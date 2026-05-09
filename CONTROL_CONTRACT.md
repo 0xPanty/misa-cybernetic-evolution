@@ -25,6 +25,19 @@ It prevents vague goals from becoming uncontrolled system modifications.
 - Risks:
 ```
 
+Machine-readable form:
+
+- [schemas/control_contract.schema.json](./schemas/control_contract.schema.json)
+- [examples/control_contract.example.json](./examples/control_contract.example.json)
+
+Local validation:
+
+```bash
+npm run simulate:misa
+npm run validate:schemas
+npm run precheck
+```
+
 ## Field Guide
 
 ### Primary Setpoint
@@ -42,6 +55,12 @@ Weak examples:
 - make the agent smarter
 - improve memory
 - optimize prompts
+
+For v0.2, a good Misa learning-loop setpoint is narrower:
+
+- route repeated recovery behavior into a draft skill, not generic memory
+- hold a single transient failure as damping, not a provider-route change
+- keep public posting boundaries as policy candidates requiring approval
 
 ### Acceptance
 

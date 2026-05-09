@@ -1,0 +1,29 @@
+{
+  "event_id": "misa-damping-provider-retry-002",
+  "channel": "local",
+  "summary": "A single provider read timeout should trigger retry or observation, not an immediate provider-route rewrite.",
+  "signals": [
+    "single_failure",
+    "avoid_overreaction"
+  ],
+  "evidence_count": 1,
+  "outcome": "failure",
+  "risk_level": "medium",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from real provider timeout behavior; provider payloads and keys are omitted.",
+  "setpoint": "avoid changing control routes from one transient failure",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": [
+      "tool:provider-read-timeout"
+    ]
+  },
+  "expected_route": "damping",
+  "expected_status": "held",
+  "expected_publication_mode": "no_publish",
+  "expected_candidate_state": "held",
+  "created_at": "2026-05-10T01:00:00Z"
+}

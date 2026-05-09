@@ -1,0 +1,27 @@
+{
+  "event_id": "misa-memory-project-boundary-002",
+  "channel": "local",
+  "summary": "Structure optimization work should stay inside the local cybernetic repo unless the core project files explicitly require closeout notes.",
+  "signals": [
+    "stable_project_fact",
+    "verified_project_state"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "low",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from real project boundaries with paths and private chatter removed.",
+  "setpoint": "keep structure optimization scoped and recoverable",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "memory",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T01:00:00Z"
+}

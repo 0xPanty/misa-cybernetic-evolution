@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/misa_learning_fixture.schema.json",
+  "title": "MisaLearningFixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "channel",
+    "summary",
+    "signals",
+    "evidence_count",
+    "outcome",
+    "risk_level",
+    "redaction_status",
+    "source_type",
+    "redaction_note",
+    "setpoint",
+    "artifact_evidence",
+    "expected_route",
+    "expected_status",
+    "expected_publication_mode",
+    "expected_candidate_state",
+    "created_at"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "channel": {
+      "type": "string",
+      "enum": ["discord", "farcaster", "agentmail", "local", "other"]
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "signals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "evidence_count": { "type": "integer", "minimum": 0 },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "partial", "failure", "unknown"]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "redaction_status": {
+      "type": "string",
+      "enum": ["clean", "redacted", "blocked"]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["synthetic", "redacted_realish"]
+    },
+    "redaction_note": { "type": "string", "minLength": 1 },
+    "setpoint": { "type": "string", "minLength": 1 },
+    "artifact_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["injected", "read", "modified", "tool_errors"],
+      "properties": {
+        "injected": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "read": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "modified": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "tool_errors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "expected_route": {
+      "type": "string",
+      "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+    },
+    "expected_status": {
+      "type": "string",
+      "enum": ["draft", "verified", "requires_approval", "rejected", "held"]
+    },
+    "expected_publication_mode": {
+      "type": "string",
+      "enum": ["draft_only", "requires_approval", "no_publish"]
+    },
+    "expected_candidate_state": {
+      "type": "string",
+      "enum": ["none", "staged", "validated", "rejected", "held"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

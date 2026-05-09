@@ -1,0 +1,31 @@
+{
+  "event_id": "misa-skill-recovery-workflow-001",
+  "channel": "local",
+  "summary": "Misa recovery work repeatedly starts by reading the three core project files before editing.",
+  "signals": [
+    "reusable_workflow",
+    "project_recovery_sequence"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "medium",
+  "redaction_status": "clean",
+  "source_type": "synthetic",
+  "redaction_note": "No raw private message; synthesized from the project recovery workflow.",
+  "setpoint": "make recovery repeatable without rereading unrelated backlog",
+  "artifact_evidence": {
+    "injected": [
+      "skill:misa-hermes-recovery"
+    ],
+    "read": [
+      "skill:misa-hermes-recovery"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "skill",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T00:00:00Z"
+}

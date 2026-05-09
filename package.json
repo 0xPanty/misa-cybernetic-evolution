@@ -1,0 +1,28 @@
+{
+  "name": "misa-cybernetic-evolution",
+  "version": "0.4.0",
+  "description": "A control-theoretic learning plane for Hermes-style AI agents.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "private": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate:schemas": "node scripts/validate-schemas.mjs",
+    "simulate:misa": "node scripts/simulate-learning.mjs",
+    "precheck": "node scripts/precheck.mjs",
+    "test": "node --test"
+  },
+  "keywords": [
+    "ai-agent",
+    "cybernetics",
+    "governance",
+    "learning-plane",
+    "control-contract"
+  ],
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

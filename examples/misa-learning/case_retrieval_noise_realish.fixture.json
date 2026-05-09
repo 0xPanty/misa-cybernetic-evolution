@@ -1,0 +1,29 @@
+{
+  "event_id": "misa-case-retrieval-noise-002",
+  "channel": "local",
+  "summary": "Retrieval detail chunks can keep prompt scaffolding and tool boilerplate even when the top-level summary is clean.",
+  "signals": [
+    "repeated_failure_pattern",
+    "retrieval_noise"
+  ],
+  "evidence_count": 3,
+  "outcome": "partial",
+  "risk_level": "medium",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from a real retrieval-quality audit; source IDs and raw chunk text are removed.",
+  "setpoint": "recognize raw retrieval noise before restoring automatic memory flows",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": [
+      "tool:retrieval-noise"
+    ]
+  },
+  "expected_route": "case",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T01:00:00Z"
+}

@@ -1,0 +1,29 @@
+{
+  "event_id": "misa-damping-single-failure-001",
+  "channel": "local",
+  "summary": "A single transient validation failure should not trigger provider, memory, or session-mechanic changes.",
+  "signals": [
+    "single_failure",
+    "avoid_overreaction"
+  ],
+  "evidence_count": 1,
+  "outcome": "failure",
+  "risk_level": "medium",
+  "redaction_status": "clean",
+  "source_type": "synthetic",
+  "redaction_note": "No raw log or secret; synthesized from the one-failure damping rule.",
+  "setpoint": "hold the candidate in draft and collect another signal before changing the system",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": [
+      "tool:transient-validation-failure"
+    ]
+  },
+  "expected_route": "damping",
+  "expected_status": "held",
+  "expected_publication_mode": "no_publish",
+  "expected_candidate_state": "held",
+  "created_at": "2026-05-10T00:00:00Z"
+}

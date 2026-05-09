@@ -6,7 +6,7 @@
 observed -> summarized -> routed -> drafted -> verified -> approved -> published
                               |          |          |          |
                               v          v          v          v
-                           ignored    rejected   rejected   rolled back
+                    ignored / damping  rejected   rejected   rolled back
 ```
 
 ## Promotion Rules
@@ -55,6 +55,19 @@ Promote to case when the lesson is a failure or recovery pattern:
 Promote to policy only when the rule changes future behavior. Policy updates
 need the strongest validation because they can affect many tasks.
 
+### Damping
+
+Route to damping when the safest action is to hold:
+
+- single transient failure
+- weak evidence
+- possible overreaction
+- repeated verifier failure
+- high-risk actuator without enough evidence
+
+Damping is a positive route. It prevents Misa from turning one noisy signal into
+a permanent memory, skill, or policy.
+
 ## Damping and Cooldown
 
 The learning plane should resist oscillation:
@@ -64,6 +77,17 @@ The learning plane should resist oscillation:
 - repeated rejection triggers cooldown
 - verifier failure blocks publication
 - conflicting controllers must pause and escalate
+
+The default thresholds live in
+[docs/damping-rules.md](./docs/damping-rules.md) and
+[schemas/damping_rules.schema.json](./schemas/damping_rules.schema.json).
+
+Run the local dry-run gate before publishing a governance change:
+
+```bash
+npm run simulate:misa
+npm run precheck
+```
 
 ## Owner Matrix
 
@@ -87,6 +111,37 @@ These require explicit approval:
 - persistent memory writes from weak evidence
 - security or redaction policy changes
 
+## Misa Launch Profile
+
+Misa can use this repository as a structure reference and local precheck layer:
+
+- [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md)
+- [examples/misa_readonly_integration.example.json](./examples/misa_readonly_integration.example.json)
+
+The local precheck keeps the v0.2 shape honest: docs, schemas, examples, and
+tests should run cleanly, and this repo should not quietly become a Misa
+background service.
+
+## Misa Learning Loop v0.2
+
+The v0.2 simulator routes Misa-style events into:
+
+- memory candidates;
+- skill drafts;
+- case records;
+- policy candidates;
+- damping holds;
+- ignored noise.
+
+Run:
+
+```bash
+npm run simulate:misa
+```
+
+This is dry-run only. A `memory` route does not write Zilliz. A `skill` route
+does not publish a Skill. A `policy` route does not change runtime behavior.
+
 ## Evidence Requirements
 
 A publication record should include:
@@ -100,3 +155,21 @@ A publication record should include:
 - approver or gate id
 
 No evidence, no publication.
+
+## Governance Skill Template
+
+Reusable agent procedures should start from
+[docs/templates/governance-skill-template.md](./docs/templates/governance-skill-template.md).
+
+The template requires:
+
+- trigger conditions;
+- not-for conditions;
+- read and write boundaries;
+- damping rules;
+- verification plan;
+- rollback notes;
+- evidence ids.
+
+Do not publish a Skill from a single successful run. One event may create a
+draft only.

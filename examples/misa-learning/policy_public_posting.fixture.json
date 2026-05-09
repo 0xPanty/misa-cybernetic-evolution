@@ -1,0 +1,27 @@
+{
+  "event_id": "misa-policy-public-posting-001",
+  "channel": "farcaster",
+  "summary": "The user explicitly says not to proactively send real Farcaster posts unless asked for a real test post.",
+  "signals": [
+    "explicit_user_boundary",
+    "public_posting_boundary"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "high",
+  "redaction_status": "clean",
+  "source_type": "synthetic",
+  "redaction_note": "No live cast content; only the public posting boundary is represented.",
+  "setpoint": "avoid public-channel side effects without explicit user approval",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "policy",
+  "expected_status": "requires_approval",
+  "expected_publication_mode": "requires_approval",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T00:00:00Z"
+}

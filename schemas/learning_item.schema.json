@@ -18,7 +18,7 @@
     "item_id": { "type": "string", "minLength": 1 },
     "kind": {
       "type": "string",
-      "enum": ["memory", "skill", "case", "policy", "ignore"]
+      "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
     },
     "source_events": {
       "type": "array",

@@ -1,0 +1,27 @@
+{
+  "event_id": "misa-policy-timer-restore-002",
+  "channel": "local",
+  "summary": "Do not restore an automatic distillation timer until an explicit request and a clean canary prove the write path.",
+  "signals": [
+    "explicit_user_boundary",
+    "timer_restore_boundary"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "high",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from real timer decisions; service names are generalized and no runtime state is included.",
+  "setpoint": "avoid automatic background writes without approval",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "policy",
+  "expected_status": "requires_approval",
+  "expected_publication_mode": "requires_approval",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T01:00:00Z"
+}

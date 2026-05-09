@@ -1,0 +1,72 @@
+{
+  "cycle_id": "cycle-misa-policy-public-posting-001",
+  "source_event_id": "misa-policy-public-posting-001",
+  "observe": {
+    "channel": "farcaster",
+    "signals": [
+      "explicit_user_boundary",
+      "public_posting_boundary"
+    ],
+    "evidence_count": 3,
+    "risk_level": "high",
+    "redaction_status": "clean"
+  },
+  "identify": {
+    "control_category": "optimal_control",
+    "error_class": "future behavior boundary",
+    "setpoint": "avoid public-channel side effects without explicit user approval"
+  },
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "referenced": [],
+    "tool_errors": []
+  },
+  "route": {
+    "target": "policy",
+    "rationale": "The signal changes future behavior and must stay draft-only until approved.",
+    "publication_mode": "requires_approval"
+  },
+  "proposed_change": {
+    "summary": "Draft policy candidate: The user explicitly says not to proactively send real Farcaster posts unless asked for a real test post.",
+    "candidate_action": "create",
+    "affected_artifacts": [
+      "policy:candidate"
+    ]
+  },
+  "candidate_review": {
+    "state": "staged",
+    "evidence_basis": "explicit user boundary",
+    "publication_allowed": false,
+    "notes": [
+      "Candidate is staged for local replay evidence only.",
+      "Prompt-time injection alone is not treated as proof that a skill was used."
+    ]
+  },
+  "verification": {
+    "level": "L1",
+    "commands": [
+      "npm run simulate:misa",
+      "npm run precheck",
+      "npm test"
+    ],
+    "passed": true,
+    "notes": [
+      "Deterministic read-only replay over local redacted fixtures.",
+      "No persistent memory, skill publication, timer, session-mechanic, or public posting effect."
+    ]
+  },
+  "result": {
+    "status": "requires_approval",
+    "positive_value": true,
+    "live_effects": {
+      "writes_persistent_memory": false,
+      "publishes_skill": false,
+      "starts_timer": false,
+      "changes_session_mechanics": false,
+      "posts_publicly": false
+    }
+  },
+  "created_at": "2026-05-10T00:00:00Z"
+}

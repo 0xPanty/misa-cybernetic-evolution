@@ -1,0 +1,29 @@
+{
+  "event_id": "misa-skill-readonly-audit-002",
+  "channel": "local",
+  "summary": "When checking a restored bridge, inspect process state, logs, and artifact cleanliness before sending any live test message.",
+  "signals": [
+    "reusable_workflow",
+    "read_only_verification"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "medium",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from real bridge-audit work; channel IDs, tokens, and message text are omitted.",
+  "setpoint": "make bridge checks useful without polluting live conversations",
+  "artifact_evidence": {
+    "injected": [
+      "skill:misa-bridge-audit"
+    ],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "skill",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T01:00:00Z"
+}

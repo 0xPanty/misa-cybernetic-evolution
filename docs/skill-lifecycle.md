@@ -30,6 +30,20 @@ A published skill should have:
 - version history
 - rollback target
 
+Start new candidates from
+[templates/governance-skill-template.md](./templates/governance-skill-template.md).
+
+In v0.2, Skill candidates can be produced by the Misa learning-loop simulator
+only as drafts:
+
+```bash
+npm run simulate:misa
+```
+
+The simulator helps decide whether a lesson is actually a Skill. Stable facts
+should go to memory, repeated failures to cases, behavior boundaries to policy,
+and weak evidence to damping.
+
 ## Replay Validation
 
 Replay compares candidate behavior with baseline behavior on historical tasks.

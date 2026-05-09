@@ -1,0 +1,27 @@
+{
+  "event_id": "evt-20260509-001",
+  "session_id": "session-local-001",
+  "channel": "local",
+  "task_type": "governance-precheck",
+  "input_hash": "sha256:input-redacted",
+  "output_hash": "sha256:output-redacted",
+  "tools_used": [
+    "node:test",
+    "ajv"
+  ],
+  "skills_injected": [
+    "misa-hermes-recovery"
+  ],
+  "skills_read": [
+    "misa-hermes-recovery"
+  ],
+  "skills_modified": [],
+  "provider": "none",
+  "latency_ms": 1200,
+  "cost": 0,
+  "outcome": "success",
+  "user_feedback": "none",
+  "risk_level": "low",
+  "redaction_status": "clean",
+  "created_at": "2026-05-09T08:00:00Z"
+}

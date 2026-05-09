@@ -1,0 +1,51 @@
+{
+  "contract_id": "cc-misa-learning-loop-v0.2",
+  "primary_setpoint": "Make the cybernetic evolution layer usable as Misa's official structure reference, local precheck layer, and dry-run learning-loop simulator without changing live runtime behavior.",
+  "acceptance": [
+    "Misa learning-loop simulation passes.",
+    "Repository schema validation passes.",
+    "Dry-run precheck passes.",
+    "Minimal test suite passes.",
+    "Misa integration profile blocks timers, session mechanics, provider routes, public posting, deletion, and persistent memory publication."
+  ],
+  "guardrail_metrics": [
+    "live_effect_count",
+    "secret_requirement_count",
+    "blocked_surface_coverage",
+    "precheck_failure_count"
+  ],
+  "sampling_plan": "Run local repository checks against the v0.2 scaffold before any Misa runtime integration work.",
+  "known_delays": [
+    "manual review",
+    "future adapter implementation"
+  ],
+  "recovery_target": "Revert to documentation-only reference by removing the integration profile or restoring the previous repository tag.",
+  "rollback_trigger": "Any live-effect flag becomes true, any blocked surface is removed, or precheck fails.",
+  "constraints": [
+    "Do not process session-distiller backlog.",
+    "Do not start session-distiller timer.",
+    "Do not change Discord or Farcaster session mechanics.",
+    "Do not write persistent memory or publish skills automatically."
+  ],
+  "boundary": [
+    "local repository documentation",
+    "local schemas",
+    "local Misa learning-loop fixtures",
+    "local dry-run checks",
+    "Misa-specific read-only control contract"
+  ],
+  "coupling_notes": [
+    "The profile may guide future Misa adapter design but does not attach to live services."
+  ],
+  "approximation_validity": "Local dry-run checks prove only repository consistency, route behavior, and boundary consistency; they do not prove live production safety.",
+  "actuator_budget": [
+    "write docs",
+    "write schema",
+    "run local dry-run checks"
+  ],
+  "risks": [
+    "Overstating readiness as production runtime approval",
+    "Future adapter accidentally adding live effects without a new contract"
+  ],
+  "created_at": "2026-05-10T00:00:00Z"
+}

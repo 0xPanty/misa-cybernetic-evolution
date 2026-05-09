@@ -10,6 +10,41 @@
 | L3 | Canary | limited low-risk activation |
 | L4 | Publication | version, evidence, approval, rollback |
 
+## Local v0.4 Gate
+
+Run:
+
+```bash
+npm run simulate:misa
+npm run validate:schemas
+npm run precheck
+npm test
+```
+
+This proves L0 repository consistency and L1 read-only replay over the local
+Misa fixture suite. It does not prove shadow safety, canary safety, or
+production readiness.
+
+For Misa specifically, L0 also checks the launch profile:
+
+- [misa-readonly-integration.md](./misa-readonly-integration.md)
+- [../examples/misa_readonly_integration.example.json](../examples/misa_readonly_integration.example.json)
+
+Passing this means the v0.4 reference/precheck/simulation/replay launch shape is
+coherent. It does not turn the repo into a background runtime service.
+
+The simulator is documented in:
+
+- [misa-learning-loop-v0.2.md](./misa-learning-loop-v0.2.md)
+- [misa-learning-replay-v0.3.md](./misa-learning-replay-v0.3.md)
+- [misa-learning-evidence-v0.4.md](./misa-learning-evidence-v0.4.md)
+- [source-synthesis.md](./source-synthesis.md)
+
+It checks that Misa-style events can route to memory, skill, case, policy, and
+damping without live effects, and that each fixture's declared route expectation
+stays stable. v0.4 also checks that injected-only skill context is not counted
+as attribution evidence, and that staged/held/rejected candidates cannot publish.
+
 ## Gate Boundaries
 
 Offline success is not production success. Each gate must state what it proves

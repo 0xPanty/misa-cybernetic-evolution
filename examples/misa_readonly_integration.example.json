@@ -1,0 +1,43 @@
+{
+  "profile_id": "misa-learning-loop-v0.2",
+  "target_agent": "Misa",
+  "mode": "read_only_dry_run",
+  "launch_verdict": "ok_as_read_only_dry_run",
+  "allowed_surfaces": [
+    "local repository documentation",
+    "local Misa learning-loop simulation",
+    "local schema validation",
+    "local dry-run precheck",
+    "Misa-specific control-contract drafting"
+  ],
+  "blocked_surfaces": [
+    "session_distiller_backlog",
+    "session_distiller_timer",
+    "discord_session_mechanics",
+    "farcaster_session_mechanics",
+    "hermes_runtime_transport",
+    "persistent_memory_publication"
+  ],
+  "live_effects": {
+    "calls_model_providers": false,
+    "starts_timers": false,
+    "writes_persistent_memory": false,
+    "changes_session_mechanics": false,
+    "changes_provider_routes": false,
+    "posts_publicly": false,
+    "deletes_data": false
+  },
+  "secrets_required": false,
+  "approval_required_for_live_effects": true,
+  "verification_commands": [
+    "npm run simulate:misa",
+    "npm run validate:schemas",
+    "npm run precheck",
+    "npm test"
+  ],
+  "notes": [
+    "This profile allows the repository to be used as Misa's official structure reference, local precheck layer, and dry-run learning-loop simulator.",
+    "A later runtime adapter should be implemented separately instead of being implied by this v0.2 scaffold."
+  ],
+  "created_at": "2026-05-10T00:00:00Z"
+}

@@ -73,12 +73,14 @@ The router decides the artifact class:
 - skill draft
 - case record
 - policy proposal
+- damping hold
 - ignored noise
 
 The key rule:
 
 Stable bottom logic goes to memory. Reusable procedures go to skills. Repeated
-failure and recovery patterns go to cases.
+failure and recovery patterns go to cases. Behavior boundaries go to policy.
+Thin or one-off evidence goes to damping or ignore.
 
 ### 6. Evolution Plane
 
@@ -107,6 +109,40 @@ The verifier evaluates candidates through layered gates:
 
 The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
+
+The v0.4 repository implements the first local gate:
+
+```bash
+npm run simulate:misa
+npm run validate:schemas
+npm run precheck
+npm test
+```
+
+These commands are dry-run checks. They do not call providers, start timers,
+write memory, publish artifacts, post publicly, or change live channel behavior.
+
+v0.2 added a deterministic Misa learning-loop simulation:
+
+```text
+fixture event -> observe -> identify -> route -> draft -> verify -> dry-run result
+```
+
+The simulator is deliberately small. It proves route behavior before any live
+adapter exists.
+
+v0.4 adds an attribution rule to that same small simulator: injected artifacts
+are context only, while read or modified artifacts are evidence. This keeps a
+listed skill from being credited unless the session actually used it, and it
+keeps candidates staged, held, or rejected instead of published.
+
+For Misa, the current launch shape is structure reference plus local precheck.
+See
+[docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
+The v0.2 loop is described in
+[docs/misa-learning-loop-v0.2.md](./docs/misa-learning-loop-v0.2.md).
+The v0.4 evidence gate is described in
+[docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md).
 
 ### 8. Publication and Governance Plane
 

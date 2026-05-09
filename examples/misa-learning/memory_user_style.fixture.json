@@ -1,0 +1,27 @@
+{
+  "event_id": "misa-memory-user-style-001",
+  "channel": "local",
+  "summary": "The user repeatedly asks for Chinese-first, plainspoken answers with conclusion first.",
+  "signals": [
+    "stable_user_preference",
+    "explicit_feedback"
+  ],
+  "evidence_count": 4,
+  "outcome": "success",
+  "risk_level": "low",
+  "redaction_status": "clean",
+  "source_type": "synthetic",
+  "redaction_note": "No raw private message; synthesized from repeated project style instructions.",
+  "setpoint": "future answers preserve the user's preferred communication style",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "memory",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-10T00:00:00Z"
+}

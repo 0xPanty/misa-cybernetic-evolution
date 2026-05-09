@@ -1,0 +1,22 @@
+{
+  "item_id": "li-skill-template-001",
+  "kind": "skill",
+  "source_events": [
+    "evt-20260509-001"
+  ],
+  "evidence_count": 3,
+  "confidence": 0.82,
+  "candidate_action": "create",
+  "affected_artifacts": [
+    "docs/templates/governance-skill-template.md"
+  ],
+  "verification_plan": [
+    "schema validation",
+    "dry-run precheck",
+    "node:test unit coverage"
+  ],
+  "rollback_plan": "Remove the draft template or revert to the previous repository tag.",
+  "owner": "skill owner",
+  "status": "draft",
+  "created_at": "2026-05-09T08:00:00Z"
+}

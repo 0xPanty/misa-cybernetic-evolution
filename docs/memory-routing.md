@@ -10,6 +10,7 @@ The router decides where a lesson belongs.
 | Reusable workflow | skill draft |
 | Repeated failure | case record |
 | Behavioral rule | policy proposal |
+| Single weak signal or overreaction risk | damping hold |
 | One-off detail | ignore or short-lived session note |
 | Unsupported inference | reject |
 
@@ -22,6 +23,7 @@ The router decides where a lesson belongs.
 5. Store procedure in skills.
 6. Store failure and recovery patterns in cases.
 7. Preserve evidence links for every promoted artifact.
+8. Use damping when the right move is to wait, not write.
 
 ## Promotion Thresholds
 
@@ -32,3 +34,4 @@ Suggested defaults:
 - three confirmed successes: skill candidate
 - explicit user correction: memory candidate, pending verification
 - high-risk behavior change: policy proposal with approval required
+- single transient failure: damping hold, no publication

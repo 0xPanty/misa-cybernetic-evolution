@@ -12,6 +12,52 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
+## v0.4 Quickstart
+
+This repository is safe to run locally. The default checks are dry-run checks:
+they read repository files, validate schemas, and report governance failures.
+They do not call model providers, write memories, start timers, or touch live
+channels.
+
+```bash
+npm install
+npm run simulate:misa
+npm run validate:schemas
+npm run precheck
+npm test
+```
+
+Expected result:
+
+- all JSON schemas compile;
+- all checked examples validate;
+- the Misa learning-loop simulation routes synthetic and redacted real-ish
+  example events into memory, skill, case, policy, and damping candidates
+  without live effects;
+- the dry-run precheck passes required-file, governance, damping, and secret
+  assignment checks;
+- the minimal test suite passes.
+
+## Misa Integration Verdict
+
+This version can be used as Misa's official structure reference, local precheck
+layer, dry-run learning-loop simulator, and read-only replay fixture suite.
+
+That is a real launch shape: Misa can rely on the docs, schemas, templates, and
+checks when designing future learning/memory/skill changes.
+
+What this v0.4 does not include is a background runtime service. It does not
+start timers, change Discord/Farcaster session mechanics, call model providers,
+post publicly, publish skills, or write Misa memory by itself.
+
+See [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
+See [docs/misa-learning-loop-v0.2.md](./docs/misa-learning-loop-v0.2.md) for
+the runnable learning-loop simulation.
+See [docs/misa-learning-replay-v0.3.md](./docs/misa-learning-replay-v0.3.md)
+for the read-only replay fixture layer.
+See [docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md)
+for the artifact evidence and candidate review gate.
+
 ## Why This Exists
 
 Most agent systems can already talk, call tools, and write notes. The hard part
@@ -57,13 +103,46 @@ Evolution Plane
   create skill / improve skill / optimize trigger / memory patch / skip
         |
         v
-Verification Plane
+  Verification Plane
   static checks / replay / shadow / canary / approval
         |
         v
 Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
+
+## Misa Learning Loop v0.4
+
+v0.2 adds a deterministic dry-run loop for Misa:
+
+```text
+Misa event -> observe -> identify -> route -> draft -> verify -> hold for later publication
+```
+
+The router does not treat every lesson as memory. It can route a lesson to:
+
+- `memory`: stable facts and preferences
+- `skill`: repeatable procedures
+- `case`: repeated failures and recovery patterns
+- `policy`: future behavior boundaries
+- `damping`: do not overreact yet
+- `ignore`: unsupported noise
+
+Run it locally:
+
+```bash
+npm run simulate:misa
+```
+
+This is L1 read-only replay over local fixtures. It proves the route model is
+runnable, positive, and stable for declared route expectations; it does not
+publish anything.
+
+v0.4 adds the smallest useful evidence gate from SkillClaw-style systems:
+`injected` artifacts do not count as attribution evidence. Only artifacts that
+were explicitly `read` or `modified` can justify improving an existing skill.
+Otherwise, a repeatable workflow can only stage a new candidate. Every generated
+trace also carries `candidate_review`, and publication remains disabled.
 
 ## Design Principles
 
@@ -160,6 +239,10 @@ These rules prevent unstable self-modification:
   as high-risk control inputs.
 - Prefer smaller reversible decisions before large irreversible ones.
 
+See [docs/damping-rules.md](./docs/damping-rules.md) for the enforceable
+defaults and [schemas/damping_rules.schema.json](./schemas/damping_rules.schema.json)
+for the machine-readable form.
+
 ## Suggested Repository Layout
 
 ```text
@@ -171,22 +254,56 @@ These rules prevent unstable self-modification:
 ├── SECURITY.md
 ├── docs/
 │   ├── control-theory-mapping.md
+│   ├── damping-rules.md
+│   ├── misa-learning-loop-v0.2.md
+│   ├── misa-learning-replay-v0.3.md
+│   ├── misa-readonly-integration.md
 │   ├── memory-routing.md
+│   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
-│   └── verification-matrix.md
+│   ├── verification-matrix.md
+│   └── templates/
+│       └── governance-skill-template.md
 ├── schemas/
+│   ├── damping_rules.schema.json
+│   ├── integration_profile.schema.json
+│   ├── learning_cycle_trace.schema.json
+│   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
 │   ├── learning_item.schema.json
 │   └── control_contract.schema.json
-└── examples/
-    └── control_contract.example.json
+├── examples/
+│   ├── control_contract.example.json
+│   ├── damping_rules.example.json
+│   ├── learning_event.example.json
+│   ├── learning_item.example.json
+│   ├── learning_cycle_trace.example.json
+│   ├── misa-learning/
+│   │   ├── memory_user_style.fixture.json
+│   │   ├── skill_recovery_workflow.fixture.json
+│   │   ├── case_provider_timeout.fixture.json
+│   │   ├── case_retrieval_noise_realish.fixture.json
+│   │   ├── damping_provider_retry_realish.fixture.json
+│   │   ├── policy_public_posting.fixture.json
+│   │   ├── policy_timer_restore_realish.fixture.json
+│   │   ├── memory_project_boundary_realish.fixture.json
+│   │   ├── skill_readonly_audit_realish.fixture.json
+│   │   └── damping_single_failure.fixture.json
+│   ├── misa_readonly_control_contract.example.json
+│   └── misa_readonly_integration.example.json
+├── scripts/
+│   ├── precheck.mjs
+│   ├── simulate-learning.mjs
+│   └── validate-schemas.mjs
+└── test/
+    └── governance.test.mjs
 ```
 
 ## Minimal Implementation Path
 
 1. Record `LearningEvent` from completed tasks.
 2. Generate trajectory summaries from events.
-3. Route summaries into memory, skill, case, policy, or ignore queues.
+3. Route summaries into memory, skill, case, policy, damping, or ignore queues.
 4. Produce draft-only candidates.
 5. Validate candidates with static checks and replay.
 6. Publish versioned artifacts only after approval.
@@ -207,8 +324,30 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a design-first v0.1 repository. It is intended to be used as a public
-architecture blueprint and implementation scaffold.
+This is a v0.3 engineering scaffold. It is ready to publish as a public
+architecture blueprint with local dry-run validation and a runnable Misa
+learning-loop simulation plus read-only replay fixtures.
+
+Current scope:
+
+- sidecar learning-plane architecture;
+- control contract schema and example;
+- learning event and learning item schemas and examples;
+- damping rules schema and documentation;
+- Misa launch profile for reference/precheck use;
+- Misa learning-loop simulator and route expectation fixtures;
+- source synthesis for Kura, SkillClaw, CSE, and self-evolution references;
+- governance Skill template;
+- local schema validation, dry-run precheck, and minimal tests.
+
+Deferred scope:
+
+- runtime brain replacement;
+- gbrain/cbrain adapter work;
+- live channel session changes;
+- provider route changes;
+- background timers;
+- automatic memory or skill publication.
 
 ## License
 

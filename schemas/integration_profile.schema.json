@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/integration_profile.schema.json",
+  "title": "IntegrationProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_id",
+    "target_agent",
+    "mode",
+    "launch_verdict",
+    "allowed_surfaces",
+    "blocked_surfaces",
+    "live_effects",
+    "secrets_required",
+    "approval_required_for_live_effects",
+    "verification_commands",
+    "created_at"
+  ],
+  "properties": {
+    "profile_id": { "type": "string", "minLength": 1 },
+    "target_agent": { "type": "string", "minLength": 1 },
+    "mode": {
+      "type": "string",
+      "enum": ["reference_only", "read_only_dry_run", "shadow", "canary", "live"]
+    },
+    "launch_verdict": {
+      "type": "string",
+      "enum": [
+        "ok_as_reference",
+        "ok_as_read_only_dry_run",
+        "blocked_for_live_runtime",
+        "approved_for_live_runtime"
+      ]
+    },
+    "allowed_surfaces": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blocked_surfaces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "live_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "calls_model_providers",
+        "starts_timers",
+        "writes_persistent_memory",
+        "changes_session_mechanics",
+        "changes_provider_routes",
+        "posts_publicly",
+        "deletes_data"
+      ],
+      "properties": {
+        "calls_model_providers": { "type": "boolean" },
+        "starts_timers": { "type": "boolean" },
+        "writes_persistent_memory": { "type": "boolean" },
+        "changes_session_mechanics": { "type": "boolean" },
+        "changes_provider_routes": { "type": "boolean" },
+        "posts_publicly": { "type": "boolean" },
+        "deletes_data": { "type": "boolean" }
+      }
+    },
+    "secrets_required": { "type": "boolean" },
+    "approval_required_for_live_effects": { "type": "boolean" },
+    "verification_commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
