@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/control_contract.schema.json",
+  "title": "ControlContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_id",
+    "primary_setpoint",
+    "acceptance",
+    "guardrail_metrics",
+    "sampling_plan",
+    "recovery_target",
+    "rollback_trigger",
+    "boundary",
+    "actuator_budget",
+    "created_at"
+  ],
+  "properties": {
+    "contract_id": { "type": "string", "minLength": 1 },
+    "primary_setpoint": { "type": "string", "minLength": 1 },
+    "acceptance": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "guardrail_metrics": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sampling_plan": { "type": "string", "minLength": 1 },
+    "known_delays": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recovery_target": { "type": "string", "minLength": 1 },
+    "rollback_trigger": { "type": "string", "minLength": 1 },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "boundary": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "coupling_notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "approximation_validity": { "type": "string" },
+    "actuator_budget": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

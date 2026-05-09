@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/learning_event.schema.json",
+  "title": "LearningEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "session_id",
+    "channel",
+    "task_type",
+    "outcome",
+    "risk_level",
+    "redaction_status",
+    "created_at"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "session_id": { "type": "string", "minLength": 1 },
+    "channel": {
+      "type": "string",
+      "enum": ["discord", "farcaster", "agentmail", "local", "other"]
+    },
+    "task_type": { "type": "string", "minLength": 1 },
+    "input_hash": { "type": "string" },
+    "output_hash": { "type": "string" },
+    "tools_used": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skills_injected": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skills_read": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skills_modified": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "provider": { "type": "string" },
+    "latency_ms": { "type": "integer", "minimum": 0 },
+    "cost": { "type": "number", "minimum": 0 },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "partial", "failure", "unknown"]
+    },
+    "user_feedback": {
+      "type": "string",
+      "enum": ["explicit", "implicit", "none"]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "redaction_status": {
+      "type": "string",
+      "enum": ["clean", "redacted", "blocked"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "contract_id": "cc-skill-replay-001",
+  "primary_setpoint": "Increase replay pass rate for a repeated mail-triage workflow without increasing memory pollution.",
+  "acceptance": [
+    "Candidate skill passes L0 static checks.",
+    "Candidate skill improves replay score over baseline on at least 3 historical tasks.",
+    "No redaction or persistent-memory guardrail fails."
+  ],
+  "guardrail_metrics": [
+    "memory_pollution_rate",
+    "persona_drift_score",
+    "tool_error_rate",
+    "rollback_mttr"
+  ],
+  "sampling_plan": "Evaluate replay cases from the last 30 days of redacted task evidence.",
+  "known_delays": [
+    "human review",
+    "vector index refresh"
+  ],
+  "recovery_target": "Disable the candidate and restore the previous skill version within 5 minutes.",
+  "rollback_trigger": "Replay win rate below threshold, redaction failure, or public-channel safety incident.",
+  "constraints": [
+    "Do not change live channel session mechanics.",
+    "Do not write persistent memory from a single task."
+  ],
+  "boundary": [
+    "draft skill",
+    "replay verifier",
+    "publication record"
+  ],
+  "coupling_notes": [
+    "The skill may affect future tool selection for mail tasks only."
+  ],
+  "approximation_validity": "Replay proves behavior on known tasks only; canary is still required before broad activation.",
+  "actuator_budget": [
+    "write draft",
+    "run replay",
+    "publish after approval"
+  ],
+  "risks": [
+    "Overfitting to old replay cases",
+    "Trigger description becoming too broad"
+  ],
+  "created_at": "2026-05-09T08:00:00Z"
+}

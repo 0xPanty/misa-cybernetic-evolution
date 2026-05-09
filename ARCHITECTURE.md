@@ -1,0 +1,167 @@
+# Architecture
+
+## Scope
+
+Misa Cybernetic Evolution Layer is a sidecar learning plane for AI agents. It
+does not require the live assistant to route model traffic through a new proxy at
+the beginning. The initial integration is observation-only.
+
+## Planes
+
+### 1. Live Runtime
+
+The production assistant remains responsible for user interaction, tool calls,
+model routing, memory reads, and channel-specific behavior.
+
+Examples:
+
+- chat channels
+- social channels
+- mail channels
+- model providers
+- tool runners
+- memory readers
+
+The learning plane must not silently alter this layer.
+
+### 2. Observation Plane
+
+The observation plane collects append-only evidence:
+
+- session id
+- channel
+- task type
+- model/provider metadata
+- tools used
+- skill attribution
+- feedback
+- latency and cost
+- outcome estimate
+- risk class
+- redaction status
+
+It should avoid storing raw private content when hashes, summaries, or redacted
+snippets are enough.
+
+### 3. Control Contract Plane
+
+This plane turns ambiguous improvement ideas into controlled engineering work.
+It defines setpoints, acceptance criteria, guardrails, sampling, delay budget,
+rollback triggers, boundaries, and actuator budget.
+
+Any change touching public output, session continuity, provider routes, deletion,
+timers, or persistent memory requires a control contract.
+
+### 4. Distillation and Identification Plane
+
+This plane converts raw observations into causal summaries:
+
+- what the user wanted
+- what the agent tried
+- which tools and skills mattered
+- where errors occurred
+- what feedback was received
+- what reusable pattern may exist
+
+The output is not yet memory. It is evidence for routing.
+
+### 5. Routing Plane
+
+The router decides the artifact class:
+
+- memory candidate
+- skill draft
+- case record
+- policy proposal
+- ignored noise
+
+The key rule:
+
+Stable bottom logic goes to memory. Reusable procedures go to skills. Repeated
+failure and recovery patterns go to cases.
+
+### 6. Evolution Plane
+
+The evolution plane can propose:
+
+- create skill
+- improve skill
+- optimize skill trigger
+- merge duplicate skills
+- deprecate skill
+- patch memory
+- create known-failure case
+- skip
+
+It produces draft artifacts only.
+
+### 7. Verification Plane
+
+The verifier evaluates candidates through layered gates:
+
+- L0 static checks
+- L1 replay
+- L2 shadow
+- L3 canary
+- L4 publication
+
+The verifier should compare candidate behavior against baseline behavior instead
+of relying on model confidence.
+
+### 8. Publication and Governance Plane
+
+Publication creates immutable records:
+
+- artifact id
+- version
+- content hash
+- source evidence ids
+- validation result
+- approver or automated gate id
+- rollback target
+- publication timestamp
+
+## Control Surfaces
+
+Every change should be classified by surface:
+
+| Surface | Examples | Default stance |
+| --- | --- | --- |
+| Control plane | routing, gates, retries, publishing, cooldowns | can iterate in shadow |
+| Data plane | real user output, public posting, tool execution | gated |
+| State plane | memory, journals, vector stores, registries | versioned and reversible |
+
+If a change touches more than one surface, record the complexity transfer.
+
+## Complexity Transfer Ledger
+
+When a change claims to simplify the system, record:
+
+- original location of complexity
+- new location of complexity
+- benefit
+- new cost
+- new failure mode
+
+This prevents hidden complexity from being mistaken for simplification.
+
+## Controller Conflict Rule
+
+Only one primary controller may write the same artifact at a time. Other systems
+may observe, suggest, or validate, but not publish concurrently.
+
+Examples:
+
+- memory writer and skill publisher must not both mutate the same lesson
+- session distiller and trajectory summarizer must not race on the same session
+- policy optimizer and channel runtime must not both change public behavior
+
+## Decision Door Classification
+
+Classify each decision:
+
+- two-way door: reversible, safe for small experiments
+- one-way door: hard to undo, requires frozen boundary and explicit approval
+
+Provider routes, public posting behavior, persistent deletion, timers, and
+session mechanics should be treated as one-way-door decisions by default.
