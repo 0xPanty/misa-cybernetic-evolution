@@ -13,6 +13,10 @@ import {
 } from "../scripts/lib/learning-loop.mjs";
 import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
 import { crystallizeMisaSkills } from "../scripts/lib/skill-crystallization.mjs";
+import { runMisaSelfRepair } from "../scripts/lib/self-repair.mjs";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 test("classifies high-risk actuators", () => {
   const matches = classifyActuators([
@@ -106,9 +110,56 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
 
   for (const candidate of result.candidates) {
     assert.equal(candidate.route.target, "skill");
+    assert.equal(candidate.proposed_skill.target_surface, "draft_skill");
+    assert.equal(candidate.quality.ready_for_draft, true);
+    assert.equal(candidate.quality.ready_for_publish, false);
+    assert.equal(candidate.self_repair.allowed, true);
     assert.equal(candidate.safety.publication_allowed, false);
     assert.equal(Object.values(candidate.safety.live_effects).some(Boolean), false);
+    assert.ok(candidate.verification_commands.includes("npm run self-repair:misa -- --no-verify"));
     assert.ok(candidate.verification_commands.includes("npm run crystallize:misa"));
+  }
+});
+
+test("Misa self repair writes draft artifacts without production effects", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-self-repair-"));
+
+  try {
+    const result = await runMisaSelfRepair({
+      repoRoot: process.cwd(),
+      candidateId: "skill-candidate-misa-skill-recovery-workflow-001",
+      runRoot: path.join(tempRoot, "runs", "self-repair"),
+      generatedRoot: path.join(tempRoot, "generated", "skill-drafts"),
+      repairPlanRoot: path.join(tempRoot, "generated", "repair-plans"),
+      verify: false,
+      now: new Date("2026-05-11T01:30:00Z")
+    });
+
+    assert.equal(result.mode, "self-repair-draft");
+    assert.equal(result.ok, true);
+    assert.equal(result.candidate_count, 1);
+    assert.equal(result.safety.publication_allowed, false);
+    assert.equal(result.safety.writes_persistent_memory, false);
+    assert.equal(result.safety.touches_runtime, false);
+
+    const run = result.runs[0];
+    assert.equal(run.status, "draft_generated");
+    assert.equal(run.needs_human_review, true);
+    assert.equal(run.commands.length, 0);
+    assert.ok(run.generated_files.some((file) => file.endsWith("misa-hermes-recovery-refinement.md")));
+
+    const draftPath = path.join(tempRoot, "generated", "skill-drafts", "misa-hermes-recovery-refinement.md");
+    const reportPath = path.join(tempRoot, "runs", "self-repair", run.run_id, "final-report.json");
+    const draft = await fs.readFile(draftPath, "utf8");
+    const report = JSON.parse(await fs.readFile(reportPath, "utf8"));
+
+    assert.match(draft, /publication_allowed: false/);
+    assert.match(draft, /state: draft_generated/);
+    assert.match(draft, /Do not write persistent memory/);
+    assert.equal(report.status, "draft_generated");
+    assert.equal(report.safety.requires_human_publish_approval, true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
 

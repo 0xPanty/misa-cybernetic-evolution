@@ -1,5 +1,5 @@
 {
-  "schema_version": "misa.skill_crystallization_candidate.v1",
+  "schema_version": "misa.skill_crystallization_candidate.v2",
   "candidate_id": "skill-candidate-misa-skill-recovery-workflow-001",
   "source_event_id": "misa-skill-recovery-workflow-001",
   "source_cycle_id": "cycle-misa-skill-recovery-workflow-001",
@@ -32,18 +32,52 @@
       "tool_errors": []
     }
   },
+  "proposed_skill": {
+    "slug": "misa-hermes-recovery-refinement",
+    "title": "Misa Hermes Recovery Refinement",
+    "action": "improve",
+    "proposed_path": "generated/skill-drafts/misa-hermes-recovery-refinement.md",
+    "target_surface": "draft_skill"
+  },
   "procedure_outline": [
-    "Confirm the triggering situation still matches misa-skill-recovery-workflow-001 and its setpoint.",
-    "Read or cite the named evidence artifacts before changing skill:misa-hermes-recovery.",
-    "Run local replay and precheck again; keep publication disabled unless a separate gate approves it."
+    "Read the three core Misa/Hermes project files before changing project state.",
+    "Locate the current execution-table section and use it as the active boundary.",
+    "Restate the current phase, formal source, active lane, and blocker in one short block.",
+    "Avoid broad backlog reads unless the active section names them.",
+    "When a key decision or runtime change is made, update state, source log, and execution table before closeout.",
+    "Do not create a second planning system beside the core project files."
   ],
+  "quality": {
+    "score": 0.9,
+    "ready_for_draft": true,
+    "ready_for_publish": false,
+    "missing_fields": [
+      "needs manual review before changing the installed global recovery skill"
+    ],
+    "rationale": [
+      "The candidate matches an existing high-value recovery routine.",
+      "The affected existing skill was explicitly read, so improvement evidence is stronger than prompt injection alone."
+    ]
+  },
   "verification_commands": [
     "npm run crystallize:misa",
+    "npm run self-repair:misa -- --no-verify",
     "npm run simulate:misa",
     "npm run validate:schemas",
     "npm run precheck",
     "npm test"
   ],
+  "self_repair": {
+    "allowed": true,
+    "mode": "draft_only",
+    "write_scope": [
+      "generated/skill-drafts",
+      "generated/repair-plans",
+      "runs/self-repair"
+    ],
+    "max_auto_fix_attempts": 1,
+    "requires_human_publish_approval": true
+  },
   "safety": {
     "publication_allowed": false,
     "live_effects": {

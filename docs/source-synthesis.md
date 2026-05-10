@@ -24,7 +24,7 @@ noise are also valid outputs.
 | Engineering cybernetics | feedback, error, delay, stability, simulation | treat learning as a controlled loop with dry-run verification | abstract theory without runnable checks |
 | Kura Hermes three-stage article | collect, analyze, then land the result | keep Misa's learning plane beside runtime first | blind automation or live writeback |
 | SkillClaw | session evidence can evolve skills after real interaction | borrow the summarize/aggregate/verify shape | proxy integration, daemon evolution, auto skill publication |
-| GenericAgent | completed work can be crystallized into small reusable skills | add a read-only skill candidate index over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes |
+| GenericAgent | completed work can be crystallized into small reusable skills | add a skill candidate index and bounded self-repair draft loop over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes, production publication |
 | Cybernetic Systems Engineering | control/data/state surfaces and minimal control input | use surface language only where it prevents real confusion | a heavy approval process for every small change |
 | self-evolution | simple categories and experience summary template | use plain route labels and positive-value checks | Heartbeat/timer learning or unimplemented scripts |
 

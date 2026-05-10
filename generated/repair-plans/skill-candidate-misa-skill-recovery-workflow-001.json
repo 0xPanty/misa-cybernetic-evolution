@@ -1,0 +1,47 @@
+{
+  "schema_version": "misa.self_repair_plan.v1",
+  "candidate_id": "skill-candidate-misa-skill-recovery-workflow-001",
+  "proposed_skill": {
+    "slug": "misa-hermes-recovery-refinement",
+    "title": "Misa Hermes Recovery Refinement",
+    "action": "improve",
+    "proposed_path": "generated/skill-drafts/misa-hermes-recovery-refinement.md",
+    "target_surface": "draft_skill"
+  },
+  "action": "generate_validated_draft",
+  "status": "validated_draft",
+  "write_scope": [
+    "generated/skill-drafts",
+    "generated/repair-plans",
+    "runs/self-repair"
+  ],
+  "generated_files": [
+    "generated/skill-drafts/misa-hermes-recovery-refinement.md",
+    "generated/repair-plans/skill-candidate-misa-skill-recovery-workflow-001.json"
+  ],
+  "verification": {
+    "max_auto_fix_attempts": 1,
+    "commands": [
+      "npm run validate:schemas",
+      "npm run precheck",
+      "npm test"
+    ],
+    "timeout_required": true,
+    "failure_behavior": "stop_and_request_human_review"
+  },
+  "blocked_operations": [
+    "persistent_memory_write",
+    "zilliz_replacement",
+    "farcaster_publish",
+    "skill_publication",
+    "session_mechanic_replacement",
+    "timer_or_service_start"
+  ],
+  "safety": {
+    "publication_allowed": false,
+    "writes_persistent_memory": false,
+    "touches_runtime": false,
+    "starts_timer_or_service": false,
+    "requires_human_publish_approval": true
+  }
+}

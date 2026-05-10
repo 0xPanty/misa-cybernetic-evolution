@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.5 Quickstart
+## v0.6 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -23,6 +23,7 @@ channels.
 npm install
 npm run simulate:misa
 npm run crystallize:misa
+npm run self-repair:misa -- --no-verify
 npm run validate:schemas
 npm run precheck
 npm test
@@ -37,6 +38,8 @@ Expected result:
   without live effects;
 - the skill crystallization index extracts staged skill candidates while keeping
   publication disabled;
+- the self-repair draft runner can generate skill drafts, repair plans, and run
+  logs without touching production runtime surfaces;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -49,7 +52,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.5 does not include is a background runtime service. It does not
+What this v0.6 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -62,6 +65,8 @@ See [docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md)
 for the artifact evidence and candidate review gate.
 See [docs/skill-crystallization-v0.5.md](./docs/skill-crystallization-v0.5.md)
 for the read-only skill crystallization index.
+See [docs/self-repair-v0.6.md](./docs/self-repair-v0.6.md) for the bounded
+self-repair draft runner.
 
 ## Why This Exists
 
@@ -116,7 +121,7 @@ Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
 
-## Misa Learning Loop v0.5
+## Misa Learning Loop v0.6
 
 v0.2 adds a deterministic dry-run loop for Misa:
 
@@ -152,6 +157,12 @@ trace also carries `candidate_review`, and publication remains disabled.
 v0.5 adds `npm run crystallize:misa`, a GenericAgent-inspired read-only index
 over staged skill routes. It produces skill crystallization candidates for
 Misa/Hermes reference use, but it still does not publish skills or write memory.
+
+v0.6 adds `npm run self-repair:misa`. It can turn staged skill candidates into
+draft skill files, repair plans, command logs, and final reports under
+`generated/` and `runs/self-repair/`. A passing run marks the output as
+`validated_draft`; `--no-verify` only marks `draft_generated`. It still cannot
+publish the Skill or change production.
 
 ## Design Principles
 

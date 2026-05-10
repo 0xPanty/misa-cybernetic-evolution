@@ -19,8 +19,11 @@ if (asJson) {
   for (const candidate of result.candidates) {
     console.log(`- ${candidate.candidate_id}`);
     console.log(`  action: ${candidate.route.candidate_action}`);
+    console.log(`  draft: ${candidate.proposed_skill.proposed_path}`);
+    console.log(`  quality: ${candidate.quality.score}`);
     console.log(`  summary: ${candidate.one_line_summary}`);
     console.log(`  affected: ${candidate.route.affected_artifacts.join(", ")}`);
+    console.log(`  self repair: ${candidate.self_repair.mode}`);
     console.log(`  publish: blocked`);
   }
 

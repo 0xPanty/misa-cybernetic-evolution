@@ -1,6 +1,6 @@
 {
   "name": "misa-cybernetic-evolution",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A control-theoretic learning plane for Hermes-style AI agents.",
   "type": "module",
   "license": "Apache-2.0",
@@ -12,6 +12,7 @@
     "validate:schemas": "node scripts/validate-schemas.mjs",
     "simulate:misa": "node scripts/simulate-learning.mjs",
     "crystallize:misa": "node scripts/crystallize-skills.mjs",
+    "self-repair:misa": "node scripts/self-repair.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test"
   },

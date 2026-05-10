@@ -22,12 +22,14 @@ const REQUIRED_FILES = [
   "docs/misa-readonly-integration.md",
   "docs/source-synthesis.md",
   "docs/skill-crystallization-v0.5.md",
+  "docs/self-repair-v0.6.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
   "schemas/learning_item.schema.json",
   "schemas/learning_cycle_trace.schema.json",
   "schemas/skill_crystallization_candidate.schema.json",
+  "schemas/self_repair_run.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -38,6 +40,7 @@ const REQUIRED_FILES = [
   "examples/learning_item.example.json",
   "examples/learning_cycle_trace.example.json",
   "examples/misa_skill_crystallization_candidate.example.json",
+  "examples/self_repair_run.example.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -48,7 +51,10 @@ const REQUIRED_FILES = [
   "examples/misa-learning/case_retrieval_noise_realish.fixture.json",
   "examples/misa-learning/policy_timer_restore_realish.fixture.json",
   "examples/misa-learning/damping_provider_retry_realish.fixture.json",
-  "examples/damping_rules.example.json"
+  "examples/damping_rules.example.json",
+  "scripts/self-repair.mjs",
+  "scripts/lib/self-repair.mjs",
+  "generated/README.md"
 ];
 
 const SECRET_PATTERNS = [

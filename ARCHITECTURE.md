@@ -110,11 +110,12 @@ The verifier evaluates candidates through layered gates:
 The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
 
-The v0.5 repository implements the first local gate:
+The v0.6 repository implements the first local gate:
 
 ```bash
 npm run simulate:misa
 npm run crystallize:misa
+npm run self-repair:misa -- --no-verify
 npm run validate:schemas
 npm run precheck
 npm test
@@ -142,6 +143,11 @@ borrows GenericAgent's useful "completed work can become a reusable procedure"
 shape without importing broad runtime tools, schedulers, memory writes, or
 automatic Skill publication.
 
+v0.6 adds a bounded self-repair draft runner. It may write only generated draft
+skills, repair plans, and run logs. It can validate a draft, but it cannot write
+Misa memory, replace Zilliz, publish Farcaster, publish Skills, touch runtime
+services, or start timers.
+
 For Misa, the current launch shape is structure reference plus local precheck.
 See
 [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
@@ -151,6 +157,8 @@ The v0.4 evidence gate is described in
 [docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md).
 The v0.5 crystallization index is described in
 [docs/skill-crystallization-v0.5.md](./docs/skill-crystallization-v0.5.md).
+The v0.6 self-repair draft runner is described in
+[docs/self-repair-v0.6.md](./docs/self-repair-v0.6.md).
 
 ### 8. Publication and Governance Plane
 
