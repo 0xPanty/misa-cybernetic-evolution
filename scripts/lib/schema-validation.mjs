@@ -9,6 +9,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/learning_event.schema.json", "examples/learning_event.example.json"],
   ["schemas/learning_item.schema.json", "examples/learning_item.example.json"],
   ["schemas/learning_cycle_trace.schema.json", "examples/learning_cycle_trace.example.json"],
+  ["schemas/skill_crystallization_candidate.schema.json", "examples/misa_skill_crystallization_candidate.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];

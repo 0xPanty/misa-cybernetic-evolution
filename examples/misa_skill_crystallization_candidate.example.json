@@ -1,0 +1,66 @@
+{
+  "schema_version": "misa.skill_crystallization_candidate.v1",
+  "candidate_id": "skill-candidate-misa-skill-recovery-workflow-001",
+  "source_event_id": "misa-skill-recovery-workflow-001",
+  "source_cycle_id": "cycle-misa-skill-recovery-workflow-001",
+  "one_line_summary": "Misa recovery work repeatedly starts by reading the three core project files before editing.",
+  "trigger_conditions": [
+    "reusable_workflow",
+    "project_recovery_sequence",
+    "setpoint:make recovery repeatable without rereading unrelated backlog"
+  ],
+  "route": {
+    "target": "skill",
+    "candidate_action": "improve",
+    "affected_artifacts": [
+      "skill:misa-hermes-recovery"
+    ]
+  },
+  "evidence": {
+    "evidence_basis": "skill was explicitly read or modified",
+    "artifact_evidence": {
+      "injected": [
+        "skill:misa-hermes-recovery"
+      ],
+      "read": [
+        "skill:misa-hermes-recovery"
+      ],
+      "modified": [],
+      "referenced": [
+        "skill:misa-hermes-recovery"
+      ],
+      "tool_errors": []
+    }
+  },
+  "procedure_outline": [
+    "Confirm the triggering situation still matches misa-skill-recovery-workflow-001 and its setpoint.",
+    "Read or cite the named evidence artifacts before changing skill:misa-hermes-recovery.",
+    "Run local replay and precheck again; keep publication disabled unless a separate gate approves it."
+  ],
+  "verification_commands": [
+    "npm run crystallize:misa",
+    "npm run simulate:misa",
+    "npm run validate:schemas",
+    "npm run precheck",
+    "npm test"
+  ],
+  "safety": {
+    "publication_allowed": false,
+    "live_effects": {
+      "writes_persistent_memory": false,
+      "publishes_skill": false,
+      "starts_timer": false,
+      "changes_session_mechanics": false,
+      "posts_publicly": false
+    },
+    "blocked_operations": [
+      "persistent_memory_write",
+      "zilliz_replacement",
+      "farcaster_publish",
+      "skill_publication",
+      "session_mechanic_replacement",
+      "timer_or_service_start"
+    ]
+  },
+  "created_at": "2026-05-10T00:00:00Z"
+}

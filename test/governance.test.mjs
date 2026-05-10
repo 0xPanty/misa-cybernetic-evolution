@@ -12,6 +12,7 @@ import {
   simulateMisaLearning
 } from "../scripts/lib/learning-loop.mjs";
 import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
+import { crystallizeMisaSkills } from "../scripts/lib/skill-crystallization.mjs";
 
 test("classifies high-risk actuators", () => {
   const matches = classifyActuators([
@@ -90,6 +91,25 @@ test("repository dry-run precheck passes", async () => {
 
   assert.equal(result.mode, "dry-run");
   assert.equal(result.ok, true);
+});
+
+test("Misa skill crystallization stays read-only and indexed", async () => {
+  const result = await crystallizeMisaSkills();
+  const candidateIds = new Set(result.candidates.map((candidate) => candidate.candidate_id));
+
+  assert.equal(result.mode, "read-only-crystallization");
+  assert.equal(result.ok, true);
+  assert.equal(result.index.skill_candidates, 2);
+  assert.equal(candidateIds.size, result.candidates.length);
+  assert.equal(result.index.publication_allowed, false);
+  assert.equal(Object.values(result.index.live_effects).some(Boolean), false);
+
+  for (const candidate of result.candidates) {
+    assert.equal(candidate.route.target, "skill");
+    assert.equal(candidate.safety.publication_allowed, false);
+    assert.equal(Object.values(candidate.safety.live_effects).some(Boolean), false);
+    assert.ok(candidate.verification_commands.includes("npm run crystallize:misa"));
+  }
 });
 
 test("routes explicit public posting boundary to policy draft", () => {

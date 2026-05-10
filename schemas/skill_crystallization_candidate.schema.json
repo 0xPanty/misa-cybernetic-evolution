@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/skill_crystallization_candidate.schema.json",
+  "title": "SkillCrystallizationCandidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "source_event_id",
+    "source_cycle_id",
+    "one_line_summary",
+    "trigger_conditions",
+    "route",
+    "evidence",
+    "procedure_outline",
+    "verification_commands",
+    "safety",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.skill_crystallization_candidate.v1"
+    },
+    "candidate_id": { "type": "string", "minLength": 1 },
+    "source_event_id": { "type": "string", "minLength": 1 },
+    "source_cycle_id": { "type": "string", "minLength": 1 },
+    "one_line_summary": { "type": "string", "minLength": 1 },
+    "trigger_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "candidate_action", "affected_artifacts"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "const": "skill"
+        },
+        "candidate_action": {
+          "type": "string",
+          "enum": ["create", "improve"]
+        },
+        "affected_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_basis", "artifact_evidence"],
+      "properties": {
+        "evidence_basis": { "type": "string", "minLength": 1 },
+        "artifact_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["injected", "read", "modified", "referenced", "tool_errors"],
+          "properties": {
+            "injected": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "read": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "modified": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "referenced": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "tool_errors": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "procedure_outline": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "verification_commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publication_allowed", "live_effects", "blocked_operations"],
+      "properties": {
+        "publication_allowed": {
+          "type": "boolean",
+          "const": false
+        },
+        "live_effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "writes_persistent_memory",
+            "publishes_skill",
+            "starts_timer",
+            "changes_session_mechanics",
+            "posts_publicly"
+          ],
+          "properties": {
+            "writes_persistent_memory": { "type": "boolean", "const": false },
+            "publishes_skill": { "type": "boolean", "const": false },
+            "starts_timer": { "type": "boolean", "const": false },
+            "changes_session_mechanics": { "type": "boolean", "const": false },
+            "posts_publicly": { "type": "boolean", "const": false }
+          }
+        },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "persistent_memory_write",
+              "zilliz_replacement",
+              "farcaster_publish",
+              "skill_publication",
+              "session_mechanic_replacement",
+              "timer_or_service_start"
+            ]
+          }
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

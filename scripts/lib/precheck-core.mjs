@@ -7,6 +7,7 @@ import {
 } from "./governance.mjs";
 import { simulateMisaLearning } from "./learning-loop.mjs";
 import { validateJsonData, validateSchemas } from "./schema-validation.mjs";
+import { crystallizeMisaSkills } from "./skill-crystallization.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -20,11 +21,13 @@ const REQUIRED_FILES = [
   "docs/misa-learning-replay-v0.3.md",
   "docs/misa-readonly-integration.md",
   "docs/source-synthesis.md",
+  "docs/skill-crystallization-v0.5.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
   "schemas/learning_item.schema.json",
   "schemas/learning_cycle_trace.schema.json",
+  "schemas/skill_crystallization_candidate.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -34,6 +37,7 @@ const REQUIRED_FILES = [
   "examples/learning_event.example.json",
   "examples/learning_item.example.json",
   "examples/learning_cycle_trace.example.json",
+  "examples/misa_skill_crystallization_candidate.example.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -164,6 +168,22 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
       schemaRel: "schemas/learning_cycle_trace.schema.json",
       data: trace,
       name: `validate generated trace ${trace.cycle_id}`
+    }));
+  }
+
+  const crystallization = await crystallizeMisaSkills({ repoRoot });
+  checks.push(checkResult("Misa skill crystallization check", crystallization.ok, {
+    skillCandidates: crystallization.index.skill_candidates,
+    warnings: crystallization.warnings,
+    violations: crystallization.violations
+  }));
+
+  for (const candidate of crystallization.candidates) {
+    checks.push(await validateJsonData({
+      repoRoot,
+      schemaRel: "schemas/skill_crystallization_candidate.schema.json",
+      data: candidate,
+      name: `validate skill crystallization candidate ${candidate.candidate_id}`
     }));
   }
 

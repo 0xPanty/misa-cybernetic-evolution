@@ -110,10 +110,11 @@ The verifier evaluates candidates through layered gates:
 The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
 
-The v0.4 repository implements the first local gate:
+The v0.5 repository implements the first local gate:
 
 ```bash
 npm run simulate:misa
+npm run crystallize:misa
 npm run validate:schemas
 npm run precheck
 npm test
@@ -136,6 +137,11 @@ are context only, while read or modified artifacts are evidence. This keeps a
 listed skill from being credited unless the session actually used it, and it
 keeps candidates staged, held, or rejected instead of published.
 
+v0.5 adds a read-only skill crystallization index over staged skill routes. It
+borrows GenericAgent's useful "completed work can become a reusable procedure"
+shape without importing broad runtime tools, schedulers, memory writes, or
+automatic Skill publication.
+
 For Misa, the current launch shape is structure reference plus local precheck.
 See
 [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
@@ -143,6 +149,8 @@ The v0.2 loop is described in
 [docs/misa-learning-loop-v0.2.md](./docs/misa-learning-loop-v0.2.md).
 The v0.4 evidence gate is described in
 [docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md).
+The v0.5 crystallization index is described in
+[docs/skill-crystallization-v0.5.md](./docs/skill-crystallization-v0.5.md).
 
 ### 8. Publication and Governance Plane
 
