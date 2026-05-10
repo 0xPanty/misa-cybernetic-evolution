@@ -14,6 +14,8 @@ import {
 import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
 import { crystallizeMisaSkills } from "../scripts/lib/skill-crystallization.mjs";
 import { runMisaSelfRepair } from "../scripts/lib/self-repair.mjs";
+import { reviewGenericAgentContextDensity } from "../scripts/lib/genericagent-density.mjs";
+import { reviewAdaptiveCandidateGate } from "../scripts/lib/adaptive-candidate-gate.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -117,7 +119,51 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
     assert.equal(candidate.safety.publication_allowed, false);
     assert.equal(Object.values(candidate.safety.live_effects).some(Boolean), false);
     assert.ok(candidate.verification_commands.includes("npm run self-repair:misa -- --no-verify"));
+    assert.ok(candidate.verification_commands.includes("npm run density:misa"));
+    assert.ok(candidate.verification_commands.includes("npm run adaptive:misa"));
     assert.ok(candidate.verification_commands.includes("npm run crystallize:misa"));
+  }
+});
+
+test("GenericAgent context density review adopts logic and rejects runtime authority", async () => {
+  const result = await reviewGenericAgentContextDensity();
+  const byId = new Map(result.adaptations.map((item) => [item.id, item]));
+
+  assert.equal(result.mode, "genericagent-context-density-review");
+  assert.equal(result.ok, true);
+  assert.ok(result.summary.overall_score >= 0.82);
+  assert.equal(byId.get("contextual_information_density").status, "adopted");
+  assert.equal(byId.get("layered_pointer_memory").status, "adopted");
+  assert.equal(byId.get("genericagent_runtime_authority").status, "rejected");
+  assert.equal(byId.get("autonomous_scheduler").status, "rejected");
+  assert.ok(byId.get("genericagent_runtime_authority").blocked_operations.includes("production_skill_publication"));
+  assert.equal(result.candidate_reviews.every((review) => review.decision === "positive"), true);
+});
+
+test("adaptive v0.8 widens candidates while keeping production locked", async () => {
+  const result = await reviewAdaptiveCandidateGate();
+  const bySource = new Map(result.candidates.map((candidate) => [candidate.source_event_id, candidate]));
+  const failedReplay = bySource.get("misa-damping-candidate-replay-failed-003");
+
+  assert.equal(result.mode, "adaptive-candidate-gate");
+  assert.equal(result.ok, true);
+  assert.equal(result.operator_safety_profile.candidate_generation, "wide");
+  assert.equal(result.operator_safety_profile.production_authority, false);
+  assert.ok(result.summary.generated_candidate_count > result.summary.skill_candidate_count);
+  assert.ok(result.summary.validation_ready_count >= 6);
+  assert.ok(result.summary.held_count >= 1);
+  assert.ok(result.summary.rejected_count >= 1);
+  assert.equal(result.candidates.every((candidate) => candidate.safety.production_authority === false), true);
+  assert.equal(result.candidates.every((candidate) => candidate.safety.publication_allowed === false), true);
+  assert.equal(result.candidates.every((candidate) => !Object.values(candidate.safety.live_effects).some(Boolean)), true);
+  assert.ok(failedReplay);
+  assert.equal(failedReplay.decision, "rejected");
+  assert.equal(failedReplay.suppression.applied, true);
+
+  for (const candidate of result.candidates.filter((item) => item.decision === "validation_ready")) {
+    assert.equal(candidate.verification.enters_verification, true);
+    assert.ok(candidate.verification.commands.includes("npm run adaptive:misa"));
+    assert.ok(candidate.safety_gates.some((gate) => gate.name === "production_authority" && gate.state === "blocked_by_design"));
   }
 });
 
@@ -340,7 +386,7 @@ test("Misa replay fixtures stay inside the redacted real-ish cap", async () => {
   const fixtures = await loadMisaLearningFixtures();
   const redactedRealish = fixtures.filter((fixture) => fixture.source_type === "redacted_realish");
 
-  assert.equal(fixtures.length, 10);
+  assert.equal(fixtures.length, 11);
   assert.equal(redactedRealish.length, 5);
   assert.ok(redactedRealish.length <= 10);
   assert.equal(redactedRealish.every((fixture) => fixture.redaction_status === "redacted"), true);

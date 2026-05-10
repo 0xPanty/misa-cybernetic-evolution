@@ -1,0 +1,33 @@
+{
+  "event_id": "misa-damping-candidate-replay-failed-003",
+  "channel": "local",
+  "summary": "A generated skill candidate failed local replay and should be suppressed before it can re-enter validation.",
+  "signals": [
+    "candidate_replay_failed",
+    "reusable_workflow"
+  ],
+  "evidence_count": 2,
+  "outcome": "failure",
+  "risk_level": "medium",
+  "redaction_status": "clean",
+  "source_type": "synthetic",
+  "redaction_note": "synthetic suppression fixture for adaptive gate v0.8",
+  "setpoint": "suppress failed candidates before publication",
+  "artifact_evidence": {
+    "injected": [
+      "skill:misa-hermes-recovery"
+    ],
+    "read": [
+      "skill:misa-hermes-recovery"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "tool:replay-regression"
+    ]
+  },
+  "expected_route": "damping",
+  "expected_status": "rejected",
+  "expected_publication_mode": "no_publish",
+  "expected_candidate_state": "rejected",
+  "created_at": "2026-05-11T03:05:00Z"
+}

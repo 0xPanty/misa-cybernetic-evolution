@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.6 Quickstart
+## v0.8 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -24,6 +24,8 @@ npm install
 npm run simulate:misa
 npm run crystallize:misa
 npm run self-repair:misa -- --no-verify
+npm run density:misa
+npm run adaptive:misa
 npm run validate:schemas
 npm run precheck
 npm test
@@ -40,6 +42,12 @@ Expected result:
   publication disabled;
 - the self-repair draft runner can generate skill drafts, repair plans, and run
   logs without touching production runtime surfaces;
+- the GenericAgent-inspired context-density review accepts only high-signal,
+  evidence-backed candidates and explicitly rejects high-authority runtime
+  imports;
+- the EvoMap-inspired adaptive candidate gate generates a wider set of local
+  learning signals, rejects or holds weak candidates, and sends only safe
+  candidates into validation;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -52,7 +60,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.6 does not include is a background runtime service. It does not
+What this v0.8 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -67,6 +75,10 @@ See [docs/skill-crystallization-v0.5.md](./docs/skill-crystallization-v0.5.md)
 for the read-only skill crystallization index.
 See [docs/self-repair-v0.6.md](./docs/self-repair-v0.6.md) for the bounded
 self-repair draft runner.
+See [docs/genericagent-context-density-v0.7.md](./docs/genericagent-context-density-v0.7.md)
+for the GenericAgent-inspired information-density gate.
+See [docs/evolver-adaptive-gate-v0.8.md](./docs/evolver-adaptive-gate-v0.8.md)
+for the EvoMap-inspired adaptive candidate gate.
 
 ## Why This Exists
 
@@ -121,7 +133,7 @@ Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
 
-## Misa Learning Loop v0.6
+## Misa Learning Loop v0.8
 
 v0.2 adds a deterministic dry-run loop for Misa:
 
@@ -163,6 +175,18 @@ draft skill files, repair plans, command logs, and final reports under
 `generated/` and `runs/self-repair/`. A passing run marks the output as
 `validated_draft`; `--no-verify` only marks `draft_generated`. It still cannot
 publish the Skill or change production.
+
+v0.7 adds `npm run density:misa`, a second GenericAgent-inspired gate. It borrows
+contextual information density, layered pointer memory, and action-verified
+memory discipline, while explicitly rejecting GenericAgent's broad tool
+authority, autonomous scheduler, automatic memory writes, production Skill
+publication, and desktop/browser/ADB control.
+
+v0.8 adds `npm run adaptive:misa`, an EvoMap-inspired candidate gate. It lets
+Misa generate more local candidates and learning signals first, then filters
+them through evidence, live-effect, command-allowlist, suppression, and
+production-authority gates. Good candidates can enter validation; production
+authority remains false.
 
 ## Design Principles
 
@@ -278,6 +302,7 @@ for the machine-readable form.
 │   ├── misa-learning-loop-v0.2.md
 │   ├── misa-learning-replay-v0.3.md
 │   ├── misa-readonly-integration.md
+│   ├── evolver-adaptive-gate-v0.8.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -287,6 +312,7 @@ for the machine-readable form.
 ├── schemas/
 │   ├── damping_rules.schema.json
 │   ├── integration_profile.schema.json
+│   ├── adaptive_candidate_gate.schema.json
 │   ├── learning_cycle_trace.schema.json
 │   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
@@ -295,6 +321,7 @@ for the machine-readable form.
 ├── examples/
 │   ├── control_contract.example.json
 │   ├── damping_rules.example.json
+│   ├── adaptive_candidate_gate.example.json
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
 │   ├── learning_cycle_trace.example.json
@@ -308,11 +335,13 @@ for the machine-readable form.
 │   │   ├── policy_timer_restore_realish.fixture.json
 │   │   ├── memory_project_boundary_realish.fixture.json
 │   │   ├── skill_readonly_audit_realish.fixture.json
+│   │   ├── damping_candidate_replay_failed.fixture.json
 │   │   └── damping_single_failure.fixture.json
 │   ├── misa_readonly_control_contract.example.json
 │   └── misa_readonly_integration.example.json
 ├── scripts/
 │   ├── precheck.mjs
+│   ├── adaptive-candidates.mjs
 │   ├── simulate-learning.mjs
 │   └── validate-schemas.mjs
 └── test/
@@ -344,7 +373,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.3 engineering scaffold. It is ready to publish as a public
+This is a v0.8 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures.
 
@@ -356,6 +385,8 @@ Current scope:
 - damping rules schema and documentation;
 - Misa launch profile for reference/precheck use;
 - Misa learning-loop simulator and route expectation fixtures;
+- GenericAgent context-density gate;
+- EvoMap-inspired adaptive candidate gate;
 - source synthesis for Kura, SkillClaw, CSE, and self-evolution references;
 - governance Skill template;
 - local schema validation, dry-run precheck, and minimal tests.

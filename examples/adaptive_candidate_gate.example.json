@@ -1,0 +1,156 @@
+{
+  "schema_version": "misa.adaptive_candidate_gate.v1",
+  "mode": "adaptive-candidate-gate",
+  "ok": true,
+  "operator_safety_profile": {
+    "id": "misa-v0.8-wide-generate-filtered-verify",
+    "candidate_generation": "wide",
+    "filter_mode": "strict_safety_gate",
+    "validation_mode": "local_allowlisted_commands",
+    "production_authority": false,
+    "production_gate": "hard_locked_until_explicit_human_approval"
+  },
+  "source_adaptations": [
+    {
+      "source": "lsdefine/GenericAgent",
+      "inspected_commit": "9024af7499a04dbb4c2bab01584ce170ec9ba439",
+      "borrowed": [
+        "high-signal candidate summaries"
+      ],
+      "rejected": [
+        "broad runtime authority"
+      ]
+    },
+    {
+      "source": "EvoMap/evolver",
+      "inspected_commit": "17e1c79bbbd3e80536d654ecf1925c5f97c0fcd8",
+      "borrowed": [
+        "wide mutation candidate generation",
+        "candidate suppression after failed replay"
+      ],
+      "rejected": [
+        "daemon loop import",
+        "Hub worker execution"
+      ]
+    }
+  ],
+  "strategy_rules": [
+    {
+      "id": "wide_generate_first",
+      "rule": "Generate local candidates and learning signals before rejecting weak ideas.",
+      "production_effect": "none"
+    },
+    {
+      "id": "production_hard_gate",
+      "rule": "No validation-ready candidate can publish, write memory, start services, or touch live channels.",
+      "production_effect": "blocked"
+    }
+  ],
+  "summary": {
+    "source_trace_count": 1,
+    "generated_candidate_count": 1,
+    "validation_ready_count": 1,
+    "held_count": 0,
+    "rejected_count": 0,
+    "generated_signal_count": 2,
+    "skill_candidate_count": 1,
+    "production_authority": false
+  },
+  "learning_signals": [
+    {
+      "signal": "route:skill",
+      "count": 1,
+      "routes": [
+        "skill"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "candidate_id": "adaptive-example",
+      "source_event_id": "example",
+      "source_cycle_id": "cycle-example",
+      "route_target": "skill",
+      "summary": "Draft skill candidate: example reusable workflow.",
+      "generated_signals": [
+        "reusable_workflow",
+        "route:skill"
+      ],
+      "decision": "validation_ready",
+      "strategy": "crystallize_repeatable_skill",
+      "blast_radius": {
+        "max_files": 3,
+        "max_generated_artifacts": 3,
+        "source": "operator_v0_8_profile"
+      },
+      "failure_mode": {
+        "class": "none",
+        "retryable": false,
+        "suppress_candidate": false,
+        "rationale": "No failure suppression is required."
+      },
+      "safety": {
+        "production_authority": false,
+        "publication_allowed": false,
+        "requires_human_approval_for_production": true,
+        "live_effects": {
+          "writes_persistent_memory": false,
+          "publishes_skill": false,
+          "starts_timer": false,
+          "changes_session_mechanics": false,
+          "posts_publicly": false
+        },
+        "blocked_operations": [
+          "persistent_memory_write",
+          "zilliz_replacement",
+          "farcaster_publish",
+          "skill_publication",
+          "production_skill_installation",
+          "session_mechanic_replacement",
+          "timer_or_service_start",
+          "provider_route_change",
+          "external_worker_or_hub_execution"
+        ]
+      },
+      "safety_gates": [
+        {
+          "name": "candidate_generation",
+          "ok": true,
+          "state": "allowed",
+          "reason": "v0.8 allows wide local candidate generation before filtering."
+        },
+        {
+          "name": "production_authority",
+          "ok": true,
+          "state": "blocked_by_design",
+          "reason": "Production authority remains false even for validation-ready candidates."
+        }
+      ],
+      "verification": {
+        "level": "L1",
+        "enters_verification": true,
+        "commands": [
+          "npm run crystallize:misa",
+          "npm run self-repair:misa -- --no-verify",
+          "npm run density:misa",
+          "npm run adaptive:misa",
+          "npm run simulate:misa",
+          "npm run validate:schemas",
+          "npm run precheck",
+          "npm test"
+        ],
+        "allowlist": "misa-known-local-npm-scripts"
+      },
+      "linked_skill_candidate_id": "skill-candidate-example",
+      "suppression": {
+        "applied": false,
+        "reason": "",
+        "suppresses_candidate_ids": []
+      }
+    }
+  ],
+  "warnings": [
+    "v0.8 widens local candidate generation but does not widen production authority."
+  ],
+  "violations": []
+}

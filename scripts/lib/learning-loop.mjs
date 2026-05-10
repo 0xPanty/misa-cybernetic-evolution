@@ -321,8 +321,8 @@ export async function simulateMisaLearning({ repoRoot = process.cwd() } = {}) {
       violations.push(`${trace.cycle_id} policy route must require approval`);
     }
 
-    if (trace.route.target === "damping" && trace.result.status !== "held") {
-      violations.push(`${trace.cycle_id} damping route should hold rather than publish`);
+    if (trace.route.target === "damping" && !["held", "rejected"].includes(trace.result.status)) {
+      violations.push(`${trace.cycle_id} damping route should hold or reject rather than publish`);
     }
   }
 

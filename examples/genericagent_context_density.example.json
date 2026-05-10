@@ -1,0 +1,84 @@
+{
+  "schema_version": "misa.genericagent_context_density.v1",
+  "mode": "genericagent-context-density-review",
+  "ok": true,
+  "source": {
+    "name": "lsdefine/GenericAgent",
+    "url": "https://github.com/lsdefine/GenericAgent",
+    "inspected_commit": "9024af7499a04dbb4c2bab01584ce170ec9ba439",
+    "useful_patterns": [
+      "contextual information density maximization",
+      "layered pointer memory"
+    ],
+    "rejected_patterns": [
+      "broad system tool authority",
+      "autonomous scheduler"
+    ]
+  },
+  "density_contract": {
+    "min_overall_score": 0.82,
+    "required_adaptations": [
+      "contextual_information_density",
+      "layered_pointer_memory"
+    ],
+    "blocked_imports": [
+      "broad_tool_authority",
+      "autonomous_scheduler"
+    ]
+  },
+  "summary": {
+    "overall_score": 0.9,
+    "adopted_count": 2,
+    "rejected_count": 2,
+    "candidate_reviews_count": 1
+  },
+  "adaptations": [
+    {
+      "id": "contextual_information_density",
+      "source_pattern": "Keep high-signal summaries and small pointers in active context.",
+      "misa_adaptation": "Score candidates for evidence density and safety boundaries.",
+      "status": "adopted",
+      "positive_value": true,
+      "evidence_basis": [
+        "GenericAgent README and agent loop were inspected."
+      ],
+      "safety_boundary": [
+        "no memory write"
+      ],
+      "blocked_operations": []
+    },
+    {
+      "id": "autonomous_scheduler",
+      "source_pattern": "Periodic autonomous task trigger.",
+      "misa_adaptation": "Reject scheduler import for Misa production.",
+      "status": "rejected",
+      "positive_value": true,
+      "evidence_basis": [
+        "GenericAgent scheduler was inspected."
+      ],
+      "safety_boundary": [
+        "no cron"
+      ],
+      "blocked_operations": [
+        "autonomous_scheduler"
+      ]
+    }
+  ],
+  "candidate_reviews": [
+    {
+      "candidate_id": "skill-candidate-example",
+      "score": 0.9,
+      "decision": "positive",
+      "signal_count": 3,
+      "evidence_reference_count": 1,
+      "procedure_step_count": 6,
+      "verification_command_count": 7,
+      "generated_scope_count": 3,
+      "reasons": [
+        "publication and live effects remain blocked"
+      ]
+    }
+  ],
+  "warnings": [],
+  "violations": []
+}

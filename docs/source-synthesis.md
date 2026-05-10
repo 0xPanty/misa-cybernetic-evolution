@@ -24,7 +24,8 @@ noise are also valid outputs.
 | Engineering cybernetics | feedback, error, delay, stability, simulation | treat learning as a controlled loop with dry-run verification | abstract theory without runnable checks |
 | Kura Hermes three-stage article | collect, analyze, then land the result | keep Misa's learning plane beside runtime first | blind automation or live writeback |
 | SkillClaw | session evidence can evolve skills after real interaction | borrow the summarize/aggregate/verify shape | proxy integration, daemon evolution, auto skill publication |
-| GenericAgent | completed work can be crystallized into small reusable skills | add a skill candidate index and bounded self-repair draft loop over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes, production publication |
+| GenericAgent | completed work can be crystallized into small reusable skills; active context should maximize information density | add a skill candidate index, bounded self-repair draft loop, and context-density gate over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes, production publication, desktop/browser/ADB live control |
+| EvoMap/evolver | self-evolution benefits from wide mutation candidates, adaptive strategy switching, hard/soft failure classification, suppression, and blast-radius gates | add a local adaptive candidate gate: generate more candidates/signals first, filter with safety gates, verify surviving candidates, keep production hard-locked | daemon loop, Hub worker execution, marketplace/ATP auto-delivery, host-runtime `sessions_spawn` authority, automatic production writes |
 | Cybernetic Systems Engineering | control/data/state surfaces and minimal control input | use surface language only where it prevents real confusion | a heavy approval process for every small change |
 | self-evolution | simple categories and experience summary template | use plain route labels and positive-value checks | Heartbeat/timer learning or unimplemented scripts |
 
@@ -36,6 +37,11 @@ noise are also valid outputs.
 4. Do not add a second planning system.
 5. Do not touch live channel mechanics, provider routes, timers, or persistent
    memory writes.
+6. Borrowing an external agent idea must pass the context-density review before
+   it can become part of the Misa process.
+7. v0.8 may generate more local candidates and learning signals, but production
+   authority remains blocked until explicit human approval and separate live
+   rollout evidence exist.
 
 ## Route Model
 

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/genericagent_context_density.schema.json",
+  "title": "GenericAgentContextDensityReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "source",
+    "density_contract",
+    "summary",
+    "adaptations",
+    "candidate_reviews",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.genericagent_context_density.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "genericagent-context-density-review"
+    },
+    "ok": { "type": "boolean" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url", "inspected_commit", "useful_patterns", "rejected_patterns"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "inspected_commit": { "type": "string", "minLength": 7 },
+        "useful_patterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rejected_patterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "density_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_overall_score", "required_adaptations", "blocked_imports"],
+      "properties": {
+        "min_overall_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "required_adaptations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "blocked_imports": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["overall_score", "adopted_count", "rejected_count", "candidate_reviews_count"],
+      "properties": {
+        "overall_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "adopted_count": { "type": "integer", "minimum": 0 },
+        "rejected_count": { "type": "integer", "minimum": 0 },
+        "candidate_reviews_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "adaptations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "source_pattern",
+          "misa_adaptation",
+          "status",
+          "positive_value",
+          "evidence_basis",
+          "safety_boundary",
+          "blocked_operations"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "source_pattern": { "type": "string", "minLength": 1 },
+          "misa_adaptation": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["adopted", "rejected", "deferred"] },
+          "positive_value": { "type": "boolean", "const": true },
+          "evidence_basis": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "safety_boundary": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "blocked_operations": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "candidate_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "score",
+          "decision",
+          "signal_count",
+          "evidence_reference_count",
+          "procedure_step_count",
+          "verification_command_count",
+          "generated_scope_count",
+          "reasons"
+        ],
+        "properties": {
+          "candidate_id": { "type": "string", "minLength": 1 },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "decision": { "type": "string", "enum": ["positive", "hold", "reject"] },
+          "signal_count": { "type": "integer", "minimum": 0 },
+          "evidence_reference_count": { "type": "integer", "minimum": 0 },
+          "procedure_step_count": { "type": "integer", "minimum": 0 },
+          "verification_command_count": { "type": "integer", "minimum": 0 },
+          "generated_scope_count": { "type": "integer", "minimum": 0 },
+          "reasons": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

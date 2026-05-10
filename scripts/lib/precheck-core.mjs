@@ -8,6 +8,8 @@ import {
 import { simulateMisaLearning } from "./learning-loop.mjs";
 import { validateJsonData, validateSchemas } from "./schema-validation.mjs";
 import { crystallizeMisaSkills } from "./skill-crystallization.mjs";
+import { reviewGenericAgentContextDensity } from "./genericagent-density.mjs";
+import { reviewAdaptiveCandidateGate } from "./adaptive-candidate-gate.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -23,6 +25,8 @@ const REQUIRED_FILES = [
   "docs/source-synthesis.md",
   "docs/skill-crystallization-v0.5.md",
   "docs/self-repair-v0.6.md",
+  "docs/genericagent-context-density-v0.7.md",
+  "docs/evolver-adaptive-gate-v0.8.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
@@ -30,6 +34,8 @@ const REQUIRED_FILES = [
   "schemas/learning_cycle_trace.schema.json",
   "schemas/skill_crystallization_candidate.schema.json",
   "schemas/self_repair_run.schema.json",
+  "schemas/genericagent_context_density.schema.json",
+  "schemas/adaptive_candidate_gate.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -41,6 +47,8 @@ const REQUIRED_FILES = [
   "examples/learning_cycle_trace.example.json",
   "examples/misa_skill_crystallization_candidate.example.json",
   "examples/self_repair_run.example.json",
+  "examples/genericagent_context_density.example.json",
+  "examples/adaptive_candidate_gate.example.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -53,7 +61,11 @@ const REQUIRED_FILES = [
   "examples/misa-learning/damping_provider_retry_realish.fixture.json",
   "examples/damping_rules.example.json",
   "scripts/self-repair.mjs",
+  "scripts/genericagent-density.mjs",
+  "scripts/adaptive-candidates.mjs",
   "scripts/lib/self-repair.mjs",
+  "scripts/lib/genericagent-density.mjs",
+  "scripts/lib/adaptive-candidate-gate.mjs",
   "generated/README.md"
 ];
 
@@ -192,6 +204,35 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
       name: `validate skill crystallization candidate ${candidate.candidate_id}`
     }));
   }
+
+  const densityReview = await reviewGenericAgentContextDensity({ repoRoot });
+  checks.push(checkResult("GenericAgent context-density review check", densityReview.ok, {
+    overallScore: densityReview.summary.overall_score,
+    adoptedCount: densityReview.summary.adopted_count,
+    rejectedCount: densityReview.summary.rejected_count,
+    violations: densityReview.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/genericagent_context_density.schema.json",
+    data: densityReview,
+    name: "validate GenericAgent context-density review"
+  }));
+
+  const adaptiveGate = await reviewAdaptiveCandidateGate({ repoRoot });
+  checks.push(checkResult("Misa adaptive candidate gate check", adaptiveGate.ok, {
+    generatedCandidates: adaptiveGate.summary.generated_candidate_count,
+    validationReady: adaptiveGate.summary.validation_ready_count,
+    held: adaptiveGate.summary.held_count,
+    rejected: adaptiveGate.summary.rejected_count,
+    violations: adaptiveGate.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/adaptive_candidate_gate.schema.json",
+    data: adaptiveGate,
+    name: "validate adaptive candidate gate review"
+  }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);
   checks.push(checkResult("no committed secret assignments", secretHits.length === 0, {
