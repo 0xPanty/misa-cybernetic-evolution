@@ -23,6 +23,8 @@ const VERIFY_COMMANDS = [
   { label: "density:misa", command: "npm run density:misa", args: ["run", "density:misa"] },
   { label: "adaptive:misa", command: "npm run adaptive:misa", args: ["run", "adaptive:misa"] },
   { label: "intake:misa", command: "npm run intake:misa", args: ["run", "intake:misa"] },
+  { label: "rollup:misa", command: "npm run rollup:misa", args: ["run", "rollup:misa"] },
+  { label: "evolution:evaluate:misa", command: "npm run evolution:evaluate:misa", args: ["run", "evolution:evaluate:misa"] },
   { label: "precheck", command: "npm run precheck", args: ["run", "precheck"] },
   { label: "test", command: "npm test", args: ["test"] }
 ];
@@ -53,6 +55,10 @@ function redactSecrets(text) {
     redacted = redacted.replace(pattern, "[REDACTED:SECRET]");
   }
   return redacted;
+}
+
+function safeFileLabel(label) {
+  return String(label).replace(/[^a-z0-9_.-]+/gi, "-").replace(/^-+|-+$/g, "");
 }
 
 function relativePath(base, target) {
@@ -175,8 +181,9 @@ async function runAllowedCommand({ repoRoot, runDir, command, timeoutMs }) {
   const stderr = redactSecrets(Buffer.concat(stderrChunks).toString("utf8"));
   const outputDir = path.join(runDir, "test-output");
   await fs.mkdir(outputDir, { recursive: true });
-  const stdoutRel = `test-output/${command.label}.stdout.txt`;
-  const stderrRel = `test-output/${command.label}.stderr.txt`;
+  const outputLabel = safeFileLabel(command.label);
+  const stdoutRel = `test-output/${outputLabel}.stdout.txt`;
+  const stderrRel = `test-output/${outputLabel}.stderr.txt`;
   await fs.writeFile(path.join(runDir, stdoutRel), stdout, "utf8");
   await fs.writeFile(path.join(runDir, stderrRel), stderr, "utf8");
 

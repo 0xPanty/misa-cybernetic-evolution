@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.9 Quickstart
+## v0.11 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -27,6 +27,8 @@ npm run self-repair:misa -- --no-verify
 npm run density:misa
 npm run adaptive:misa
 npm run intake:misa
+npm run rollup:misa
+npm run evolution:evaluate:misa
 npm run validate:schemas
 npm run precheck
 npm test
@@ -52,6 +54,11 @@ Expected result:
 - the signal-intake cadence contract separates 30-minute signal scans from
   daily durable learning, keeps chat distillation summary-first, and treats
   Farcaster as per-reply defense plus daily learning rollup;
+- the v0.10 signal rollup connects signal adapters, the candidate queue, and
+  the daily Qianxuesen rollup without adding live runtime authority;
+- the v0.11 candidate preflight gate turns daily-rollup candidates into local
+  optimization preflights, and only reportable candidates are queued for Huan
+  review;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -64,7 +71,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.9 does not include is a background runtime service. It does not
+What this v0.11 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -85,6 +92,10 @@ See [docs/evolver-adaptive-gate-v0.8.md](./docs/evolver-adaptive-gate-v0.8.md)
 for the EvoMap-inspired adaptive candidate gate.
 See [docs/signal-intake-cadence-v0.9.md](./docs/signal-intake-cadence-v0.9.md)
 for the session-distiller, failure-log, and Farcaster intake cadence contract.
+See [docs/signal-candidate-rollup-v0.10.md](./docs/signal-candidate-rollup-v0.10.md)
+for the local signal adapter -> candidate queue -> daily rollup chain.
+See [docs/evolution-candidate-preflight-v0.11.md](./docs/evolution-candidate-preflight-v0.11.md)
+for the candidate preflight -> report queue gate.
 
 ## Why This Exists
 
@@ -139,7 +150,7 @@ Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
 
-## Misa Learning Loop v0.8
+## Misa Learning Loop v0.11
 
 v0.2 adds a deterministic dry-run loop for Misa:
 
@@ -201,6 +212,20 @@ before any source-fragment lookup. Distiller failures enter an exception queue.
 Farcaster checks candidate replies before posting, but only sends pooled
 behavior feedback into daily learning. Extra judge API calls are conditional,
 not the default.
+
+v0.10 adds `npm run rollup:misa`, a local closed-loop report. It adapts
+session-distiller summaries, failure logs, and Farcaster behavior signals into a
+candidate queue, then summarizes that queue through a 24-hour daily rollup. It
+is still local and draft-only: no scheduler, no provider call, no Farcaster
+post, no persistent memory write, no Skill publication, and no VPS update.
+
+v0.11 adds `npm run evolution:evaluate:misa`, a local candidate preflight gate.
+It starts after the v0.10 daily rollup has produced optimization candidates.
+Each candidate must pass local simulation checks before it can enter the
+`report_queue` for Huan review. Held or suppressed candidates stay internal and
+become more-evidence or failure-experience records. Passing preflight is not
+approval to write memory, publish Skills, post publicly, start services, or
+update VPS.
 
 ## Design Principles
 
@@ -317,6 +342,7 @@ for the machine-readable form.
 │   ├── misa-learning-replay-v0.3.md
 │   ├── misa-readonly-integration.md
 │   ├── evolver-adaptive-gate-v0.8.md
+│   ├── signal-candidate-rollup-v0.10.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -327,6 +353,7 @@ for the machine-readable form.
 │   ├── damping_rules.schema.json
 │   ├── integration_profile.schema.json
 │   ├── adaptive_candidate_gate.schema.json
+│   ├── signal_candidate_rollup.schema.json
 │   ├── learning_cycle_trace.schema.json
 │   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
@@ -336,6 +363,7 @@ for the machine-readable form.
 │   ├── control_contract.example.json
 │   ├── damping_rules.example.json
 │   ├── adaptive_candidate_gate.example.json
+│   ├── signal_candidate_rollup.example.json
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
 │   ├── learning_cycle_trace.example.json
@@ -356,6 +384,7 @@ for the machine-readable form.
 ├── scripts/
 │   ├── precheck.mjs
 │   ├── adaptive-candidates.mjs
+│   ├── signal-rollup.mjs
 │   ├── simulate-learning.mjs
 │   └── validate-schemas.mjs
 └── test/
@@ -387,7 +416,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.8 engineering scaffold. It is ready to publish as a public
+This is a v0.11 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures.
 
@@ -401,6 +430,8 @@ Current scope:
 - Misa learning-loop simulator and route expectation fixtures;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;
+- signal candidate queue and daily rollup report;
+- candidate preflight and report queue;
 - source synthesis for Kura, SkillClaw, CSE, and self-evolution references;
 - governance Skill template;
 - local schema validation, dry-run precheck, and minimal tests.

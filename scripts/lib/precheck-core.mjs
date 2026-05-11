@@ -11,6 +11,8 @@ import { crystallizeMisaSkills } from "./skill-crystallization.mjs";
 import { reviewGenericAgentContextDensity } from "./genericagent-density.mjs";
 import { reviewAdaptiveCandidateGate } from "./adaptive-candidate-gate.mjs";
 import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
+import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
+import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -29,6 +31,8 @@ const REQUIRED_FILES = [
   "docs/genericagent-context-density-v0.7.md",
   "docs/evolver-adaptive-gate-v0.8.md",
   "docs/signal-intake-cadence-v0.9.md",
+  "docs/signal-candidate-rollup-v0.10.md",
+  "docs/evolution-candidate-preflight-v0.11.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
@@ -39,6 +43,7 @@ const REQUIRED_FILES = [
   "schemas/genericagent_context_density.schema.json",
   "schemas/adaptive_candidate_gate.schema.json",
   "schemas/signal_intake_contract.schema.json",
+  "schemas/signal_candidate_rollup.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -53,6 +58,7 @@ const REQUIRED_FILES = [
   "examples/genericagent_context_density.example.json",
   "examples/adaptive_candidate_gate.example.json",
   "examples/signal_intake_contract.example.json",
+  "examples/signal_candidate_rollup.example.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -60,6 +66,7 @@ const REQUIRED_FILES = [
   "examples/misa-learning/damping_single_failure.fixture.json",
   "examples/misa-learning/memory_project_boundary_realish.fixture.json",
   "examples/misa-learning/skill_readonly_audit_realish.fixture.json",
+  "examples/misa-learning/skill_real_chat_evolution_eval.fixture.json",
   "examples/misa-learning/case_retrieval_noise_realish.fixture.json",
   "examples/misa-learning/policy_timer_restore_realish.fixture.json",
   "examples/misa-learning/damping_provider_retry_realish.fixture.json",
@@ -68,10 +75,14 @@ const REQUIRED_FILES = [
   "scripts/genericagent-density.mjs",
   "scripts/adaptive-candidates.mjs",
   "scripts/signal-intake.mjs",
+  "scripts/signal-rollup.mjs",
+  "scripts/evolution-evaluator.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
   "scripts/lib/signal-intake-contract.mjs",
+  "scripts/lib/signal-candidate-rollup.mjs",
+  "scripts/lib/evolution-evaluator.mjs",
   "generated/README.md"
 ];
 
@@ -252,6 +263,33 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/signal_intake_contract.schema.json",
     data: signalIntake,
     name: "validate signal intake contract review"
+  }));
+
+  const signalRollup = await reviewSignalCandidateRollup({ repoRoot });
+  checks.push(checkResult("Misa signal candidate rollup check", signalRollup.ok, {
+    adaptedSignals: signalRollup.summary.adapted_signal_count,
+    queueItems: signalRollup.summary.queue_item_count,
+    dailyRollupHours: signalRollup.summary.daily_rollup_window_hours,
+    validationReady: signalRollup.summary.validation_ready_count,
+    violations: signalRollup.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/signal_candidate_rollup.schema.json",
+    data: signalRollup,
+    name: "validate signal candidate rollup review"
+  }));
+
+  const evolutionEvaluator = await evaluateMisaEvolution({ repoRoot });
+  checks.push(checkResult("Misa evolution evaluator simulation check", evolutionEvaluator.ok, {
+    mode: evolutionEvaluator.mode,
+    optimizationCandidates: evolutionEvaluator.summary.optimization_candidate_count,
+    preflightPassed: evolutionEvaluator.summary.preflight_passed_count,
+    reportQueue: evolutionEvaluator.summary.report_queue_count,
+    held: evolutionEvaluator.summary.held_count,
+    suppressed: evolutionEvaluator.summary.suppressed_count,
+    realChatPreflightStatus: evolutionEvaluator.summary.real_chat_preflight_status,
+    violations: evolutionEvaluator.violations
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);

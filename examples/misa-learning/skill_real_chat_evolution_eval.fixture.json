@@ -1,0 +1,33 @@
+{
+  "event_id": "misa-skill-real-chat-evolution-eval-004",
+  "channel": "local",
+  "summary": "Huan asked Codex in real local chat to stop judging EvoAgentX only conceptually and run a real local simulation with real chat samples before deciding whether the evaluator is useful.",
+  "signals": [
+    "reusable_workflow",
+    "stable_user_preference",
+    "real_chat_validation_required"
+  ],
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "medium",
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "redaction_note": "Derived from the current Huan/Codex chat request; raw private chat content and secrets are not stored.",
+  "setpoint": "prove self-evolution changes with real local samples before treating them as useful",
+  "artifact_evidence": {
+    "injected": [
+      "skill:misa-hermes-recovery"
+    ],
+    "read": [
+      "skill:misa-hermes-recovery",
+      "repo:misa-cybernetic-evolution"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "expected_route": "skill",
+  "expected_status": "draft",
+  "expected_publication_mode": "draft_only",
+  "expected_candidate_state": "staged",
+  "created_at": "2026-05-11T06:30:00Z"
+}

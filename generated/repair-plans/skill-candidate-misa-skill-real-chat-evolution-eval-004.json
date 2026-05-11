@@ -1,11 +1,11 @@
 {
   "schema_version": "misa.self_repair_plan.v1",
-  "candidate_id": "skill-candidate-misa-skill-readonly-audit-002",
+  "candidate_id": "skill-candidate-misa-skill-real-chat-evolution-eval-004",
   "proposed_skill": {
-    "slug": "misa-bridge-readonly-audit",
-    "title": "Misa Bridge Read-only Audit",
-    "action": "create",
-    "proposed_path": "generated/skill-drafts/misa-bridge-readonly-audit.md",
+    "slug": "real-chat-evolution-eval-004",
+    "title": "Huan asked Codex in real local chat to stop judging EvoAgentX only conceptually ",
+    "action": "improve",
+    "proposed_path": "generated/skill-drafts/misa-skill-real-chat-evolution-eval-004.md",
     "target_surface": "draft_skill"
   },
   "action": "generate_validated_draft",
@@ -16,8 +16,8 @@
     "runs/self-repair"
   ],
   "generated_files": [
-    "generated/skill-drafts/misa-bridge-readonly-audit.md",
-    "generated/repair-plans/skill-candidate-misa-skill-readonly-audit-002.json"
+    "generated/skill-drafts/real-chat-evolution-eval-004.md",
+    "generated/repair-plans/skill-candidate-misa-skill-real-chat-evolution-eval-004.json"
   ],
   "verification": {
     "max_auto_fix_attempts": 1,

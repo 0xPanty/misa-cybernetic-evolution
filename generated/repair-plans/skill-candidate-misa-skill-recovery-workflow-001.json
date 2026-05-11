@@ -26,6 +26,8 @@
       "npm run density:misa",
       "npm run adaptive:misa",
       "npm run intake:misa",
+      "npm run rollup:misa",
+      "npm run evolution:evaluate:misa",
       "npm run precheck",
       "npm test"
     ],

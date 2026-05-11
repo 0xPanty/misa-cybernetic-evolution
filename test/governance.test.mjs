@@ -17,6 +17,8 @@ import { runMisaSelfRepair } from "../scripts/lib/self-repair.mjs";
 import { reviewGenericAgentContextDensity } from "../scripts/lib/genericagent-density.mjs";
 import { reviewAdaptiveCandidateGate } from "../scripts/lib/adaptive-candidate-gate.mjs";
 import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contract.mjs";
+import { reviewSignalCandidateRollup } from "../scripts/lib/signal-candidate-rollup.mjs";
+import { evaluateMisaEvolution } from "../scripts/lib/evolution-evaluator.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -106,7 +108,7 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
 
   assert.equal(result.mode, "read-only-crystallization");
   assert.equal(result.ok, true);
-  assert.equal(result.index.skill_candidates, 2);
+  assert.equal(result.index.skill_candidates, 3);
   assert.equal(candidateIds.size, result.candidates.length);
   assert.equal(result.index.publication_allowed, false);
   assert.equal(Object.values(result.index.live_effects).some(Boolean), false);
@@ -123,6 +125,8 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
     assert.ok(candidate.verification_commands.includes("npm run density:misa"));
     assert.ok(candidate.verification_commands.includes("npm run adaptive:misa"));
     assert.ok(candidate.verification_commands.includes("npm run intake:misa"));
+    assert.ok(candidate.verification_commands.includes("npm run rollup:misa"));
+    assert.ok(candidate.verification_commands.includes("npm run evolution:evaluate:misa"));
     assert.ok(candidate.verification_commands.includes("npm run crystallize:misa"));
   }
 });
@@ -166,6 +170,8 @@ test("adaptive v0.8 widens candidates while keeping production locked", async ()
     assert.equal(candidate.verification.enters_verification, true);
     assert.ok(candidate.verification.commands.includes("npm run adaptive:misa"));
     assert.ok(candidate.verification.commands.includes("npm run intake:misa"));
+    assert.ok(candidate.verification.commands.includes("npm run rollup:misa"));
+    assert.ok(candidate.verification.commands.includes("npm run evolution:evaluate:misa"));
     assert.ok(candidate.safety_gates.some((gate) => gate.name === "production_authority" && gate.state === "blocked_by_design"));
   }
 });
@@ -202,6 +208,66 @@ test("signal intake cadence separates half-hour scans from daily learning", () =
     "timer_or_service_start",
     "provider_route_change"
   ]);
+});
+
+test("v0.10 signal rollup closes adapter queue and daily rollup locally", async () => {
+  const result = await reviewSignalCandidateRollup();
+  const adapters = new Map(result.signal_adapters.map((adapter) => [adapter.source_contract_id, adapter]));
+  const readyItems = result.candidate_queue.items.filter((item) => item.queue_state === "ready_for_daily_rollup");
+
+  assert.equal(result.mode, "signal-candidate-daily-rollup");
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.adapted_signal_count, result.summary.queue_item_count);
+  assert.equal(result.daily_rollup.window_hours, 24);
+  assert.ok(adapters.get("session_distiller_success").mapped_signal_count > 0);
+  assert.ok(adapters.get("session_distiller_failure").mapped_signal_count > 0);
+  assert.ok(adapters.get("farcaster_behavior").mapped_signal_count > 0);
+  assert.ok(readyItems.length > 0);
+  assert.equal(readyItems.every((item) => item.verification_commands.includes("npm run rollup:misa")), true);
+  assert.equal(result.daily_rollup.durable_outputs.publication_allowed, false);
+  assert.equal(result.daily_rollup.durable_outputs.writes_persistent_memory, false);
+  assert.equal(result.safety.production_authority, false);
+  assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+});
+
+test("v0.11 preflights optimization candidates before reporting to Huan", async () => {
+  const result = await evaluateMisaEvolution();
+  const realChat = result.optimization_candidates.find(
+    (candidate) => candidate.source_event_id === "misa-skill-real-chat-evolution-eval-004"
+  );
+
+  assert.equal(result.mode, "candidate-preflight-local-simulation");
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.sequence, [
+    "signal_adapter",
+    "candidate_queue",
+    "daily_rollup",
+    "optimization_candidate",
+    "local_preflight",
+    "report_queue_or_internal_ledger"
+  ]);
+  assert.equal(result.summary.real_chat_preflight_status, "preflight_passed");
+  assert.ok(result.summary.report_queue_count > 0);
+  assert.ok(result.summary.report_queue_count <= result.summary.report_queue_limit);
+  assert.ok(result.summary.held_count > 0);
+  assert.ok(result.summary.suppressed_count > 0);
+  assert.ok(realChat);
+  assert.equal(realChat.route_target, "skill");
+  assert.equal(realChat.local_preflight.status, "preflight_passed");
+  assert.equal(realChat.local_preflight.report_to_huan, true);
+  assert.equal(realChat.local_preflight.simulated_before_report, true);
+  assert.equal(result.report_queue.every((report) => report.allowed_next_step === "human_review_only"), true);
+  assert.equal(
+    result.optimization_candidates
+      .filter((candidate) => candidate.local_preflight.status !== "preflight_passed")
+      .every((candidate) => candidate.local_preflight.report_to_huan === false),
+    true
+  );
+  assert.ok(result.experience_ledger.length > 0);
+  assert.equal(result.optimization_candidates.length, result.source.queue_item_count);
+  assert.equal(result.safety.production_authority, false);
+  assert.equal(result.safety.publication_allowed, false);
+  assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
 });
 
 test("Misa self repair writes draft artifacts without production effects", async () => {
@@ -423,8 +489,8 @@ test("Misa replay fixtures stay inside the redacted real-ish cap", async () => {
   const fixtures = await loadMisaLearningFixtures();
   const redactedRealish = fixtures.filter((fixture) => fixture.source_type === "redacted_realish");
 
-  assert.equal(fixtures.length, 11);
-  assert.equal(redactedRealish.length, 5);
+  assert.equal(fixtures.length, 12);
+  assert.equal(redactedRealish.length, 6);
   assert.ok(redactedRealish.length <= 10);
   assert.equal(redactedRealish.every((fixture) => fixture.redaction_status === "redacted"), true);
 });

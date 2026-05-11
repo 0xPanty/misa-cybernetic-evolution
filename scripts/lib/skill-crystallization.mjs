@@ -23,6 +23,8 @@ const VERIFICATION_COMMANDS = [
   "npm run density:misa",
   "npm run adaptive:misa",
   "npm run intake:misa",
+  "npm run rollup:misa",
+  "npm run evolution:evaluate:misa",
   "npm run simulate:misa",
   "npm run validate:schemas",
   "npm run precheck",
