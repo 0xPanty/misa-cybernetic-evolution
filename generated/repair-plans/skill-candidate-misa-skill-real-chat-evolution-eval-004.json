@@ -3,7 +3,7 @@
   "candidate_id": "skill-candidate-misa-skill-real-chat-evolution-eval-004",
   "proposed_skill": {
     "slug": "real-chat-evolution-eval-004",
-    "title": "Huan asked Codex in real local chat to stop judging EvoAgentX only conceptually ",
+    "title": "Huan asked Codex in real local chat to stop judging EvoAgentX only conceptually",
     "action": "improve",
     "proposed_path": "generated/skill-drafts/misa-skill-real-chat-evolution-eval-004.md",
     "target_surface": "draft_skill"
@@ -23,6 +23,7 @@
     "max_auto_fix_attempts": 1,
     "commands": [
       "npm run validate:schemas",
+      "npm run distill:misa",
       "npm run density:misa",
       "npm run adaptive:misa",
       "npm run intake:misa",

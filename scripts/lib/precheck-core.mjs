@@ -13,6 +13,7 @@ import { reviewAdaptiveCandidateGate } from "./adaptive-candidate-gate.mjs";
 import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
+import { distillLocalMisaSources } from "./session-distiller.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -33,6 +34,7 @@ const REQUIRED_FILES = [
   "docs/signal-intake-cadence-v0.9.md",
   "docs/signal-candidate-rollup-v0.10.md",
   "docs/evolution-candidate-preflight-v0.11.md",
+  "docs/local-session-distillation-v0.12.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
@@ -44,6 +46,8 @@ const REQUIRED_FILES = [
   "schemas/adaptive_candidate_gate.schema.json",
   "schemas/signal_intake_contract.schema.json",
   "schemas/signal_candidate_rollup.schema.json",
+  "schemas/local_distillation_source.schema.json",
+  "schemas/session_distillation_review.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -59,6 +63,7 @@ const REQUIRED_FILES = [
   "examples/adaptive_candidate_gate.example.json",
   "examples/signal_intake_contract.example.json",
   "examples/signal_candidate_rollup.example.json",
+  "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -75,12 +80,14 @@ const REQUIRED_FILES = [
   "scripts/genericagent-density.mjs",
   "scripts/adaptive-candidates.mjs",
   "scripts/signal-intake.mjs",
+  "scripts/distill-misa.mjs",
   "scripts/signal-rollup.mjs",
   "scripts/evolution-evaluator.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
   "scripts/lib/signal-intake-contract.mjs",
+  "scripts/lib/session-distiller.mjs",
   "scripts/lib/signal-candidate-rollup.mjs",
   "scripts/lib/evolution-evaluator.mjs",
   "generated/README.md"
@@ -203,6 +210,31 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
       schemaRel: "schemas/learning_cycle_trace.schema.json",
       data: trace,
       name: `validate generated trace ${trace.cycle_id}`
+    }));
+  }
+
+  const distillation = await distillLocalMisaSources({ repoRoot });
+  checks.push(checkResult("Misa local session distillation check", distillation.ok, {
+    sources: distillation.summary.source_count,
+    learningEvents: distillation.summary.learning_event_count,
+    zillizProxyUsed: distillation.summary.zilliz_proxy_used,
+    llmApiCalls: distillation.summary.llm_api_calls,
+    externalApiCalls: distillation.summary.external_api_calls,
+    violations: distillation.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/session_distillation_review.schema.json",
+    data: distillation,
+    name: "validate local session distillation review"
+  }));
+
+  for (const event of distillation.learning_events) {
+    checks.push(await validateJsonData({
+      repoRoot,
+      schemaRel: "schemas/misa_learning_fixture.schema.json",
+      data: event,
+      name: `validate distilled learning event ${event.event_id}`
     }));
   }
 

@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/session_distillation_review.schema.json",
+  "title": "SessionDistillationReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "summary",
+    "distillates",
+    "learning_events",
+    "safety",
+    "checks",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.local_session_distillation.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "local-session-distillation"
+    },
+    "ok": { "type": "boolean" },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_count",
+        "distillate_count",
+        "learning_event_count",
+        "llm_api_calls",
+        "external_api_calls",
+        "zilliz_proxy_used",
+        "vector_lookup_required",
+        "raw_window_default",
+        "production_authority"
+      ],
+      "properties": {
+        "source_count": { "type": "integer", "minimum": 1 },
+        "distillate_count": { "type": "integer", "minimum": 1 },
+        "learning_event_count": { "type": "integer", "minimum": 1 },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "zilliz_proxy_used": { "type": "boolean", "const": false },
+        "vector_lookup_required": { "type": "boolean", "const": false },
+        "raw_window_default": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "distillates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "distillate_id",
+          "source_id",
+          "source_kind",
+          "channel",
+          "summary",
+          "source_refs",
+          "extracted_signals",
+          "input_policy",
+          "learning_event_id"
+        ],
+        "properties": {
+          "distillate_id": { "type": "string", "minLength": 1 },
+          "source_id": { "type": "string", "minLength": 1 },
+          "source_kind": { "type": "string", "minLength": 1 },
+          "channel": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string", "minLength": 1 },
+          "source_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "extracted_signals": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "input_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "local_only",
+              "summary_first",
+              "raw_window_default",
+              "uses_zilliz_proxy",
+              "vector_lookup_required",
+              "llm_api_calls",
+              "external_api_calls"
+            ],
+            "properties": {
+              "local_only": { "type": "boolean", "const": true },
+              "summary_first": { "type": "boolean", "const": true },
+              "raw_window_default": { "type": "boolean", "const": false },
+              "uses_zilliz_proxy": { "type": "boolean", "const": false },
+              "vector_lookup_required": { "type": "boolean", "const": false },
+              "llm_api_calls": { "type": "integer", "const": 0 },
+              "external_api_calls": { "type": "integer", "const": 0 }
+            }
+          },
+          "learning_event_id": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "learning_events": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "publication_allowed",
+        "writes_persistent_memory",
+        "uses_zilliz_proxy",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "uses_zilliz_proxy": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ok", "reason"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "ok": { "type": "boolean" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

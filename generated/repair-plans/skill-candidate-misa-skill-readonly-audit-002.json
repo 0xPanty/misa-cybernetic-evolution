@@ -23,6 +23,7 @@
     "max_auto_fix_attempts": 1,
     "commands": [
       "npm run validate:schemas",
+      "npm run distill:misa",
       "npm run density:misa",
       "npm run adaptive:misa",
       "npm run intake:misa",

@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.11 Quickstart
+## v0.12 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -24,6 +24,7 @@ npm install
 npm run simulate:misa
 npm run crystallize:misa
 npm run self-repair:misa -- --no-verify
+npm run distill:misa
 npm run density:misa
 npm run adaptive:misa
 npm run intake:misa
@@ -54,6 +55,8 @@ Expected result:
 - the signal-intake cadence contract separates 30-minute signal scans from
   daily durable learning, keeps chat distillation summary-first, and treats
   Farcaster as per-reply defense plus daily learning rollup;
+- the v0.12 local session distiller turns redacted local windows into learning
+  events without using Zilliz, vector lookup, model providers, or external APIs;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -71,7 +74,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.11 does not include is a background runtime service. It does not
+What this v0.12 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -96,6 +99,8 @@ See [docs/signal-candidate-rollup-v0.10.md](./docs/signal-candidate-rollup-v0.10
 for the local signal adapter -> candidate queue -> daily rollup chain.
 See [docs/evolution-candidate-preflight-v0.11.md](./docs/evolution-candidate-preflight-v0.11.md)
 for the candidate preflight -> report queue gate.
+See [docs/local-session-distillation-v0.12.md](./docs/local-session-distillation-v0.12.md)
+for the local window -> distillate -> learning event intake step.
 
 ## Why This Exists
 
@@ -150,7 +155,7 @@ Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
 
-## Misa Learning Loop v0.11
+## Misa Learning Loop v0.12
 
 v0.2 adds a deterministic dry-run loop for Misa:
 
@@ -226,6 +231,13 @@ Each candidate must pass local simulation checks before it can enter the
 become more-evidence or failure-experience records. Passing preflight is not
 approval to write memory, publish Skills, post publicly, start services, or
 update VPS.
+
+v0.12 adds `npm run distill:misa`, a local session-distillation step before
+candidate generation. It reads redacted local window sources from
+`examples/misa-distillation/`, emits compact learning events, and then those
+events flow through the same simulator, candidate queue, daily rollup, and
+preflight gate. It does not use Zilliz as an intake proxy, does not require
+vector lookup, and reports `0` LLM API calls plus `0` external API calls.
 
 ## Design Principles
 
@@ -343,6 +355,7 @@ for the machine-readable form.
 │   ├── misa-readonly-integration.md
 │   ├── evolver-adaptive-gate-v0.8.md
 │   ├── signal-candidate-rollup-v0.10.md
+│   ├── local-session-distillation-v0.12.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -354,6 +367,8 @@ for the machine-readable form.
 │   ├── integration_profile.schema.json
 │   ├── adaptive_candidate_gate.schema.json
 │   ├── signal_candidate_rollup.schema.json
+│   ├── local_distillation_source.schema.json
+│   ├── session_distillation_review.schema.json
 │   ├── learning_cycle_trace.schema.json
 │   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
@@ -364,6 +379,7 @@ for the machine-readable form.
 │   ├── damping_rules.example.json
 │   ├── adaptive_candidate_gate.example.json
 │   ├── signal_candidate_rollup.example.json
+│   ├── misa-distillation/
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
 │   ├── learning_cycle_trace.example.json
@@ -384,6 +400,7 @@ for the machine-readable form.
 ├── scripts/
 │   ├── precheck.mjs
 │   ├── adaptive-candidates.mjs
+│   ├── distill-misa.mjs
 │   ├── signal-rollup.mjs
 │   ├── simulate-learning.mjs
 │   └── validate-schemas.mjs
@@ -416,9 +433,10 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.11 engineering scaffold. It is ready to publish as a public
+This is a v0.12 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
-learning-loop simulation plus read-only replay fixtures.
+learning-loop simulation plus read-only replay fixtures and local distillation
+sources.
 
 Current scope:
 
@@ -428,6 +446,7 @@ Current scope:
 - damping rules schema and documentation;
 - Misa launch profile for reference/precheck use;
 - Misa learning-loop simulator and route expectation fixtures;
+- local session distillation without Zilliz proxy or API calls;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;
 - signal candidate queue and daily rollup report;

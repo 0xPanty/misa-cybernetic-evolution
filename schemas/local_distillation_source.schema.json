@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/local_distillation_source.schema.json",
+  "title": "LocalDistillationSource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_id",
+    "source_kind",
+    "channel",
+    "created_at",
+    "local_only",
+    "uses_zilliz_proxy",
+    "vector_lookup_required",
+    "raw_window_default",
+    "redaction_status",
+    "redaction_note",
+    "summary",
+    "setpoint",
+    "evidence_count",
+    "outcome",
+    "risk_level",
+    "source_refs",
+    "signals",
+    "artifact_evidence",
+    "turns"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.local_distillation_source.v1"
+    },
+    "source_id": { "type": "string", "minLength": 1 },
+    "source_kind": {
+      "type": "string",
+      "enum": ["chat_window", "failure_log", "farcaster_audit"]
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["discord", "farcaster", "agentmail", "local", "other"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "local_only": { "type": "boolean", "const": true },
+    "uses_zilliz_proxy": { "type": "boolean", "const": false },
+    "vector_lookup_required": { "type": "boolean", "const": false },
+    "raw_window_default": { "type": "boolean", "const": false },
+    "redaction_status": {
+      "type": "string",
+      "enum": ["clean", "redacted", "blocked"]
+    },
+    "redaction_note": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "setpoint": { "type": "string", "minLength": 1 },
+    "evidence_count": { "type": "integer", "minimum": 1 },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "partial", "failure", "unknown"]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "signals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "artifact_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["injected", "read", "modified", "tool_errors"],
+      "properties": {
+        "injected": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "read": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "modified": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "tool_errors": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "turns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["speaker", "ref", "text"],
+        "properties": {
+          "speaker": { "type": "string", "minLength": 1 },
+          "ref": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

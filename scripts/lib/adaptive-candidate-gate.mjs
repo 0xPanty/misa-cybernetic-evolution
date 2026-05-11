@@ -24,6 +24,7 @@ const BLOCKED_OPERATIONS = [
 const VALIDATION_COMMANDS = [
   "npm run crystallize:misa",
   "npm run self-repair:misa -- --no-verify",
+  "npm run distill:misa",
   "npm run density:misa",
   "npm run adaptive:misa",
   "npm run intake:misa",

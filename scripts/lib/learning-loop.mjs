@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { distillLocalMisaSources } from "./session-distiller.mjs";
 
 const FIXTURE_DIR = path.join("examples", "misa-learning");
 
@@ -229,7 +230,7 @@ export function simulateLearningCycle(event) {
     },
     verification: {
       level: "L1",
-      commands: ["npm run simulate:misa", "npm run precheck", "npm test"],
+      commands: ["npm run distill:misa", "npm run simulate:misa", "npm run precheck", "npm test"],
       passed: true,
       notes: [
         "Deterministic read-only replay over local redacted fixtures.",
@@ -267,19 +268,39 @@ export async function loadMisaLearningFixtures({ repoRoot = process.cwd() } = {}
   return fixtures;
 }
 
+export async function loadMisaLearningEvents({ repoRoot = process.cwd(), includeDistilled = true } = {}) {
+  const fixtures = await loadMisaLearningFixtures({ repoRoot });
+  if (!includeDistilled) {
+    return fixtures;
+  }
+
+  const distillation = await distillLocalMisaSources({ repoRoot });
+  return [
+    ...fixtures,
+    ...distillation.learning_events
+  ].sort((a, b) => a.event_id.localeCompare(b.event_id));
+}
+
 export async function simulateMisaLearning({ repoRoot = process.cwd() } = {}) {
   const fixtures = await loadMisaLearningFixtures({ repoRoot });
-  const traces = fixtures.map((fixture) => simulateLearningCycle(fixture));
+  const distillation = await distillLocalMisaSources({ repoRoot });
+  const events = [
+    ...fixtures,
+    ...distillation.learning_events
+  ].sort((a, b) => a.event_id.localeCompare(b.event_id));
+  const traces = events.map((event) => simulateLearningCycle(event));
   const routeCounts = Object.fromEntries(ROUTE_ORDER.map((route) => [route, 0]));
   const fixtureStats = {
-    total: fixtures.length,
-    redacted_realish: fixtures.filter((fixture) => fixture.source_type === "redacted_realish").length
+    total: events.length,
+    file_fixtures: fixtures.length,
+    distilled_events: distillation.learning_events.length,
+    redacted_realish: events.filter((event) => event.source_type === "redacted_realish").length
   };
-  const violations = [];
-  const warnings = [];
+  const violations = [...distillation.violations];
+  const warnings = [...distillation.warnings];
 
   for (const [index, trace] of traces.entries()) {
-    const fixture = fixtures[index];
+    const fixture = events[index];
     routeCounts[trace.route.target] += 1;
 
     if (trace.route.target !== fixture.expected_route) {

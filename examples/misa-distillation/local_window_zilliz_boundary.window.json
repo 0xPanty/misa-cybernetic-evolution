@@ -1,0 +1,50 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "local-window-zilliz-boundary-005",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-11T10:20:00Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted real-ish local chat requirement; no secrets or full private transcript.",
+  "summary": "Huan wants local window distillation to feed the Qianxuesen learning loop without using Zilliz as the default intake proxy.",
+  "setpoint": "use local distilled windows as learning input before candidate generation",
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "low",
+  "source_refs": [
+    "turn:huan:distillation-request",
+    "turn:codex:local-first-routing"
+  ],
+  "signals": [
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [
+      "skill:misa-hermes-recovery"
+    ],
+    "read": [
+      "docs/signal-intake-cadence-v0.9.md",
+      "docs/signal-candidate-rollup-v0.10.md",
+      "docs/evolution-candidate-preflight-v0.11.md"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "huan",
+      "ref": "turn:huan:distillation-request",
+      "text": "Add window distillation into the Qianxuesen loop and keep it local instead of using a Zilliz proxy."
+    },
+    {
+      "speaker": "codex",
+      "ref": "turn:codex:local-first-routing",
+      "text": "The distiller should create a compact learning event first, then the existing local candidate queue can handle it."
+    }
+  ]
+}

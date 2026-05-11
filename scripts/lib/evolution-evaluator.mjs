@@ -23,6 +23,7 @@ const BLOCKED_OPERATIONS = [
 ];
 
 const PREFLIGHT_COMMANDS = [
+  "npm run distill:misa",
   "npm run simulate:misa",
   "npm run adaptive:misa",
   "npm run rollup:misa",

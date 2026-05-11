@@ -20,7 +20,12 @@ export const SCHEMA_EXAMPLE_PAIRS = [
 ];
 
 const SCHEMA_DIRECTORY_PAIRS = [
-  ["schemas/misa_learning_fixture.schema.json", "examples/misa-learning", ".fixture.json"]
+  ["schemas/misa_learning_fixture.schema.json", "examples/misa-learning", ".fixture.json"],
+  ["schemas/local_distillation_source.schema.json", "examples/misa-distillation", ".window.json"]
+];
+
+const SCHEMA_ONLY_FILES = [
+  "schemas/session_distillation_review.schema.json"
 ];
 
 async function readJson(filePath) {
@@ -43,7 +48,8 @@ export async function validateSchemas({ repoRoot = process.cwd() } = {}) {
 
   const schemaRels = new Set([
     ...SCHEMA_EXAMPLE_PAIRS.map(([schema]) => schema),
-    ...SCHEMA_DIRECTORY_PAIRS.map(([schema]) => schema)
+    ...SCHEMA_DIRECTORY_PAIRS.map(([schema]) => schema),
+    ...SCHEMA_ONLY_FILES
   ]);
 
   for (const schemaRel of schemaRels) {
