@@ -16,6 +16,7 @@ import { crystallizeMisaSkills } from "../scripts/lib/skill-crystallization.mjs"
 import { runMisaSelfRepair } from "../scripts/lib/self-repair.mjs";
 import { reviewGenericAgentContextDensity } from "../scripts/lib/genericagent-density.mjs";
 import { reviewAdaptiveCandidateGate } from "../scripts/lib/adaptive-candidate-gate.mjs";
+import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contract.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -121,6 +122,7 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
     assert.ok(candidate.verification_commands.includes("npm run self-repair:misa -- --no-verify"));
     assert.ok(candidate.verification_commands.includes("npm run density:misa"));
     assert.ok(candidate.verification_commands.includes("npm run adaptive:misa"));
+    assert.ok(candidate.verification_commands.includes("npm run intake:misa"));
     assert.ok(candidate.verification_commands.includes("npm run crystallize:misa"));
   }
 });
@@ -163,8 +165,43 @@ test("adaptive v0.8 widens candidates while keeping production locked", async ()
   for (const candidate of result.candidates.filter((item) => item.decision === "validation_ready")) {
     assert.equal(candidate.verification.enters_verification, true);
     assert.ok(candidate.verification.commands.includes("npm run adaptive:misa"));
+    assert.ok(candidate.verification.commands.includes("npm run intake:misa"));
     assert.ok(candidate.safety_gates.some((gate) => gate.name === "production_authority" && gate.state === "blocked_by_design"));
   }
+});
+
+test("signal intake cadence separates half-hour scans from daily learning", () => {
+  const result = reviewSignalIntakeContract();
+  const byId = new Map(result.source_contracts.map((source) => [source.id, source]));
+  const sessionSuccess = byId.get("session_distiller_success");
+  const sessionFailure = byId.get("session_distiller_failure");
+  const farcaster = byId.get("farcaster_behavior");
+
+  assert.equal(result.mode, "signal-intake-contract");
+  assert.equal(result.ok, true);
+  assert.equal(result.cadence.signal_scan_interval_minutes, 30);
+  assert.equal(result.cadence.learning_rollup_interval_hours, 24);
+  assert.equal(sessionSuccess.read_policy.default_input, "distilled_summary");
+  assert.equal(sessionSuccess.read_policy.full_raw_default, false);
+  assert.equal(sessionSuccess.learning_policy.durable_learning_rollup, "daily");
+  assert.equal(sessionFailure.learning_policy.durable_learning_rollup, "daily");
+  assert.equal(sessionFailure.learning_policy.immediate_exception_queue, true);
+  assert.equal(farcaster.learning_policy.durable_learning_rollup, "daily");
+  assert.equal(result.cadence.farcaster_defense_mode, "per_candidate_reply");
+  assert.equal(result.api_policy.farcaster_extra_judge_api_default, false);
+  assert.equal(result.api_policy.engagement_is_not_quality_by_itself, true);
+  assert.equal(result.safety.production_authority, false);
+  assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+  assert.deepEqual(result.safety.blocked_operations, [
+    "persistent_memory_write",
+    "zilliz_replacement",
+    "farcaster_publish",
+    "skill_publication",
+    "production_skill_installation",
+    "session_mechanic_replacement",
+    "timer_or_service_start",
+    "provider_route_change"
+  ]);
 });
 
 test("Misa self repair writes draft artifacts without production effects", async () => {

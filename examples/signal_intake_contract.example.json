@@ -1,0 +1,113 @@
+{
+  "schema_version": "misa.signal_intake_contract.v1",
+  "mode": "signal-intake-contract",
+  "ok": true,
+  "cadence": {
+    "signal_scan_interval_minutes": 30,
+    "learning_rollup_interval_hours": 24,
+    "session_distiller_idle_minutes": 30,
+    "farcaster_defense_mode": "per_candidate_reply",
+    "farcaster_post_feedback_delays_hours": [2, 24],
+    "exception_queue": "immediate_signal_only"
+  },
+  "source_contracts": [
+    {
+      "id": "session_distiller_success",
+      "channel": "chat",
+      "intake_mode": "summary_first",
+      "scan_interval_minutes": 30,
+      "read_policy": {
+        "default_input": "distilled_summary",
+        "raw_lookup": "conditional_source_ref_fragments",
+        "full_raw_default": false
+      },
+      "learning_policy": {
+        "candidate_pool": true,
+        "durable_learning_rollup": "daily",
+        "immediate_exception_queue": false,
+        "routes": ["memory", "skill", "case", "policy", "damping", "ignore"]
+      },
+      "signals": ["stable_user_preference", "reusable_workflow"]
+    },
+    {
+      "id": "session_distiller_failure",
+      "channel": "runtime",
+      "intake_mode": "failure_log_signal",
+      "scan_interval_minutes": 30,
+      "read_policy": {
+        "default_input": "distiller_failure_summary",
+        "raw_lookup": "failure_log_context_only",
+        "full_raw_default": false
+      },
+      "learning_policy": {
+        "candidate_pool": true,
+        "durable_learning_rollup": "daily",
+        "immediate_exception_queue": true,
+        "routes": ["damping", "case", "skill", "policy", "ignore"]
+      },
+      "signals": ["single_failure", "repeated_failure_pattern"]
+    },
+    {
+      "id": "farcaster_behavior",
+      "channel": "farcaster",
+      "intake_mode": "pre_reply_defense_then_feedback",
+      "scan_interval_minutes": 30,
+      "read_policy": {
+        "default_input": "action_audit_and_post_feedback",
+        "raw_lookup": "public_thread_hash_or_url_only",
+        "full_raw_default": false
+      },
+      "learning_policy": {
+        "candidate_pool": true,
+        "durable_learning_rollup": "daily",
+        "immediate_exception_queue": true,
+        "routes": ["memory", "skill", "case", "policy", "damping", "ignore"]
+      },
+      "signals": ["farcaster_reply_success", "farcaster_public_memory_risk"]
+    }
+  ],
+  "api_policy": {
+    "farcaster_local_rule_gate_always": true,
+    "farcaster_extra_judge_api_default": false,
+    "farcaster_generation_api_is_reply_generation": true,
+    "farcaster_extra_judge_required_when": ["public_memory_risk", "uncertain_should_reply"],
+    "engagement_is_not_quality_by_itself": true
+  },
+  "approval_boundaries": [
+    {
+      "id": "durable_memory_write",
+      "requires_huan_approval": true,
+      "production_effect": "blocked"
+    }
+  ],
+  "safety": {
+    "production_authority": false,
+    "publication_allowed": false,
+    "live_effects": {
+      "writes_persistent_memory": false,
+      "publishes_skill": false,
+      "starts_timer": false,
+      "changes_session_mechanics": false,
+      "posts_publicly": false
+    },
+    "blocked_operations": [
+      "persistent_memory_write",
+      "zilliz_replacement",
+      "farcaster_publish",
+      "skill_publication",
+      "production_skill_installation",
+      "session_mechanic_replacement",
+      "timer_or_service_start",
+      "provider_route_change"
+    ]
+  },
+  "checks": [
+    {
+      "id": "signal_scan_is_30_minutes",
+      "ok": true,
+      "reason": "Qianxuesen scans for new signals every 30 minutes; this is discovery, not durable learning."
+    }
+  ],
+  "warnings": [],
+  "violations": []
+}

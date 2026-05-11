@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/signal_intake_contract.schema.json",
+  "title": "SignalIntakeContractReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "cadence",
+    "source_contracts",
+    "api_policy",
+    "approval_boundaries",
+    "safety",
+    "checks",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.signal_intake_contract.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "signal-intake-contract"
+    },
+    "ok": { "type": "boolean" },
+    "cadence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_scan_interval_minutes",
+        "learning_rollup_interval_hours",
+        "session_distiller_idle_minutes",
+        "farcaster_defense_mode",
+        "farcaster_post_feedback_delays_hours",
+        "exception_queue"
+      ],
+      "properties": {
+        "signal_scan_interval_minutes": { "type": "integer", "const": 30 },
+        "learning_rollup_interval_hours": { "type": "integer", "const": 24 },
+        "session_distiller_idle_minutes": { "type": "integer", "const": 30 },
+        "farcaster_defense_mode": {
+          "type": "string",
+          "const": "per_candidate_reply"
+        },
+        "farcaster_post_feedback_delays_hours": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "exception_queue": {
+          "type": "string",
+          "const": "immediate_signal_only"
+        }
+      }
+    },
+    "source_contracts": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "channel",
+          "intake_mode",
+          "scan_interval_minutes",
+          "read_policy",
+          "learning_policy",
+          "signals"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "channel": {
+            "type": "string",
+            "enum": ["chat", "runtime", "farcaster"]
+          },
+          "intake_mode": { "type": "string", "minLength": 1 },
+          "scan_interval_minutes": { "type": "integer", "const": 30 },
+          "read_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["default_input", "raw_lookup", "full_raw_default"],
+            "properties": {
+              "default_input": { "type": "string", "minLength": 1 },
+              "raw_lookup": { "type": "string", "minLength": 1 },
+              "full_raw_default": { "type": "boolean", "const": false }
+            }
+          },
+          "learning_policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidate_pool",
+              "durable_learning_rollup",
+              "immediate_exception_queue",
+              "routes"
+            ],
+            "properties": {
+              "candidate_pool": { "type": "boolean" },
+              "durable_learning_rollup": {
+                "type": "string",
+                "const": "daily"
+              },
+              "immediate_exception_queue": { "type": "boolean" },
+              "routes": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+                },
+                "uniqueItems": true
+              }
+            }
+          },
+          "signals": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "api_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "farcaster_local_rule_gate_always",
+        "farcaster_extra_judge_api_default",
+        "farcaster_generation_api_is_reply_generation",
+        "farcaster_extra_judge_required_when",
+        "engagement_is_not_quality_by_itself"
+      ],
+      "properties": {
+        "farcaster_local_rule_gate_always": { "type": "boolean", "const": true },
+        "farcaster_extra_judge_api_default": { "type": "boolean", "const": false },
+        "farcaster_generation_api_is_reply_generation": { "type": "boolean" },
+        "farcaster_extra_judge_required_when": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "engagement_is_not_quality_by_itself": { "type": "boolean", "const": true }
+      }
+    },
+    "approval_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "requires_huan_approval", "production_effect"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "requires_huan_approval": { "type": "boolean", "const": true },
+          "production_effect": {
+            "type": "string",
+            "const": "blocked"
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "publication_allowed",
+        "live_effects",
+        "blocked_operations"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "live_effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "writes_persistent_memory",
+            "publishes_skill",
+            "starts_timer",
+            "changes_session_mechanics",
+            "posts_publicly"
+          ],
+          "properties": {
+            "writes_persistent_memory": { "type": "boolean", "const": false },
+            "publishes_skill": { "type": "boolean", "const": false },
+            "starts_timer": { "type": "boolean", "const": false },
+            "changes_session_mechanics": { "type": "boolean", "const": false },
+            "posts_publicly": { "type": "boolean", "const": false }
+          }
+        },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 8,
+          "items": {
+            "type": "string",
+            "enum": [
+              "persistent_memory_write",
+              "zilliz_replacement",
+              "farcaster_publish",
+              "skill_publication",
+              "production_skill_installation",
+              "session_mechanic_replacement",
+              "timer_or_service_start",
+              "provider_route_change"
+            ]
+          },
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "persistent_memory_write" } },
+            { "contains": { "const": "zilliz_replacement" } },
+            { "contains": { "const": "farcaster_publish" } },
+            { "contains": { "const": "skill_publication" } },
+            { "contains": { "const": "production_skill_installation" } },
+            { "contains": { "const": "session_mechanic_replacement" } },
+            { "contains": { "const": "timer_or_service_start" } },
+            { "contains": { "const": "provider_route_change" } }
+          ]
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ok", "reason"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "ok": { "type": "boolean" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

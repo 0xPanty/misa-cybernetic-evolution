@@ -13,6 +13,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/self_repair_run.schema.json", "examples/self_repair_run.example.json"],
   ["schemas/genericagent_context_density.schema.json", "examples/genericagent_context_density.example.json"],
   ["schemas/adaptive_candidate_gate.schema.json", "examples/adaptive_candidate_gate.example.json"],
+  ["schemas/signal_intake_contract.schema.json", "examples/signal_intake_contract.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];

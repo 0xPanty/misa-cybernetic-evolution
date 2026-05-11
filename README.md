@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.8 Quickstart
+## v0.9 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -26,6 +26,7 @@ npm run crystallize:misa
 npm run self-repair:misa -- --no-verify
 npm run density:misa
 npm run adaptive:misa
+npm run intake:misa
 npm run validate:schemas
 npm run precheck
 npm test
@@ -48,6 +49,9 @@ Expected result:
 - the EvoMap-inspired adaptive candidate gate generates a wider set of local
   learning signals, rejects or holds weak candidates, and sends only safe
   candidates into validation;
+- the signal-intake cadence contract separates 30-minute signal scans from
+  daily durable learning, keeps chat distillation summary-first, and treats
+  Farcaster as per-reply defense plus daily learning rollup;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -60,7 +64,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.8 does not include is a background runtime service. It does not
+What this v0.9 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -79,6 +83,8 @@ See [docs/genericagent-context-density-v0.7.md](./docs/genericagent-context-dens
 for the GenericAgent-inspired information-density gate.
 See [docs/evolver-adaptive-gate-v0.8.md](./docs/evolver-adaptive-gate-v0.8.md)
 for the EvoMap-inspired adaptive candidate gate.
+See [docs/signal-intake-cadence-v0.9.md](./docs/signal-intake-cadence-v0.9.md)
+for the session-distiller, failure-log, and Farcaster intake cadence contract.
 
 ## Why This Exists
 
@@ -187,6 +193,14 @@ Misa generate more local candidates and learning signals first, then filters
 them through evidence, live-effect, command-allowlist, suppression, and
 production-authority gates. Good candidates can enter validation; production
 authority remains false.
+
+v0.9 adds `npm run intake:misa`, a cadence contract for the real signal feeds
+around Misa. Chat windows are distilled and scanned every 30 minutes, but
+durable Qianxuesen learning is a daily rollup. Session summaries are read
+before any source-fragment lookup. Distiller failures enter an exception queue.
+Farcaster checks candidate replies before posting, but only sends pooled
+behavior feedback into daily learning. Extra judge API calls are conditional,
+not the default.
 
 ## Design Principles
 

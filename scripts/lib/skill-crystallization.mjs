@@ -22,6 +22,7 @@ const VERIFICATION_COMMANDS = [
   "npm run self-repair:misa -- --no-verify",
   "npm run density:misa",
   "npm run adaptive:misa",
+  "npm run intake:misa",
   "npm run simulate:misa",
   "npm run validate:schemas",
   "npm run precheck",

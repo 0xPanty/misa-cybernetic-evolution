@@ -22,6 +22,7 @@ const VERIFY_COMMANDS = [
   { label: "validate:schemas", command: "npm run validate:schemas", args: ["run", "validate:schemas"] },
   { label: "density:misa", command: "npm run density:misa", args: ["run", "density:misa"] },
   { label: "adaptive:misa", command: "npm run adaptive:misa", args: ["run", "adaptive:misa"] },
+  { label: "intake:misa", command: "npm run intake:misa", args: ["run", "intake:misa"] },
   { label: "precheck", command: "npm run precheck", args: ["run", "precheck"] },
   { label: "test", command: "npm test", args: ["test"] }
 ];

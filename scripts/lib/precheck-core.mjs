@@ -10,6 +10,7 @@ import { validateJsonData, validateSchemas } from "./schema-validation.mjs";
 import { crystallizeMisaSkills } from "./skill-crystallization.mjs";
 import { reviewGenericAgentContextDensity } from "./genericagent-density.mjs";
 import { reviewAdaptiveCandidateGate } from "./adaptive-candidate-gate.mjs";
+import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -27,6 +28,7 @@ const REQUIRED_FILES = [
   "docs/self-repair-v0.6.md",
   "docs/genericagent-context-density-v0.7.md",
   "docs/evolver-adaptive-gate-v0.8.md",
+  "docs/signal-intake-cadence-v0.9.md",
   "docs/templates/governance-skill-template.md",
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
@@ -36,6 +38,7 @@ const REQUIRED_FILES = [
   "schemas/self_repair_run.schema.json",
   "schemas/genericagent_context_density.schema.json",
   "schemas/adaptive_candidate_gate.schema.json",
+  "schemas/signal_intake_contract.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -49,6 +52,7 @@ const REQUIRED_FILES = [
   "examples/self_repair_run.example.json",
   "examples/genericagent_context_density.example.json",
   "examples/adaptive_candidate_gate.example.json",
+  "examples/signal_intake_contract.example.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -63,9 +67,11 @@ const REQUIRED_FILES = [
   "scripts/self-repair.mjs",
   "scripts/genericagent-density.mjs",
   "scripts/adaptive-candidates.mjs",
+  "scripts/signal-intake.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
+  "scripts/lib/signal-intake-contract.mjs",
   "generated/README.md"
 ];
 
@@ -232,6 +238,20 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/adaptive_candidate_gate.schema.json",
     data: adaptiveGate,
     name: "validate adaptive candidate gate review"
+  }));
+
+  const signalIntake = reviewSignalIntakeContract();
+  checks.push(checkResult("Misa signal intake cadence check", signalIntake.ok, {
+    signalScanMinutes: signalIntake.cadence.signal_scan_interval_minutes,
+    learningRollupHours: signalIntake.cadence.learning_rollup_interval_hours,
+    farcasterDefense: signalIntake.cadence.farcaster_defense_mode,
+    violations: signalIntake.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/signal_intake_contract.schema.json",
+    data: signalIntake,
+    name: "validate signal intake contract review"
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);
