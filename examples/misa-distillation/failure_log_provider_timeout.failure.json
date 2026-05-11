@@ -1,0 +1,36 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "failure-log-provider-timeout-006",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-11T10:40:00Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic failure-log template with no secrets.",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "logs:provider-timeout"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "tool:provider-read-timeout",
+      "tool:retry-window"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "system",
+      "ref": "failure:provider-timeout:001",
+      "text": "Provider read timeout appeared twice during local validation. Retry recovered during validation; direct provider-route change was not approved."
+    },
+    {
+      "speaker": "codex",
+      "ref": "failure:provider-timeout:002",
+      "text": "Treat this as a repeated failure pattern and draft a case candidate before changing routes."
+    }
+  ]
+}

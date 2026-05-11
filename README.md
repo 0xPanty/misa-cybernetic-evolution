@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.12 Quickstart
+## v0.13 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -55,8 +55,9 @@ Expected result:
 - the signal-intake cadence contract separates 30-minute signal scans from
   daily durable learning, keeps chat distillation summary-first, and treats
   Farcaster as per-reply defense plus daily learning rollup;
-- the v0.12 local session distiller turns redacted local windows into learning
-  events without using Zilliz, vector lookup, model providers, or external APIs;
+- the v0.13 local session distiller turns redacted local windows, failure logs,
+  and Farcaster audits into learning events with redaction, segmentation, local
+  token vectors, and no Zilliz/model/external API dependency;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -74,7 +75,7 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.12 does not include is a background runtime service. It does not
+What this v0.13 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
@@ -101,6 +102,8 @@ See [docs/evolution-candidate-preflight-v0.11.md](./docs/evolution-candidate-pre
 for the candidate preflight -> report queue gate.
 See [docs/local-session-distillation-v0.12.md](./docs/local-session-distillation-v0.12.md)
 for the local window -> distillate -> learning event intake step.
+See [docs/window-distillation-pipeline-v0.13.md](./docs/window-distillation-pipeline-v0.13.md)
+for the full local redaction -> segmentation -> token vector -> signal extraction pipeline.
 
 ## Why This Exists
 
@@ -155,7 +158,7 @@ Publication and Governance
   registry / version / evidence log / rollback / dashboard
 ```
 
-## Misa Learning Loop v0.12
+## Misa Learning Loop v0.13
 
 v0.2 adds a deterministic dry-run loop for Misa:
 
@@ -238,6 +241,13 @@ candidate generation. It reads redacted local window sources from
 events flow through the same simulator, candidate queue, daily rollup, and
 preflight gate. It does not use Zilliz as an intake proxy, does not require
 vector lookup, and reports `0` LLM API calls plus `0` external API calls.
+
+v0.13 expands that distiller into the full local window pipeline. It accepts
+`chat_window`, `failure_log`, and `farcaster_audit` sources, redacts raw text,
+splits it into source-referenced segments, builds a local `local-token-vector-v1`
+index, extracts signals, and emits fixture-shaped learning events. The vector
+index is local and deterministic. It is not Zilliz and it does not call an
+embedding provider.
 
 ## Design Principles
 
@@ -356,6 +366,7 @@ for the machine-readable form.
 │   ├── evolver-adaptive-gate-v0.8.md
 │   ├── signal-candidate-rollup-v0.10.md
 │   ├── local-session-distillation-v0.12.md
+│   ├── window-distillation-pipeline-v0.13.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -433,7 +444,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.12 engineering scaffold. It is ready to publish as a public
+This is a v0.13 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures and local distillation
 sources.
@@ -446,7 +457,7 @@ Current scope:
 - damping rules schema and documentation;
 - Misa launch profile for reference/precheck use;
 - Misa learning-loop simulator and route expectation fixtures;
-- local session distillation without Zilliz proxy or API calls;
+- full local window distillation without Zilliz proxy or API calls;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;
 - signal candidate queue and daily rollup report;

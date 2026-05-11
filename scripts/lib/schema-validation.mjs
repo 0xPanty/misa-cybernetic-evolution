@@ -21,7 +21,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
 
 const SCHEMA_DIRECTORY_PAIRS = [
   ["schemas/misa_learning_fixture.schema.json", "examples/misa-learning", ".fixture.json"],
-  ["schemas/local_distillation_source.schema.json", "examples/misa-distillation", ".window.json"]
+  ["schemas/local_distillation_source.schema.json", "examples/misa-distillation", ".json"]
 ];
 
 const SCHEMA_ONLY_FILES = [

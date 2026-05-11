@@ -134,23 +134,32 @@ test("Misa skill crystallization stays read-only and indexed", async () => {
   }
 });
 
-test("v0.12 distills local windows without Zilliz proxy", async () => {
+test("v0.13 distills local windows with a local vector index and no Zilliz proxy", async () => {
   const result = await distillLocalMisaSources();
   const events = await loadMisaLearningEvents();
+  const sourceKinds = new Set(result.distillates.map((item) => item.source_kind));
   const distilledEvent = result.learning_events.find(
     (event) => event.event_id === "misa-distilled-local-window-zilliz-boundary-005"
   );
 
   assert.equal(result.mode, "local-session-distillation");
   assert.equal(result.ok, true);
+  assert.ok(result.summary.source_count >= 3);
   assert.equal(result.summary.source_count, result.summary.learning_event_count);
   assert.equal(result.summary.zilliz_proxy_used, false);
+  assert.equal(result.summary.local_vector_index_used, true);
+  assert.equal(result.summary.vector_store_backend, "local-token-vector-v1");
   assert.equal(result.summary.vector_lookup_required, false);
   assert.equal(result.summary.raw_window_default, false);
+  assert.ok(result.summary.segment_count >= result.summary.source_count);
   assert.equal(result.summary.llm_api_calls, 0);
   assert.equal(result.summary.external_api_calls, 0);
   assert.equal(result.safety.production_authority, false);
+  assert.deepEqual([...sourceKinds].sort(), ["chat_window", "failure_log", "farcaster_audit"]);
   assert.equal(result.distillates.every((item) => item.input_policy.uses_zilliz_proxy === false), true);
+  assert.equal(result.distillates.every((item) => item.input_policy.local_vector_index === true), true);
+  assert.equal(result.distillates.every((item) => item.local_vector_index.backend === "local-token-vector-v1"), true);
+  assert.equal(result.distillates.every((item) => item.local_vector_index.uses_zilliz_proxy === false), true);
   assert.equal(result.distillates.every((item) => item.input_policy.llm_api_calls === 0), true);
   assert.ok(distilledEvent);
   assert.equal(distilledEvent.expected_route, "memory");
@@ -246,6 +255,8 @@ test("v0.10 signal rollup closes adapter queue and daily rollup locally", async 
   assert.equal(result.ok, true);
   assert.equal(result.summary.adapted_signal_count, result.summary.queue_item_count);
   assert.ok(result.adapted_signals.some((signal) => signal.source_event_id === "misa-distilled-local-window-zilliz-boundary-005"));
+  assert.ok(result.adapted_signals.some((signal) => signal.source_event_id === "misa-distilled-failure-log-provider-timeout-006"));
+  assert.ok(result.adapted_signals.some((signal) => signal.source_event_id === "misa-distilled-farcaster-reply-audit-007"));
   assert.equal(result.daily_rollup.window_hours, 24);
   assert.ok(adapters.get("session_distiller_success").mapped_signal_count > 0);
   assert.ok(adapters.get("session_distiller_failure").mapped_signal_count > 0);

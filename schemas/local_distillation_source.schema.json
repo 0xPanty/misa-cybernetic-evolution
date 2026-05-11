@@ -16,13 +16,6 @@
     "raw_window_default",
     "redaction_status",
     "redaction_note",
-    "summary",
-    "setpoint",
-    "evidence_count",
-    "outcome",
-    "risk_level",
-    "source_refs",
-    "signals",
     "artifact_evidence",
     "turns"
   ],

@@ -14,6 +14,9 @@ if (asJson) {
   console.log(`sources: ${result.summary.source_count}`);
   console.log(`learning_events: ${result.summary.learning_event_count}`);
   console.log(`zilliz_proxy_used: ${result.summary.zilliz_proxy_used}`);
+  console.log(`local_vector_index_used: ${result.summary.local_vector_index_used}`);
+  console.log(`vector_store_backend: ${result.summary.vector_store_backend}`);
+  console.log(`segments: ${result.summary.segment_count}`);
   console.log(`llm_api_calls: ${result.summary.llm_api_calls}`);
   console.log(`external_api_calls: ${result.summary.external_api_calls}`);
   console.log(`raw_window_default: ${result.summary.raw_window_default}`);
