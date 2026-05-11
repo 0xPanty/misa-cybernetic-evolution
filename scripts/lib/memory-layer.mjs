@@ -43,6 +43,57 @@ function countBy(values, selector) {
   return counts;
 }
 
+function possibleRoutesForSignals(signals) {
+  const routes = [];
+  if (signals.includes("candidate_replay_failed") || signals.includes("single_failure")) {
+    routes.push("damping");
+  }
+  if (
+    signals.includes("explicit_user_boundary")
+    || signals.includes("public_posting_boundary")
+    || signals.includes("farcaster_public_memory_risk")
+  ) {
+    routes.push("policy");
+  }
+  if (signals.includes("reusable_workflow")) {
+    routes.push("skill");
+  }
+  if (signals.includes("repeated_failure_pattern")) {
+    routes.push("case");
+  }
+  if (signals.includes("stable_user_preference") || signals.includes("stable_project_fact")) {
+    routes.push("memory");
+  }
+  return uniqueStrings(routes);
+}
+
+function buildMixedRoutePressure(traces) {
+  const mixed = traces
+    .map((trace) => {
+      const possible_routes = possibleRoutesForSignals(trace.observe.signals);
+      return {
+        source_event_id: trace.source_event_id,
+        selected_route: routeForTrace(trace),
+        possible_routes,
+        signals: trace.observe.signals,
+        summary: trace.proposed_change.summary.replace(/^Draft [a-z]+ candidate:\s*/i, "").slice(0, 120)
+      };
+    })
+    .filter((item) => item.possible_routes.length > 1);
+
+  const skillSuppressed = mixed.filter((item) => (
+    item.possible_routes.includes("skill") && item.selected_route !== "skill"
+  ));
+
+  return {
+    mixed_count: mixed.length,
+    skill_signal_suppressed_count: skillSuppressed.length,
+    by_selected_route: countBy(mixed, (item) => item.selected_route),
+    examples: mixed.slice(0, 5),
+    skill_suppressed_examples: skillSuppressed.slice(0, 5)
+  };
+}
+
 function makeSkillId(trace) {
   return `l3-${trace.source_event_id}`.replace(/[^a-z0-9_.-]+/gi, "-").toLowerCase();
 }
@@ -151,7 +202,8 @@ function buildLayers({ sources, distillation, traces }) {
     l2_candidates: {
       candidate_count: traces.length,
       route_counts: countBy(traces, routeForTrace),
-      candidate_states: countBy(traces, (trace) => trace.candidate_review.state)
+      candidate_states: countBy(traces, (trace) => trace.candidate_review.state),
+      mixed_route_pressure: buildMixedRoutePressure(traces)
     }
   };
 }
@@ -174,7 +226,11 @@ async function loadSources({ repoRoot, sourceDir, vpsRawDir }) {
     return loadVpsConversationSources({ rawDir: path.isAbsolute(vpsRawDir) ? vpsRawDir : path.join(repoRoot, vpsRawDir) });
   }
 
-  const distillation = await distillLocalMisaSources({ repoRoot, sourceDir });
+  const distillation = await distillLocalMisaSources({
+    repoRoot,
+    sourceDir,
+    requireTemplateCoverage: !sourceDir
+  });
   return distillation.distillates.map((item, index) => ({
     schema_version: "misa.local_distillation_source.v1",
     source_id: item.source_id,
@@ -209,7 +265,11 @@ export async function reviewMemoryLayerComparison({
   vpsRawDir
 } = {}) {
   const sources = await loadSources({ repoRoot, sourceDir, vpsRawDir });
-  const distillation = await distillLocalMisaSources({ repoRoot, sources });
+  const distillation = await distillLocalMisaSources({
+    repoRoot,
+    sources,
+    requireTemplateCoverage: !sourceDir && !vpsRawDir
+  });
   const traces = distillation.learning_events.map((event) => simulateLearningCycle(event));
   const layers = buildLayers({ sources, distillation, traces });
   const originalAutoL3 = buildOriginalAutoL3(traces);

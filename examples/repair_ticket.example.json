@@ -1,0 +1,173 @@
+{
+  "schema_version": "misa.repair_ticket_review.v1",
+  "mode": "repair-ticket-review",
+  "ok": true,
+  "created_at": "2026-05-11T00:00:00.000Z",
+  "source": {
+    "source_kind": "local_distillation_sources",
+    "source_dir": null,
+    "vps_raw_dir": null
+  },
+  "source_review": {
+    "mode": "memory-layer-comparison",
+    "ok": true,
+    "comparison": {
+      "original_skill_count": 3,
+      "minimal_skill_count": 0,
+      "avoided_bad_promotions": 3,
+      "original_non_skill_promoted_count": 3,
+      "minimal_non_skill_promoted_count": 0,
+      "verdict": "minimal_positive_is_safer"
+    }
+  },
+  "summary": {
+    "ticket_count": 1,
+    "highest_severity": "P1",
+    "severity_counts": {
+      "P1": 1
+    },
+    "repair_candidate_count": 1,
+    "bad_promotion_count": 3,
+    "minimal_non_skill_promoted_count": 0,
+    "live_effect_violation": false,
+    "verdict": "minimal_positive_is_safer"
+  },
+  "tickets": [
+    {
+      "ticket_id": "repair-local-distillation-sources-auto-l3-overpromotion",
+      "title": "Memory-layer Auto-L3 over-promotion check",
+      "severity": "P1",
+      "status": "repair_candidate",
+      "source_kind": "local_distillation_sources",
+      "problem_statement": "Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording.",
+      "evidence": {
+        "source_count": 3,
+        "turn_count": 6,
+        "raw_token_estimate": 104,
+        "distillate_token_estimate": 71,
+        "compression_ratio": 0.683,
+        "route_counts": {
+          "case": 1,
+          "policy": 1,
+          "memory": 1
+        },
+        "original_auto_l3_skill_count": 3,
+        "minimal_l3_skill_count": 0,
+        "original_non_skill_promoted_count": 3,
+        "minimal_non_skill_promoted_count": 0,
+        "avoided_bad_promotions": 3,
+        "verdict": "minimal_positive_is_safer"
+      },
+      "bad_promotions": [
+        {
+          "source_event_id": "misa-distilled-failure-log-provider-timeout-006",
+          "wrong_route_promoted_as_skill": "case",
+          "title": "Local failure log distilled: Treat this as a repeated failure pattern",
+          "repair_hint": "Keep this as case, not L3 skill export."
+        },
+        {
+          "source_event_id": "misa-distilled-farcaster-reply-audit-007",
+          "wrong_route_promoted_as_skill": "policy",
+          "title": "Local Farcaster audit distilled: private process must stay out of public reply drafts",
+          "repair_hint": "Keep this as policy, not L3 skill export."
+        },
+        {
+          "source_event_id": "misa-distilled-local-window-zilliz-boundary-005",
+          "wrong_route_promoted_as_skill": "memory",
+          "title": "Local window distillation boundary should stay as stable memory",
+          "repair_hint": "Keep this as memory, not L3 skill export."
+        }
+      ],
+      "reproduction_commands": [
+        "npm run memory-layer:misa -- --json",
+        "npm run repair-ticket:misa -- --json --dry-run",
+        "npm run export-skills:misa -- --json"
+      ],
+      "acceptance_criteria": [
+        "minimal_positive_l3.non_skill_promoted_count == 0",
+        "every exported skill has route_target == skill",
+        "export_policy.installs_skills == false",
+        "export_policy.writes_persistent_memory == false",
+        "export_policy.updates_vps == false",
+        "export_policy.publication_allowed == false",
+        "repair ticket schema validation passes",
+        "npm run precheck passes",
+        "npm test passes"
+      ],
+      "codex_scope": {
+        "may_edit": [
+          "scripts/lib/memory-layer.mjs",
+          "scripts/lib/repair-ticket.mjs",
+          "scripts/repair-ticket.mjs",
+          "schemas/memory_layer.schema.json",
+          "schemas/repair_ticket.schema.json",
+          "test/governance.test.mjs",
+          "docs/memory-layer-skill-export-v0.13.md",
+          "docs/repair-ticket-v0.13.md"
+        ],
+        "must_not_edit": [
+          "Hermes runtime files",
+          "Misa persona or production memory",
+          "Farcaster production publisher",
+          "VPS services",
+          "provider credentials or .env files"
+        ]
+      },
+      "non_goals": [
+        "Do not install Hermes skills.",
+        "Do not write persistent memory.",
+        "Do not update VPS.",
+        "Do not touch production Farcaster actions.",
+        "Do not start timers or services.",
+        "Do not change provider routes."
+      ],
+      "repair_tasks": {
+        "must_fix": [
+          "Non-skill routes must never export as L3 skills.",
+          "Minimal-positive export must remain the only exportable path."
+        ],
+        "should_improve": [
+          "Repair-ticket wording should explain whether a candidate belongs to case, policy, memory, or damping."
+        ],
+        "observe_only": [
+          "original_auto_l3 remains a comparison simulation, not a production recommendation."
+        ]
+      },
+      "quality_notes": [
+        "actionable: exact source_event_id and wrong route are present",
+        "bounded: Codex edit scope is explicit",
+        "safe: non-goals block live effects"
+      ]
+    }
+  ],
+  "safety": {
+    "production_authority": false,
+    "publication_allowed": false,
+    "installs_skills": false,
+    "writes_persistent_memory": false,
+    "updates_vps": false,
+    "touches_runtime": false,
+    "live_effects": {
+      "writes_persistent_memory": false,
+      "publishes_skill": false,
+      "starts_timer": false,
+      "changes_session_mechanics": false,
+      "posts_publicly": false
+    },
+    "blocked_operations": [
+      "persistent_memory_write",
+      "zilliz_replacement",
+      "farcaster_publish",
+      "skill_publication",
+      "production_skill_installation",
+      "session_mechanic_replacement",
+      "timer_or_service_start",
+      "provider_route_change"
+    ]
+  },
+  "warnings": [
+    "repair-ticket:misa is a local repair queue generator, not an automatic fixer.",
+    "Codex repair scope is limited to memory-layer, skill-export, repair-ticket, replay-eval, schema, docs, and tests."
+  ],
+  "violations": []
+}

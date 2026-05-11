@@ -15,6 +15,7 @@ import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
+import { reviewRepairTickets } from "./repair-ticket.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -38,6 +39,7 @@ const REQUIRED_FILES = [
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
   "docs/memory-layer-skill-export-v0.13.md",
+  "docs/repair-ticket-v0.13.md",
   "docs/templates/governance-skill-template.md",
   "docs/templates/distillation/README.md",
   "schemas/control_contract.schema.json",
@@ -51,6 +53,7 @@ const REQUIRED_FILES = [
   "schemas/signal_intake_contract.schema.json",
   "schemas/signal_candidate_rollup.schema.json",
   "schemas/memory_layer.schema.json",
+  "schemas/repair_ticket.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/misa_learning_fixture.schema.json",
@@ -69,6 +72,7 @@ const REQUIRED_FILES = [
   "examples/signal_intake_contract.example.json",
   "examples/signal_candidate_rollup.example.json",
   "examples/memory_layer.example.json",
+  "examples/repair_ticket.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
@@ -93,6 +97,7 @@ const REQUIRED_FILES = [
   "scripts/evolution-evaluator.mjs",
   "scripts/memory-layer.mjs",
   "scripts/export-skills.mjs",
+  "scripts/repair-ticket.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
@@ -101,6 +106,7 @@ const REQUIRED_FILES = [
   "scripts/lib/signal-candidate-rollup.mjs",
   "scripts/lib/evolution-evaluator.mjs",
   "scripts/lib/memory-layer.mjs",
+  "scripts/lib/repair-ticket.mjs",
   "scripts/lib/vps-conversation-sources.mjs",
   "generated/README.md"
 ];
@@ -355,6 +361,21 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/memory_layer.schema.json",
     data: memoryLayer,
     name: "validate memory layer comparison review"
+  }));
+
+  const repairTickets = await reviewRepairTickets({ repoRoot, memoryLayerReview: memoryLayer });
+  checks.push(checkResult("Misa repair ticket queue check", repairTickets.ok, {
+    ticketCount: repairTickets.summary.ticket_count,
+    highestSeverity: repairTickets.summary.highest_severity,
+    badPromotions: repairTickets.summary.bad_promotion_count,
+    minimalBadPromotions: repairTickets.summary.minimal_non_skill_promoted_count,
+    violations: repairTickets.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/repair_ticket.schema.json",
+    data: repairTickets,
+    name: "validate repair ticket review"
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);

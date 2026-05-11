@@ -22,10 +22,11 @@ const STOP_WORDS = new Set([
 
 const SIGNAL_RULES = [
   ["candidate_replay_failed", /\b(replay failed|validation failed|回放失败|验证失败)\b/iu],
+  ["avoid_overreaction", /\b(overreact|overreaction|too complicated|过度反应|太复杂|别搞这么麻烦|不要搞这么麻烦)\b/iu],
   ["single_failure", /\b(single|once|transient|单次|偶发)\b/iu],
   ["repeated_failure_pattern", /\b(timeout|failure|failed|error|retry|exception|失败|报错|重试|超时)\b/iu],
   ["explicit_user_boundary", /\b(do not|don't|without|must not|blocked|approval|不要|不用|不能|别|必须|禁止)\b/iu],
-  ["public_posting_boundary", /\b(farcaster|public|post|reply|cast|公开|帖子|回复)\b/iu],
+  ["public_posting_boundary", /\b(farcaster|post|reply|cast|publisher|webhook|x402|public[- ]?(?:post|reply|channel|thread)|公开|帖子|回复)\b/iu],
   ["farcaster_public_memory_risk", /\b(public memory|private|secret|leak|privacy|隐私|秘密|记忆泄露)\b/iu],
   ["farcaster_reply_success", /\b(good reply|reply success|useful reply|thread result|回复成功|效果好)\b/iu],
   ["farcaster_low_quality_reply", /\b(low quality|off voice|bad reply|overposting|跑偏|低质量|过度回复)\b/iu],
@@ -86,7 +87,20 @@ function extractSignalsFromText(text, sourceKind) {
 
 function expectedRouteFor(signals) {
   if (signals.includes("candidate_replay_failed")) return "damping";
-  if (signals.includes("explicit_user_boundary") || signals.includes("public_posting_boundary")) return "policy";
+  if (
+    (signals.includes("avoid_overreaction") || signals.includes("single_failure"))
+    && !signals.includes("public_posting_boundary")
+    && !signals.includes("farcaster_public_memory_risk")
+  ) {
+    return "damping";
+  }
+  if (
+    signals.includes("explicit_user_boundary")
+    || signals.includes("public_posting_boundary")
+    || signals.includes("farcaster_public_memory_risk")
+  ) {
+    return "policy";
+  }
   if (signals.includes("avoid_overreaction") || signals.includes("single_failure")) return "damping";
   if (signals.includes("reusable_workflow")) return "skill";
   if (signals.includes("repeated_failure_pattern")) return "case";
@@ -341,7 +355,7 @@ function buildLearningEvent(source, distillate) {
   };
 }
 
-function evaluateSources(sources, distillates, learningEvents) {
+function evaluateSources(sources, distillates, learningEvents, { requireTemplateCoverage = true } = {}) {
   const checks = [];
   const violations = [];
   const sourceKindCounts = countBy(sources, (source) => source.source_kind);
@@ -351,11 +365,13 @@ function evaluateSources(sources, distillates, learningEvents) {
     sources.length > 0,
     "At least one local source is needed for session distillation."
   ));
-  checks.push(makeCheck(
-    "covers_all_distillation_templates",
-    REQUIRED_SOURCE_KINDS.every((kind) => (sourceKindCounts[kind] ?? 0) > 0),
-    "Local distillation examples must cover chat windows, failure logs, and Farcaster audits."
-  ));
+  if (requireTemplateCoverage) {
+    checks.push(makeCheck(
+      "covers_all_distillation_templates",
+      REQUIRED_SOURCE_KINDS.every((kind) => (sourceKindCounts[kind] ?? 0) > 0),
+      "Local distillation examples must cover chat windows, failure logs, and Farcaster audits."
+    ));
+  }
   checks.push(makeCheck(
     "local_only",
     sources.every((source) => source.local_only === true),
@@ -404,11 +420,11 @@ function evaluateSources(sources, distillates, learningEvents) {
   return { checks, violations };
 }
 
-export async function distillMisaSources(sources) {
+export async function distillMisaSources(sources, { requireTemplateCoverage = true } = {}) {
   const distilled = sources.map(distillSource);
   const distillates = distilled.map((item) => item.distillate);
   const learningEvents = distilled.map((item) => item.learningEvent);
-  const evaluation = evaluateSources(sources, distillates, learningEvents);
+  const evaluation = evaluateSources(sources, distillates, learningEvents, { requireTemplateCoverage });
   const segmentCount = distillates.reduce((sum, item) => sum + item.segments.length, 0);
 
   return {
@@ -441,9 +457,14 @@ export async function distillMisaSources(sources) {
   };
 }
 
-export async function distillLocalMisaSources({ repoRoot = process.cwd(), sourceDir = SOURCE_DIR, sources } = {}) {
+export async function distillLocalMisaSources({
+  repoRoot = process.cwd(),
+  sourceDir = SOURCE_DIR,
+  sources,
+  requireTemplateCoverage = true
+} = {}) {
   const loadedSources = sources ?? await loadLocalDistillationSources({ repoRoot, sourceDir });
-  return distillMisaSources(loadedSources);
+  return distillMisaSources(loadedSources, { requireTemplateCoverage });
 }
 
 export { loadLocalDistillationSources };

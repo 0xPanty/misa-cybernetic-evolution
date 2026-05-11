@@ -32,6 +32,7 @@ npm run rollup:misa
 npm run evolution:evaluate:misa
 npm run memory-layer:misa
 npm run export-skills:misa
+npm run repair-ticket:misa -- --dry-run
 npm run validate:schemas
 npm run precheck
 npm test
@@ -62,9 +63,13 @@ Expected result:
   token vectors, and no Zilliz/model/external API dependency;
 - the memory-layer comparison reports L0 source refs, L1 distillates, L2 route
   candidates, and two L3 strategies so broad auto-skill promotion can be
-  compared against the minimal positive export path;
+  compared against the minimal positive export path, including mixed-route
+  pressure where skill-like signals are intentionally suppressed by safer routes;
 - the skill export command writes local L3 draft skills only from the minimal
   positive path and does not install Skills, write memory, or update VPS;
+- the repair-ticket queue turns memory-layer over-promotion evidence into
+  Codex-ready local tickets with reproduction commands, acceptance criteria,
+  edit scope, and explicit non-goals;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -113,6 +118,8 @@ See [docs/window-distillation-pipeline-v0.13.md](./docs/window-distillation-pipe
 for the full local redaction -> segmentation -> token vector -> signal extraction pipeline.
 See [docs/memory-layer-skill-export-v0.13.md](./docs/memory-layer-skill-export-v0.13.md)
 for the GenericAgent-inspired L0-L4 comparison and local skill export path.
+See [docs/repair-ticket-v0.13.md](./docs/repair-ticket-v0.13.md)
+for the local Codex repair-ticket queue.
 
 ## Why This Exists
 
@@ -263,6 +270,11 @@ The first command compares the broad GenericAgent-style idea of sending every
 verified lesson to L3 skills against the safer Misa path: only verified
 `skill`-route lessons become local L3 drafts. The export command writes only
 those minimal L3 drafts into a local export folder; it never installs them.
+
+v0.13 adds `npm run repair-ticket:misa` as a local maintenance queue for this
+new memory-layer path. It turns over-promotion evidence into JSON and Markdown
+repair tickets for later Codex work. It does not fix automatically, write
+memory, install skills, touch runtime state, or update VPS.
 
 ## Design Principles
 

@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/repair_ticket.schema.json",
+  "title": "RepairTicketReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "source",
+    "source_review",
+    "summary",
+    "tickets",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.repair_ticket_review.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "repair-ticket-review"
+    },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_kind", "source_dir", "vps_raw_dir"],
+      "properties": {
+        "source_kind": { "type": "string" },
+        "source_dir": { "type": ["string", "null"] },
+        "vps_raw_dir": { "type": ["string", "null"] }
+      }
+    },
+    "source_review": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["mode", "ok", "comparison"],
+      "properties": {
+        "mode": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "comparison": { "type": "object" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ticket_count",
+        "highest_severity",
+        "severity_counts",
+        "repair_candidate_count",
+        "bad_promotion_count",
+        "minimal_non_skill_promoted_count",
+        "live_effect_violation",
+        "verdict"
+      ],
+      "properties": {
+        "ticket_count": { "type": "integer", "minimum": 0 },
+        "highest_severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+        "severity_counts": { "type": "object" },
+        "repair_candidate_count": { "type": "integer", "minimum": 0 },
+        "bad_promotion_count": { "type": "integer", "minimum": 0 },
+        "minimal_non_skill_promoted_count": { "type": "integer", "const": 0 },
+        "live_effect_violation": { "type": "boolean", "const": false },
+        "verdict": { "type": "string" }
+      }
+    },
+    "tickets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ticket" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "production_authority",
+        "publication_allowed",
+        "installs_skills",
+        "writes_persistent_memory",
+        "updates_vps",
+        "touches_runtime",
+        "live_effects",
+        "blocked_operations"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "updates_vps": { "type": "boolean", "const": false },
+        "touches_runtime": { "type": "boolean", "const": false },
+        "live_effects": { "type": "object" },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_dir", "json_path", "markdown_path"],
+      "properties": {
+        "output_dir": { "type": "string" },
+        "json_path": { "type": "string" },
+        "markdown_path": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ticket_id",
+        "title",
+        "severity",
+        "status",
+        "source_kind",
+        "problem_statement",
+        "evidence",
+        "bad_promotions",
+        "reproduction_commands",
+        "acceptance_criteria",
+        "codex_scope",
+        "non_goals",
+        "repair_tasks",
+        "quality_notes"
+      ],
+      "properties": {
+        "ticket_id": { "type": "string" },
+        "title": { "type": "string" },
+        "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+        "status": { "type": "string", "enum": ["must_fix", "repair_candidate", "observe_only"] },
+        "source_kind": { "type": "string" },
+        "problem_statement": { "type": "string" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "source_count",
+            "turn_count",
+            "raw_token_estimate",
+            "distillate_token_estimate",
+            "compression_ratio",
+            "route_counts",
+            "original_auto_l3_skill_count",
+            "minimal_l3_skill_count",
+            "original_non_skill_promoted_count",
+            "minimal_non_skill_promoted_count",
+            "avoided_bad_promotions",
+            "verdict"
+          ],
+          "properties": {
+            "source_count": { "type": "integer", "minimum": 1 },
+            "turn_count": { "type": "integer", "minimum": 1 },
+            "raw_token_estimate": { "type": "integer", "minimum": 1 },
+            "distillate_token_estimate": { "type": "integer", "minimum": 1 },
+            "compression_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "route_counts": { "type": "object" },
+            "original_auto_l3_skill_count": { "type": "integer", "minimum": 0 },
+            "minimal_l3_skill_count": { "type": "integer", "minimum": 0 },
+            "original_non_skill_promoted_count": { "type": "integer", "minimum": 0 },
+            "minimal_non_skill_promoted_count": { "type": "integer", "const": 0 },
+            "avoided_bad_promotions": { "type": "integer", "minimum": 0 },
+            "verdict": { "type": "string" }
+          }
+        },
+        "bad_promotions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_event_id",
+              "wrong_route_promoted_as_skill",
+              "title",
+              "repair_hint"
+            ],
+            "properties": {
+              "source_event_id": { "type": "string" },
+              "wrong_route_promoted_as_skill": { "type": "string" },
+              "title": { "type": "string" },
+              "repair_hint": { "type": "string" }
+            }
+          }
+        },
+        "reproduction_commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "codex_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["may_edit", "must_not_edit"],
+          "properties": {
+            "may_edit": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "must_not_edit": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "non_goals": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "repair_tasks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["must_fix", "should_improve", "observe_only"],
+          "properties": {
+            "must_fix": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "should_improve": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "observe_only": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "quality_notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

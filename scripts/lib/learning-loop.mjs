@@ -42,6 +42,8 @@ function referencedByPrefix(artifactEvidence, prefix) {
 
 function classifyRoute(event) {
   const artifactEvidence = normalizeArtifactEvidence(event);
+  const overreactionSignal = hasSignal(event, "avoid_overreaction") || hasSignal(event, "single_failure");
+  const publicBoundarySignal = hasSignal(event, "public_posting_boundary") || hasSignal(event, "farcaster_public_memory_risk");
 
   if (hasSignal(event, "candidate_replay_failed")) {
     return {
@@ -58,7 +60,22 @@ function classifyRoute(event) {
     };
   }
 
-  if (hasSignal(event, "explicit_user_boundary") || hasSignal(event, "public_posting_boundary")) {
+  if (overreactionSignal && !publicBoundarySignal) {
+    return {
+      target: "damping",
+      controlCategory: "fault_tolerance",
+      errorClass: "overreaction risk",
+      action: "skip",
+      status: "held",
+      publicationMode: "no_publish",
+      candidateState: "held",
+      evidenceBasis: "thin or one-off evidence",
+      rationale: "The evidence is too thin for a permanent write; hold and collect another signal.",
+      affectedArtifacts: ["damping:cooldown"]
+    };
+  }
+
+  if (hasSignal(event, "explicit_user_boundary") || publicBoundarySignal) {
     return {
       target: "policy",
       controlCategory: "optimal_control",
@@ -73,7 +90,7 @@ function classifyRoute(event) {
     };
   }
 
-  if (hasSignal(event, "avoid_overreaction") || hasSignal(event, "single_failure")) {
+  if (overreactionSignal) {
     return {
       target: "damping",
       controlCategory: "fault_tolerance",

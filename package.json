@@ -21,6 +21,7 @@
     "evolution:evaluate:misa": "node scripts/evolution-evaluator.mjs",
     "memory-layer:misa": "node scripts/memory-layer.mjs",
     "export-skills:misa": "node scripts/export-skills.mjs",
+    "repair-ticket:misa": "node scripts/repair-ticket.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test"
   },

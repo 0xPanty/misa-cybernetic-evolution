@@ -20,11 +20,18 @@ import { reviewAdaptiveCandidateGate } from "../scripts/lib/adaptive-candidate-g
 import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contract.mjs";
 import { reviewSignalCandidateRollup } from "../scripts/lib/signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "../scripts/lib/evolution-evaluator.mjs";
-import { distillLocalMisaSources } from "../scripts/lib/session-distiller.mjs";
+import {
+  distillLocalMisaSources,
+  distillMisaSources
+} from "../scripts/lib/session-distiller.mjs";
 import {
   exportMinimalPositiveSkills,
   reviewMemoryLayerComparison
 } from "../scripts/lib/memory-layer.mjs";
+import {
+  reviewRepairTickets,
+  writeRepairTicketArtifacts
+} from "../scripts/lib/repair-ticket.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -101,6 +108,130 @@ test("blocks Misa live-effect integration profile", () => {
   assert.match(result.violations.join("\n"), /calls_model_providers/);
 });
 
+test("routes overreaction boundaries to damping unless public behavior is involved", () => {
+  const base = {
+    event_id: "route-overreaction-boundary",
+    channel: "local",
+    summary: "Do not overreact to a single provider timeout.",
+    evidence_count: 1,
+    outcome: "partial",
+    risk_level: "medium",
+    redaction_status: "redacted",
+    source_type: "redacted_realish",
+    redaction_note: "test",
+    setpoint: "hold one-off failures before changing runtime behavior",
+    artifact_evidence: {
+      injected: [],
+      read: ["test:route"],
+      modified: [],
+      tool_errors: []
+    },
+    expected_route: "damping",
+    expected_status: "held",
+    expected_publication_mode: "no_publish",
+    expected_candidate_state: "held",
+    created_at: "2026-05-11T08:00:00Z"
+  };
+
+  const dampingTrace = simulateLearningCycle({
+    ...base,
+    signals: ["single_failure", "explicit_user_boundary"]
+  });
+  const policyTrace = simulateLearningCycle({
+    ...base,
+    event_id: "route-public-overreaction-boundary",
+    summary: "Do not overreact, but keep public replies behind policy approval.",
+    signals: ["single_failure", "explicit_user_boundary", "public_posting_boundary"]
+  });
+  const publicMemoryTrace = simulateLearningCycle({
+    ...base,
+    event_id: "route-public-memory-risk-boundary",
+    summary: "Do not overreact when public memory risk appears.",
+    signals: ["single_failure", "farcaster_public_memory_risk"]
+  });
+  const publicMemoryAvoidTrace = simulateLearningCycle({
+    ...base,
+    event_id: "route-public-memory-avoid-overreaction-boundary",
+    summary: "Avoid overreaction but keep public memory risk behind policy.",
+    signals: ["avoid_overreaction", "farcaster_public_memory_risk"]
+  });
+
+  assert.equal(dampingTrace.route.target, "damping");
+  assert.equal(dampingTrace.result.status, "held");
+  assert.equal(policyTrace.route.target, "policy");
+  assert.equal(policyTrace.route.publication_mode, "requires_approval");
+  assert.equal(publicMemoryTrace.route.target, "policy");
+  assert.equal(publicMemoryTrace.route.publication_mode, "requires_approval");
+  assert.equal(publicMemoryAvoidTrace.route.target, "policy");
+  assert.equal(publicMemoryAvoidTrace.route.publication_mode, "requires_approval");
+});
+
+test("public memory risk blocks reusable workflow skill export", async () => {
+  const sourceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-public-memory-risk-source-"));
+  const outRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-public-memory-risk-export-"));
+
+  try {
+    await fs.writeFile(path.join(sourceRoot, "public-memory-risk.json"), `${JSON.stringify({
+      schema_version: "misa.local_distillation_source.v1",
+      source_id: "public-memory-risk-workflow",
+      source_kind: "farcaster_audit",
+      channel: "farcaster",
+      created_at: "2026-05-11T08:10:00Z",
+      local_only: true,
+      uses_zilliz_proxy: false,
+      vector_lookup_required: false,
+      raw_window_default: false,
+      redaction_status: "redacted",
+      redaction_note: "Synthetic public memory risk source for routing regression.",
+      summary: "A reusable workflow mentions private memory risk in a public reply context.",
+      setpoint: "keep public memory risk behind policy instead of exporting a skill",
+      evidence_count: 2,
+      outcome: "success",
+      risk_level: "high",
+      source_refs: ["test:public-memory-risk"],
+      signals: ["reusable_workflow", "farcaster_public_memory_risk"],
+      artifact_evidence: {
+        injected: [],
+        read: ["test:public-memory-risk"],
+        modified: [],
+        tool_errors: []
+      },
+      turns: [
+        {
+          speaker: "test",
+          ref: "test:public-memory-risk:turn:1",
+          text: [
+            "Reusable workflow: inspect the public reply draft, compare it with the source refs,",
+            "check whether private Discord memory or owner-only context could leak into a public Farcaster reply,",
+            "keep the candidate behind policy review, and only record local evidence for later repair.",
+            "This must not become an installable skill because public memory risk is stronger than the workflow signal."
+          ].join(" ")
+        }
+      ]
+    }, null, 2)}\n`, "utf8");
+
+    const review = await reviewMemoryLayerComparison({
+      repoRoot: process.cwd(),
+      sourceDir: sourceRoot
+    });
+    const exported = await exportMinimalPositiveSkills({
+      repoRoot: process.cwd(),
+      sourceDir: sourceRoot,
+      outDir: outRoot
+    });
+
+    assert.equal(review.ok, true);
+    assert.equal(review.layers.l2_candidates.route_counts.policy, 1);
+    assert.equal(review.minimal_positive_l3.skill_count, 0);
+    assert.equal(review.layers.l2_candidates.mixed_route_pressure.skill_signal_suppressed_count, 1);
+    assert.equal(exported.ok, true);
+    assert.equal(exported.exported_count, 0);
+  } finally {
+    await fs.rm(sourceRoot, { recursive: true, force: true });
+    await fs.rm(outRoot, { recursive: true, force: true });
+  }
+});
+
 test("repository dry-run precheck passes", async () => {
   const result = await runPrecheck();
 
@@ -168,6 +299,52 @@ test("v0.13 distills local windows with a local vector index and no Zilliz proxy
   assert.ok(distilledEvent);
   assert.equal(distilledEvent.expected_route, "memory");
   assert.equal(events.some((event) => event.event_id === distilledEvent.event_id), true);
+});
+
+test("custom historical source dirs do not require example template coverage", async () => {
+  const source = {
+    schema_version: "misa.local_distillation_source.v1",
+    source_id: "history-single-chat-window",
+    source_kind: "chat_window",
+    channel: "local",
+    created_at: "2026-05-11T08:00:00Z",
+    local_only: true,
+    uses_zilliz_proxy: false,
+    vector_lookup_required: false,
+    raw_window_default: false,
+    redaction_status: "redacted",
+    redaction_note: "Synthetic historical source for custom source-dir coverage behavior.",
+    summary: "A repeatable local validation workflow exists in history.",
+    setpoint: "turn repeatable local validation into a draft skill only after checks",
+    evidence_count: 2,
+    outcome: "success",
+    risk_level: "low",
+    source_refs: ["history:single"],
+    signals: ["reusable_workflow", "stable_project_fact"],
+    artifact_evidence: {
+      injected: [],
+      read: ["history:single"],
+      modified: [],
+      tool_errors: []
+    },
+    turns: [
+      {
+        speaker: "history",
+        ref: "history:single:turn:1",
+        text: "Reusable workflow: collect local evidence, validate schemas, run precheck, then hold for review."
+      }
+    ]
+  };
+
+  const strict = await distillMisaSources([source]);
+  const relaxed = await distillMisaSources([source], { requireTemplateCoverage: false });
+
+  assert.equal(strict.ok, false);
+  assert.match(strict.violations.join("\n"), /cover chat windows, failure logs, and Farcaster audits/);
+  assert.equal(relaxed.ok, true);
+  assert.equal(relaxed.checks.some((check) => check.id === "covers_all_distillation_templates"), false);
+  assert.equal(relaxed.summary.source_count, 1);
+  assert.equal(relaxed.learning_events[0].expected_route, "skill");
 });
 
 test("GenericAgent context density review adopts logic and rejects runtime authority", async () => {
@@ -323,6 +500,8 @@ test("memory layer comparison rejects broad automatic L3 promotion", async () =>
   assert.equal(result.ok, true);
   assert.ok(result.layers.l0_sources.raw_token_estimate > result.layers.l1_distillates.distillate_token_estimate);
   assert.ok(result.layers.l1_distillates.compression_ratio < 1);
+  assert.ok(result.layers.l2_candidates.mixed_route_pressure);
+  assert.ok(result.layers.l2_candidates.mixed_route_pressure.mixed_count >= 1);
   assert.ok(result.original_auto_l3.non_skill_promoted_count > 0);
   assert.equal(result.minimal_positive_l3.non_skill_promoted_count, 0);
   assert.equal(result.comparison.verdict, "minimal_positive_is_safer");
@@ -352,6 +531,83 @@ test("export-skills writes only minimal positive local drafts", async () => {
     assert.equal(manifest.exports.every((item) => item.route_target === "skill"), true);
     assert.equal(manifest.exports.every((item) => item.publication_allowed === false), true);
     assert.equal(manifest.exports.every((item) => item.installation_allowed === false), true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("repair-ticket queue converts over-promotion evidence into Codex-ready tickets", async () => {
+  const result = await reviewRepairTickets();
+  const actualBadPromotions = result.tickets.reduce((sum, ticket) => sum + ticket.bad_promotions.length, 0);
+
+  assert.equal(result.mode, "repair-ticket-review");
+  assert.equal(result.ok, true);
+  assert.equal(result.safety.publication_allowed, false);
+  assert.equal(result.safety.installs_skills, false);
+  assert.equal(result.safety.writes_persistent_memory, false);
+  assert.equal(result.safety.updates_vps, false);
+  assert.equal(result.safety.touches_runtime, false);
+  assert.ok(result.summary.ticket_count >= 1);
+  assert.ok(result.summary.bad_promotion_count >= 1);
+  assert.equal(result.summary.bad_promotion_count, actualBadPromotions);
+  assert.equal(result.summary.minimal_non_skill_promoted_count, 0);
+
+  const ticket = result.tickets[0];
+  assert.match(ticket.ticket_id, /auto-l3-overpromotion/);
+  assert.ok(["P1", "P2"].includes(ticket.severity));
+  assert.equal(ticket.status, "repair_candidate");
+  assert.ok(ticket.bad_promotions.length >= 1);
+  assert.ok(ticket.bad_promotions.every((item) => item.wrong_route_promoted_as_skill !== "skill"));
+  assert.ok(ticket.reproduction_commands.some((command) => command.includes("memory-layer:misa")));
+  assert.ok(ticket.reproduction_commands.some((command) => command.includes("repair-ticket:misa")));
+  assert.ok(ticket.acceptance_criteria.includes("minimal_positive_l3.non_skill_promoted_count == 0"));
+  assert.ok(ticket.acceptance_criteria.includes("every exported skill has route_target == skill"));
+  assert.ok(ticket.codex_scope.may_edit.includes("scripts/lib/repair-ticket.mjs"));
+  assert.ok(ticket.non_goals.includes("Do not write persistent memory."));
+  assert.ok(ticket.repair_tasks.must_fix.includes("Non-skill routes must never export as L3 skills."));
+});
+
+test("repair-ticket example keeps summary counts aligned with ticket details", async () => {
+  const example = JSON.parse(await fs.readFile(
+    path.join(process.cwd(), "examples", "repair_ticket.example.json"),
+    "utf8"
+  ));
+  const actualBadPromotions = example.tickets.reduce((sum, ticket) => sum + ticket.bad_promotions.length, 0);
+  const actualRepairCandidates = example.tickets.filter((ticket) => ticket.status !== "observe_only").length;
+  const actualSeverityCounts = example.tickets.reduce((counts, ticket) => {
+    counts[ticket.severity] = (counts[ticket.severity] ?? 0) + 1;
+    return counts;
+  }, {});
+
+  assert.equal(example.summary.ticket_count, example.tickets.length);
+  assert.equal(example.summary.bad_promotion_count, actualBadPromotions);
+  assert.equal(example.summary.repair_candidate_count, actualRepairCandidates);
+  assert.deepEqual(example.summary.severity_counts, actualSeverityCounts);
+});
+
+test("repair-ticket artifacts write JSON and Markdown without runtime effects", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-repair-ticket-"));
+
+  try {
+    const review = await reviewRepairTickets({
+      now: new Date("2026-05-11T02:00:00Z")
+    });
+    const written = await writeRepairTicketArtifacts({
+      review,
+      outDir: tempRoot,
+      now: new Date("2026-05-11T02:00:00Z")
+    });
+
+    assert.equal(written.output.output_dir, tempRoot);
+    const persisted = JSON.parse(await fs.readFile(written.output.json_path, "utf8"));
+    const markdown = await fs.readFile(written.output.markdown_path, "utf8");
+
+    assert.equal(persisted.mode, "repair-ticket-review");
+    assert.equal(persisted.safety.writes_persistent_memory, false);
+    assert.equal(persisted.safety.installs_skills, false);
+    assert.match(markdown, /# Misa Repair Tickets/);
+    assert.match(markdown, /### Acceptance/);
+    assert.match(markdown, /Do not update VPS/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
