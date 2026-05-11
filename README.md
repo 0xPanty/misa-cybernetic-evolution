@@ -91,6 +91,162 @@ What this v0.13 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
+In plain terms, v0.13 is accepted as a local control-theoretic learning engine,
+not as an autonomous production brain. It can read redacted local evidence,
+compress it, route it, draft safe local artifacts, and explain what should be
+repaired next. It cannot make production decisions by itself.
+
+| Scope | Verdict |
+| --- | --- |
+| Local learning-plane architecture | accepted |
+| Local real-sample simulation | accepted |
+| Memory/skill/case/policy/damping routing | accepted for dry-run use |
+| Minimal L3 draft skill export | accepted as local files only |
+| Repair-ticket generation | accepted as a local Codex work queue |
+| Automatic memory writes | not enabled |
+| Automatic Skill installation | not enabled |
+| VPS updates or deployment | not enabled |
+| Farcaster/Discord live behavior changes | not enabled |
+
+The current safety posture is deliberate: positive learning is allowed to move
+forward locally, but every durable or public effect stays behind an explicit
+human approval boundary.
+
+## v0.13 Closed Loop
+
+The current closed loop is:
+
+```text
+redacted local source
+-> distill and segment
+-> extract signals
+-> create learning events
+-> route to memory / skill / case / policy / damping
+-> compare broad Auto-L3 against minimal positive L3
+-> export only safe local skill drafts
+-> generate repair tickets for unsafe over-promotion patterns
+-> validate with schemas, precheck, and tests
+```
+
+The important decision is the L3 split:
+
+- `original_auto_l3` is only a comparison simulation. It asks: what would happen
+  if every verified positive lesson became a Skill?
+- `minimal_positive_l3` is the safe path. It exports only verified lessons that
+  are already routed as `skill`.
+
+This difference matters. Real conversations often contain several lessons in
+one window. A single window can include a useful workflow, a repeated failure,
+a private-memory risk, and a VPS boundary at the same time. Broad Auto-L3 would
+turn too much of that into Skills. Minimal-positive L3 keeps memory as memory,
+case as case, policy as policy, and damping as damping.
+
+## Route Meanings
+
+The router intentionally separates five useful destinations:
+
+| Route | Meaning | Example |
+| --- | --- | --- |
+| `memory` | stable user preference or project fact | "Huan wants Chinese-first, plainspoken answers." |
+| `skill` | repeatable procedure | "Run these checks after changing the cybernetic gate." |
+| `case` | repeated failure or recovery pattern | "Provider timeouts should be diagnosed before redesign." |
+| `policy` | future behavior boundary or approval rule | "Do not leak private memory into public Farcaster replies." |
+| `damping` | hold weak evidence to avoid overreaction | "Do not rebuild a provider path from one timeout." |
+
+Two guard rules are especially important:
+
+- `single_failure` and `avoid_overreaction` normally route to `damping`, so one
+  bad run does not become permanent memory or a new Skill.
+- `public_posting_boundary` and `farcaster_public_memory_risk` route to
+  `policy`, even when a workflow signal is also present. Public-channel memory
+  risk is a safety boundary, not a normal optimization hint.
+
+## Historical Sample Validation
+
+v0.13 was checked against local historical conversation summaries in two ways.
+These artifacts are generated under ignored `runs/` directories and are not
+committed.
+
+The first run used 30 compound historical rollout summaries. This is a pressure
+test for long, mixed windows.
+
+```text
+sources: 30
+raw_tokens: 9465
+distillate_tokens: 823
+compression_ratio: 0.087
+routes: policy 23 / damping 7
+minimal_l3_skill_count: 0
+minimal_non_skill_promoted_count: 0
+mixed_route_pressure.skill_signal_suppressed_count: 30
+violations: 0
+```
+
+The result is intentionally conservative. The system found skill-like signals,
+but every window also carried safer policy or damping pressure. It exported no
+Skills and reported the suppression through `mixed_route_pressure`.
+
+The second run used 15 atomized historical lessons: three examples each for
+skill, case, policy, memory, and damping.
+
+```text
+sources: 15
+routes: skill 3 / case 3 / policy 3 / memory 3 / damping 3
+minimal_l3_skill_count: 3
+minimal_non_skill_promoted_count: 0
+violations: 0
+```
+
+This shows the main quality lesson for the next phase: the downstream routing
+works when the input lesson is small enough. Full historical windows should be
+split into atomic lessons before the system tries to promote anything durable.
+
+## Repair Tickets
+
+`repair-ticket:misa` is a maintenance queue, not an automatic fixer.
+
+It exists for cases where the comparison path sees a risk such as:
+
+```text
+case -> wrongly promoted as skill
+policy -> wrongly promoted as skill
+memory -> wrongly promoted as skill
+damping -> wrongly promoted as skill
+```
+
+The command records:
+
+- exact bad promotions and `source_event_id` values;
+- reproduction commands;
+- acceptance criteria;
+- files Codex may edit;
+- files and live surfaces Codex must not edit;
+- non-goals such as no Skill install, no persistent memory write, no VPS update,
+  no public posting, and no provider-route changes.
+
+Default writes go only to ignored local `runs/repair-tickets/` folders. A
+repair ticket is a work order for a later approved Codex repair pass. It is not
+a live runtime action.
+
+## Reviewer Finding Closed
+
+A gpt-5.5 xhigh read-only review found one real routing bug during v0.13
+hardening: `farcaster_public_memory_risk` was recognized as a signal but was
+not always routed to `policy` when it appeared without `public_posting_boundary`.
+
+The fix is now covered in:
+
+- `scripts/lib/session-distiller.mjs`
+- `scripts/lib/learning-loop.mjs`
+- `scripts/lib/memory-layer.mjs`
+- `test/governance.test.mjs`
+
+Regression coverage now checks that:
+
+- `single_failure + farcaster_public_memory_risk` routes to `policy`;
+- `avoid_overreaction + farcaster_public_memory_risk` routes to `policy`;
+- `reusable_workflow + farcaster_public_memory_risk` does not export a Skill.
+
 See [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
 See [docs/misa-learning-loop-v0.2.md](./docs/misa-learning-loop-v0.2.md) for
 the runnable learning-loop simulation.
@@ -394,6 +550,8 @@ for the machine-readable form.
 │   ├── signal-candidate-rollup-v0.10.md
 │   ├── local-session-distillation-v0.12.md
 │   ├── window-distillation-pipeline-v0.13.md
+│   ├── memory-layer-skill-export-v0.13.md
+│   ├── repair-ticket-v0.13.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -407,6 +565,8 @@ for the machine-readable form.
 │   ├── signal_candidate_rollup.schema.json
 │   ├── local_distillation_source.schema.json
 │   ├── session_distillation_review.schema.json
+│   ├── memory_layer.schema.json
+│   ├── repair_ticket.schema.json
 │   ├── learning_cycle_trace.schema.json
 │   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
@@ -417,6 +577,8 @@ for the machine-readable form.
 │   ├── damping_rules.example.json
 │   ├── adaptive_candidate_gate.example.json
 │   ├── signal_candidate_rollup.example.json
+│   ├── memory_layer.example.json
+│   ├── repair_ticket.example.json
 │   ├── misa-distillation/
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
@@ -439,6 +601,9 @@ for the machine-readable form.
 │   ├── precheck.mjs
 │   ├── adaptive-candidates.mjs
 │   ├── distill-misa.mjs
+│   ├── memory-layer.mjs
+│   ├── export-skills.mjs
+│   ├── repair-ticket.mjs
 │   ├── signal-rollup.mjs
 │   ├── simulate-learning.mjs
 │   └── validate-schemas.mjs
@@ -486,6 +651,9 @@ Current scope:
 - Misa learning-loop simulator and route expectation fixtures;
 - full local window distillation without Zilliz proxy or API calls;
 - L0-L4 memory-layer comparison and minimal local Skill export;
+- mixed-route pressure diagnostics for compound historical windows;
+- local Codex repair-ticket queue for over-promotion evidence;
+- public-memory-risk route guard so Farcaster memory leakage risk stays policy;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;
 - signal candidate queue and daily rollup report;
