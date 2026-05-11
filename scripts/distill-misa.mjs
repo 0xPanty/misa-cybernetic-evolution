@@ -2,8 +2,21 @@
 
 import { distillLocalMisaSources } from "./lib/session-distiller.mjs";
 
+function readArg(name) {
+  const prefix = `--${name}=`;
+  const direct = process.argv.find((arg) => arg.startsWith(prefix));
+  if (direct) return direct.slice(prefix.length);
+  const index = process.argv.indexOf(`--${name}`);
+  if (index >= 0) return process.argv[index + 1];
+  return undefined;
+}
+
 const asJson = process.argv.includes("--json");
-const result = await distillLocalMisaSources();
+const sourceDir = readArg("source-dir");
+const result = await distillLocalMisaSources({
+  sourceDir,
+  requireTemplateCoverage: !sourceDir
+});
 
 if (asJson) {
   console.log(JSON.stringify(result, null, 2));
@@ -13,6 +26,8 @@ if (asJson) {
   console.log(`ok: ${result.ok}`);
   console.log(`sources: ${result.summary.source_count}`);
   console.log(`learning_events: ${result.summary.learning_event_count}`);
+  console.log(`atomic_lessons: ${result.summary.atomic_lesson_count}`);
+  console.log(`compound_sources: ${result.summary.compound_source_count}`);
   console.log(`zilliz_proxy_used: ${result.summary.zilliz_proxy_used}`);
   console.log(`local_vector_index_used: ${result.summary.local_vector_index_used}`);
   console.log(`vector_store_backend: ${result.summary.vector_store_backend}`);
@@ -24,7 +39,7 @@ if (asJson) {
   if (result.distillates.length > 0) {
     console.log("distillates:");
     for (const distillate of result.distillates) {
-      console.log(`- ${distillate.distillate_id}: ${distillate.learning_event_id}`);
+      console.log(`- ${distillate.distillate_id}: ${distillate.learning_event_ids.join(", ")}`);
     }
   }
 

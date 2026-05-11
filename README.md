@@ -59,12 +59,14 @@ Expected result:
   daily durable learning, keeps chat distillation summary-first, and treats
   Farcaster as per-reply defense plus daily learning rollup;
 - the v0.13 local session distiller turns redacted local windows, failure logs,
-  and Farcaster audits into learning events with redaction, segmentation, local
-  token vectors, and no Zilliz/model/external API dependency;
+  and Farcaster audits into atomic learning events with redaction,
+  segmentation, local token vectors, route-specific lesson splitting, and no
+  Zilliz/model/external API dependency;
 - the memory-layer comparison reports L0 source refs, L1 distillates, L2 route
   candidates, and two L3 strategies so broad auto-skill promotion can be
-  compared against the minimal positive export path, including mixed-route
-  pressure where skill-like signals are intentionally suppressed by safer routes;
+  compared against the minimal positive export path, including compound-window
+  diagnostics where skill-like signals can be separated from safer policy or
+  damping lessons before export;
 - the skill export command writes local L3 draft skills only from the minimal
   positive path and does not install Skills, write memory, or update VPS;
 - the repair-ticket queue turns memory-layer over-promotion evidence into
@@ -119,6 +121,7 @@ The current closed loop is:
 ```text
 redacted local source
 -> distill and segment
+-> split compound windows into atomic lessons
 -> extract signals
 -> create learning events
 -> route to memory / skill / case / policy / damping
@@ -137,9 +140,12 @@ The important decision is the L3 split:
 
 This difference matters. Real conversations often contain several lessons in
 one window. A single window can include a useful workflow, a repeated failure,
-a private-memory risk, and a VPS boundary at the same time. Broad Auto-L3 would
-turn too much of that into Skills. Minimal-positive L3 keeps memory as memory,
-case as case, policy as policy, and damping as damping.
+a private-memory risk, and a VPS boundary at the same time. The distiller now
+splits those windows into atomic lessons before routing. Broad Auto-L3 still
+shows what would go wrong if every verified lesson became a Skill.
+Minimal-positive L3 exports only the lessons that are already clean `skill`
+routes. Memory stays memory, case stays case, policy stays policy, and damping
+stays damping.
 
 ## Route Meanings
 
@@ -168,38 +174,43 @@ These artifacts are generated under ignored `runs/` directories and are not
 committed.
 
 The first run used 30 compound historical rollout summaries. This is a pressure
-test for long, mixed windows.
+test for long, mixed windows. The atomic lesson splitter turned those 30 windows
+into 87 route-specific lessons.
 
 ```text
 sources: 30
-raw_tokens: 9465
-distillate_tokens: 823
-compression_ratio: 0.087
-routes: policy 23 / damping 7
-minimal_l3_skill_count: 0
+distillates: 30
+atomic_lessons: 87
+compound_sources: 28
+routes: policy 29 / damping 21 / skill 14 / memory 13 / case 10
+minimal_l3_skill_count: 14
 minimal_non_skill_promoted_count: 0
-mixed_route_pressure.skill_signal_suppressed_count: 30
+public_memory_risk_routes: policy only
+skill_with_public_memory_risk: 0
 violations: 0
 ```
 
-The result is intentionally conservative. The system found skill-like signals,
-but every window also carried safer policy or damping pressure. It exported no
-Skills and reported the suppression through `mixed_route_pressure`.
+The important result is that skill signals are no longer buried just because the
+same historical window also contains policy or damping pressure. Public memory
+risk still routes only to policy, and no exported skill carries that risk signal.
 
-The second run used 15 atomized historical lessons: three examples each for
-skill, case, policy, memory, and damping.
+The second run used 15 atomized historical source lessons: three examples each
+for skill, case, policy, memory, and damping. Two sources still contained a
+separate policy boundary, so the splitter emitted 17 atomic lessons.
 
 ```text
 sources: 15
-routes: skill 3 / case 3 / policy 3 / memory 3 / damping 3
+atomic_lessons: 17
+compound_sources: 2
+routes: skill 3 / case 3 / policy 5 / memory 3 / damping 3
 minimal_l3_skill_count: 3
 minimal_non_skill_promoted_count: 0
 violations: 0
 ```
 
-This shows the main quality lesson for the next phase: the downstream routing
-works when the input lesson is small enough. Full historical windows should be
-split into atomic lessons before the system tries to promote anything durable.
+This remains the calibration set: the downstream routing works when the input
+lesson is small enough, and compound windows now get split before the system
+tries to promote anything durable.
 
 ## Repair Tickets
 
@@ -416,10 +427,11 @@ vector lookup, and reports `0` LLM API calls plus `0` external API calls.
 
 v0.13 expands that distiller into the full local window pipeline. It accepts
 `chat_window`, `failure_log`, and `farcaster_audit` sources, redacts raw text,
-splits it into source-referenced segments, builds a local `local-token-vector-v1`
-index, extracts signals, and emits fixture-shaped learning events. The vector
-index is local and deterministic. It is not Zilliz and it does not call an
-embedding provider.
+splits it into source-referenced segments, builds a local
+`local-token-vector-v1` index, extracts signals, splits compound windows into
+atomic lessons, and emits fixture-shaped learning events. The vector index is
+local and deterministic. It is not Zilliz and it does not call an embedding
+provider.
 
 v0.13 also adds `npm run memory-layer:misa` and `npm run export-skills:misa`.
 The first command compares the broad GenericAgent-style idea of sending every

@@ -223,9 +223,107 @@ test("public memory risk blocks reusable workflow skill export", async () => {
     assert.equal(review.ok, true);
     assert.equal(review.layers.l2_candidates.route_counts.policy, 1);
     assert.equal(review.minimal_positive_l3.skill_count, 0);
-    assert.equal(review.layers.l2_candidates.mixed_route_pressure.skill_signal_suppressed_count, 1);
+    assert.equal(review.layers.l1_distillates.atomic_lesson_count, 1);
+    assert.equal(review.layers.l2_candidates.mixed_route_pressure.skill_signal_suppressed_count, 0);
     assert.equal(exported.ok, true);
     assert.equal(exported.exported_count, 0);
+  } finally {
+    await fs.rm(sourceRoot, { recursive: true, force: true });
+    await fs.rm(outRoot, { recursive: true, force: true });
+  }
+});
+
+test("atomic lesson splitter recovers skill lessons from compound windows", async () => {
+  const sourceRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-compound-lesson-source-"));
+  const outRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-compound-lesson-export-"));
+  const source = {
+    schema_version: "misa.local_distillation_source.v1",
+    source_id: "compound-policy-damping-skill-window",
+    source_kind: "chat_window",
+    channel: "local",
+    created_at: "2026-05-11T08:20:00Z",
+    local_only: true,
+    uses_zilliz_proxy: false,
+    vector_lookup_required: false,
+    raw_window_default: false,
+    redaction_status: "redacted",
+    redaction_note: "Synthetic compound source for atomic lesson splitter regression.",
+    summary: "A historical window mixed a reusable validation workflow, a single timeout, and a public memory boundary.",
+    setpoint: "split compound history into route-specific lessons before export",
+    evidence_count: 4,
+    outcome: "partial",
+    risk_level: "high",
+    source_refs: ["history:compound-window"],
+    signals: [
+      "reusable_workflow",
+      "single_failure",
+      "explicit_user_boundary",
+      "public_posting_boundary",
+      "farcaster_public_memory_risk",
+      "stable_project_fact"
+    ],
+    artifact_evidence: {
+      injected: [],
+      read: ["history:compound-window"],
+      modified: [],
+      tool_errors: ["tool:single-provider-timeout"]
+    },
+    turns: [
+      {
+        speaker: "history",
+        ref: "history:compound:policy",
+        text: "Policy boundary: private Discord memory must not leak into public Farcaster replies."
+      },
+      {
+        speaker: "history",
+        ref: "history:compound:damping",
+        text: "Single provider timeout was transient; hold the evidence before any provider redesign."
+      },
+      {
+        speaker: "history",
+        ref: "history:compound:skill",
+        text: "Reusable workflow: after cybernetic gate changes, run validate:schemas, precheck, npm test, and git diff check before handoff."
+      }
+    ]
+  };
+
+  try {
+    await fs.writeFile(path.join(sourceRoot, "compound-window.json"), `${JSON.stringify(source, null, 2)}\n`, "utf8");
+
+    const distillation = await distillMisaSources([source], { requireTemplateCoverage: false });
+    const review = await reviewMemoryLayerComparison({
+      repoRoot: process.cwd(),
+      sourceDir: sourceRoot
+    });
+    const exported = await exportMinimalPositiveSkills({
+      repoRoot: process.cwd(),
+      sourceDir: sourceRoot,
+      outDir: outRoot
+    });
+    const routes = new Set(distillation.learning_events.map((event) => event.expected_route));
+    const skillEvent = distillation.learning_events.find((event) => event.expected_route === "skill");
+    const policyEvent = distillation.learning_events.find((event) => event.expected_route === "policy");
+
+    assert.equal(distillation.ok, true);
+    assert.equal(distillation.lesson_splitter.compound_source_count, 1);
+    assert.equal(distillation.lesson_splitter.route_counts.skill, 1);
+    assert.equal(distillation.lesson_splitter.route_counts.policy, 1);
+    assert.equal(distillation.lesson_splitter.route_counts.damping, 1);
+    assert.deepEqual([...routes].sort(), ["damping", "policy", "skill"]);
+    assert.ok(skillEvent);
+    assert.equal(skillEvent.lesson_scope, "atomic");
+    assert.equal(skillEvent.signals.includes("farcaster_public_memory_risk"), false);
+    assert.ok(policyEvent);
+    assert.equal(policyEvent.signals.includes("farcaster_public_memory_risk"), true);
+    assert.equal(review.ok, true);
+    assert.equal(review.layers.l2_candidates.route_counts.skill, 1);
+    assert.equal(review.layers.l2_candidates.route_counts.policy, 1);
+    assert.equal(review.layers.l2_candidates.route_counts.damping, 1);
+    assert.equal(review.minimal_positive_l3.skill_count, 1);
+    assert.equal(review.minimal_positive_l3.non_skill_promoted_count, 0);
+    assert.equal(exported.ok, true);
+    assert.equal(exported.exported_count, 1);
+    assert.equal(exported.exports[0].route_target, "skill");
   } finally {
     await fs.rm(sourceRoot, { recursive: true, force: true });
     await fs.rm(outRoot, { recursive: true, force: true });

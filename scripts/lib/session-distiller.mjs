@@ -35,8 +35,44 @@ const SIGNAL_RULES = [
   ["stable_project_fact", /\b(local|zilliz|vector|repo|vps|github|window|distill|本地|向量|窗口|蒸馏|仓库)\b/iu]
 ];
 
+const LESSON_ROUTE_ORDER = ["policy", "damping", "skill", "case", "memory"];
+
+const LESSON_ROUTE_SIGNALS = {
+  policy: ["explicit_user_boundary", "public_posting_boundary", "farcaster_public_memory_risk"],
+  damping: ["candidate_replay_failed", "avoid_overreaction", "single_failure"],
+  skill: ["reusable_workflow"],
+  case: ["repeated_failure_pattern"],
+  memory: ["stable_user_preference", "stable_project_fact"]
+};
+
+const LESSON_ALLOWED_SIGNALS = {
+  policy: [
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "farcaster_public_memory_risk",
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  damping: ["candidate_replay_failed", "avoid_overreaction", "single_failure"],
+  skill: ["reusable_workflow", "stable_project_fact", "stable_user_preference"],
+  case: ["repeated_failure_pattern", "stable_project_fact"],
+  memory: ["stable_user_preference", "stable_project_fact"]
+};
+
+const LESSON_FALLBACK_SIGNAL = {
+  policy: "explicit_user_boundary",
+  damping: "single_failure",
+  skill: "reusable_workflow",
+  case: "repeated_failure_pattern",
+  memory: "stable_project_fact"
+};
+
 function uniqueStrings(values) {
   return [...new Set((values ?? []).map((value) => String(value).trim()).filter(Boolean))];
+}
+
+function hasAnySignal(signals, candidates) {
+  return candidates.some((candidate) => signals.includes(candidate));
 }
 
 function countBy(values, selector) {
@@ -106,6 +142,225 @@ function expectedRouteFor(signals) {
   if (signals.includes("repeated_failure_pattern")) return "case";
   if (signals.includes("stable_user_preference") || signals.includes("stable_project_fact")) return "memory";
   return "ignore";
+}
+
+function isPolicySignal(signals) {
+  return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.policy);
+}
+
+function isDampingSignal(signals) {
+  return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.damping);
+}
+
+function segmentSupportsLessonRoute(segment, route) {
+  const signals = segment.signals ?? [];
+
+  if (route === "policy") {
+    return isPolicySignal(signals);
+  }
+
+  if (route === "damping") {
+    return isDampingSignal(signals) && !isPolicySignal(signals);
+  }
+
+  if (route === "skill") {
+    return signals.includes("reusable_workflow")
+      && !isPolicySignal(signals)
+      && !isDampingSignal(signals);
+  }
+
+  if (route === "case") {
+    return signals.includes("repeated_failure_pattern")
+      && !signals.includes("reusable_workflow")
+      && !isPolicySignal(signals)
+      && !isDampingSignal(signals);
+  }
+
+  if (route === "memory") {
+    return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.memory)
+      && !signals.includes("reusable_workflow")
+      && !signals.includes("repeated_failure_pattern")
+      && !isPolicySignal(signals)
+      && !isDampingSignal(signals);
+  }
+
+  return false;
+}
+
+function sourceLevelFallbackAllowed(sourceSignals, route) {
+  if (!hasAnySignal(sourceSignals, LESSON_ROUTE_SIGNALS[route])) {
+    return false;
+  }
+
+  if (route === "policy") {
+    return true;
+  }
+
+  if (route === "damping") {
+    return true;
+  }
+
+  if (route === "skill") {
+    return !isPolicySignal(sourceSignals) && !isDampingSignal(sourceSignals);
+  }
+
+  if (route === "case") {
+    return !sourceSignals.includes("reusable_workflow")
+      && !isPolicySignal(sourceSignals)
+      && !isDampingSignal(sourceSignals);
+  }
+
+  if (route === "memory") {
+    return !sourceSignals.includes("reusable_workflow")
+      && !sourceSignals.includes("repeated_failure_pattern")
+      && !isPolicySignal(sourceSignals)
+      && !isDampingSignal(sourceSignals);
+  }
+
+  return false;
+}
+
+function clipText(text, maxLength = 180) {
+  const clean = String(text ?? "").replace(/\s+/g, " ").trim();
+  return clean.length > maxLength ? `${clean.slice(0, maxLength - 3)}...` : clean;
+}
+
+function lessonSummaryFor(route, source, segments) {
+  const labels = {
+    policy: "Policy boundary",
+    damping: "Damping hold",
+    skill: "Reusable workflow",
+    case: "Failure case",
+    memory: "Stable memory"
+  };
+  const text = segments.length > 0
+    ? segments.map((segment) => segment.redacted_text).join(" ")
+    : source.summary ?? source.setpoint ?? source.source_id;
+
+  return `${labels[route]} distilled: ${clipText(text)}`;
+}
+
+function lessonSetpointFor(route, source) {
+  const defaults = {
+    policy: "keep future behavior or public-memory boundaries behind approval",
+    damping: "hold weak or single-sample evidence to avoid overreaction",
+    skill: "turn repeatable local behavior into a draft skill only after replay",
+    case: "record repeated failure patterns before changing runtime behavior",
+    memory: "preserve stable facts or preferences as draft memory candidates"
+  };
+
+  return defaults[route] ?? source.setpoint ?? "use local distilled evidence before candidate generation";
+}
+
+function lessonRiskFor(route, source, signals) {
+  if (route === "policy") {
+    return signals.includes("farcaster_public_memory_risk") || signals.includes("public_posting_boundary")
+      ? "high"
+      : source.risk_level ?? "medium";
+  }
+  if (route === "damping" || route === "case") return "medium";
+  if (route === "skill") return source.risk_level === "critical" || source.risk_level === "high" ? "medium" : source.risk_level ?? "low";
+  return source.risk_level === "critical" ? "high" : source.risk_level ?? "low";
+}
+
+function lessonOutcomeFor(route, source) {
+  if (route === "damping") return source.outcome === "failure" ? "failure" : "partial";
+  if (route === "case") return source.outcome === "success" ? "partial" : source.outcome ?? "partial";
+  return source.outcome ?? "success";
+}
+
+function lessonEvidenceCountFor(route, source, segments, signals) {
+  const required = route === "damping" ? 1 : 2;
+  const observed = Math.max(
+    source.evidence_count ?? 0,
+    segments.length + signals.length
+  );
+  return Math.max(required, observed || required);
+}
+
+function lessonSignalsFor(route, sourceSignals, segments) {
+  const segmentSignals = uniqueStrings(segments.flatMap((segment) => segment.signals ?? []));
+  const allowed = new Set(LESSON_ALLOWED_SIGNALS[route] ?? []);
+  const signals = uniqueStrings([
+    ...segmentSignals,
+    ...sourceSignals.filter((signal) => allowed.has(signal))
+  ]).filter((signal) => allowed.has(signal));
+
+  if (!hasAnySignal(signals, LESSON_ROUTE_SIGNALS[route])) {
+    signals.push(LESSON_FALLBACK_SIGNAL[route]);
+  }
+
+  return uniqueStrings(signals);
+}
+
+function lessonArtifactEvidenceFor(route, source, segments) {
+  const evidence = source.artifact_evidence ?? {};
+  const sourceRefs = segments.map((segment) => segment.source_ref);
+  const includeToolErrors = route === "case" || route === "damping";
+
+  return {
+    injected: uniqueStrings(evidence.injected),
+    read: uniqueStrings([...(evidence.read ?? []), ...sourceRefs]),
+    modified: uniqueStrings(evidence.modified),
+    tool_errors: includeToolErrors ? uniqueStrings(evidence.tool_errors) : []
+  };
+}
+
+function buildAtomicLessons(source, distillate) {
+  const sourceSignals = distillate.extracted_signals;
+  const lessons = [];
+
+  for (const route of LESSON_ROUTE_ORDER) {
+    let segments = distillate.segments.filter((segment) => segmentSupportsLessonRoute(segment, route));
+    if (segments.length === 0 && !sourceLevelFallbackAllowed(sourceSignals, route)) {
+      continue;
+    }
+
+    if (segments.length === 0) {
+      segments = distillate.segments;
+    }
+
+    const signals = lessonSignalsFor(route, sourceSignals, segments);
+    const expectedRoute = expectedRouteFor(signals);
+    if (expectedRoute !== route) {
+      continue;
+    }
+
+    lessons.push({
+      lesson_id: `${source.source_id}-lesson-${route}-${String(lessons.length + 1).padStart(2, "0")}`,
+      route,
+      summary: lessonSummaryFor(route, source, segments),
+      source_refs: uniqueStrings([
+        ...(source.source_refs ?? []),
+        ...segments.map((segment) => segment.source_ref)
+      ]),
+      segment_ids: segments.map((segment) => segment.segment_id),
+      signals,
+      evidence_count: lessonEvidenceCountFor(route, source, segments, signals),
+      outcome: lessonOutcomeFor(route, source),
+      risk_level: lessonRiskFor(route, source, signals),
+      setpoint: lessonSetpointFor(route, source),
+      artifact_evidence: lessonArtifactEvidenceFor(route, source, segments)
+    });
+  }
+
+  if (lessons.length > 0) {
+    return lessons;
+  }
+
+  return [{
+    lesson_id: `${source.source_id}-lesson-ignore-01`,
+    route: "ignore",
+    summary: summarizeSource(source, distillate.segments, sourceSignals),
+    source_refs: distillate.source_refs,
+    segment_ids: distillate.segments.map((segment) => segment.segment_id),
+    signals: sourceSignals.length > 0 ? sourceSignals : ["unsupported_signal"],
+    evidence_count: source.evidence_count ?? 1,
+    outcome: inferOutcome(source, sourceSignals),
+    risk_level: inferRiskLevel(source, sourceSignals),
+    setpoint: inferSetpoint(source, sourceSignals),
+    artifact_evidence: distillate.extraction.artifact_evidence
+  }];
 }
 
 function expectationFor(route) {
@@ -328,27 +583,44 @@ function distillSource(source) {
     },
     learning_event_id: `misa-distilled-${source.source_id}`
   };
+  const lessons = buildAtomicLessons(source, distillate);
+  const learningEvents = lessons.map((lesson) => buildLearningEvent(source, distillate, lesson, lessons.length));
+  distillate.learning_event_id = learningEvents[0]?.event_id ?? `misa-distilled-${source.source_id}`;
+  distillate.learning_event_ids = learningEvents.map((event) => event.event_id);
+  distillate.atomic_lesson_count = learningEvents.length;
 
-  return { distillate, learningEvent: buildLearningEvent(source, distillate) };
+  return { distillate, learningEvents };
 }
 
-function buildLearningEvent(source, distillate) {
-  const expectedRoute = expectedRouteFor(distillate.extracted_signals);
+function buildLearningEvent(source, distillate, lesson, lessonCount) {
+  const signals = lesson?.signals ?? distillate.extracted_signals;
+  const expectedRoute = expectedRouteFor(signals);
   const expectation = expectationFor(expectedRoute);
+  const singleLesson = lessonCount === 1;
+  const eventId = lesson && !singleLesson
+    ? `misa-distilled-${lesson.lesson_id}`
+    : `misa-distilled-${source.source_id}`;
 
   return {
-    event_id: distillate.learning_event_id,
+    event_id: eventId,
     channel: source.channel,
-    summary: distillate.extraction.summary,
-    signals: distillate.extracted_signals,
-    evidence_count: distillate.extraction.evidence_count,
-    outcome: distillate.extraction.outcome,
-    risk_level: distillate.extraction.risk_level,
+    summary: lesson?.summary ?? distillate.extraction.summary,
+    signals,
+    evidence_count: lesson?.evidence_count ?? distillate.extraction.evidence_count,
+    outcome: lesson?.outcome ?? distillate.extraction.outcome,
+    risk_level: lesson?.risk_level ?? distillate.extraction.risk_level,
     redaction_status: source.redaction_status,
     source_type: "redacted_realish",
     redaction_note: source.redaction_note,
-    setpoint: distillate.extraction.setpoint,
-    artifact_evidence: distillate.extraction.artifact_evidence,
+    setpoint: lesson?.setpoint ?? distillate.extraction.setpoint,
+    artifact_evidence: lesson?.artifact_evidence ?? distillate.extraction.artifact_evidence,
+    source_id: source.source_id,
+    parent_distillate_id: distillate.distillate_id,
+    lesson_id: lesson?.lesson_id ?? `${source.source_id}-lesson-${expectedRoute}-01`,
+    lesson_route: expectedRoute,
+    lesson_scope: singleLesson ? "source" : "atomic",
+    source_refs: lesson?.source_refs ?? distillate.source_refs,
+    segment_ids: lesson?.segment_ids ?? distillate.segments.map((segment) => segment.segment_id),
     expected_route: expectedRoute,
     ...expectation,
     created_at: source.created_at
@@ -359,6 +631,7 @@ function evaluateSources(sources, distillates, learningEvents, { requireTemplate
   const checks = [];
   const violations = [];
   const sourceKindCounts = countBy(sources, (source) => source.source_kind);
+  const eventSourceIds = new Set(learningEvents.map((event) => event.source_id));
 
   checks.push(makeCheck(
     "has_local_sources",
@@ -407,8 +680,15 @@ function evaluateSources(sources, distillates, learningEvents, { requireTemplate
   ));
   checks.push(makeCheck(
     "learning_events_ready",
-    learningEvents.length === sources.length && learningEvents.every((event) => event.evidence_count >= 1),
-    "Every local source should become one learning event."
+    learningEvents.length >= sources.length
+      && sources.every((source) => eventSourceIds.has(source.source_id))
+      && learningEvents.every((event) => event.evidence_count >= 1),
+    "Every local source should become at least one learning event."
+  ));
+  checks.push(makeCheck(
+    "atomic_lesson_splitter_ready",
+    distillates.every((item) => item.atomic_lesson_count >= 1 && item.learning_event_ids.length === item.atomic_lesson_count),
+    "Compound windows should expose one or more atomic lessons without losing source refs."
   ));
 
   for (const check of checks) {
@@ -423,9 +703,10 @@ function evaluateSources(sources, distillates, learningEvents, { requireTemplate
 export async function distillMisaSources(sources, { requireTemplateCoverage = true } = {}) {
   const distilled = sources.map(distillSource);
   const distillates = distilled.map((item) => item.distillate);
-  const learningEvents = distilled.map((item) => item.learningEvent);
+  const learningEvents = distilled.flatMap((item) => item.learningEvents);
   const evaluation = evaluateSources(sources, distillates, learningEvents, { requireTemplateCoverage });
   const segmentCount = distillates.reduce((sum, item) => sum + item.segments.length, 0);
+  const compoundSourceCount = distillates.filter((item) => item.atomic_lesson_count > 1).length;
 
   return {
     schema_version: "misa.local_session_distillation.v1",
@@ -443,14 +724,30 @@ export async function distillMisaSources(sources, { requireTemplateCoverage = tr
       vector_lookup_required: false,
       raw_window_default: false,
       segment_count: segmentCount,
+      atomic_lesson_count: learningEvents.length,
+      compound_source_count: compoundSourceCount,
       production_authority: false
     },
     distillates,
     learning_events: learningEvents,
+    lesson_splitter: {
+      enabled: true,
+      mode: "deterministic-atomic-lessons-v1",
+      source_count: sources.length,
+      atomic_lesson_count: learningEvents.length,
+      compound_source_count: compoundSourceCount,
+      route_counts: countBy(learningEvents, (event) => event.expected_route),
+      local_only: true,
+      writes_persistent_memory: false,
+      installs_skills: false,
+      updates_vps: false,
+      llm_api_calls: 0,
+      external_api_calls: 0
+    },
     safety: { ...SAFETY },
     checks: evaluation.checks,
     warnings: [
-      "v0.13 performs local window distillation with redaction, segmentation, signal extraction, and a local token vector index.",
+      "v0.13 performs local window distillation with redaction, segmentation, signal extraction, atomic lesson splitting, and a local token vector index.",
       "The local vector index is not Zilliz and does not call embedding providers or external APIs."
     ],
     violations: evaluation.violations

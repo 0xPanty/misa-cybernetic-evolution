@@ -1,6 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { distillLocalMisaSources } from "./session-distiller.mjs";
+import {
+  distillLocalMisaSources,
+  loadLocalDistillationSources
+} from "./session-distiller.mjs";
 import { simulateLearningCycle } from "./learning-loop.mjs";
 import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
 
@@ -194,6 +197,9 @@ function buildLayers({ sources, distillation, traces }) {
     l1_distillates: {
       distillate_count: distillation.distillates.length,
       learning_event_count: distillation.learning_events.length,
+      atomic_lesson_count: distillation.lesson_splitter.atomic_lesson_count,
+      compound_source_count: distillation.lesson_splitter.compound_source_count,
+      lesson_route_counts: distillation.lesson_splitter.route_counts,
       distillate_token_estimate: distillateTokenEstimate,
       compression_ratio: compressionRatio,
       local_vector_index_used: distillation.summary.local_vector_index_used,
@@ -226,37 +232,10 @@ async function loadSources({ repoRoot, sourceDir, vpsRawDir }) {
     return loadVpsConversationSources({ rawDir: path.isAbsolute(vpsRawDir) ? vpsRawDir : path.join(repoRoot, vpsRawDir) });
   }
 
-  const distillation = await distillLocalMisaSources({
+  return loadLocalDistillationSources({
     repoRoot,
-    sourceDir,
-    requireTemplateCoverage: !sourceDir
+    sourceDir: sourceDir ?? path.join("examples", "misa-distillation")
   });
-  return distillation.distillates.map((item, index) => ({
-    schema_version: "misa.local_distillation_source.v1",
-    source_id: item.source_id,
-    source_kind: item.source_kind,
-    channel: item.channel,
-    created_at: distillation.learning_events[index]?.created_at ?? "2026-05-11T00:00:00Z",
-    local_only: true,
-    uses_zilliz_proxy: false,
-    vector_lookup_required: false,
-    raw_window_default: false,
-    redaction_status: distillation.learning_events[index]?.redaction_status ?? "redacted",
-    redaction_note: distillation.learning_events[index]?.redaction_note ?? "Loaded from existing local examples.",
-    summary: item.summary,
-    setpoint: item.extraction.setpoint,
-    evidence_count: item.extraction.evidence_count,
-    outcome: item.extraction.outcome,
-    risk_level: item.extraction.risk_level,
-    source_refs: item.source_refs,
-    signals: item.extracted_signals,
-    artifact_evidence: item.extraction.artifact_evidence,
-    turns: item.segments.map((segment) => ({
-      speaker: segment.speaker,
-      ref: segment.source_ref,
-      text: segment.redacted_text
-    }))
-  }));
 }
 
 export async function reviewMemoryLayerComparison({

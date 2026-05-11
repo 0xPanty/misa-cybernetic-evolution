@@ -8,6 +8,7 @@ It compares two paths over the same local distillation output:
 ```text
 L0 redacted source refs
 -> L1 compact distillates
+-> L1a atomic lesson split
 -> L2 route candidates
 -> L3 local draft skills
 -> L4 approved publication later, outside this repo
@@ -41,9 +42,14 @@ candidates, and damping stays suppression or hold evidence.
 Historical windows can contain more than one lesson: a reusable workflow, a
 failure pattern, and a production boundary can appear in the same source. The
 memory-layer report therefore includes `mixed_route_pressure` diagnostics under
-L2. This does not relax export rules. It only records when a skill-like signal
-was suppressed by policy, case, memory, or damping pressure so a later repair
-pass can split the source into smaller lessons instead of over-promoting it.
+L2. The session distiller now also splits compound windows into atomic lessons
+before the router runs. This does not relax export rules. It lets clean
+`reusable_workflow` lessons reach the minimal positive L3 path while policy,
+case, memory, and damping lessons stay in their own lanes.
+
+The safety rule is still strict: if `farcaster_public_memory_risk` appears, that
+atomic lesson routes to `policy`. A skill export is allowed only when the skill
+lesson itself does not carry public-memory risk.
 
 ## Commands
 

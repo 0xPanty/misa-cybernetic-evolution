@@ -11,6 +11,7 @@
     "summary",
     "distillates",
     "learning_events",
+    "lesson_splitter",
     "safety",
     "checks",
     "warnings",
@@ -41,6 +42,8 @@
         "vector_lookup_required",
         "raw_window_default",
         "segment_count",
+        "atomic_lesson_count",
+        "compound_source_count",
         "production_authority"
       ],
       "properties": {
@@ -55,6 +58,8 @@
         "vector_lookup_required": { "type": "boolean", "const": false },
         "raw_window_default": { "type": "boolean", "const": false },
         "segment_count": { "type": "integer", "minimum": 1 },
+        "atomic_lesson_count": { "type": "integer", "minimum": 1 },
+        "compound_source_count": { "type": "integer", "minimum": 0 },
         "production_authority": { "type": "boolean", "const": false }
       }
     },
@@ -76,7 +81,9 @@
           "extraction",
           "local_vector_index",
           "input_policy",
-          "learning_event_id"
+          "learning_event_id",
+          "learning_event_ids",
+          "atomic_lesson_count"
         ],
         "properties": {
           "distillate_id": { "type": "string", "minLength": 1 },
@@ -191,7 +198,14 @@
               "external_api_calls": { "type": "integer", "const": 0 }
             }
           },
-          "learning_event_id": { "type": "string", "minLength": 1 }
+          "learning_event_id": { "type": "string", "minLength": 1 },
+          "learning_event_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "atomic_lesson_count": { "type": "integer", "minimum": 1 }
         }
       }
     },
@@ -199,6 +213,38 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "object" }
+    },
+    "lesson_splitter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "mode",
+        "source_count",
+        "atomic_lesson_count",
+        "compound_source_count",
+        "route_counts",
+        "local_only",
+        "writes_persistent_memory",
+        "installs_skills",
+        "updates_vps",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean", "const": true },
+        "mode": { "type": "string", "const": "deterministic-atomic-lessons-v1" },
+        "source_count": { "type": "integer", "minimum": 1 },
+        "atomic_lesson_count": { "type": "integer", "minimum": 1 },
+        "compound_source_count": { "type": "integer", "minimum": 0 },
+        "route_counts": { "type": "object" },
+        "local_only": { "type": "boolean", "const": true },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "updates_vps": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
     },
     "safety": {
       "type": "object",

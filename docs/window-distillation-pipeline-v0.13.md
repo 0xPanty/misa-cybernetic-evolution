@@ -9,6 +9,7 @@ raw local source
 -> segmentation
 -> local token vector index
 -> signal extraction
+-> atomic lesson splitting
 -> compact distillate
 -> learning event
 -> candidate queue
@@ -48,6 +49,23 @@ The local index is deterministic:
 This index is only for local source lookup inside the distillation report. It
 does not write persistent memory and does not replace a production memory store.
 
+## Atomic Lesson Splitter
+
+Compound windows are split after segmentation and signal extraction. The
+splitter is deterministic and local-only:
+
+- policy lessons keep `explicit_user_boundary`, `public_posting_boundary`, and
+  `farcaster_public_memory_risk`;
+- damping lessons keep one-off or overreaction signals;
+- skill lessons keep clean `reusable_workflow` signals only when the same
+  segment is not carrying public-memory or damping pressure;
+- case lessons keep repeated failure patterns;
+- memory lessons keep stable preference or project-fact signals.
+
+This lets one historical window produce several learning events. A reusable
+workflow can become a local draft skill candidate while a public-memory risk in
+the same source still routes to policy.
+
 ## Safety
 
 The pipeline cannot:
@@ -66,12 +84,14 @@ The pipeline cannot:
 ```bash
 npm run distill:misa
 npm run distill:misa -- --json
+npm run distill:misa -- --source-dir runs/history-flowtest-sources
 ```
 
 Expected result:
 
 - all three source kinds are covered;
-- every source creates one distillate and one learning event;
+- every source creates one distillate and at least one learning event;
+- compound sources can create multiple atomic learning events;
 - every distillate has redacted segments;
 - every distillate has a local token vector index;
 - LLM API calls are `0`;
