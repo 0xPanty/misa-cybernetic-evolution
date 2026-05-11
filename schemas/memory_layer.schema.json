@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/memory_layer.schema.json",
+  "title": "MemoryLayerReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "source",
+    "layers",
+    "original_auto_l3",
+    "minimal_positive_l3",
+    "comparison",
+    "export_policy",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.memory_layer_review.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "memory-layer-comparison"
+    },
+    "ok": { "type": "boolean" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_kind", "source_dir", "vps_raw_dir"],
+      "properties": {
+        "source_kind": { "type": "string" },
+        "source_dir": { "type": ["string", "null"] },
+        "vps_raw_dir": { "type": ["string", "null"] }
+      }
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["l0_sources", "l1_distillates", "l2_candidates"],
+      "properties": {
+        "l0_sources": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["source_count", "turn_count", "raw_token_estimate", "redaction_statuses"],
+          "properties": {
+            "source_count": { "type": "integer", "minimum": 1 },
+            "turn_count": { "type": "integer", "minimum": 1 },
+            "raw_token_estimate": { "type": "integer", "minimum": 1 },
+            "redaction_statuses": { "type": "object" }
+          }
+        },
+        "l1_distillates": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "distillate_count",
+            "learning_event_count",
+            "distillate_token_estimate",
+            "compression_ratio",
+            "local_vector_index_used",
+            "vector_store_backend"
+          ],
+          "properties": {
+            "distillate_count": { "type": "integer", "minimum": 1 },
+            "learning_event_count": { "type": "integer", "minimum": 1 },
+            "distillate_token_estimate": { "type": "integer", "minimum": 1 },
+            "compression_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+            "local_vector_index_used": { "type": "boolean", "const": true },
+            "vector_store_backend": { "type": "string" }
+          }
+        },
+        "l2_candidates": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["candidate_count", "route_counts", "candidate_states"],
+          "properties": {
+            "candidate_count": { "type": "integer", "minimum": 1 },
+            "route_counts": { "type": "object" },
+            "candidate_states": { "type": "object" }
+          }
+        }
+      }
+    },
+    "original_auto_l3": { "$ref": "#/$defs/l3_mode" },
+    "minimal_positive_l3": { "$ref": "#/$defs/l3_mode" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_skill_count",
+        "minimal_skill_count",
+        "avoided_bad_promotions",
+        "original_non_skill_promoted_count",
+        "minimal_non_skill_promoted_count",
+        "verdict"
+      ],
+      "properties": {
+        "original_skill_count": { "type": "integer", "minimum": 0 },
+        "minimal_skill_count": { "type": "integer", "minimum": 0 },
+        "avoided_bad_promotions": { "type": "integer", "minimum": 0 },
+        "original_non_skill_promoted_count": { "type": "integer", "minimum": 0 },
+        "minimal_non_skill_promoted_count": { "type": "integer", "const": 0 },
+        "verdict": { "type": "string" }
+      }
+    },
+    "export_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "export_command",
+        "export_scope",
+        "installs_skills",
+        "writes_persistent_memory",
+        "updates_vps",
+        "publication_allowed"
+      ],
+      "properties": {
+        "export_command": { "type": "string" },
+        "export_scope": { "type": "string" },
+        "installs_skills": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "updates_vps": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["production_authority", "publication_allowed", "live_effects", "blocked_operations"],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "live_effects": { "type": "object" },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "violations": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "l3_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "description",
+        "skill_count",
+        "non_skill_promoted_count",
+        "route_counts",
+        "risk_flags",
+        "skills"
+      ],
+      "properties": {
+        "mode": { "type": "string" },
+        "description": { "type": "string" },
+        "skill_count": { "type": "integer", "minimum": 0 },
+        "non_skill_promoted_count": { "type": "integer", "minimum": 0 },
+        "route_counts": { "type": "object" },
+        "risk_flags": { "type": "array", "items": { "type": "string" } },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "skill_id",
+              "source_event_id",
+              "route_target",
+              "mode",
+              "verification_passed",
+              "export_allowed",
+              "publication_allowed",
+              "safety"
+            ],
+            "properties": {
+              "skill_id": { "type": "string" },
+              "source_event_id": { "type": "string" },
+              "route_target": { "type": "string" },
+              "mode": { "type": "string" },
+              "verification_passed": { "type": "boolean", "const": true },
+              "export_allowed": { "type": "boolean" },
+              "publication_allowed": { "type": "boolean", "const": false },
+              "safety": { "type": "object" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

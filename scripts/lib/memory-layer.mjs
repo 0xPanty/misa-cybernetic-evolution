@@ -1,0 +1,344 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { distillLocalMisaSources } from "./session-distiller.mjs";
+import { simulateLearningCycle } from "./learning-loop.mjs";
+import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
+
+const BLOCKED_OPERATIONS = [
+  "persistent_memory_write",
+  "zilliz_replacement",
+  "farcaster_publish",
+  "skill_publication",
+  "production_skill_installation",
+  "session_mechanic_replacement",
+  "timer_or_service_start",
+  "provider_route_change"
+];
+
+const LIVE_EFFECTS_OFF = {
+  writes_persistent_memory: false,
+  publishes_skill: false,
+  starts_timer: false,
+  changes_session_mechanics: false,
+  posts_publicly: false
+};
+
+function uniqueStrings(values) {
+  return [...new Set((values ?? []).map((value) => String(value).trim()).filter(Boolean))];
+}
+
+function estimateTokens(text) {
+  return String(text ?? "")
+    .split(/[^\p{L}\p{N}_:/.-]+/u)
+    .filter(Boolean)
+    .length;
+}
+
+function countBy(values, selector) {
+  const counts = {};
+  for (const value of values) {
+    const key = selector(value);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function makeSkillId(trace) {
+  return `l3-${trace.source_event_id}`.replace(/[^a-z0-9_.-]+/gi, "-").toLowerCase();
+}
+
+function routeForTrace(trace) {
+  return trace.route.target;
+}
+
+function isVerified(trace) {
+  return trace.verification.passed
+    && trace.result.positive_value
+    && !Object.values(trace.result.live_effects).some(Boolean);
+}
+
+function buildL3Skill(trace, mode) {
+  return {
+    skill_id: makeSkillId(trace),
+    source_event_id: trace.source_event_id,
+    source_cycle_id: trace.cycle_id,
+    route_target: routeForTrace(trace),
+    title: trace.proposed_change.summary.replace(/^Draft [a-z]+ candidate:\s*/i, "").slice(0, 96),
+    mode,
+    candidate_state: trace.candidate_review.state,
+    verification_passed: trace.verification.passed,
+    procedure_outline: [
+      `Trigger on signals: ${trace.observe.signals.join(", ")}`,
+      `Preserve setpoint: ${trace.identify.setpoint}`,
+      "Read source refs and evidence before applying the procedure.",
+      "Run local validation again before any export or publication."
+    ],
+    export_allowed: mode === "minimal_positive_l3" && routeForTrace(trace) === "skill",
+    publication_allowed: false,
+    safety: {
+      production_authority: false,
+      live_effects: { ...LIVE_EFFECTS_OFF },
+      blocked_operations: [...BLOCKED_OPERATIONS]
+    }
+  };
+}
+
+function buildOriginalAutoL3(traces) {
+  const skills = traces
+    .filter(isVerified)
+    .filter((trace) => routeForTrace(trace) !== "ignore")
+    .map((trace) => buildL3Skill(trace, "original_auto_l3"));
+
+  const nonSkill = skills.filter((skill) => skill.route_target !== "skill");
+
+  return {
+    mode: "original_auto_l3",
+    description: "Simulates the broad plan: every verified positive lesson becomes an L3 reusable skill candidate.",
+    skill_count: skills.length,
+    non_skill_promoted_count: nonSkill.length,
+    route_counts: countBy(skills, (skill) => skill.route_target),
+    risk_flags: [
+      ...nonSkill.map((skill) => `${skill.source_event_id} promoted ${skill.route_target} as skill`)
+    ],
+    skills
+  };
+}
+
+function buildMinimalPositiveL3(traces) {
+  const skills = traces
+    .filter(isVerified)
+    .filter((trace) => routeForTrace(trace) === "skill")
+    .filter((trace) => trace.candidate_review.state === "staged")
+    .map((trace) => buildL3Skill(trace, "minimal_positive_l3"));
+
+  return {
+    mode: "minimal_positive_l3",
+    description: "Only verified skill-route lessons become local L3 draft skills; memory, case, policy, and damping stay in their own lanes.",
+    skill_count: skills.length,
+    non_skill_promoted_count: 0,
+    route_counts: countBy(skills, (skill) => skill.route_target),
+    risk_flags: [],
+    skills
+  };
+}
+
+function buildLayers({ sources, distillation, traces }) {
+  const rawTokenEstimate = sources.reduce((sum, source) => (
+    sum + source.turns.reduce((turnSum, turn) => turnSum + estimateTokens(turn.text), 0)
+  ), 0);
+  const distillateTokenEstimate = distillation.distillates.reduce((sum, item) => (
+    sum + estimateTokens(item.summary) + item.extracted_signals.reduce((signalSum, signal) => signalSum + estimateTokens(signal), 0)
+  ), 0);
+  const compressionRatio = rawTokenEstimate > 0
+    ? Math.round((distillateTokenEstimate / rawTokenEstimate) * 1000) / 1000
+    : 0;
+
+  return {
+    l0_sources: {
+      source_count: sources.length,
+      turn_count: sources.reduce((sum, source) => sum + source.turns.length, 0),
+      raw_token_estimate: rawTokenEstimate,
+      redaction_statuses: countBy(sources, (source) => source.redaction_status)
+    },
+    l1_distillates: {
+      distillate_count: distillation.distillates.length,
+      learning_event_count: distillation.learning_events.length,
+      distillate_token_estimate: distillateTokenEstimate,
+      compression_ratio: compressionRatio,
+      local_vector_index_used: distillation.summary.local_vector_index_used,
+      vector_store_backend: distillation.summary.vector_store_backend
+    },
+    l2_candidates: {
+      candidate_count: traces.length,
+      route_counts: countBy(traces, routeForTrace),
+      candidate_states: countBy(traces, (trace) => trace.candidate_review.state)
+    }
+  };
+}
+
+function compareModes(originalAutoL3, minimalPositiveL3) {
+  return {
+    original_skill_count: originalAutoL3.skill_count,
+    minimal_skill_count: minimalPositiveL3.skill_count,
+    avoided_bad_promotions: originalAutoL3.non_skill_promoted_count - minimalPositiveL3.non_skill_promoted_count,
+    original_non_skill_promoted_count: originalAutoL3.non_skill_promoted_count,
+    minimal_non_skill_promoted_count: minimalPositiveL3.non_skill_promoted_count,
+    verdict: originalAutoL3.non_skill_promoted_count > 0
+      ? "minimal_positive_is_safer"
+      : "both_modes_are_clean_on_this_sample"
+  };
+}
+
+async function loadSources({ repoRoot, sourceDir, vpsRawDir }) {
+  if (vpsRawDir) {
+    return loadVpsConversationSources({ rawDir: path.isAbsolute(vpsRawDir) ? vpsRawDir : path.join(repoRoot, vpsRawDir) });
+  }
+
+  const distillation = await distillLocalMisaSources({ repoRoot, sourceDir });
+  return distillation.distillates.map((item, index) => ({
+    schema_version: "misa.local_distillation_source.v1",
+    source_id: item.source_id,
+    source_kind: item.source_kind,
+    channel: item.channel,
+    created_at: distillation.learning_events[index]?.created_at ?? "2026-05-11T00:00:00Z",
+    local_only: true,
+    uses_zilliz_proxy: false,
+    vector_lookup_required: false,
+    raw_window_default: false,
+    redaction_status: distillation.learning_events[index]?.redaction_status ?? "redacted",
+    redaction_note: distillation.learning_events[index]?.redaction_note ?? "Loaded from existing local examples.",
+    summary: item.summary,
+    setpoint: item.extraction.setpoint,
+    evidence_count: item.extraction.evidence_count,
+    outcome: item.extraction.outcome,
+    risk_level: item.extraction.risk_level,
+    source_refs: item.source_refs,
+    signals: item.extracted_signals,
+    artifact_evidence: item.extraction.artifact_evidence,
+    turns: item.segments.map((segment) => ({
+      speaker: segment.speaker,
+      ref: segment.source_ref,
+      text: segment.redacted_text
+    }))
+  }));
+}
+
+export async function reviewMemoryLayerComparison({
+  repoRoot = process.cwd(),
+  sourceDir,
+  vpsRawDir
+} = {}) {
+  const sources = await loadSources({ repoRoot, sourceDir, vpsRawDir });
+  const distillation = await distillLocalMisaSources({ repoRoot, sources });
+  const traces = distillation.learning_events.map((event) => simulateLearningCycle(event));
+  const layers = buildLayers({ sources, distillation, traces });
+  const originalAutoL3 = buildOriginalAutoL3(traces);
+  const minimalPositiveL3 = buildMinimalPositiveL3(traces);
+  const comparison = compareModes(originalAutoL3, minimalPositiveL3);
+  const violations = [...distillation.violations];
+
+  if (layers.l1_distillates.compression_ratio >= 1) {
+    violations.push("Layered distillation did not reduce token estimate on this sample.");
+  }
+
+  if (minimalPositiveL3.skills.some((skill) => skill.route_target !== "skill")) {
+    violations.push("Minimal positive mode promoted a non-skill route.");
+  }
+
+  return {
+    schema_version: "misa.memory_layer_review.v1",
+    mode: "memory-layer-comparison",
+    ok: violations.length === 0,
+    source: {
+      source_kind: vpsRawDir ? "vps_sanitized_conversation_artifacts" : "local_distillation_sources",
+      source_dir: sourceDir ?? null,
+      vps_raw_dir: vpsRawDir ?? null
+    },
+    layers,
+    original_auto_l3: originalAutoL3,
+    minimal_positive_l3: minimalPositiveL3,
+    comparison,
+    export_policy: {
+      export_command: "npm run export-skills:misa",
+      export_scope: "minimal_positive_l3_only",
+      installs_skills: false,
+      writes_persistent_memory: false,
+      updates_vps: false,
+      publication_allowed: false
+    },
+    safety: {
+      production_authority: false,
+      publication_allowed: false,
+      live_effects: { ...LIVE_EFFECTS_OFF },
+      blocked_operations: [...BLOCKED_OPERATIONS]
+    },
+    warnings: [
+      "original_auto_l3 is a comparison simulation, not a production recommendation.",
+      "minimal_positive_l3 exports local draft skills only; installation remains a separate human-approved action."
+    ],
+    violations
+  };
+}
+
+export async function exportMinimalPositiveSkills({
+  repoRoot = process.cwd(),
+  sourceDir,
+  vpsRawDir,
+  outDir = path.join(repoRoot, "generated", "skill-exports")
+} = {}) {
+  const review = await reviewMemoryLayerComparison({ repoRoot, sourceDir, vpsRawDir });
+  const outputRoot = path.isAbsolute(outDir) ? outDir : path.join(repoRoot, outDir);
+  const skillsDir = path.join(outputRoot, "skills");
+  await fs.mkdir(skillsDir, { recursive: true });
+
+  const exported = [];
+  for (const skill of review.minimal_positive_l3.skills) {
+    const fileName = `${skill.skill_id}.md`;
+    const rel = `skills/${fileName}`;
+    const body = [
+      `# ${skill.title}`,
+      "",
+      "## Status",
+      "",
+      "- layer: L3",
+      "- state: validated_local_draft",
+      "- publication_allowed: false",
+      "- installation_allowed: false",
+      "",
+      "## Source",
+      "",
+      `- source_event_id: ${skill.source_event_id}`,
+      `- source_cycle_id: ${skill.source_cycle_id}`,
+      "",
+      "## Procedure",
+      "",
+      ...skill.procedure_outline.map((step, index) => `${index + 1}. ${step}`),
+      "",
+      "## Boundaries",
+      "",
+      "- Do not write persistent memory.",
+      "- Do not install into production Skill directories.",
+      "- Do not update VPS.",
+      "- Do not publish public-channel behavior.",
+      ""
+    ].join("\n");
+
+    await fs.writeFile(path.join(skillsDir, fileName), body, "utf8");
+    exported.push({
+      skill_id: skill.skill_id,
+      source_event_id: skill.source_event_id,
+      route_target: skill.route_target,
+      path: rel,
+      publication_allowed: false,
+      installation_allowed: false
+    });
+  }
+
+  const manifest = {
+    schema_version: "misa.skill_export_manifest.v1",
+    mode: "minimal-positive-skill-export",
+    ok: review.ok,
+    exported_count: exported.length,
+    source_review: {
+      mode: review.mode,
+      source: review.source,
+      comparison: review.comparison
+    },
+    exports: exported,
+    safety: {
+      production_authority: false,
+      publication_allowed: false,
+      installs_skills: false,
+      writes_persistent_memory: false,
+      updates_vps: false
+    }
+  };
+
+  await fs.mkdir(outputRoot, { recursive: true });
+  await fs.writeFile(path.join(outputRoot, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  return {
+    ...manifest,
+    output_dir: outputRoot
+  };
+}

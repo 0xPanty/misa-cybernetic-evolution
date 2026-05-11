@@ -1,0 +1,101 @@
+{
+  "schema_version": "misa.memory_layer_review.v1",
+  "mode": "memory-layer-comparison",
+  "ok": true,
+  "source": {
+    "source_kind": "local_distillation_sources",
+    "source_dir": null,
+    "vps_raw_dir": null
+  },
+  "layers": {
+    "l0_sources": {
+      "source_count": 3,
+      "turn_count": 6,
+      "raw_token_estimate": 120,
+      "redaction_statuses": {
+        "redacted": 3
+      }
+    },
+    "l1_distillates": {
+      "distillate_count": 3,
+      "learning_event_count": 3,
+      "distillate_token_estimate": 32,
+      "compression_ratio": 0.267,
+      "local_vector_index_used": true,
+      "vector_store_backend": "local-token-vector-v1"
+    },
+    "l2_candidates": {
+      "candidate_count": 3,
+      "route_counts": {
+        "skill": 1,
+        "policy": 1,
+        "case": 1
+      },
+      "candidate_states": {
+        "staged": 3
+      }
+    }
+  },
+  "original_auto_l3": {
+    "mode": "original_auto_l3",
+    "description": "Simulates broad automatic L3 promotion.",
+    "skill_count": 3,
+    "non_skill_promoted_count": 2,
+    "route_counts": {
+      "skill": 1,
+      "policy": 1,
+      "case": 1
+    },
+    "risk_flags": [
+      "example-policy promoted policy as skill",
+      "example-case promoted case as skill"
+    ],
+    "skills": []
+  },
+  "minimal_positive_l3": {
+    "mode": "minimal_positive_l3",
+    "description": "Only skill-route candidates become L3 draft skills.",
+    "skill_count": 1,
+    "non_skill_promoted_count": 0,
+    "route_counts": {
+      "skill": 1
+    },
+    "risk_flags": [],
+    "skills": []
+  },
+  "comparison": {
+    "original_skill_count": 3,
+    "minimal_skill_count": 1,
+    "avoided_bad_promotions": 2,
+    "original_non_skill_promoted_count": 2,
+    "minimal_non_skill_promoted_count": 0,
+    "verdict": "minimal_positive_is_safer"
+  },
+  "export_policy": {
+    "export_command": "npm run export-skills:misa",
+    "export_scope": "minimal_positive_l3_only",
+    "installs_skills": false,
+    "writes_persistent_memory": false,
+    "updates_vps": false,
+    "publication_allowed": false
+  },
+  "safety": {
+    "production_authority": false,
+    "publication_allowed": false,
+    "live_effects": {
+      "writes_persistent_memory": false,
+      "publishes_skill": false,
+      "starts_timer": false,
+      "changes_session_mechanics": false,
+      "posts_publicly": false
+    },
+    "blocked_operations": [
+      "persistent_memory_write",
+      "zilliz_replacement",
+      "farcaster_publish",
+      "skill_publication"
+    ]
+  },
+  "warnings": [],
+  "violations": []
+}

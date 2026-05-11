@@ -30,6 +30,8 @@ npm run adaptive:misa
 npm run intake:misa
 npm run rollup:misa
 npm run evolution:evaluate:misa
+npm run memory-layer:misa
+npm run export-skills:misa
 npm run validate:schemas
 npm run precheck
 npm test
@@ -58,6 +60,11 @@ Expected result:
 - the v0.13 local session distiller turns redacted local windows, failure logs,
   and Farcaster audits into learning events with redaction, segmentation, local
   token vectors, and no Zilliz/model/external API dependency;
+- the memory-layer comparison reports L0 source refs, L1 distillates, L2 route
+  candidates, and two L3 strategies so broad auto-skill promotion can be
+  compared against the minimal positive export path;
+- the skill export command writes local L3 draft skills only from the minimal
+  positive path and does not install Skills, write memory, or update VPS;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -104,6 +111,8 @@ See [docs/local-session-distillation-v0.12.md](./docs/local-session-distillation
 for the local window -> distillate -> learning event intake step.
 See [docs/window-distillation-pipeline-v0.13.md](./docs/window-distillation-pipeline-v0.13.md)
 for the full local redaction -> segmentation -> token vector -> signal extraction pipeline.
+See [docs/memory-layer-skill-export-v0.13.md](./docs/memory-layer-skill-export-v0.13.md)
+for the GenericAgent-inspired L0-L4 comparison and local skill export path.
 
 ## Why This Exists
 
@@ -248,6 +257,12 @@ splits it into source-referenced segments, builds a local `local-token-vector-v1
 index, extracts signals, and emits fixture-shaped learning events. The vector
 index is local and deterministic. It is not Zilliz and it does not call an
 embedding provider.
+
+v0.13 also adds `npm run memory-layer:misa` and `npm run export-skills:misa`.
+The first command compares the broad GenericAgent-style idea of sending every
+verified lesson to L3 skills against the safer Misa path: only verified
+`skill`-route lessons become local L3 drafts. The export command writes only
+those minimal L3 drafts into a local export folder; it never installs them.
 
 ## Design Principles
 
@@ -458,6 +473,7 @@ Current scope:
 - Misa launch profile for reference/precheck use;
 - Misa learning-loop simulator and route expectation fixtures;
 - full local window distillation without Zilliz proxy or API calls;
+- L0-L4 memory-layer comparison and minimal local Skill export;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;
 - signal candidate queue and daily rollup report;

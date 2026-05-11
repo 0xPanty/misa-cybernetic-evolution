@@ -19,6 +19,8 @@
     "intake:misa": "node scripts/signal-intake.mjs",
     "rollup:misa": "node scripts/signal-rollup.mjs",
     "evolution:evaluate:misa": "node scripts/evolution-evaluator.mjs",
+    "memory-layer:misa": "node scripts/memory-layer.mjs",
+    "export-skills:misa": "node scripts/export-skills.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test"
   },

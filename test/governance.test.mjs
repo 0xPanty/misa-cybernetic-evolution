@@ -21,6 +21,10 @@ import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contrac
 import { reviewSignalCandidateRollup } from "../scripts/lib/signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "../scripts/lib/evolution-evaluator.mjs";
 import { distillLocalMisaSources } from "../scripts/lib/session-distiller.mjs";
+import {
+  exportMinimalPositiveSkills,
+  reviewMemoryLayerComparison
+} from "../scripts/lib/memory-layer.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -310,6 +314,47 @@ test("v0.11 preflights optimization candidates before reporting to Huan", async 
   assert.equal(result.safety.production_authority, false);
   assert.equal(result.safety.publication_allowed, false);
   assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+});
+
+test("memory layer comparison rejects broad automatic L3 promotion", async () => {
+  const result = await reviewMemoryLayerComparison();
+
+  assert.equal(result.mode, "memory-layer-comparison");
+  assert.equal(result.ok, true);
+  assert.ok(result.layers.l0_sources.raw_token_estimate > result.layers.l1_distillates.distillate_token_estimate);
+  assert.ok(result.layers.l1_distillates.compression_ratio < 1);
+  assert.ok(result.original_auto_l3.non_skill_promoted_count > 0);
+  assert.equal(result.minimal_positive_l3.non_skill_promoted_count, 0);
+  assert.equal(result.comparison.verdict, "minimal_positive_is_safer");
+  assert.equal(result.export_policy.installs_skills, false);
+  assert.equal(result.export_policy.writes_persistent_memory, false);
+  assert.equal(result.export_policy.updates_vps, false);
+});
+
+test("export-skills writes only minimal positive local drafts", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-skill-export-"));
+
+  try {
+    const result = await exportMinimalPositiveSkills({
+      repoRoot: process.cwd(),
+      outDir: tempRoot
+    });
+
+    assert.equal(result.mode, "minimal-positive-skill-export");
+    assert.equal(result.ok, true);
+    assert.equal(result.safety.publication_allowed, false);
+    assert.equal(result.safety.installs_skills, false);
+    assert.equal(result.safety.writes_persistent_memory, false);
+    assert.equal(result.safety.updates_vps, false);
+
+    const manifest = JSON.parse(await fs.readFile(path.join(tempRoot, "manifest.json"), "utf8"));
+    assert.equal(manifest.exported_count, result.exported_count);
+    assert.equal(manifest.exports.every((item) => item.route_target === "skill"), true);
+    assert.equal(manifest.exports.every((item) => item.publication_allowed === false), true);
+    assert.equal(manifest.exports.every((item) => item.installation_allowed === false), true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test("Misa self repair writes draft artifacts without production effects", async () => {

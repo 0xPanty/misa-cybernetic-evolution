@@ -188,8 +188,10 @@ async function readJson(filePath) {
   return JSON.parse(raw);
 }
 
-async function loadLocalDistillationSources({ repoRoot = process.cwd() } = {}) {
-  const sourceRoot = path.join(repoRoot, SOURCE_DIR);
+async function loadLocalDistillationSources({ repoRoot = process.cwd(), sourceDir = SOURCE_DIR } = {}) {
+  const sourceRoot = path.isAbsolute(sourceDir)
+    ? sourceDir
+    : path.join(repoRoot, sourceDir);
   const entries = await fs.readdir(sourceRoot, { withFileTypes: true }).catch(() => []);
   const sources = [];
 
@@ -402,8 +404,7 @@ function evaluateSources(sources, distillates, learningEvents) {
   return { checks, violations };
 }
 
-export async function distillLocalMisaSources({ repoRoot = process.cwd() } = {}) {
-  const sources = await loadLocalDistillationSources({ repoRoot });
+export async function distillMisaSources(sources) {
   const distilled = sources.map(distillSource);
   const distillates = distilled.map((item) => item.distillate);
   const learningEvents = distilled.map((item) => item.learningEvent);
@@ -438,6 +439,11 @@ export async function distillLocalMisaSources({ repoRoot = process.cwd() } = {})
     ],
     violations: evaluation.violations
   };
+}
+
+export async function distillLocalMisaSources({ repoRoot = process.cwd(), sourceDir = SOURCE_DIR, sources } = {}) {
+  const loadedSources = sources ?? await loadLocalDistillationSources({ repoRoot, sourceDir });
+  return distillMisaSources(loadedSources);
 }
 
 export { loadLocalDistillationSources };

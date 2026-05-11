@@ -14,6 +14,7 @@ import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
+import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -36,6 +37,7 @@ const REQUIRED_FILES = [
   "docs/evolution-candidate-preflight-v0.11.md",
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
+  "docs/memory-layer-skill-export-v0.13.md",
   "docs/templates/governance-skill-template.md",
   "docs/templates/distillation/README.md",
   "schemas/control_contract.schema.json",
@@ -48,6 +50,7 @@ const REQUIRED_FILES = [
   "schemas/adaptive_candidate_gate.schema.json",
   "schemas/signal_intake_contract.schema.json",
   "schemas/signal_candidate_rollup.schema.json",
+  "schemas/memory_layer.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/misa_learning_fixture.schema.json",
@@ -65,6 +68,7 @@ const REQUIRED_FILES = [
   "examples/adaptive_candidate_gate.example.json",
   "examples/signal_intake_contract.example.json",
   "examples/signal_candidate_rollup.example.json",
+  "examples/memory_layer.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
@@ -87,6 +91,8 @@ const REQUIRED_FILES = [
   "scripts/distill-misa.mjs",
   "scripts/signal-rollup.mjs",
   "scripts/evolution-evaluator.mjs",
+  "scripts/memory-layer.mjs",
+  "scripts/export-skills.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
@@ -94,6 +100,8 @@ const REQUIRED_FILES = [
   "scripts/lib/session-distiller.mjs",
   "scripts/lib/signal-candidate-rollup.mjs",
   "scripts/lib/evolution-evaluator.mjs",
+  "scripts/lib/memory-layer.mjs",
+  "scripts/lib/vps-conversation-sources.mjs",
   "generated/README.md"
 ];
 
@@ -328,6 +336,25 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     suppressed: evolutionEvaluator.summary.suppressed_count,
     realChatPreflightStatus: evolutionEvaluator.summary.real_chat_preflight_status,
     violations: evolutionEvaluator.violations
+  }));
+
+  const memoryLayer = await reviewMemoryLayerComparison({ repoRoot });
+  checks.push(checkResult("Misa memory layer comparison check", memoryLayer.ok, {
+    rawTokens: memoryLayer.layers.l0_sources.raw_token_estimate,
+    distillateTokens: memoryLayer.layers.l1_distillates.distillate_token_estimate,
+    compressionRatio: memoryLayer.layers.l1_distillates.compression_ratio,
+    originalL3: memoryLayer.original_auto_l3.skill_count,
+    originalBadPromotions: memoryLayer.original_auto_l3.non_skill_promoted_count,
+    minimalL3: memoryLayer.minimal_positive_l3.skill_count,
+    minimalBadPromotions: memoryLayer.minimal_positive_l3.non_skill_promoted_count,
+    verdict: memoryLayer.comparison.verdict,
+    violations: memoryLayer.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/memory_layer.schema.json",
+    data: memoryLayer,
+    name: "validate memory layer comparison review"
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);
