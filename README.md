@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.13 Quickstart
+## v0.14 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -33,6 +33,7 @@ npm run evolution:evaluate:misa
 npm run memory-layer:misa
 npm run export-skills:misa
 npm run repair-ticket:misa -- --dry-run
+npm run work-order:route -- --dry-run
 npm run validate:schemas
 npm run precheck
 npm test
@@ -72,6 +73,9 @@ Expected result:
 - the repair-ticket queue turns memory-layer over-promotion evidence into
   Codex-ready local tickets with reproduction commands, acceptance criteria,
   edit scope, and explicit non-goals;
+- the work-order router converts repair tickets and operator-quality reports
+  into traceable primary-agent handoff packets, with suggested executors,
+  escalation options, user confirmation, and source refs preserved;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -93,11 +97,11 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.13 does not include is a background runtime service. It does not
+What this v0.14 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
-In plain terms, v0.13 is accepted as a local control-theoretic learning engine,
+In plain terms, v0.14 is accepted as a local control-theoretic learning engine,
 not as an autonomous production brain. It can read redacted local evidence,
 compress it, route it, draft safe local artifacts, and explain what should be
 repaired next. It cannot make production decisions by itself.
@@ -109,6 +113,7 @@ repaired next. It cannot make production decisions by itself.
 | Memory/skill/case/policy/damping routing | accepted for dry-run use |
 | Minimal L3 draft skill export | accepted as local files only |
 | Repair-ticket generation | accepted as a local Codex work queue |
+| Work-order routing | accepted as primary-agent handoff packets |
 | Automatic memory writes | not enabled |
 | Automatic Skill installation | not enabled |
 | VPS updates or deployment | not enabled |
@@ -132,6 +137,7 @@ redacted local source
 -> compare broad Auto-L3 against minimal positive L3
 -> export only safe local skill drafts
 -> generate repair tickets for unsafe over-promotion patterns
+-> route work orders to the primary agent with suggested executor and escalation options
 -> validate with schemas, precheck, and tests
 ```
 
@@ -243,6 +249,38 @@ Default writes go only to ignored local `runs/repair-tickets/` folders. A
 repair ticket is a work order for a later approved Codex repair pass. It is not
 a live runtime action.
 
+## Work Order Routing
+
+`work-order:route` turns tickets and operator-quality reports into generic
+handoff packets. This is the open-source version of the operating pattern:
+
+```text
+work order appears
+-> primary agent tells the user what arrived
+-> user chooses handle, hold, or escalate
+-> engineering work can go to a coding agent
+-> operator/persona quality can go to the persona agent
+-> high-risk changes go to the human owner
+```
+
+The packet keeps traceability attached: source refs, evidence, reproduction
+commands, acceptance criteria, editable scope, forbidden scope, audit need, and
+rollback need. It does not execute the work order by itself.
+
+The behavior is configurable through `routing_policy`:
+
+- `report_only`: only notify the user and wait;
+- `ask_before_execution`: default, ask the user before execution;
+- `agent_autonomous_low_risk`: allow only configured low-risk categories;
+- `agent_autonomous_within_scope`: allow configured in-scope work, while still
+  blocking public, durable, credential, memory, or production effects.
+
+Every work order also includes `model_handoff`, so the primary agent can tell
+the user when the current model should hold the task or hand it to a stronger
+model.
+
+See [docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md).
+
 ## Reviewer Finding Closed
 
 A gpt-5.5 xhigh read-only review found one real routing bug during v0.13
@@ -291,6 +329,8 @@ See [docs/memory-layer-skill-export-v0.13.md](./docs/memory-layer-skill-export-v
 for the GenericAgent-inspired L0-L4 comparison and local skill export path.
 See [docs/repair-ticket-v0.13.md](./docs/repair-ticket-v0.13.md)
 for the local Codex repair-ticket queue.
+See [docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md)
+for the primary-agent handoff and executor-choice layer.
 
 ## Why This Exists
 
@@ -448,6 +488,12 @@ new memory-layer path. It turns over-promotion evidence into JSON and Markdown
 repair tickets for later Codex work. It does not fix automatically, write
 memory, install skills, touch runtime state, or update VPS.
 
+v0.14 adds `npm run work-order:route` as the generic handoff layer. It converts
+repair tickets and operator-quality reports into traceable work orders for the
+primary agent to report to the user. Each work order keeps source refs,
+evidence, acceptance criteria, suggested executor, escalation options, and a
+plain user prompt. It still does not execute anything automatically.
+
 ## Design Principles
 
 1. Separate the live runtime from the learning plane.
@@ -568,6 +614,7 @@ for the machine-readable form.
 │   ├── window-distillation-pipeline-v0.13.md
 │   ├── memory-layer-skill-export-v0.13.md
 │   ├── repair-ticket-v0.13.md
+│   ├── work-order-routing-v0.14.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -583,6 +630,7 @@ for the machine-readable form.
 │   ├── session_distillation_review.schema.json
 │   ├── memory_layer.schema.json
 │   ├── repair_ticket.schema.json
+│   ├── work_order_routing.schema.json
 │   ├── learning_cycle_trace.schema.json
 │   ├── misa_learning_fixture.schema.json
 │   ├── learning_event.schema.json
@@ -595,6 +643,7 @@ for the machine-readable form.
 │   ├── signal_candidate_rollup.example.json
 │   ├── memory_layer.example.json
 │   ├── repair_ticket.example.json
+│   ├── work_order_routing.example.json
 │   ├── misa-distillation/
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
@@ -620,6 +669,7 @@ for the machine-readable form.
 │   ├── memory-layer.mjs
 │   ├── export-skills.mjs
 │   ├── repair-ticket.mjs
+│   ├── work-order-router.mjs
 │   ├── signal-rollup.mjs
 │   ├── simulate-learning.mjs
 │   └── validate-schemas.mjs
@@ -652,7 +702,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.13 engineering scaffold. It is ready to publish as a public
+This is a v0.14 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures and local distillation
 sources.
@@ -669,6 +719,8 @@ Current scope:
 - L0-L4 memory-layer comparison and minimal local Skill export;
 - mixed-route pressure diagnostics for compound historical windows;
 - local Codex repair-ticket queue for over-promotion evidence;
+- generic work-order routing for primary-agent handoff, user choice, and
+  stronger-model escalation;
 - public-memory-risk route guard so Farcaster memory leakage risk stays policy;
 - GenericAgent context-density gate;
 - EvoMap-inspired adaptive candidate gate;

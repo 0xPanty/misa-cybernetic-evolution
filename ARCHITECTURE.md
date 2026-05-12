@@ -160,7 +160,22 @@ The v0.5 crystallization index is described in
 The v0.6 self-repair draft runner is described in
 [docs/self-repair-v0.6.md](./docs/self-repair-v0.6.md).
 
-### 8. Publication and Governance Plane
+### 8. Work Order Handoff Plane
+
+The handoff plane turns validated repair tickets and operator-quality reports
+into user-visible work orders. Its job is not to execute the work. Its job is to
+preserve traceability and choose the right next executor.
+
+Each work order goes first to the primary agent, which reports the summary to
+the user and asks whether to handle, hold, or escalate. Engineering repairs can
+be delegated to a specialized coding agent. Operator or persona quality issues
+can be delegated to the persona/operator agent for self-review. High-risk
+public, durable, credential, memory, or production changes go to the human owner.
+
+The v0.14 handoff layer is described in
+[docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md).
+
+### 9. Publication and Governance Plane
 
 Publication creates immutable records:
 

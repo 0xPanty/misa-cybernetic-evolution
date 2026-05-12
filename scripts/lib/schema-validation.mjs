@@ -17,6 +17,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/signal_candidate_rollup.schema.json", "examples/signal_candidate_rollup.example.json"],
   ["schemas/memory_layer.schema.json", "examples/memory_layer.example.json"],
   ["schemas/repair_ticket.schema.json", "examples/repair_ticket.example.json"],
+  ["schemas/work_order_routing.schema.json", "examples/work_order_routing.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];

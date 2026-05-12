@@ -16,6 +16,7 @@ import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
+import { buildWorkOrderRouting } from "./work-order-router.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -40,6 +41,7 @@ const REQUIRED_FILES = [
   "docs/window-distillation-pipeline-v0.13.md",
   "docs/memory-layer-skill-export-v0.13.md",
   "docs/repair-ticket-v0.13.md",
+  "docs/work-order-routing-v0.14.md",
   "docs/templates/governance-skill-template.md",
   "docs/templates/distillation/README.md",
   "schemas/control_contract.schema.json",
@@ -54,6 +56,7 @@ const REQUIRED_FILES = [
   "schemas/signal_candidate_rollup.schema.json",
   "schemas/memory_layer.schema.json",
   "schemas/repair_ticket.schema.json",
+  "schemas/work_order_routing.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/misa_learning_fixture.schema.json",
@@ -73,6 +76,7 @@ const REQUIRED_FILES = [
   "examples/signal_candidate_rollup.example.json",
   "examples/memory_layer.example.json",
   "examples/repair_ticket.example.json",
+  "examples/work_order_routing.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
@@ -98,6 +102,7 @@ const REQUIRED_FILES = [
   "scripts/memory-layer.mjs",
   "scripts/export-skills.mjs",
   "scripts/repair-ticket.mjs",
+  "scripts/work-order-router.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
@@ -107,6 +112,7 @@ const REQUIRED_FILES = [
   "scripts/lib/evolution-evaluator.mjs",
   "scripts/lib/memory-layer.mjs",
   "scripts/lib/repair-ticket.mjs",
+  "scripts/lib/work-order-router.mjs",
   "scripts/lib/vps-conversation-sources.mjs",
   "generated/README.md"
 ];
@@ -377,6 +383,23 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/repair_ticket.schema.json",
     data: repairTickets,
     name: "validate repair ticket review"
+  }));
+
+  const workOrderRouting = buildWorkOrderRouting({
+    repairTicketReview: repairTickets,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  checks.push(checkResult("Misa work-order routing check", workOrderRouting.ok, {
+    workOrderCount: workOrderRouting.summary.work_order_count,
+    requiresUserConfirmation: workOrderRouting.summary.requires_user_confirmation_count,
+    escalationAvailable: workOrderRouting.summary.escalation_available_count,
+    autoExecuteAllowed: workOrderRouting.safety.auto_execute_allowed
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/work_order_routing.schema.json",
+    data: workOrderRouting,
+    name: "validate work-order routing review"
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);

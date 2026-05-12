@@ -32,6 +32,12 @@ import {
   reviewRepairTickets,
   writeRepairTicketArtifacts
 } from "../scripts/lib/repair-ticket.mjs";
+import {
+  buildWorkOrderRouting,
+  routeWorkOrders,
+  workOrderFromOperationalQualityReport,
+  writeWorkOrderArtifacts
+} from "../scripts/lib/work-order-router.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -752,6 +758,140 @@ test("repair-ticket artifacts write JSON and Markdown without runtime effects", 
     assert.match(markdown, /# Misa Repair Tickets/);
     assert.match(markdown, /### Acceptance/);
     assert.match(markdown, /Do not update VPS/);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("work-order routing sends repair tickets through primary-agent user choice", async () => {
+  const repairTickets = await reviewRepairTickets({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const result = buildWorkOrderRouting({
+    repairTicketReview: repairTickets,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(result.mode, "work-order-routing");
+  assert.equal(result.ok, true);
+  assert.equal(result.routing_policy.mode, "ask_before_execution");
+  assert.equal(result.safety.auto_execute_allowed, false);
+  assert.equal(result.safety.primary_agent_must_report_first, true);
+  assert.equal(result.summary.work_order_count, repairTickets.tickets.length);
+  assert.equal(result.summary.requires_user_confirmation_count, result.summary.work_order_count);
+  assert.equal(result.summary.auto_executable_count, 0);
+
+  const order = result.work_orders[0];
+  assert.equal(order.delivery.receiver_type, "primary_agent");
+  assert.equal(order.delivery.delivery_policy, "report_to_user_before_execution");
+  assert.equal(order.suggested_executor.executor_type, "specialized_engineering_agent");
+  assert.equal(order.execution_policy.requires_user_confirmation, true);
+  assert.equal(order.execution_policy.auto_execute_allowed, false);
+  assert.equal(order.execution_policy.durable_or_public_effect_allowed, false);
+  assert.equal(order.escalation.user_can_decline_execution, true);
+  assert.equal(order.model_handoff.stronger_model_recommended, true);
+  assert.ok(order.source_refs.some((ref) => ref.kind === "repair_ticket"));
+  assert.ok(order.traceability.acceptance_criteria.includes("minimal_positive_l3.non_skill_promoted_count == 0"));
+  assert.match(order.user_prompt, /I received a work order/);
+});
+
+test("work-order routing policy can allow only bounded low-risk autonomous work", () => {
+  const report = {
+    schema: "misa.hermes.farcaster.daily_report.v1",
+    report_date: "2026-05-12",
+    counts: {
+      outcomes_considered: 4
+    },
+    operator_quality: {
+      schema: "misa.hermes.farcaster.operator_quality.v1",
+      verdict: "healthy",
+      recommendations: [
+        "operator quality looks steady; keep current soft-presence settings"
+      ]
+    }
+  };
+
+  const result = buildWorkOrderRouting({
+    operationalReports: [report],
+    routingPolicy: {
+      mode: "agent_autonomous_low_risk",
+      auto_execute_allowed: true,
+      max_auto_severity: "P3",
+      auto_execute_categories: ["operator_quality"]
+    },
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(result.routing_policy.mode, "agent_autonomous_low_risk");
+  assert.equal(result.safety.auto_execute_allowed, true);
+  assert.equal(result.summary.auto_executable_count, 1);
+
+  const order = result.work_orders[0];
+  assert.equal(order.category, "operator_quality");
+  assert.equal(order.severity, "P3");
+  assert.equal(order.delivery.delivery_policy, "notify_then_execute_within_scope");
+  assert.equal(order.execution_policy.requires_user_confirmation, false);
+  assert.equal(order.execution_policy.auto_execute_allowed, true);
+  assert.equal(order.execution_policy.default_next_step, "execute_within_scope");
+  assert.equal(order.execution_policy.durable_or_public_effect_allowed, false);
+  assert.equal(order.model_handoff.stronger_model_recommended, false);
+});
+
+test("work-order routing maps operator quality to persona self-review instead of engineering", () => {
+  const report = {
+    schema: "misa.hermes.farcaster.daily_report.v1",
+    report_date: "2026-05-12",
+    counts: {
+      outcomes_considered: 12,
+      blocked_transitions: 2
+    },
+    operator_quality: {
+      schema: "misa.hermes.farcaster.operator_quality.v1",
+      verdict: "tighten",
+      recommendations: [
+        "lower priority for repeated author/thread/topic before the next cycle",
+        "quality brakes are active; inspect blocks before loosening thresholds"
+      ]
+    }
+  };
+
+  const order = workOrderFromOperationalQualityReport(report, {
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(order.category, "operator_quality");
+  assert.equal(order.severity, "P1");
+  assert.equal(order.delivery.receiver_type, "primary_agent");
+  assert.equal(order.suggested_executor.executor_type, "persona_operator_agent");
+  assert.equal(order.execution_policy.self_evolution_allowed, true);
+  assert.equal(order.execution_policy.auto_execute_allowed, false);
+  assert.ok(order.traceability.forbidden_scope.includes("live publisher"));
+  assert.match(order.user_prompt, /hand it to a stronger model/);
+});
+
+test("work-order artifacts write traceable JSON and Markdown without execution", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-work-orders-"));
+
+  try {
+    const result = await routeWorkOrders({
+      now: new Date("2026-05-12T00:00:00Z")
+    });
+    const written = await writeWorkOrderArtifacts({
+      routing: result,
+      outDir: tempRoot,
+      now: new Date("2026-05-12T00:00:00Z")
+    });
+
+    assert.equal(written.output.output_dir, tempRoot);
+    const persisted = JSON.parse(await fs.readFile(written.output.json_path, "utf8"));
+    const markdown = await fs.readFile(written.output.markdown_path, "utf8");
+
+    assert.equal(persisted.mode, "work-order-routing");
+    assert.equal(persisted.safety.auto_execute_allowed, false);
+    assert.equal(persisted.safety.durable_or_public_effect_allowed, false);
+    assert.match(markdown, /# Work Order Routing/);
+    assert.match(markdown, /### User Prompt/);
+    assert.match(markdown, /### Traceability/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

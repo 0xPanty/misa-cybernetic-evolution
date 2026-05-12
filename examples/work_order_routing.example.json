@@ -1,0 +1,276 @@
+{
+  "schema_version": "misa.work_order_routing.v1",
+  "mode": "work-order-routing",
+  "ok": true,
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "receiver_slots": {
+    "primary_agent": {
+      "label": "Primary agent",
+      "role": "Receives the work order, explains it to the user, and asks before execution."
+    },
+    "persona_operator_agent": {
+      "label": "Persona or operator agent",
+      "role": "Reviews voice, content quality, topic choice, and operator behavior."
+    },
+    "specialized_engineering_agent": {
+      "label": "Specialized engineering agent",
+      "role": "Edits code, tests, schemas, documentation, deployment scripts, or rollback tooling."
+    },
+    "stronger_model": {
+      "label": "Stronger model",
+      "role": "Handles high-complexity repair or design work after the user chooses to escalate."
+    },
+    "human_owner": {
+      "label": "Human owner",
+      "role": "Approves high-risk, durable, public, credential, or production-impacting actions."
+    }
+  },
+  "routing_policy": {
+    "mode": "ask_before_execution",
+    "auto_execute_allowed": false,
+    "max_auto_severity": "P3",
+    "auto_execute_categories": [],
+    "primary_agent_report_first": true,
+    "stronger_model_policy": "recommend_when_high_risk_or_complex",
+    "durable_or_public_effect_policy": "human_owner_required"
+  },
+  "summary": {
+    "work_order_count": 2,
+    "by_category": {
+      "engineering_repair": 1,
+      "operator_quality": 1
+    },
+    "by_suggested_executor": {
+      "specialized_engineering_agent": 1,
+      "persona_operator_agent": 1
+    },
+    "requires_user_confirmation_count": 2,
+    "auto_executable_count": 0,
+    "escalation_available_count": 2,
+    "stronger_model_recommended_count": 2
+  },
+  "work_orders": [
+    {
+      "work_order_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "title": "Memory-layer Auto-L3 over-promotion check",
+      "category": "engineering_repair",
+      "severity": "P2",
+      "risk_level": "medium",
+      "status": "pending_user_choice",
+      "source": {
+        "source_type": "repair_ticket",
+        "source_id": "repair-local-distillation-sources-auto-l3-overpromotion",
+        "source_kind": "local_distillation_sources"
+      },
+      "summary": "Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording.",
+      "source_refs": [
+        {
+          "kind": "repair_ticket",
+          "id": "repair-local-distillation-sources-auto-l3-overpromotion"
+        },
+        {
+          "kind": "source_event",
+          "id": "misa-distilled-farcaster-reply-audit-007",
+          "note": "Keep this as policy, not L3 skill export."
+        }
+      ],
+      "delivery": {
+        "receiver_type": "primary_agent",
+        "receiver_label": "Primary agent",
+        "delivery_policy": "report_to_user_before_execution",
+        "reason": "The primary agent is the user's front door for deciding whether to execute, hold, or escalate."
+      },
+      "suggested_executor": {
+        "executor_type": "specialized_engineering_agent",
+        "label": "Specialized engineering agent",
+        "reason": "The ticket includes code/schema/test scope and concrete acceptance checks."
+      },
+      "task_gate": {
+        "complex_enough": true,
+        "valuable_enough": true,
+        "doable_enough": true,
+        "error_discovery_cost": "medium",
+        "verdict": "ask_user_then_delegate",
+        "reasons": [
+          "The ticket has enough scope to justify a work order.",
+          "The ticket represents a real repair candidate.",
+          "The ticket includes reproduction commands, acceptance criteria, and edit scope.",
+          "Error discovery cost is bounded by local reproduction and acceptance checks."
+        ]
+      },
+      "traceability": {
+        "evidence": {
+          "source_count": 3,
+          "avoided_bad_promotions": 1,
+          "verdict": "minimal_positive_is_safer"
+        },
+        "reproduction_commands": [
+          "npm run memory-layer:misa -- --json",
+          "npm run repair-ticket:misa -- --json --dry-run"
+        ],
+        "acceptance_criteria": [
+          "minimal_positive_l3.non_skill_promoted_count == 0",
+          "every exported skill has route_target == skill"
+        ],
+        "editable_scope": [
+          "scripts/lib/repair-ticket.mjs",
+          "test/governance.test.mjs"
+        ],
+        "forbidden_scope": [
+          "Misa persona or production memory",
+          "Farcaster production publisher"
+        ],
+        "audit_required": true,
+        "rollback_required": false,
+        "source_refs_required": true
+      },
+      "execution_policy": {
+        "requires_user_confirmation": true,
+        "auto_execute_allowed": false,
+        "self_evolution_allowed": true,
+        "durable_or_public_effect_allowed": false,
+        "default_next_step": "ask_user_to_choose_executor"
+      },
+      "escalation": {
+        "allowed": true,
+        "recommended_when": "Escalate only if local reproduction exposes broader design risk.",
+        "stronger_model_slots": [
+          "stronger_model"
+        ],
+        "user_can_decline_execution": true
+      },
+      "model_handoff": {
+        "current_model_fit": "use_for_intake_or_small_patch_only",
+        "stronger_model_recommended": true,
+        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.",
+        "stronger_model_slots": [
+          "stronger_model"
+        ],
+        "user_can_override": true
+      },
+      "user_prompt": "I received a work order: Memory-layer Auto-L3 over-promotion check. Summary: Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording. Suggested executor: Specialized engineering agent. Risk level: medium. Do you want me to handle it, keep it pending, or hand it to a stronger model?"
+    },
+    {
+      "work_order_id": "wo-operator-quality-2026-05-12",
+      "title": "Operator quality review for 2026-05-12",
+      "category": "operator_quality",
+      "severity": "P1",
+      "risk_level": "high",
+      "status": "pending_user_choice",
+      "source": {
+        "source_type": "operational_quality_report",
+        "source_id": "2026-05-12",
+        "source_kind": "misa.hermes.farcaster.daily_report.v1"
+      },
+      "summary": "lower priority for repeated author/thread/topic before the next cycle quality brakes are active; inspect blocks before loosening thresholds",
+      "source_refs": [
+        {
+          "kind": "daily_report",
+          "id": "2026-05-12"
+        },
+        {
+          "kind": "operator_quality",
+          "id": "misa.hermes.farcaster.operator_quality.v1"
+        }
+      ],
+      "delivery": {
+        "receiver_type": "primary_agent",
+        "receiver_label": "Primary agent",
+        "delivery_policy": "report_to_user_before_execution",
+        "reason": "The primary agent should explain the quality issue and ask whether the persona/operator agent should self-review."
+      },
+      "suggested_executor": {
+        "executor_type": "persona_operator_agent",
+        "label": "Persona or operator agent",
+        "reason": "The issue concerns voice, content quality, topic choice, or operating posture."
+      },
+      "task_gate": {
+        "complex_enough": true,
+        "valuable_enough": true,
+        "doable_enough": true,
+        "error_discovery_cost": "medium",
+        "verdict": "ask_user_then_delegate",
+        "reasons": [
+          "Operational quality is learned from pooled history, not a single cast.",
+          "The report includes concrete recommendations.",
+          "Behavior changes stay behind user choice and do not directly publish."
+        ]
+      },
+      "traceability": {
+        "evidence": {
+          "counts": {
+            "outcomes_considered": 12
+          },
+          "operator_quality": {
+            "schema": "misa.hermes.farcaster.operator_quality.v1",
+            "verdict": "tighten",
+            "recommendations": [
+              "lower priority for repeated author/thread/topic before the next cycle",
+              "quality brakes are active; inspect blocks before loosening thresholds"
+            ]
+          },
+          "recommendations": [
+            "lower priority for repeated author/thread/topic before the next cycle",
+            "quality brakes are active; inspect blocks before loosening thresholds"
+          ]
+        },
+        "reproduction_commands": [],
+        "acceptance_criteria": [
+          "the agent reports the work order to the user before execution",
+          "the persona/operator agent proposes changes before durable mutation",
+          "high-risk public or memory effects require owner approval"
+        ],
+        "editable_scope": [
+          "operator prompt or policy candidates",
+          "content strategy candidates"
+        ],
+        "forbidden_scope": [
+          "live publisher",
+          "credentials",
+          "private memory",
+          "production services"
+        ],
+        "audit_required": true,
+        "rollback_required": false,
+        "source_refs_required": true
+      },
+      "execution_policy": {
+        "requires_user_confirmation": true,
+        "auto_execute_allowed": false,
+        "self_evolution_allowed": true,
+        "durable_or_public_effect_allowed": false,
+        "default_next_step": "ask_user_to_choose_executor"
+      },
+      "escalation": {
+        "allowed": true,
+        "recommended_when": "Escalate if the persona/operator agent cannot explain the quality failure or proposes broad identity changes.",
+        "stronger_model_slots": [
+          "stronger_model"
+        ],
+        "user_can_decline_execution": true
+      },
+      "model_handoff": {
+        "current_model_fit": "use_for_intake_or_small_patch_only",
+        "stronger_model_recommended": true,
+        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.",
+        "stronger_model_slots": [
+          "stronger_model"
+        ],
+        "user_can_override": true
+      },
+      "user_prompt": "I received a work order: Operator quality review for 2026-05-12. Summary: lower priority for repeated author/thread/topic before the next cycle quality brakes are active; inspect blocks before loosening thresholds. Suggested executor: Persona or operator agent. Risk level: high. Do you want me to handle it, keep it pending, or hand it to a stronger model?"
+    }
+  ],
+  "safety": {
+    "auto_execute_allowed": false,
+    "durable_or_public_effect_allowed": false,
+    "primary_agent_must_report_first": true,
+    "user_may_escalate_to_stronger_model": true,
+    "traceability_required": true
+  },
+  "warnings": [
+    "Work orders are routing packets, not automatic execution.",
+    "The primary agent must explain the work order and ask the user before acting.",
+    "Every suggested executor can be overridden by the user."
+  ]
+}
