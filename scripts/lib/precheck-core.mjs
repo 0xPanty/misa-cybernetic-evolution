@@ -18,6 +18,7 @@ import { evaluateHermesMappingFixtures } from "./hermes-distillation-mapper.mjs"
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import { buildWorkOrderRouting } from "./work-order-router.mjs";
+import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -44,6 +45,9 @@ const REQUIRED_FILES = [
   "docs/memory-layer-skill-export-v0.13.md",
   "docs/repair-ticket-v0.13.md",
   "docs/work-order-routing-v0.14.md",
+  "docs/langgraph-qianxuesen-bridge-v0.15.md",
+  "docs/assets/langgraph-qianxuesen-flow.svg",
+  "docs/remotion/langgraph-qianxuesen-flow.tsx",
   "docs/templates/governance-skill-template.md",
   "docs/templates/distillation/README.md",
   "schemas/control_contract.schema.json",
@@ -59,6 +63,7 @@ const REQUIRED_FILES = [
   "schemas/memory_layer.schema.json",
   "schemas/repair_ticket.schema.json",
   "schemas/work_order_routing.schema.json",
+  "schemas/langgraph_qianxuesen_bridge.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
@@ -80,6 +85,7 @@ const REQUIRED_FILES = [
   "examples/memory_layer.example.json",
   "examples/repair_ticket.example.json",
   "examples/work_order_routing.example.json",
+  "examples/langgraph_qianxuesen_bridge.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
@@ -117,6 +123,7 @@ const REQUIRED_FILES = [
   "scripts/export-skills.mjs",
   "scripts/repair-ticket.mjs",
   "scripts/work-order-router.mjs",
+  "scripts/langgraph-qianxuesen-bridge.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
@@ -128,6 +135,8 @@ const REQUIRED_FILES = [
   "scripts/lib/memory-layer.mjs",
   "scripts/lib/repair-ticket.mjs",
   "scripts/lib/work-order-router.mjs",
+  "scripts/lib/langgraph-qianxuesen-contract.mjs",
+  "scripts/lib/langgraph-qianxuesen-bridge.mjs",
   "scripts/lib/vps-conversation-sources.mjs",
   "generated/README.md"
 ];
@@ -436,6 +445,27 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/work_order_routing.schema.json",
     data: workOrderRouting,
     name: "validate work-order routing review"
+  }));
+
+  const langGraphBridge = await reviewLangGraphQianxuesenBridge({
+    repoRoot,
+    repairTicketReview: repairTickets,
+    workOrderRouting,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  checks.push(checkResult("LangGraph Qianxuesen bridge contract check", langGraphBridge.ok, {
+    workOrders: langGraphBridge.summary.work_order_count,
+    interrupts: langGraphBridge.summary.interrupt_count,
+    deterministicNodes: langGraphBridge.summary.deterministic_governance_node_count,
+    llmOwnedLearningDecisions: langGraphBridge.summary.llm_owned_learning_decision_count,
+    liveEffectAllowed: langGraphBridge.summary.live_effect_allowed,
+    violations: langGraphBridge.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/langgraph_qianxuesen_bridge.schema.json",
+    data: langGraphBridge,
+    name: "validate LangGraph Qianxuesen bridge review"
   }));
 
   const secretHits = await scanForSecretAssignments(repoRoot);

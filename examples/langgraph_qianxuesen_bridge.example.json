@@ -1,0 +1,266 @@
+{
+  "schema_version": "misa.langgraph_qianxuesen_bridge.v1",
+  "mode": "langgraph-qianxuesen-bridge",
+  "ok": true,
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "integration_principle": {
+    "carrier_layer": "LangGraph",
+    "control_layer": "Qianxuesen",
+    "llm_agent_role": "executor_or_summarizer_only",
+    "natural_fit": true,
+    "rule": "LangGraph can carry the loop; Qianxuesen owns what should be learned and when humans must resume."
+  },
+  "langgraph_contract": {
+    "state_inputs": [
+      "evidence_refs",
+      "distillates",
+      "learning_events",
+      "route_decisions",
+      "repair_tickets",
+      "work_orders",
+      "human_decisions"
+    ],
+    "checkpointer": {
+      "required": true,
+      "scope": "learning_cycle",
+      "persist_fields": [
+        "thread_id",
+        "checkpoint_id",
+        "source_refs",
+        "route_decisions",
+        "repair_ticket_ids",
+        "work_order_ids",
+        "interrupt_decisions"
+      ],
+      "must_not_persist_raw_private_content": true
+    },
+    "interrupt": {
+      "required": true,
+      "trigger_sources": [
+        "repair_ticket",
+        "work_order",
+        "durable_or_public_effect",
+        "human_owner_route"
+      ],
+      "human_boundary": "human_owner",
+      "resume_requires": [
+        "decision",
+        "approver",
+        "source_refs"
+      ]
+    },
+    "custom_nodes": [
+      {
+        "stage_id": "distill",
+        "node_id": "qianxuesen_distill_node",
+        "owner": "qianxuesen_deterministic",
+        "calls": "distillLocalMisaSources or Hermes mapping output",
+        "llm_decision_allowed": false,
+        "description": "Convert evidence into local learning inputs before any agent reasoning."
+      },
+      {
+        "stage_id": "route",
+        "node_id": "qianxuesen_route_node",
+        "owner": "qianxuesen_deterministic",
+        "calls": "Misa route rules for memory, skill, case, policy, damping, or ignore",
+        "llm_decision_allowed": false,
+        "description": "Own the learning route so LangGraph agents cannot decide what Misa learns."
+      },
+      {
+        "stage_id": "repair_ticket",
+        "node_id": "qianxuesen_repair_ticket_node",
+        "owner": "qianxuesen_deterministic",
+        "calls": "reviewRepairTickets",
+        "llm_decision_allowed": false,
+        "description": "Turn unsafe or unclear learning evidence into local repair tickets."
+      },
+      {
+        "stage_id": "work_order",
+        "node_id": "qianxuesen_work_order_node",
+        "owner": "qianxuesen_deterministic",
+        "calls": "buildWorkOrderRouting",
+        "llm_decision_allowed": false,
+        "description": "Choose handoff packet, suggested executor, and escalation without executing."
+      }
+    ],
+    "llm_nodes": {
+      "allowed_roles": [
+        "summarize_evidence_after_deterministic_routing",
+        "draft_candidate_text_for_review",
+        "explain_work_order_to_user",
+        "run bounded executor steps after human approval"
+      ],
+      "forbidden_learning_decisions": [
+        "choose_learning_route",
+        "override_qianxuesen_route",
+        "promote_memory_or_skill",
+        "approve_durable_or_public_effect",
+        "resume_after_interrupt_without_human_decision",
+        "change_provider_route",
+        "write_persistent_memory",
+        "publish_skill",
+        "touch_vps_or_services"
+      ]
+    }
+  },
+  "state_projection": {
+    "evidence_source_ids": [
+      "repair-local-distillation-sources-auto-l3-overpromotion",
+      "local_distillation_sources",
+      "misa-distilled-failure-log-provider-timeout-006",
+      "misa-distilled-farcaster-reply-audit-007",
+      "misa-distilled-local-window-zilliz-boundary-005"
+    ],
+    "repair_ticket_count": 1,
+    "work_order_count": 1,
+    "high_risk_work_order_count": 1,
+    "human_owner_work_order_count": 0
+  },
+  "governance_hooks": [
+    {
+      "stage_id": "distill",
+      "from_node": "evidence_ingest",
+      "to_node": "qianxuesen_distill_node",
+      "after_node": "evidence_ingest",
+      "hook": "qianxuesen_distill",
+      "owner": "qianxuesen_deterministic",
+      "input_from_state": ["evidence_refs"],
+      "output_to_state": ["distillates", "learning_events"],
+      "must_be_deterministic": true,
+      "llm_may_override": false
+    },
+    {
+      "stage_id": "route",
+      "from_node": "qianxuesen_distill_node",
+      "to_node": "qianxuesen_route_node",
+      "after_node": "qianxuesen_distill_node",
+      "hook": "qianxuesen_route",
+      "owner": "qianxuesen_deterministic",
+      "input_from_state": ["learning_events"],
+      "output_to_state": ["route_decisions"],
+      "must_be_deterministic": true,
+      "llm_may_override": false
+    },
+    {
+      "stage_id": "repair_ticket",
+      "from_node": "qianxuesen_route_node",
+      "to_node": "qianxuesen_repair_ticket_node",
+      "after_node": "qianxuesen_route_node",
+      "hook": "qianxuesen_repair_ticket",
+      "owner": "qianxuesen_deterministic",
+      "input_from_state": ["route_decisions"],
+      "output_to_state": ["repair_tickets"],
+      "must_be_deterministic": true,
+      "llm_may_override": false
+    },
+    {
+      "stage_id": "work_order",
+      "from_node": "qianxuesen_repair_ticket_node",
+      "to_node": "qianxuesen_work_order_node",
+      "after_node": "qianxuesen_repair_ticket_node",
+      "hook": "qianxuesen_work_order_route",
+      "owner": "qianxuesen_deterministic",
+      "input_from_state": ["repair_tickets"],
+      "output_to_state": ["work_orders"],
+      "must_be_deterministic": true,
+      "llm_may_override": false
+    }
+  ],
+  "interrupt_queue": [
+    {
+      "interrupt_id": "interrupt-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "source_type": "work_order",
+      "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "title": "Auto-L3 non-skill promotion from local distillation sources",
+      "reason": "work order requires user confirmation",
+      "suggested_executor": "specialized_engineering_agent",
+      "requires_user_confirmation": true,
+      "durable_or_public_effect": false,
+      "effect_boundary": {
+        "durable_or_public_effect": false,
+        "execution_allowed_without_human": false,
+        "requires_interrupt": true,
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_or_channel_output",
+          "runtime_service",
+          "provider_or_credential"
+        ],
+        "source_policy": "work_order.execution_policy plus traceability.forbidden_scope"
+      },
+      "resume_policy": {
+        "human_owner_required": false,
+        "accepted_decisions": [
+          "execute_locally",
+          "hold",
+          "escalate",
+          "reject"
+        ],
+        "require_source_refs": true,
+        "require_approval_record": true
+      }
+    }
+  ],
+  "decision_boundary": {
+    "qianxuesen_owns": [
+      "distillation",
+      "route_decision",
+      "damping_decision",
+      "repair_ticket_creation",
+      "work_order_routing",
+      "memory_or_skill_promotion",
+      "durable_or_public_effect_boundary"
+    ],
+    "langgraph_owns": [
+      "state_container",
+      "node_orchestration",
+      "durable_checkpoint",
+      "interrupt_and_resume",
+      "tool_interface",
+      "execution_trace"
+    ],
+    "llm_agent_may": [
+      "summarize_evidence_after_deterministic_routing",
+      "draft_candidate_text_for_review",
+      "explain_work_order_to_user",
+      "run bounded executor steps after human approval"
+    ],
+    "llm_agent_must_not": [
+      "choose_learning_route",
+      "override_qianxuesen_route",
+      "promote_memory_or_skill",
+      "approve_durable_or_public_effect",
+      "resume_after_interrupt_without_human_decision",
+      "change_provider_route",
+      "write_persistent_memory",
+      "publish_skill",
+      "touch_vps_or_services"
+    ]
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "publishes_skill": false,
+    "posts_publicly": false,
+    "touches_vps_or_services": false,
+    "provider_route_change_allowed": false,
+    "llm_route_decision_allowed": false,
+    "graph_can_execute_live_effects": false,
+    "all_durable_public_effects_require_interrupt": true
+  },
+  "summary": {
+    "work_order_count": 1,
+    "interrupt_count": 1,
+    "deterministic_governance_node_count": 4,
+    "governance_hook_count": 4,
+    "llm_owned_learning_decision_count": 0,
+    "live_effect_allowed": false,
+    "verifier": "passed"
+  },
+  "warnings": [
+    "This is a local integration contract, not a LangGraph runtime install.",
+    "LangGraph State is evidence input; Qianxuesen route output remains authoritative.",
+    "Any repair ticket or durable/public work order should become an interrupt before execution."
+  ],
+  "violations": []
+}

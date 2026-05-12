@@ -47,6 +47,18 @@ import {
   workOrderFromOperationalQualityReport,
   writeWorkOrderArtifacts
 } from "../scripts/lib/work-order-router.mjs";
+import {
+  buildLangGraphQianxuesenBridge,
+  evaluateLangGraphQianxuesenBridge,
+  reviewLangGraphQianxuesenBridge
+} from "../scripts/lib/langgraph-qianxuesen-bridge.mjs";
+import {
+  CHECKPOINTER_FIELDS,
+  DEFAULT_STATE_INPUTS,
+  GOVERNANCE_STAGES,
+  INTERRUPT_DECISIONS,
+  LLM_MUST_NOT
+} from "../scripts/lib/langgraph-qianxuesen-contract.mjs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -904,6 +916,106 @@ test("work-order routing sends repair tickets through primary-agent user choice"
   assert.ok(order.traceability.acceptance_criteria.includes("minimal_positive_l3.non_skill_promoted_count == 0"));
   assert.match(order.user_prompt, /I received a work order/);
   assert.match(order.user_prompt, /minimal-positive mode already blocked the bad export/);
+});
+
+test("LangGraph bridge keeps Qianxuesen in charge of learning routes", async () => {
+  const repairTickets = await reviewRepairTickets({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const workOrderRouting = buildWorkOrderRouting({
+    repairTicketReview: repairTickets,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const result = buildLangGraphQianxuesenBridge({
+    repairTicketReview: repairTickets,
+    workOrderRouting,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const schemaCheck = await validateJsonData({
+    repoRoot: process.cwd(),
+    schemaRel: "schemas/langgraph_qianxuesen_bridge.schema.json",
+    data: result,
+    name: "validate generated LangGraph bridge"
+  });
+
+  assert.equal(result.mode, "langgraph-qianxuesen-bridge");
+  assert.equal(result.ok, true);
+  assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
+  assert.equal(result.integration_principle.carrier_layer, "LangGraph");
+  assert.equal(result.integration_principle.control_layer, "Qianxuesen");
+  assert.equal(result.langgraph_contract.checkpointer.required, true);
+  assert.equal(result.langgraph_contract.interrupt.required, true);
+  assert.equal(result.summary.work_order_count, workOrderRouting.summary.work_order_count);
+  assert.equal(result.summary.interrupt_count, workOrderRouting.summary.requires_user_confirmation_count);
+  assert.equal(result.summary.llm_owned_learning_decision_count, 0);
+  assert.equal(result.safety.llm_route_decision_allowed, false);
+  assert.equal(result.safety.graph_can_execute_live_effects, false);
+  assert.equal(result.langgraph_contract.custom_nodes.every((node) => node.owner === "qianxuesen_deterministic"), true);
+  assert.equal(result.langgraph_contract.custom_nodes.every((node) => node.llm_decision_allowed === false), true);
+  assert.deepEqual(result.langgraph_contract.state_inputs, DEFAULT_STATE_INPUTS);
+  assert.deepEqual(result.langgraph_contract.checkpointer.persist_fields, CHECKPOINTER_FIELDS);
+  assert.deepEqual(result.langgraph_contract.custom_nodes.map((node) => node.stage_id), GOVERNANCE_STAGES.map((stage) => stage.stage_id));
+  assert.deepEqual(result.governance_hooks.map((hook) => hook.from_node), GOVERNANCE_STAGES.map((stage) => stage.from_node));
+  assert.deepEqual(result.governance_hooks.map((hook) => hook.to_node), GOVERNANCE_STAGES.map((stage) => stage.to_node));
+  assert.deepEqual(result.decision_boundary.llm_agent_must_not, LLM_MUST_NOT);
+  assert.deepEqual(result.langgraph_contract.llm_nodes.forbidden_learning_decisions, LLM_MUST_NOT);
+  assert.equal(result.interrupt_queue.every((item) => item.effect_boundary.execution_allowed_without_human === false), true);
+  assert.equal(result.interrupt_queue.every((item) => item.effect_boundary.requires_interrupt === true), true);
+  assert.deepEqual(result.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
+});
+
+test("LangGraph bridge flags downgraded LLM-owned governance", async () => {
+  const result = await reviewLangGraphQianxuesenBridge({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const downgraded = structuredClone(result);
+  downgraded.langgraph_contract.custom_nodes[0].owner = "llm_agent";
+  downgraded.langgraph_contract.custom_nodes[0].llm_decision_allowed = true;
+  downgraded.governance_hooks[0].llm_may_override = true;
+  downgraded.safety.llm_route_decision_allowed = true;
+  downgraded.summary.llm_owned_learning_decision_count = 1;
+  downgraded.decision_boundary.llm_agent_must_not = downgraded.decision_boundary.llm_agent_must_not
+    .filter((item) => item !== "write_persistent_memory");
+  downgraded.langgraph_contract.llm_nodes.forbidden_learning_decisions = downgraded.langgraph_contract.llm_nodes.forbidden_learning_decisions
+    .filter((item) => item !== "touch_vps_or_services");
+  downgraded.langgraph_contract.checkpointer.persist_fields = downgraded.langgraph_contract.checkpointer.persist_fields
+    .filter((item) => item !== "interrupt_decisions");
+  downgraded.interrupt_queue[0].resume_policy.accepted_decisions = ["execute_locally"];
+
+  const checked = evaluateLangGraphQianxuesenBridge(downgraded);
+
+  assert.equal(checked.ok, false);
+  assert.ok(checked.violations.includes("custom_governance_nodes_must_be_deterministic"));
+  assert.ok(checked.violations.includes("governance_hooks_must_not_be_llm_overridable"));
+  assert.ok(checked.violations.includes("llm_route_decision_allowed_must_be_false"));
+  assert.ok(checked.violations.includes("llm_owned_learning_decision_count_must_be_zero"));
+  assert.ok(checked.violations.includes("llm_learning_route_boundary_missing"));
+  assert.ok(checked.violations.includes("langgraph_checkpointer_fields_missing"));
+  assert.ok(checked.violations.includes("interrupt_resume_decisions_missing"));
+});
+
+test("LangGraph bridge example stays aligned with generated contract constants", async () => {
+  const example = JSON.parse(await fs.readFile(
+    path.join(process.cwd(), "examples", "langgraph_qianxuesen_bridge.example.json"),
+    "utf8"
+  ));
+  const result = await reviewLangGraphQianxuesenBridge({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.deepEqual(example.langgraph_contract.state_inputs, result.langgraph_contract.state_inputs);
+  assert.deepEqual(example.langgraph_contract.checkpointer.persist_fields, result.langgraph_contract.checkpointer.persist_fields);
+  assert.deepEqual(example.langgraph_contract.llm_nodes.forbidden_learning_decisions, result.langgraph_contract.llm_nodes.forbidden_learning_decisions);
+  assert.deepEqual(example.decision_boundary.llm_agent_must_not, result.decision_boundary.llm_agent_must_not);
+  assert.deepEqual(
+    example.langgraph_contract.custom_nodes.map((node) => [node.stage_id, node.node_id]),
+    result.langgraph_contract.custom_nodes.map((node) => [node.stage_id, node.node_id])
+  );
+  assert.deepEqual(
+    example.governance_hooks.map((hook) => [hook.stage_id, hook.from_node, hook.to_node, hook.hook]),
+    result.governance_hooks.map((hook) => [hook.stage_id, hook.from_node, hook.to_node, hook.hook])
+  );
+  assert.deepEqual(example.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
 });
 
 test("work-order routing policy can allow only bounded low-risk autonomous work", () => {

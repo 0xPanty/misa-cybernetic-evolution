@@ -12,6 +12,14 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
+## LangGraph/Qianxuesen Bridge
+
+![LangGraph carries the loop; Qianxuesen owns the learning.](docs/assets/langgraph-qianxuesen-flow.svg)
+
+The diagram is also available as a Remotion storyboard source at
+[`docs/remotion/langgraph-qianxuesen-flow.tsx`](docs/remotion/langgraph-qianxuesen-flow.tsx)
+for future animation or video rendering.
+
 ## v0.15 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
@@ -35,6 +43,7 @@ npm run memory-layer:misa
 npm run export-skills:misa
 npm run repair-ticket:misa -- --dry-run
 npm run work-order:route -- --dry-run
+npm run langgraph:bridge -- --json
 npm run validate:schemas
 npm run precheck
 npm test
@@ -92,6 +101,10 @@ Expected result:
 - the work-order router converts repair tickets and operator-quality reports
   into traceable primary-agent handoff packets, with suggested executors,
   escalation options, user confirmation, and source refs preserved;
+- the LangGraph/Qianxuesen bridge contract captures the safe fusion shape:
+  LangGraph may provide State, checkpointer, interrupt, and custom-node carrier
+  mechanics, while Qianxuesen keeps deterministic learning-route authority and
+  maps repair/work orders into human-boundary interrupts;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -156,6 +169,7 @@ or existing Hermes/Zilliz distillation artifact
 -> export only safe local skill drafts
 -> generate repair tickets for unsafe over-promotion patterns
 -> route work orders to the primary agent with suggested executor and escalation options
+-> project the same work orders into a LangGraph-compatible interrupt/checkpoint contract
 -> validate with schemas, precheck, and tests
 ```
 

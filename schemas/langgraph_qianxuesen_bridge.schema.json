@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/langgraph_qianxuesen_bridge.schema.json",
+  "title": "LangGraphQianxuesenBridge",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "integration_principle",
+    "langgraph_contract",
+    "state_projection",
+    "governance_hooks",
+    "interrupt_queue",
+    "decision_boundary",
+    "safety",
+    "summary",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.langgraph_qianxuesen_bridge.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "langgraph-qianxuesen-bridge"
+    },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "integration_principle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["carrier_layer", "control_layer", "llm_agent_role", "natural_fit", "rule"],
+      "properties": {
+        "carrier_layer": { "type": "string", "const": "LangGraph" },
+        "control_layer": { "type": "string", "const": "Qianxuesen" },
+        "llm_agent_role": { "type": "string", "const": "executor_or_summarizer_only" },
+        "natural_fit": { "type": "boolean", "const": true },
+        "rule": { "type": "string" }
+      }
+    },
+    "langgraph_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state_inputs", "checkpointer", "interrupt", "custom_nodes", "llm_nodes"],
+      "properties": {
+        "state_inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "checkpointer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "scope", "persist_fields", "must_not_persist_raw_private_content"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "scope": { "type": "string", "const": "learning_cycle" },
+            "persist_fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "must_not_persist_raw_private_content": { "type": "boolean", "const": true }
+          }
+        },
+        "interrupt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "trigger_sources", "human_boundary", "resume_requires"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "trigger_sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "human_boundary": { "type": "string", "const": "human_owner" },
+            "resume_requires": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "custom_nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/custom_node" }
+        },
+        "llm_nodes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allowed_roles", "forbidden_learning_decisions"],
+          "properties": {
+            "allowed_roles": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "forbidden_learning_decisions": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "state_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_source_ids",
+        "repair_ticket_count",
+        "work_order_count",
+        "high_risk_work_order_count",
+        "human_owner_work_order_count"
+      ],
+      "properties": {
+        "evidence_source_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "repair_ticket_count": { "type": "integer", "minimum": 0 },
+        "work_order_count": { "type": "integer", "minimum": 0 },
+        "high_risk_work_order_count": { "type": "integer", "minimum": 0 },
+        "human_owner_work_order_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "governance_hooks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/governance_hook" }
+    },
+    "interrupt_queue": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/interrupt" }
+    },
+    "decision_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["qianxuesen_owns", "langgraph_owns", "llm_agent_may", "llm_agent_must_not"],
+      "properties": {
+        "qianxuesen_owns": { "type": "array", "items": { "type": "string" } },
+        "langgraph_owns": { "type": "array", "items": { "type": "string" } },
+        "llm_agent_may": { "type": "array", "items": { "type": "string" } },
+        "llm_agent_must_not": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "writes_persistent_memory",
+        "publishes_skill",
+        "posts_publicly",
+        "touches_vps_or_services",
+        "provider_route_change_allowed",
+        "llm_route_decision_allowed",
+        "graph_can_execute_live_effects",
+        "all_durable_public_effects_require_interrupt"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "publishes_skill": { "type": "boolean", "const": false },
+        "posts_publicly": { "type": "boolean", "const": false },
+        "touches_vps_or_services": { "type": "boolean", "const": false },
+        "provider_route_change_allowed": { "type": "boolean", "const": false },
+        "llm_route_decision_allowed": { "type": "boolean", "const": false },
+        "graph_can_execute_live_effects": { "type": "boolean", "const": false },
+        "all_durable_public_effects_require_interrupt": { "type": "boolean", "const": true }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "work_order_count",
+        "interrupt_count",
+        "deterministic_governance_node_count",
+        "governance_hook_count",
+        "llm_owned_learning_decision_count",
+        "live_effect_allowed",
+        "verifier"
+      ],
+      "properties": {
+        "work_order_count": { "type": "integer", "minimum": 0 },
+        "interrupt_count": { "type": "integer", "minimum": 0 },
+        "deterministic_governance_node_count": { "type": "integer", "minimum": 1 },
+        "governance_hook_count": { "type": "integer", "minimum": 1 },
+        "llm_owned_learning_decision_count": { "type": "integer", "const": 0 },
+        "live_effect_allowed": { "type": "boolean", "const": false },
+        "verifier": { "type": "string", "enum": ["passed", "failed"] }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "custom_node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage_id", "node_id", "owner", "calls", "llm_decision_allowed", "description"],
+      "properties": {
+        "stage_id": { "type": "string" },
+        "node_id": { "type": "string" },
+        "owner": { "type": "string", "const": "qianxuesen_deterministic" },
+        "calls": { "type": "string" },
+        "llm_decision_allowed": { "type": "boolean", "const": false },
+        "description": { "type": "string" }
+      }
+    },
+    "governance_hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage_id",
+        "after_node",
+        "from_node",
+        "to_node",
+        "hook",
+        "owner",
+        "input_from_state",
+        "output_to_state",
+        "must_be_deterministic",
+        "llm_may_override"
+      ],
+      "properties": {
+        "stage_id": { "type": "string" },
+        "after_node": { "type": "string" },
+        "from_node": { "type": "string" },
+        "to_node": { "type": "string" },
+        "hook": { "type": "string" },
+        "owner": { "type": "string", "const": "qianxuesen_deterministic" },
+        "input_from_state": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "output_to_state": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "must_be_deterministic": { "type": "boolean", "const": true },
+        "llm_may_override": { "type": "boolean", "const": false }
+      }
+    },
+    "interrupt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interrupt_id",
+        "source_type",
+        "source_id",
+        "title",
+        "reason",
+        "suggested_executor",
+        "requires_user_confirmation",
+        "durable_or_public_effect",
+        "effect_boundary",
+        "resume_policy"
+      ],
+      "properties": {
+        "interrupt_id": { "type": "string" },
+        "source_type": { "type": "string" },
+        "source_id": { "type": "string" },
+        "title": { "type": "string" },
+        "reason": { "type": "string" },
+        "suggested_executor": { "type": "string" },
+        "requires_user_confirmation": { "type": "boolean" },
+        "durable_or_public_effect": { "type": "boolean" },
+        "effect_boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "durable_or_public_effect",
+            "execution_allowed_without_human",
+            "requires_interrupt",
+            "blocked_surfaces",
+            "source_policy"
+          ],
+          "properties": {
+            "durable_or_public_effect": { "type": "boolean" },
+            "execution_allowed_without_human": { "type": "boolean", "const": false },
+            "requires_interrupt": { "type": "boolean", "const": true },
+            "blocked_surfaces": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "source_policy": { "type": "string" }
+          }
+        },
+        "resume_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "human_owner_required",
+            "accepted_decisions",
+            "require_source_refs",
+            "require_approval_record"
+          ],
+          "properties": {
+            "human_owner_required": { "type": "boolean" },
+            "accepted_decisions": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "require_source_refs": { "type": "boolean", "const": true },
+            "require_approval_record": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    }
+  }
+}

@@ -202,6 +202,24 @@ public, durable, credential, memory, or production changes go to the human owner
 The v0.14 handoff layer is described in
 [docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md).
 
+### 8.1 LangGraph Carrier Bridge
+
+LangGraph is treated as a carrier layer, not as the learning controller.
+
+The useful parts are State, checkpointer, interrupt, resume trace, and custom
+nodes. The bridge maps Qianxuesen repair tickets and work orders into
+LangGraph-compatible human-boundary interrupts. Custom nodes may call local
+Qianxuesen distill, route, repair-ticket, and work-order functions, but they
+must remain deterministic from the graph's point of view.
+
+The forbidden shape is an LLM graph node choosing memory, skill, policy, case,
+or damping routes. That would make the control loop weaker. The allowed shape
+is LangGraph carrying evidence and pause/resume mechanics while Qianxuesen owns
+the route decision.
+
+The v0.15 bridge contract is described in
+[docs/langgraph-qianxuesen-bridge-v0.15.md](./docs/langgraph-qianxuesen-bridge-v0.15.md).
+
 ### 9. Publication and Governance Plane
 
 Publication creates immutable records:
