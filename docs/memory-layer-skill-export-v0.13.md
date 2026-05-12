@@ -55,18 +55,18 @@ lesson itself does not carry public-memory risk.
 
 ```bash
 npm run memory-layer:misa
-npm run memory-layer:misa -- --json
+npm --silent run memory-layer:misa -- --json
 npm run export-skills:misa
-npm run export-skills:misa -- --json
-npm run repair-ticket:misa -- --json --dry-run
+npm --silent run export-skills:misa -- --json
+npm --silent run repair-ticket:misa -- --json --dry-run
 ```
 
 For a copied VPS sanitized-conversation source directory:
 
 ```bash
-npm run memory-layer:misa -- --vps-raw-dir runs/vps-real-conversation-source --json
-npm run export-skills:misa -- --vps-raw-dir runs/vps-real-conversation-source --out-dir runs/vps-real-skill-export --json
-npm run repair-ticket:misa -- --vps-raw-dir runs/vps-real-conversation-source --json --dry-run
+npm --silent run memory-layer:misa -- --vps-raw-dir runs/vps-real-conversation-source --json
+npm --silent run export-skills:misa -- --vps-raw-dir runs/vps-real-conversation-source --out-dir runs/vps-real-skill-export --json
+npm --silent run repair-ticket:misa -- --vps-raw-dir runs/vps-real-conversation-source --json --dry-run
 ```
 
 ## Repair Tickets

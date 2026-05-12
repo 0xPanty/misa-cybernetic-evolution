@@ -1,4 +1,5 @@
 import { reviewMemoryLayerComparison } from "./lib/memory-layer.mjs";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -13,6 +14,7 @@ const result = await reviewMemoryLayerComparison({
   sourceDir: readArg("source-dir"),
   vpsRawDir: readArg("vps-raw-dir")
 });
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify(result, null, 2));

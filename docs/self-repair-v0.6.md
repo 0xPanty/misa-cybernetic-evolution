@@ -9,10 +9,14 @@ loop. It is still not a production publisher.
 npm run self-repair:misa
 npm run self-repair:misa -- --candidate-id skill-candidate-misa-skill-recovery-workflow-001
 npm run self-repair:misa -- --no-verify
+npm run self-repair:misa -- --no-verify --run-root runs/self-repair-check --generated-root runs/self-repair-check/skill-drafts --repair-plan-root runs/self-repair-check/repair-plans
 ```
 
 The command reads staged skill crystallization candidates, writes draft repair
 artifacts, and optionally verifies them.
+
+Use the custom output-root flags during full validation or CI when you want to
+inspect self-repair behavior without rewriting tracked `generated/` artifacts.
 
 ## Write Scope
 
@@ -21,6 +25,9 @@ The command may write only:
 - `generated/skill-drafts/`
 - `generated/repair-plans/`
 - `runs/self-repair/`
+
+Those defaults can be redirected with `--run-root`, `--generated-root`, and
+`--repair-plan-root`.
 
 It must not write Hermes memory, Zilliz, production skill directories, Discord,
 AgentMail, Farcaster runtime files, systemd units, cron entries, or provider

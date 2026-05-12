@@ -1,16 +1,25 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  readJsonHandoffArtifact,
+  ticketsFromJsonHandoffDiagnostics
+} from "./json-handoff-contract.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 
 const CODEX_MAY_EDIT = [
   "scripts/lib/memory-layer.mjs",
+  "scripts/lib/cli-output.mjs",
+  "scripts/lib/json-handoff-contract.mjs",
   "scripts/lib/repair-ticket.mjs",
+  "scripts/work-order-router.mjs",
   "scripts/repair-ticket.mjs",
   "schemas/memory_layer.schema.json",
   "schemas/repair_ticket.schema.json",
+  "schemas/work_order_routing.schema.json",
   "test/governance.test.mjs",
   "docs/memory-layer-skill-export-v0.13.md",
-  "docs/repair-ticket-v0.13.md"
+  "docs/repair-ticket-v0.13.md",
+  "docs/work-order-routing-v0.14.md"
 ];
 
 const CODEX_MUST_NOT_EDIT = [
@@ -147,9 +156,9 @@ function buildTicket(review) {
     },
     bad_promotions: promotions,
     reproduction_commands: [
-      commandWithArgs("npm run memory-layer:misa", review.source, ["--json"]),
-      commandWithArgs("npm run repair-ticket:misa", review.source, ["--json", "--dry-run"]),
-      commandWithArgs("npm run export-skills:misa", review.source, ["--json"])
+      commandWithArgs("npm --silent run memory-layer:misa", review.source, ["--json"]),
+      commandWithArgs("npm --silent run repair-ticket:misa", review.source, ["--json", "--dry-run"]),
+      commandWithArgs("npm --silent run export-skills:misa", review.source, ["--json"])
     ],
     acceptance_criteria: acceptanceCriteria(),
     codex_scope: {
@@ -198,7 +207,7 @@ function buildSummary(review, tickets) {
           : "P3",
     severity_counts: severityCounts,
     repair_candidate_count: tickets.filter((ticket) => ticket.status !== "observe_only").length,
-    bad_promotion_count: tickets.reduce((sum, ticket) => sum + ticket.bad_promotions.length, 0),
+    bad_promotion_count: tickets.reduce((sum, ticket) => sum + (ticket.bad_promotions ?? []).length, 0),
     minimal_non_skill_promoted_count: review.minimal_positive_l3.non_skill_promoted_count,
     live_effect_violation: liveEffectViolation(review),
     verdict: review.comparison.verdict
@@ -206,13 +215,15 @@ function buildSummary(review, tickets) {
 }
 
 export function buildRepairTicketReviewFromMemoryLayer(review, {
-  now = new Date("2026-05-11T00:00:00Z")
+  now = new Date("2026-05-11T00:00:00Z"),
+  extraTickets = []
 } = {}) {
   const tickets = [];
   const ticket = buildTicket(review);
   if (ticket.bad_promotions.length > 0 || ticket.severity === "P0") {
     tickets.push(ticket);
   }
+  tickets.push(...extraTickets);
 
   const violations = [...review.violations];
   if (review.minimal_positive_l3.non_skill_promoted_count !== 0) {
@@ -258,11 +269,17 @@ export async function reviewRepairTickets({
   repoRoot = process.cwd(),
   sourceDir,
   vpsRawDir,
+  jsonHandoffFiles = [],
   memoryLayerReview,
   now = new Date("2026-05-11T00:00:00Z")
 } = {}) {
   const review = memoryLayerReview ?? await reviewMemoryLayerComparison({ repoRoot, sourceDir, vpsRawDir });
-  return buildRepairTicketReviewFromMemoryLayer(review, { now });
+  const diagnostics = [];
+  for (const filePath of jsonHandoffFiles) {
+    diagnostics.push(await readJsonHandoffArtifact(filePath, { artifactRole: "machine_json_handoff" }));
+  }
+  const extraTickets = ticketsFromJsonHandoffDiagnostics(diagnostics);
+  return buildRepairTicketReviewFromMemoryLayer(review, { now, extraTickets });
 }
 
 function renderMarkdown(review) {
@@ -302,6 +319,13 @@ function renderMarkdown(review) {
       `- minimal_l3_skill_count: ${ticket.evidence.minimal_l3_skill_count}`,
       `- avoided_bad_promotions: ${ticket.evidence.avoided_bad_promotions}`,
       `- route_counts: ${JSON.stringify(ticket.evidence.route_counts)}`,
+      ...(ticket.evidence.issue_code
+        ? [
+          `- issue_code: ${ticket.evidence.issue_code}`,
+          `- artifact_path: ${ticket.evidence.artifact_path ?? ""}`,
+          `- parse_error: ${ticket.evidence.parse_error ?? ""}`
+        ]
+        : []),
       "",
       "### Bad Promotions",
       ""

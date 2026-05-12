@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { distillLocalMisaSources } from "./lib/session-distiller.mjs";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -17,6 +18,7 @@ const result = await distillLocalMisaSources({
   sourceDir,
   requireTemplateCoverage: !sourceDir
 });
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (asJson) {
   console.log(JSON.stringify(result, null, 2));

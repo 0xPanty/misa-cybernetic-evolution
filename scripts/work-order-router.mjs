@@ -1,4 +1,9 @@
-import fs from "node:fs/promises";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
+import {
+  buildJsonHandoffRepairTicketReview,
+  readJsonHandoffArtifact,
+  readStrictJsonArtifact
+} from "./lib/json-handoff-contract.mjs";
 import {
   buildWorkOrderRouting,
   routeWorkOrders,
@@ -20,7 +25,17 @@ function hasArg(name) {
 
 async function readJsonFile(filePath) {
   if (!filePath) return undefined;
-  return JSON.parse(await fs.readFile(filePath, "utf8"));
+  return readStrictJsonArtifact(filePath);
+}
+
+async function readRepairTicketReview(filePath, now) {
+  if (!filePath) return undefined;
+  const artifact = await readJsonHandoffArtifact(filePath, { artifactRole: "repair_ticket_file" });
+  if (artifact.ok) return artifact.data;
+  return buildJsonHandoffRepairTicketReview({
+    diagnostics: [artifact],
+    now
+  });
 }
 
 async function readJsonArray(filePath) {
@@ -49,7 +64,7 @@ const now = nowArg ? new Date(nowArg) : new Date();
 const dryRun = hasArg("dry-run") || hasArg("no-write");
 const routingPolicy = routingPolicyFromArgs();
 
-const repairTicketReview = await readJsonFile(readArg("repair-ticket-file"));
+const repairTicketReview = await readRepairTicketReview(readArg("repair-ticket-file"), now);
 const operationalReports = await readJsonArray(readArg("operator-report-file"));
 
 let result;
@@ -71,6 +86,7 @@ if (!dryRun) {
     now
   });
 }
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (hasArg("json")) {
   console.log(JSON.stringify(result, null, 2));

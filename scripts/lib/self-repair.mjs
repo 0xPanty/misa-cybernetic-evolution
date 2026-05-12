@@ -78,7 +78,7 @@ async function appendJsonl(filePath, data) {
 
 function buildSkillDraft(candidate, state = "draft_generated") {
   const lines = [
-    `# ${candidate.proposed_skill.title}`,
+    `# ${candidate.proposed_skill.title.trimEnd()}`,
     "",
     "## Status",
     "",
@@ -116,14 +116,17 @@ function buildSkillDraft(candidate, state = "draft_generated") {
     ""
   ];
 
-  return lines.join("\n");
+  return lines.map((line) => line.trimEnd()).join("\n");
 }
 
 function buildRepairPlan(candidate, generatedFiles, status = "draft_generated") {
   return {
     schema_version: "misa.self_repair_plan.v1",
     candidate_id: candidate.candidate_id,
-    proposed_skill: candidate.proposed_skill,
+    proposed_skill: {
+      ...candidate.proposed_skill,
+      title: candidate.proposed_skill.title.trimEnd()
+    },
     action: status === "validated_draft" ? "generate_validated_draft" : "generate_review_draft",
     status,
     write_scope: [...DEFAULT_WRITE_SCOPE],

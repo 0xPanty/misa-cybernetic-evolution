@@ -40,6 +40,16 @@ npm run precheck
 npm test
 ```
 
+For machine-to-machine JSON handoff, do not redirect plain `npm run ... -- --json`
+stdout into the next command. Use `npm --silent run ... -- --json`, direct
+`node scripts/... --json`, or `--out-file <path>` so the file contains only
+JSON.
+
+The handoff contract is checked as part of the repair/work-order path. If
+`work-order:route --repair-ticket-file <path>` receives an npm-banner-polluted
+file, it reports a `json_handoff_contract` repair work order instead of failing
+with an unstructured JSON parse error.
+
 Expected result:
 
 - all JSON schemas compile;
@@ -436,6 +446,10 @@ draft skill files, repair plans, command logs, and final reports under
 `generated/` and `runs/self-repair/`. A passing run marks the output as
 `validated_draft`; `--no-verify` only marks `draft_generated`. It still cannot
 publish the Skill or change production.
+
+For full validation or CI, redirect self-repair outputs with `--run-root`,
+`--generated-root`, and `--repair-plan-root` so the check does not rewrite
+tracked `generated/` artifacts.
 
 v0.7 adds `npm run density:misa`, a second GenericAgent-inspired gate. It borrows
 contextual information density, layered pointer memory, and action-verified

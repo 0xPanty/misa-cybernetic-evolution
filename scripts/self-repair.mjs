@@ -13,11 +13,17 @@ function readArg(name) {
 const asJson = process.argv.includes("--json");
 const verify = !process.argv.includes("--no-verify");
 const candidateId = readArg("--candidate-id");
+const runRoot = readArg("--run-root");
+const generatedRoot = readArg("--generated-root");
+const repairPlanRoot = readArg("--repair-plan-root");
 const timeoutArg = readArg("--timeout-ms");
 const timeoutMs = timeoutArg ? Number.parseInt(timeoutArg, 10) : 120000;
 
 const result = await runMisaSelfRepair({
   candidateId,
+  runRoot,
+  generatedRoot,
+  repairPlanRoot,
   verify,
   timeoutMs
 });

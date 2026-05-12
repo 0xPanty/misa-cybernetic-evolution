@@ -47,6 +47,26 @@ import {
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+
+function runNpm(args) {
+  const options = {
+    cwd: process.cwd(),
+    maxBuffer: 1024 * 1024 * 20
+  };
+  if (process.platform === "win32") {
+    return execFileAsync("cmd.exe", [
+      "/d",
+      "/c",
+      "npm",
+      ...args
+    ], options);
+  }
+  return execFileAsync("npm", args, options);
+}
 
 test("classifies high-risk actuators", () => {
   const matches = classifyActuators([
@@ -980,6 +1000,131 @@ test("work-order artifacts write traceable JSON and Markdown without execution",
   }
 });
 
+test("npm-launched JSON handoff writes clean out-file artifacts", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-json-handoff-"));
+  const repairTicketPath = path.join(tempRoot, "repair-ticket.json");
+  const workOrderPath = path.join(tempRoot, "work-orders.json");
+
+  try {
+    await runNpm([
+      "run",
+      "repair-ticket:misa",
+      "--",
+      "--json",
+      "--dry-run",
+      "--out-file",
+      repairTicketPath
+    ]);
+
+    const repairTicketReview = JSON.parse(await fs.readFile(repairTicketPath, "utf8"));
+    assert.equal(repairTicketReview.mode, "repair-ticket-review");
+    assert.equal(repairTicketReview.ok, true);
+
+    await runNpm([
+      "run",
+      "work-order:route",
+      "--",
+      "--repair-ticket-file",
+      repairTicketPath,
+      "--json",
+      "--dry-run",
+      "--out-file",
+      workOrderPath
+    ]);
+
+    const workOrderRouting = JSON.parse(await fs.readFile(workOrderPath, "utf8"));
+    assert.equal(workOrderRouting.mode, "work-order-routing");
+    assert.equal(workOrderRouting.ok, true);
+    assert.equal(workOrderRouting.summary.work_order_count, repairTicketReview.tickets.length);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("repair-ticket review flags npm-banner-polluted machine JSON artifacts", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-json-contract-"));
+  const pollutedPath = path.join(tempRoot, "repair-ticket.polluted.json");
+
+  try {
+    await fs.writeFile(
+      pollutedPath,
+      [
+        "> misa-cybernetic-evolution@0.15.0 repair-ticket:misa",
+        "> node scripts/repair-ticket.mjs --json --dry-run",
+        "",
+        "{\"mode\":\"repair-ticket-review\",\"ok\":true}"
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = await reviewRepairTickets({
+      jsonHandoffFiles: [pollutedPath],
+      now: new Date("2026-05-12T00:00:00Z")
+    });
+
+    const ticket = result.tickets.find((item) => item.source_kind === "json_handoff_contract");
+    assert.ok(ticket);
+    assert.equal(ticket.severity, "P2");
+    assert.equal(ticket.status, "repair_candidate");
+    assert.equal(ticket.evidence.issue_code, "npm_lifecycle_banner_before_json");
+    assert.match(ticket.problem_statement, /strict JSON/);
+    assert.ok(ticket.acceptance_criteria.includes("machine JSON artifacts parse with JSON.parse without stripping text"));
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("work-order routing reports contaminated repair-ticket files as JSON handoff work orders", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-json-contract-route-"));
+  const pollutedPath = path.join(tempRoot, "repair-ticket.polluted.json");
+  const outPath = path.join(tempRoot, "work-orders.json");
+
+  try {
+    const repairTicketReview = await reviewRepairTickets({
+      now: new Date("2026-05-12T00:00:00Z")
+    });
+    await fs.writeFile(
+      pollutedPath,
+      [
+        "> misa-cybernetic-evolution@0.15.0 repair-ticket:misa",
+        "> node scripts/repair-ticket.mjs --json --dry-run",
+        "",
+        JSON.stringify(repairTicketReview, null, 2)
+      ].join("\n"),
+      "utf8"
+    );
+
+    await runNpm([
+      "run",
+      "work-order:route",
+      "--",
+      "--repair-ticket-file",
+      pollutedPath,
+      "--json",
+      "--dry-run",
+      "--out-file",
+      outPath
+    ]);
+
+    const routing = JSON.parse(await fs.readFile(outPath, "utf8"));
+    assert.equal(routing.mode, "work-order-routing");
+    assert.equal(routing.ok, true);
+    assert.equal(routing.summary.work_order_count, 1);
+
+    const order = routing.work_orders[0];
+    assert.match(order.work_order_id, /^wo-repair-json-handoff-contract-/);
+    assert.equal(order.source.source_kind, "json_handoff_contract");
+    assert.equal(order.severity, "P2");
+    assert.equal(order.category, "engineering_repair");
+    assert.equal(order.execution_policy.requires_user_confirmation, true);
+    assert.equal(order.execution_policy.auto_execute_allowed, false);
+    assert.equal(order.traceability.evidence.issue_code, "npm_lifecycle_banner_before_json");
+    assert.match(order.summary, /machine JSON artifact is not strict JSON/);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("Misa self repair writes draft artifacts without production effects", async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-self-repair-"));
 
@@ -1015,8 +1160,36 @@ test("Misa self repair writes draft artifacts without production effects", async
     assert.match(draft, /publication_allowed: false/);
     assert.match(draft, /state: draft_generated/);
     assert.match(draft, /Do not write persistent memory/);
+    assert.doesNotMatch(draft, /[ \t]+$/m);
     assert.equal(report.status, "draft_generated");
     assert.equal(report.safety.requires_human_publish_approval, true);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("self repair trims generated draft and repair-plan titles", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-self-repair-trim-"));
+
+  try {
+    const result = await runMisaSelfRepair({
+      repoRoot: process.cwd(),
+      candidateId: "skill-candidate-misa-skill-real-chat-evolution-eval-004",
+      runRoot: path.join(tempRoot, "runs", "self-repair"),
+      generatedRoot: path.join(tempRoot, "generated", "skill-drafts"),
+      repairPlanRoot: path.join(tempRoot, "generated", "repair-plans"),
+      verify: false,
+      now: new Date("2026-05-11T01:35:00Z")
+    });
+
+    assert.equal(result.ok, true);
+    const draftPath = path.join(tempRoot, "generated", "skill-drafts", "real-chat-evolution-eval-004.md");
+    const planPath = path.join(tempRoot, "generated", "repair-plans", "skill-candidate-misa-skill-real-chat-evolution-eval-004.json");
+    const draft = await fs.readFile(draftPath, "utf8");
+    const plan = JSON.parse(await fs.readFile(planPath, "utf8"));
+
+    assert.doesNotMatch(draft.split("\n")[0], /[ \t]$/);
+    assert.doesNotMatch(plan.proposed_skill.title, /[ \t]$/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

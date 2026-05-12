@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
 import {
   evaluateHermesMappingFixtures,
   mapHermesDistillation
@@ -42,6 +43,7 @@ if (fixture) {
     now
   });
 }
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (jsonMode) {
   console.log(JSON.stringify(result, null, 2));

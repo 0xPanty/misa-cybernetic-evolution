@@ -93,7 +93,7 @@ blocked for owner approval.
 Route the current local repair-ticket review without writing files:
 
 ```bash
-npm run work-order:route -- --json --dry-run
+npm --silent run work-order:route -- --json --dry-run
 ```
 
 Write ignored local artifacts under `runs/work-orders/<timestamp>/`:
@@ -105,13 +105,26 @@ npm run work-order:route
 Route a saved repair-ticket review:
 
 ```bash
-npm run work-order:route -- --repair-ticket-file runs/repair-tickets/manual-check/repair-ticket.json --json --dry-run
+npm --silent run work-order:route -- --repair-ticket-file runs/repair-tickets/manual-check/repair-ticket.json --json --dry-run
+```
+
+If the saved repair-ticket file is polluted by npm lifecycle banner text,
+`work-order:route` does not silently strip the file. It emits a
+`json_handoff_contract` engineering work order so the broken machine handoff is
+visible and traceable.
+
+When one command writes JSON for another command to read, prefer `--out-file`.
+That file contains pure JSON even when npm prints lifecycle text to stdout:
+
+```bash
+npm run repair-ticket:misa -- --json --dry-run --out-file runs/repair-tickets/manual-check/repair-ticket.json
+npm run work-order:route -- --repair-ticket-file runs/repair-tickets/manual-check/repair-ticket.json --json --dry-run --out-file runs/work-orders/manual-check/work-orders.json
 ```
 
 Route an operator-quality report:
 
 ```bash
-npm run work-order:route -- --operator-report-file state/farcaster/daily-reports-latest.json --json --dry-run
+npm --silent run work-order:route -- --operator-report-file state/farcaster/daily-reports-latest.json --json --dry-run
 ```
 
 Choose an output directory:

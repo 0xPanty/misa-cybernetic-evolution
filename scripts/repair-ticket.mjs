@@ -1,4 +1,5 @@
 import { reviewRepairTickets, writeRepairTicketArtifacts } from "./lib/repair-ticket.mjs";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -7,6 +8,21 @@ function readArg(name) {
   const index = process.argv.indexOf(`--${name}`);
   if (index >= 0) return process.argv[index + 1];
   return undefined;
+}
+
+function readArgs(name) {
+  const values = [];
+  const prefix = `--${name}=`;
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+    if (arg.startsWith(prefix)) {
+      values.push(arg.slice(prefix.length));
+    } else if (arg === `--${name}` && process.argv[index + 1]) {
+      values.push(process.argv[index + 1]);
+      index += 1;
+    }
+  }
+  return values;
 }
 
 function hasArg(name) {
@@ -20,6 +36,7 @@ const dryRun = hasArg("dry-run") || hasArg("no-write");
 let result = await reviewRepairTickets({
   sourceDir: readArg("source-dir"),
   vpsRawDir: readArg("vps-raw-dir"),
+  jsonHandoffFiles: readArgs("json-handoff-file"),
   now
 });
 
@@ -30,6 +47,7 @@ if (!dryRun) {
     now
   });
 }
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (hasArg("json")) {
   console.log(JSON.stringify(result, null, 2));

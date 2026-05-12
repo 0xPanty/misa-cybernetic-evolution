@@ -1,4 +1,5 @@
 import { exportMinimalPositiveSkills } from "./lib/memory-layer.mjs";
+import { writeJsonOutFile } from "./lib/cli-output.mjs";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -14,6 +15,7 @@ const result = await exportMinimalPositiveSkills({
   vpsRawDir: readArg("vps-raw-dir"),
   outDir: readArg("out-dir")
 });
+await writeJsonOutFile(result, readArg("out-file"));
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify(result, null, 2));
