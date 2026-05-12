@@ -1,0 +1,49 @@
+{
+  "schema_version": "misa.hermes.distillation_bundle.v1",
+  "artifact_type": "HermesSessionRiskDistillation",
+  "source_id": "high-risk",
+  "source_kind": "hermes_high_risk_summary",
+  "channel": "farcaster",
+  "generated_at": "2026-05-12T00:00:00.000Z",
+  "summary": "Hermes/Zilliz distilled a proposal that touches production routing, credentials, public send, and durable memory write. The Qianxuesen mapper must stop this at human_owner review with audit and rollback required.",
+  "setpoint": "intercept high-risk control inputs before autonomous execution",
+  "outcome": "partial",
+  "risk_level": "critical",
+  "risk_flags": [
+    "production",
+    "credentials",
+    "public_send",
+    "durable_memory_write"
+  ],
+  "signals": [
+    "explicit_user_boundary",
+    "public_posting_boundary"
+  ],
+  "source_refs": [
+    "hermes:session:high-risk"
+  ],
+  "chunk_refs": [
+    {
+      "chunk_hash": "chunk-high-risk-001",
+      "source_path": "session-shadow/hermes/high-risk"
+    }
+  ],
+  "journal_refs": [
+    {
+      "journal_date": "2026-05-12",
+      "journal_entry_hash": "journal-high-risk-001"
+    }
+  ],
+  "audit_refs": [
+    "artifacts/session-distiller-audit.jsonl#high-risk"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "artifacts/session-llm-distillation-summary.json",
+      "artifacts/session-distiller-audit.jsonl"
+    ],
+    "modified": [],
+    "tool_errors": []
+  }
+}

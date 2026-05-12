@@ -14,6 +14,7 @@ import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
+import { evaluateHermesMappingFixtures } from "./hermes-distillation-mapper.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import { buildWorkOrderRouting } from "./work-order-router.mjs";
@@ -39,6 +40,7 @@ const REQUIRED_FILES = [
   "docs/evolution-candidate-preflight-v0.11.md",
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
+  "docs/hermes-distillation-mapping-v0.15.md",
   "docs/memory-layer-skill-export-v0.13.md",
   "docs/repair-ticket-v0.13.md",
   "docs/work-order-routing-v0.14.md",
@@ -59,6 +61,7 @@ const REQUIRED_FILES = [
   "schemas/work_order_routing.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
+  "schemas/hermes_distillation_mapping.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -80,6 +83,16 @@ const REQUIRED_FILES = [
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
+  "examples/hermes-distillation-mapping/normal-summary.input.json",
+  "examples/hermes-distillation-mapping/normal-summary.expected.json",
+  "examples/hermes-distillation-mapping/farcaster-quality.input.json",
+  "examples/hermes-distillation-mapping/farcaster-quality.expected.json",
+  "examples/hermes-distillation-mapping/repeated-failure.input.json",
+  "examples/hermes-distillation-mapping/repeated-failure.expected.json",
+  "examples/hermes-distillation-mapping/missing-evidence.input.json",
+  "examples/hermes-distillation-mapping/missing-evidence.expected.json",
+  "examples/hermes-distillation-mapping/high-risk.input.json",
+  "examples/hermes-distillation-mapping/high-risk.expected.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -97,6 +110,7 @@ const REQUIRED_FILES = [
   "scripts/adaptive-candidates.mjs",
   "scripts/signal-intake.mjs",
   "scripts/distill-misa.mjs",
+  "scripts/hermes-distillation-mapper.mjs",
   "scripts/signal-rollup.mjs",
   "scripts/evolution-evaluator.mjs",
   "scripts/memory-layer.mjs",
@@ -108,6 +122,7 @@ const REQUIRED_FILES = [
   "scripts/lib/adaptive-candidate-gate.mjs",
   "scripts/lib/signal-intake-contract.mjs",
   "scripts/lib/session-distiller.mjs",
+  "scripts/lib/hermes-distillation-mapper.mjs",
   "scripts/lib/signal-candidate-rollup.mjs",
   "scripts/lib/evolution-evaluator.mjs",
   "scripts/lib/memory-layer.mjs",
@@ -261,6 +276,27 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
       schemaRel: "schemas/misa_learning_fixture.schema.json",
       data: event,
       name: `validate distilled learning event ${event.event_id}`
+    }));
+  }
+
+  const hermesMapping = await evaluateHermesMappingFixtures({ repoRoot });
+  checks.push(checkResult("Hermes distillation mapping fixture check", hermesMapping.ok, {
+    fixtureCount: hermesMapping.summary.fixture_count,
+    mappedCount: hermesMapping.summary.mapped_count,
+    workOrders: hermesMapping.summary.work_order_count,
+    blocked: hermesMapping.summary.blocked_count,
+    humanOwner: hermesMapping.summary.human_owner_count,
+    llmApiCalls: hermesMapping.summary.llm_api_calls,
+    externalApiCalls: hermesMapping.summary.external_api_calls,
+    violations: hermesMapping.violations
+  }));
+
+  for (const mapping of hermesMapping.results) {
+    checks.push(await validateJsonData({
+      repoRoot,
+      schemaRel: "schemas/hermes_distillation_mapping.schema.json",
+      data: mapping,
+      name: `validate Hermes mapping ${mapping.source.source_id}`
     }));
   }
 

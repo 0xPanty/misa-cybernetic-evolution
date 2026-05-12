@@ -25,6 +25,12 @@ import {
   distillMisaSources
 } from "../scripts/lib/session-distiller.mjs";
 import {
+  evaluateHermesMappingFixtures,
+  loadHermesMappingFixtures,
+  mapHermesDistillation
+} from "../scripts/lib/hermes-distillation-mapper.mjs";
+import { validateJsonData } from "../scripts/lib/schema-validation.mjs";
+import {
   exportMinimalPositiveSkills,
   reviewMemoryLayerComparison
 } from "../scripts/lib/memory-layer.mjs";
@@ -403,6 +409,83 @@ test("v0.13 distills local windows with a local vector index and no Zilliz proxy
   assert.ok(distilledEvent);
   assert.equal(distilledEvent.expected_route, "memory");
   assert.equal(events.some((event) => event.event_id === distilledEvent.event_id), true);
+});
+
+test("v0.15 maps Hermes/Zilliz distillation artifacts into Qianxuesen local inputs without API calls", async () => {
+  const fixtures = await loadHermesMappingFixtures();
+
+  assert.equal(fixtures.length, 5);
+
+  for (const fixture of fixtures) {
+    const expectedPath = path.join(
+      process.cwd(),
+      "examples",
+      "hermes-distillation-mapping",
+      `${fixture.fixture_id}.expected.json`
+    );
+    const expected = JSON.parse(await fs.readFile(expectedPath, "utf8"));
+    const result = await mapHermesDistillation(fixture.input);
+    const schemaCheck = await validateJsonData({
+      repoRoot: process.cwd(),
+      schemaRel: "schemas/hermes_distillation_mapping.schema.json",
+      data: result,
+      name: `validate ${fixture.fixture_id}`
+    });
+
+    assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
+    assert.deepEqual(result.expectation_summary, expected);
+    assert.equal(result.summary.llm_api_calls, 0);
+    assert.equal(result.summary.external_api_calls, 0);
+    assert.equal(result.safety.ai_second_pass_enabled, false);
+    assert.equal(result.safety.embedding_created, false);
+    assert.equal(result.safety.zilliz_written, false);
+    assert.equal(result.safety.production_journal_written, false);
+    assert.equal(result.safety.writes_persistent_memory, false);
+    assert.equal(result.safety.posts_publicly, false);
+    assert.equal(result.safety.autonomous_execution_allowed, false);
+    assert.equal(result.local_distillation_source.uses_zilliz_proxy, false);
+    assert.equal(result.local_distillation_source.vector_lookup_required, false);
+  }
+});
+
+test("v0.15 mapping routes quality, repair, missing evidence, and high risk through the right gates", async () => {
+  const review = await evaluateHermesMappingFixtures();
+  const byId = new Map(review.results.map((item) => [item.source.source_id, item]));
+
+  assert.equal(review.ok, true);
+  assert.equal(review.summary.fixture_count, 5);
+  assert.equal(review.summary.llm_api_calls, 0);
+  assert.equal(review.summary.external_api_calls, 0);
+
+  const normal = byId.get("normal-summary");
+  assert.equal(normal.routing.route_targets.includes("memory"), true);
+  assert.equal(normal.routing.route_targets.includes("case"), true);
+  assert.equal(normal.work_order, null);
+
+  const farcaster = byId.get("farcaster-quality");
+  assert.equal(farcaster.routing.suggested_executor, "persona_operator_agent");
+  assert.equal(farcaster.work_order.category, "operator_quality");
+  assert.equal(farcaster.work_order.auto_execute_allowed, false);
+  assert.equal(farcaster.safety.posts_publicly, false);
+
+  const repeated = byId.get("repeated-failure");
+  assert.equal(repeated.routing.route_targets.includes("repair_ticket"), true);
+  assert.equal(repeated.work_order.suggested_executor, "specialized_engineering_agent");
+  assert.ok(repeated.work_order.reproduction_commands.length > 0);
+  assert.ok(repeated.work_order.acceptance_criteria.length > 0);
+
+  const missing = byId.get("missing-evidence");
+  assert.equal(missing.evidence.evidence_status, "needs_evidence");
+  assert.equal(missing.routing.routing_status, "blocked");
+  assert.equal(missing.work_order, null);
+
+  const highRisk = byId.get("high-risk");
+  assert.deepEqual(highRisk.learning_events.map((event) => event.expected_route), ["policy"]);
+  assert.equal(highRisk.routing.suggested_executor, "human_owner");
+  assert.equal(highRisk.routing.audit_required, true);
+  assert.equal(highRisk.routing.rollback_required, true);
+  assert.equal(highRisk.work_order.auto_execute_allowed, false);
+  assert.equal(highRisk.work_order.rollback_required, true);
 });
 
 test("custom historical source dirs do not require example template coverage", async () => {

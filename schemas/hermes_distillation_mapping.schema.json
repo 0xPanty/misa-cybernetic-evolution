@@ -1,0 +1,413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/hermes_distillation_mapping.schema.json",
+  "title": "HermesDistillationMapping",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "dry_run",
+    "source",
+    "summary",
+    "evidence",
+    "routing",
+    "local_distillation_source",
+    "learning_events",
+    "repair_ticket",
+    "operator_report",
+    "work_order",
+    "safety",
+    "checks",
+    "warnings",
+    "violations",
+    "expectation_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.hermes_distillation_mapping.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "hermes-distillation-mapping"
+    },
+    "ok": { "type": "boolean", "const": true },
+    "created_at": { "type": "string", "format": "date-time" },
+    "dry_run": { "type": "boolean", "const": true },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "source_kind", "artifact_type", "channel"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "source_kind": { "type": "string", "minLength": 1 },
+        "artifact_type": { "type": "string", "minLength": 1 },
+        "channel": {
+          "type": "string",
+          "enum": ["discord", "farcaster", "agentmail", "local", "other"]
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_distillation_source_emitted",
+        "learning_event_count",
+        "work_order_created",
+        "repair_ticket_created",
+        "llm_api_calls",
+        "external_api_calls",
+        "ai_second_pass_enabled",
+        "embedding_created",
+        "zilliz_written",
+        "production_write"
+      ],
+      "properties": {
+        "local_distillation_source_emitted": { "type": "boolean", "const": true },
+        "learning_event_count": { "type": "integer", "minimum": 1 },
+        "work_order_created": { "type": "boolean" },
+        "repair_ticket_created": { "type": "boolean" },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "ai_second_pass_enabled": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "production_write": { "type": "boolean", "const": false }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_status",
+        "source_refs",
+        "chunk_refs",
+        "journal_refs",
+        "audit_refs",
+        "artifact_evidence"
+      ],
+      "properties": {
+        "evidence_status": {
+          "type": "string",
+          "enum": ["complete", "needs_evidence"]
+        },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "chunk_refs": { "$ref": "#/$defs/string_array" },
+        "journal_refs": { "$ref": "#/$defs/string_array" },
+        "audit_refs": { "$ref": "#/$defs/string_array" },
+        "artifact_evidence": { "$ref": "#/$defs/artifact_evidence" }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routing_status",
+        "route_targets",
+        "suggested_executor",
+        "routing_policy",
+        "ask_before_execution",
+        "autonomous_execution_allowed",
+        "audit_required",
+        "rollback_required",
+        "no_public_send",
+        "no_zilliz_write",
+        "no_memory_write"
+      ],
+      "properties": {
+        "routing_status": {
+          "type": "string",
+          "enum": ["ready", "ask_before_execution", "blocked", "human_review"]
+        },
+        "route_targets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "memory",
+              "skill",
+              "case",
+              "policy",
+              "damping",
+              "ignore",
+              "operator_quality",
+              "repair_ticket",
+              "work_order",
+              "human_owner",
+              "needs_evidence"
+            ]
+          }
+        },
+        "suggested_executor": {
+          "type": "string",
+          "enum": [
+            "primary_agent",
+            "persona_operator_agent",
+            "specialized_engineering_agent",
+            "human_owner"
+          ]
+        },
+        "routing_policy": {
+          "type": "string",
+          "enum": ["report_only", "ask_before_execution"]
+        },
+        "ask_before_execution": { "type": "boolean" },
+        "autonomous_execution_allowed": { "type": "boolean", "const": false },
+        "audit_required": { "type": "boolean" },
+        "rollback_required": { "type": "boolean" },
+        "no_public_send": { "type": "boolean", "const": true },
+        "no_zilliz_write": { "type": "boolean", "const": true },
+        "no_memory_write": { "type": "boolean", "const": true }
+      }
+    },
+    "local_distillation_source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "source_id",
+        "source_kind",
+        "channel",
+        "local_only",
+        "uses_zilliz_proxy",
+        "vector_lookup_required",
+        "raw_window_default",
+        "artifact_evidence",
+        "turns"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "misa.local_distillation_source.v1"
+        },
+        "local_only": { "type": "boolean", "const": true },
+        "uses_zilliz_proxy": { "type": "boolean", "const": false },
+        "vector_lookup_required": { "type": "boolean", "const": false },
+        "raw_window_default": { "type": "boolean", "const": false },
+        "artifact_evidence": { "$ref": "#/$defs/artifact_evidence" },
+        "turns": { "type": "array", "minItems": 1 }
+      }
+    },
+    "learning_events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "expected_route",
+          "summary",
+          "signals",
+          "outcome",
+          "risk_level",
+          "source_refs",
+          "artifact_evidence",
+          "expected_status",
+          "expected_publication_mode",
+          "expected_candidate_state"
+        ],
+        "properties": {
+          "event_id": { "type": "string", "minLength": 1 },
+          "expected_route": {
+            "type": "string",
+            "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+          },
+          "summary": { "type": "string", "minLength": 1 },
+          "signals": { "$ref": "#/$defs/string_array_min_one" },
+          "outcome": {
+            "type": "string",
+            "enum": ["success", "partial", "failure", "unknown"]
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "source_refs": { "$ref": "#/$defs/string_array" },
+          "artifact_evidence": { "$ref": "#/$defs/artifact_evidence" },
+          "expected_status": {
+            "type": "string",
+            "enum": ["draft", "verified", "requires_approval", "rejected", "held"]
+          },
+          "expected_publication_mode": {
+            "type": "string",
+            "enum": ["draft_only", "requires_approval", "no_publish"]
+          },
+          "expected_candidate_state": {
+            "type": "string",
+            "enum": ["none", "staged", "validated", "rejected", "held"]
+          }
+        }
+      }
+    },
+    "repair_ticket": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object", "additionalProperties": true }
+      ]
+    },
+    "operator_report": {
+      "anyOf": [
+        { "type": "null" },
+        { "type": "object", "additionalProperties": true }
+      ]
+    },
+    "work_order": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "work_order_id",
+            "category",
+            "severity",
+            "risk_level",
+            "suggested_executor",
+            "routing_status",
+            "default_next_step",
+            "requires_user_confirmation",
+            "auto_execute_allowed",
+            "audit_required",
+            "rollback_required",
+            "source_refs",
+            "reproduction_commands",
+            "acceptance_criteria",
+            "forbidden_scope"
+          ],
+          "properties": {
+            "work_order_id": { "type": "string" },
+            "category": {
+              "type": "string",
+              "enum": ["engineering_repair", "operator_quality"]
+            },
+            "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+            "risk_level": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+            "suggested_executor": {
+              "type": "string",
+              "enum": [
+                "primary_agent",
+                "persona_operator_agent",
+                "specialized_engineering_agent",
+                "human_owner"
+              ]
+            },
+            "routing_status": { "type": "string" },
+            "default_next_step": { "type": "string" },
+            "requires_user_confirmation": { "type": "boolean" },
+            "auto_execute_allowed": { "type": "boolean", "const": false },
+            "audit_required": { "type": "boolean", "const": true },
+            "rollback_required": { "type": "boolean" },
+            "source_refs": { "type": "array" },
+            "reproduction_commands": { "$ref": "#/$defs/string_array" },
+            "acceptance_criteria": { "$ref": "#/$defs/string_array_min_one" },
+            "forbidden_scope": { "$ref": "#/$defs/string_array" }
+          }
+        }
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "llm_api_calls",
+        "external_api_calls",
+        "ai_second_pass_enabled",
+        "embedding_created",
+        "zilliz_written",
+        "production_journal_written",
+        "writes_persistent_memory",
+        "posts_publicly",
+        "autonomous_execution_allowed"
+      ],
+      "properties": {
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "ai_second_pass_enabled": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "production_journal_written": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "posts_publicly": { "type": "boolean", "const": false },
+        "autonomous_execution_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "ok", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expectation_summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "fixture_id",
+        "evidence_status",
+        "routing_status",
+        "route_targets",
+        "suggested_executor",
+        "learning_event_routes",
+        "work_order",
+        "repair_ticket",
+        "safety"
+      ],
+      "properties": {
+        "fixture_id": { "type": "string" },
+        "evidence_status": { "type": "string" },
+        "routing_status": { "type": "string" },
+        "route_targets": { "type": "array" },
+        "suggested_executor": { "type": "string" },
+        "learning_event_routes": { "type": "array" },
+        "work_order": {},
+        "repair_ticket": {},
+        "safety": { "type": "object" }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "string_array_min_one": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "artifact_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["injected", "read", "modified", "tool_errors"],
+      "properties": {
+        "injected": { "$ref": "#/$defs/string_array" },
+        "read": { "$ref": "#/$defs/string_array" },
+        "modified": { "$ref": "#/$defs/string_array" },
+        "tool_errors": { "$ref": "#/$defs/string_array" }
+      }
+    }
+  }
+}

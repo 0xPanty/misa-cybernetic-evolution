@@ -1,0 +1,56 @@
+{
+  "schema_version": "misa.hermes.farcaster.daily_report.v1",
+  "artifact_type": "FarcasterDailyQualityReport",
+  "source_id": "farcaster-quality",
+  "source_kind": "farcaster_quality_report",
+  "channel": "farcaster",
+  "generated_at": "2026-05-12T00:00:00.000Z",
+  "report_date": "2026-05-12",
+  "summary": "Farcaster daily quality review found reply quality declining: interactions were weak, voice drifted away from Misa's expected style, and the next behavior change must be reviewed before any public send.",
+  "outcome": "partial",
+  "risk_level": "high",
+  "signals": [
+    "operator_quality",
+    "farcaster_low_quality_reply",
+    "persona_style_drift",
+    "public_posting_boundary"
+  ],
+  "source_refs": [
+    "farcaster:daily-quality:2026-05-12"
+  ],
+  "chunk_refs": [
+    {
+      "chunk_hash": "chunk-farcaster-quality-001",
+      "source_path": "session-shadow/hermes/farcaster-quality"
+    }
+  ],
+  "journal_refs": [
+    {
+      "journal_date": "2026-05-12",
+      "journal_entry_hash": "journal-farcaster-quality-001"
+    }
+  ],
+  "audit_refs": [
+    "state/farcaster/daily-reports-latest.json#operator_quality"
+  ],
+  "quality_result": {
+    "verdict": "tighten",
+    "issues": [
+      "reply quality declined",
+      "interaction effect was weak",
+      "style drifted away from expected Misa voice"
+    ],
+    "recommendations": [
+      "send the work order to persona_operator_agent for self-review",
+      "keep live Farcaster sending disabled until Huan approves"
+    ]
+  },
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "state/farcaster/daily-reports-latest.json"
+    ],
+    "modified": [],
+    "tool_errors": []
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "fixture_id": "normal-summary",
+  "evidence_status": "complete",
+  "routing_status": "ready",
+  "route_targets": [
+    "case",
+    "memory"
+  ],
+  "suggested_executor": "primary_agent",
+  "learning_event_routes": [
+    "case",
+    "memory"
+  ],
+  "work_order": null,
+  "repair_ticket": null,
+  "safety": {
+    "llm_api_calls": 0,
+    "external_api_calls": 0,
+    "ai_second_pass_enabled": false,
+    "zilliz_written": false,
+    "writes_persistent_memory": false,
+    "posts_publicly": false,
+    "autonomous_execution_allowed": false
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": "misa.hermes.distillation_bundle.v1",
+  "artifact_type": "HermesSessionDistillationBundle",
+  "source_id": "normal-summary",
+  "source_kind": "hermes_session_summary",
+  "channel": "local",
+  "generated_at": "2026-05-12T00:00:00.000Z",
+  "summary": "Hermes/Zilliz distilled a local Misa work session: Huan wants the existing distillation summary to feed the Qianxuesen control-learning loop as a traceable local lesson. Hermes/Zilliz remains memory distillation and retrieval; Qianxuesen remains control learning.",
+  "setpoint": "preserve the Hermes distillation role while creating local Qianxuesen learning input",
+  "outcome": "success",
+  "risk_level": "low",
+  "signals": [
+    "stable_project_fact",
+    "stable_user_preference"
+  ],
+  "turns": [
+    {
+      "speaker": "hermes",
+      "ref": "hermes:normal-summary:memory",
+      "text": "Huan wants existing Hermes/Zilliz distillation summaries to feed Qianxuesen as traceable local control-learning input. Hermes/Zilliz remains memory distillation and retrieval; Qianxuesen remains control learning."
+    },
+    {
+      "speaker": "hermes",
+      "ref": "hermes:normal-summary:case",
+      "text": "Case review: if a mapping handoff drops chunk, journal, or audit evidence, keep it as a failure case for later review instead of silently promoting it to memory."
+    }
+  ],
+  "source_refs": [
+    "hermes:session:normal-summary"
+  ],
+  "chunk_refs": [
+    {
+      "chunk_hash": "chunk-normal-001",
+      "source_path": "session-shadow/hermes/normal-summary",
+      "heading": "[hermes session 2026-05-12] normal-summary chunk-0"
+    }
+  ],
+  "journal_refs": [
+    {
+      "journal_date": "2026-05-12",
+      "journal_entry_hash": "journal-normal-001"
+    }
+  ],
+  "audit_refs": [
+    "artifacts/session-distiller-audit.jsonl#normal-summary"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "artifacts/session-llm-distillation-summary.json",
+      "artifacts/zilliz-session-chunks-manifest.jsonl"
+    ],
+    "modified": [],
+    "tool_errors": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "misa.hermes.distillation_bundle.v1",
+  "artifact_type": "HermesSessionDistillationBundle",
+  "source_id": "missing-evidence",
+  "source_kind": "hermes_session_summary",
+  "channel": "local",
+  "generated_at": "2026-05-12T00:00:00.000Z",
+  "summary": "Hermes produced a summary, but the source refs and audit refs were not attached. The mapper should downgrade the result and block executable routing until evidence is supplied.",
+  "outcome": "unknown",
+  "risk_level": "medium",
+  "signals": [
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [],
+    "modified": [],
+    "tool_errors": []
+  }
+}

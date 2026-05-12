@@ -1,0 +1,37 @@
+{
+  "fixture_id": "repeated-failure",
+  "evidence_status": "complete",
+  "routing_status": "ready",
+  "route_targets": [
+    "case",
+    "repair_ticket",
+    "work_order"
+  ],
+  "suggested_executor": "specialized_engineering_agent",
+  "learning_event_routes": [
+    "case"
+  ],
+  "work_order": {
+    "category": "engineering_repair",
+    "severity": "P2",
+    "suggested_executor": "specialized_engineering_agent",
+    "auto_execute_allowed": false,
+    "audit_required": true,
+    "rollback_required": false
+  },
+  "repair_ticket": {
+    "severity": "P2",
+    "status": "repair_candidate",
+    "reproduction_command_count": 4,
+    "acceptance_criteria_count": 7
+  },
+  "safety": {
+    "llm_api_calls": 0,
+    "external_api_calls": 0,
+    "ai_second_pass_enabled": false,
+    "zilliz_written": false,
+    "writes_persistent_memory": false,
+    "posts_publicly": false,
+    "autonomous_execution_allowed": false
+  }
+}

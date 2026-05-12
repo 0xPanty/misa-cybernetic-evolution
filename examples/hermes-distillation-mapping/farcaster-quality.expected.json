@@ -1,0 +1,30 @@
+{
+  "fixture_id": "farcaster-quality",
+  "evidence_status": "complete",
+  "routing_status": "ask_before_execution",
+  "route_targets": [
+    "operator_quality"
+  ],
+  "suggested_executor": "persona_operator_agent",
+  "learning_event_routes": [
+    "policy"
+  ],
+  "work_order": {
+    "category": "operator_quality",
+    "severity": "P1",
+    "suggested_executor": "persona_operator_agent",
+    "auto_execute_allowed": false,
+    "audit_required": true,
+    "rollback_required": false
+  },
+  "repair_ticket": null,
+  "safety": {
+    "llm_api_calls": 0,
+    "external_api_calls": 0,
+    "ai_second_pass_enabled": false,
+    "zilliz_written": false,
+    "writes_persistent_memory": false,
+    "posts_publicly": false,
+    "autonomous_execution_allowed": false
+  }
+}

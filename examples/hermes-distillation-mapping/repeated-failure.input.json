@@ -1,0 +1,65 @@
+{
+  "schema_version": "misa.hermes.distillation_bundle.v1",
+  "artifact_type": "HermesSessionFailureDistillation",
+  "source_id": "repeated-failure",
+  "source_kind": "hermes_failure_summary",
+  "channel": "local",
+  "generated_at": "2026-05-12T00:00:00.000Z",
+  "summary": "Hermes distilled a repeated local failure: the same mapping precheck failed three times because evidence refs were dropped before the work-order router received the ticket.",
+  "setpoint": "turn repeated evidence-loss failures into a traceable local repair work order",
+  "outcome": "failure",
+  "risk_level": "medium",
+  "signals": [
+    "repeated_failure_pattern"
+  ],
+  "source_refs": [
+    "hermes:session:repeated-failure"
+  ],
+  "chunk_refs": [
+    {
+      "chunk_hash": "chunk-repeated-failure-001",
+      "source_path": "session-shadow/hermes/repeated-failure"
+    }
+  ],
+  "journal_refs": [
+    {
+      "journal_date": "2026-05-12",
+      "journal_entry_hash": "journal-repeated-failure-001"
+    }
+  ],
+  "audit_refs": [
+    "artifacts/session-distiller-audit.jsonl#repeated-failure"
+  ],
+  "failure_signal": {
+    "kind": "repeated_failure_pattern",
+    "occurrences": 3,
+    "summary": "Evidence refs were present in the distillation input but missing from the generated work-order handoff.",
+    "reproduction": [
+      "npm run hermes:map-distillation -- --fixture examples/hermes-distillation-mapping/repeated-failure.input.json --json --dry-run",
+      "npm test -- --test-name-pattern hermes"
+    ],
+    "acceptance_criteria": [
+      "repair ticket carries source_refs, chunk_refs, journal_refs, and audit_refs",
+      "work order suggests specialized_engineering_agent",
+      "work order remains non-autonomous"
+    ],
+    "affected_files": [
+      "scripts/lib/hermes-distillation-mapper.mjs",
+      "test/governance.test.mjs"
+    ],
+    "tool_errors": [
+      "mapper:evidence_refs_dropped"
+    ]
+  },
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "artifacts/session-llm-distillation-summary.json",
+      "artifacts/session-distiller-audit.jsonl"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "mapper:evidence_refs_dropped"
+    ]
+  }
+}

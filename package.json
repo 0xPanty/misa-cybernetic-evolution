@@ -1,6 +1,6 @@
 {
   "name": "misa-cybernetic-evolution",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "A control-theoretic learning plane for Hermes-style AI agents.",
   "type": "module",
   "license": "Apache-2.0",
@@ -14,6 +14,7 @@
     "crystallize:misa": "node scripts/crystallize-skills.mjs",
     "self-repair:misa": "node scripts/self-repair.mjs",
     "distill:misa": "node scripts/distill-misa.mjs",
+    "hermes:map-distillation": "node scripts/hermes-distillation-mapper.mjs",
     "density:misa": "node scripts/genericagent-density.mjs",
     "adaptive:misa": "node scripts/adaptive-candidates.mjs",
     "intake:misa": "node scripts/signal-intake.mjs",

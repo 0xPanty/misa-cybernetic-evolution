@@ -28,7 +28,8 @@ const SCHEMA_DIRECTORY_PAIRS = [
 ];
 
 const SCHEMA_ONLY_FILES = [
-  "schemas/session_distillation_review.schema.json"
+  "schemas/session_distillation_review.schema.json",
+  "schemas/hermes_distillation_mapping.schema.json"
 ];
 
 async function readJson(filePath) {

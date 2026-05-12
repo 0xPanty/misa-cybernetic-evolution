@@ -65,6 +65,32 @@ This plane converts raw observations into causal summaries:
 
 The output is not yet memory. It is evidence for routing.
 
+### 4.1 Hermes/Zilliz Mapping Bridge
+
+Hermes/Zilliz and Qianxuesen stay separate.
+
+Hermes/Zilliz owns memory distillation and retrieval evidence: summaries, chunk
+refs, journal refs, audit refs, and quality/risk results. Qianxuesen owns
+control learning: routing, damping, repair tickets, work-order handoff, and
+closed-loop optimization.
+
+The v0.15 mapper is only the bridge. It translates existing Hermes/Zilliz
+distillation output into `local_distillation_source`, learning events, and
+repair/work-order routing input. It must not copy Zilliz, create embeddings,
+write the vector store, write production journals, post publicly, or mutate Misa
+memory.
+
+Default runtime assertions are fixed at:
+
+- LLM API calls: `0`
+- external API calls: `0`
+- AI second-pass: off
+- embedding creation: false
+- Zilliz write: false
+- production journal write: false
+- public send: false
+- autonomous execution: false
+
 ### 5. Routing Plane
 
 The router decides the artifact class:
@@ -116,6 +142,7 @@ The v0.6 repository implements the first local gate:
 npm run simulate:misa
 npm run crystallize:misa
 npm run self-repair:misa -- --no-verify
+npm run hermes:map-distillation -- --json
 npm run validate:schemas
 npm run precheck
 npm test

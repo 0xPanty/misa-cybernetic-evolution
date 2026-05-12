@@ -12,7 +12,7 @@ developer agents, social agents, and multi-channel assistants that must improve
 without corrupting memory, breaking session continuity, or silently changing
 production behavior.
 
-## v0.14 Quickstart
+## v0.15 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -25,6 +25,7 @@ npm run simulate:misa
 npm run crystallize:misa
 npm run self-repair:misa -- --no-verify
 npm run distill:misa
+npm run hermes:map-distillation -- --json
 npm run density:misa
 npm run adaptive:misa
 npm run intake:misa
@@ -63,6 +64,10 @@ Expected result:
   and Farcaster audits into atomic learning events with redaction,
   segmentation, local token vectors, route-specific lesson splitting, and no
   Zilliz/model/external API dependency;
+- the v0.15 Hermes distillation mapper translates existing Hermes/Zilliz
+  summaries, chunk refs, journal refs, audit refs, risk, outcome, and quality
+  results into Qianxuesen local distillation sources, learning events, and
+  repair/work-order routing input without copying Zilliz or making API calls;
 - the memory-layer comparison reports L0 source refs, L1 distillates, L2 route
   candidates, and two L3 strategies so broad auto-skill promotion can be
   compared against the minimal positive export path, including compound-window
@@ -97,11 +102,11 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.14 does not include is a background runtime service. It does not
+What this v0.15 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
-In plain terms, v0.14 is accepted as a local control-theoretic learning engine,
+In plain terms, v0.15 is accepted as a local control-theoretic learning engine,
 not as an autonomous production brain. It can read redacted local evidence,
 compress it, route it, draft safe local artifacts, and explain what should be
 repaired next. It cannot make production decisions by itself.
@@ -129,7 +134,9 @@ The current closed loop is:
 
 ```text
 redacted local source
+or existing Hermes/Zilliz distillation artifact
 -> distill and segment
+-> map Hermes/Zilliz refs into local Qianxuesen input
 -> split compound windows into atomic lessons
 -> extract signals
 -> create learning events
@@ -331,6 +338,8 @@ See [docs/repair-ticket-v0.13.md](./docs/repair-ticket-v0.13.md)
 for the local Codex repair-ticket queue.
 See [docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md)
 for the primary-agent handoff and executor-choice layer.
+See [docs/hermes-distillation-mapping-v0.15.md](./docs/hermes-distillation-mapping-v0.15.md)
+for the Hermes/Zilliz -> Qianxuesen mapping bridge.
 
 ## Why This Exists
 
@@ -494,6 +503,16 @@ primary agent to report to the user. Each work order keeps source refs,
 evidence, acceptance criteria, suggested executor, escalation options, and a
 plain user prompt. It still does not execute anything automatically.
 
+v0.15 adds `npm run hermes:map-distillation` as the bridge from already-produced
+Hermes/Zilliz distillation artifacts into this control-learning layer. It keeps
+Hermes/Zilliz responsible for memory distillation and retrieval, keeps
+Qianxuesen responsible for control learning and repair routing, and preserves
+source refs, chunk refs, journal refs, and audit refs. It does not turn this
+repository into a general Zilliz memory framework or a Farcaster bot. It is a
+pure local script by default: zero LLM calls, zero external API calls, no
+embedding, no Zilliz writes, no production journal writes, no Misa memory
+writes, and no public sends.
+
 ## Design Principles
 
 1. Separate the live runtime from the learning plane.
@@ -615,6 +634,7 @@ for the machine-readable form.
 │   ├── memory-layer-skill-export-v0.13.md
 │   ├── repair-ticket-v0.13.md
 │   ├── work-order-routing-v0.14.md
+│   ├── hermes-distillation-mapping-v0.15.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -628,6 +648,7 @@ for the machine-readable form.
 │   ├── signal_candidate_rollup.schema.json
 │   ├── local_distillation_source.schema.json
 │   ├── session_distillation_review.schema.json
+│   ├── hermes_distillation_mapping.schema.json
 │   ├── memory_layer.schema.json
 │   ├── repair_ticket.schema.json
 │   ├── work_order_routing.schema.json
@@ -645,6 +666,7 @@ for the machine-readable form.
 │   ├── repair_ticket.example.json
 │   ├── work_order_routing.example.json
 │   ├── misa-distillation/
+│   ├── hermes-distillation-mapping/
 │   ├── learning_event.example.json
 │   ├── learning_item.example.json
 │   ├── learning_cycle_trace.example.json
@@ -666,6 +688,7 @@ for the machine-readable form.
 │   ├── precheck.mjs
 │   ├── adaptive-candidates.mjs
 │   ├── distill-misa.mjs
+│   ├── hermes-distillation-mapper.mjs
 │   ├── memory-layer.mjs
 │   ├── export-skills.mjs
 │   ├── repair-ticket.mjs
@@ -702,7 +725,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.14 engineering scaffold. It is ready to publish as a public
+This is a v0.15 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures and local distillation
 sources.
@@ -716,6 +739,8 @@ Current scope:
 - Misa launch profile for reference/precheck use;
 - Misa learning-loop simulator and route expectation fixtures;
 - full local window distillation without Zilliz proxy or API calls;
+- Hermes/Zilliz distillation mapping into Qianxuesen local control-learning
+  inputs, repair tickets, and work-order routing summaries;
 - L0-L4 memory-layer comparison and minimal local Skill export;
 - mixed-route pressure diagnostics for compound historical windows;
 - local Codex repair-ticket queue for over-promotion evidence;
