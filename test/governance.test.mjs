@@ -553,6 +553,12 @@ test("v0.11 preflights optimization candidates before reporting to Huan", async 
   const realChat = result.optimization_candidates.find(
     (candidate) => candidate.source_event_id === "misa-skill-real-chat-evolution-eval-004"
   );
+  const farcasterAudit = result.optimization_candidates.find(
+    (candidate) => candidate.source_event_id === "misa-distilled-farcaster-reply-audit-007"
+  );
+  const heldClarification = result.optimization_candidates.find(
+    (candidate) => candidate.candidate_hygiene.clarification.status === "hold_for_more_evidence"
+  );
 
   assert.equal(result.mode, "candidate-preflight-local-simulation");
   assert.equal(result.ok, true);
@@ -577,13 +583,53 @@ test("v0.11 preflights optimization candidates before reporting to Huan", async 
   assert.equal(realChat.local_preflight.status, "preflight_passed");
   assert.equal(realChat.local_preflight.report_to_huan, true);
   assert.equal(realChat.local_preflight.simulated_before_report, true);
+  assert.equal(realChat.candidate_hygiene.reportable, true);
+  assert.equal(realChat.candidate_hygiene.verdict, "passes_hygiene");
+  assert.equal(realChat.candidate_hygiene.role, "candidate hygiene gate, not a new workflow");
+  assert.ok(realChat.candidate_hygiene.source_adaptations.some((adaptation) => (
+    adaptation.source === "mattpocock/skills"
+      && adaptation.borrowed.includes("answer from codebase evidence before asking the user")
+      && adaptation.rejected.includes("new CONTEXT.md or ADR system")
+  )));
+  assert.equal(realChat.candidate_hygiene.principles.length, 5);
+  assert.equal(realChat.candidate_hygiene.task_gate.length, 4);
+  assert.equal(realChat.candidate_hygiene.principles.every((principle) => principle.ok), true);
+  assert.equal(realChat.candidate_hygiene.task_gate.every((question) => question.ok), true);
+  assert.equal(realChat.candidate_hygiene.clarification.mode, "codebase_first_decision_tree");
+  assert.equal(realChat.candidate_hygiene.clarification.status, "resolved_by_evidence");
+  assert.equal(realChat.candidate_hygiene.clarification.codebase_answered.length, 4);
+  assert.equal(realChat.candidate_hygiene.clarification.open_questions.length, 0);
+  assert.equal(realChat.candidate_hygiene.clarification.needs_huan_answer.length, 0);
+  assert.equal(realChat.candidate_hygiene.clarification.recommended_next_question, null);
+  assert.equal(realChat.candidate_hygiene.terminology.status, "aligned");
+  assert.equal(realChat.candidate_hygiene.terminology.conflicts.length, 0);
+  assert.ok(farcasterAudit);
+  assert.equal(farcasterAudit.candidate_hygiene.terminology.status, "surface_term_aligned");
+  assert.equal(farcasterAudit.candidate_hygiene.terminology.conflicts.length, 0);
+  assert.ok(heldClarification);
+  assert.ok(heldClarification.candidate_hygiene.clarification.recommended_next_question);
+  assert.equal(heldClarification.candidate_hygiene.clarification.needs_huan_answer.length, 0);
+  assert.equal(result.summary.hygiene_reportable_count, result.summary.preflight_passed_count);
   assert.equal(result.report_queue.every((report) => report.allowed_next_step === "human_review_only"), true);
+  assert.equal(result.report_queue.every((report) => report.hygiene_verdict === "passes_hygiene"), true);
+  assert.equal(result.report_queue.every((report) => report.clarification_status === "resolved_by_evidence"), true);
+  assert.equal(result.report_queue.every((report) => report.next_unresolved_question === null), true);
+  assert.equal(result.report_queue.every((report) => ["aligned", "surface_term_aligned"].includes(report.terminology_status)), true);
   assert.equal(
     result.optimization_candidates
       .filter((candidate) => candidate.local_preflight.status !== "preflight_passed")
       .every((candidate) => candidate.local_preflight.report_to_huan === false),
     true
   );
+  assert.equal(
+    result.optimization_candidates
+      .filter((candidate) => candidate.local_preflight.report_to_huan)
+      .every((candidate) => candidate.candidate_hygiene.reportable),
+    true
+  );
+  assert.ok(result.optimization_candidates.some(
+    (candidate) => candidate.candidate_hygiene.verdict === "hold_or_reduce_scope"
+  ));
   assert.ok(result.experience_ledger.length > 0);
   assert.equal(result.optimization_candidates.length, result.source.queue_item_count);
   assert.equal(result.safety.production_authority, false);

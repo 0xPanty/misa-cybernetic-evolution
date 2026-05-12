@@ -76,7 +76,11 @@ Expected result:
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
   optimization preflights, and only reportable candidates are queued for Huan
-  review;
+  review; its lightweight candidate hygiene gate keeps hidden assumptions,
+  over-large scope, untraceable edits, missing success criteria, and weak
+  four-question task fit out of the report queue, then adds codebase-first
+  clarification and terminology checks without importing a second doc or issue
+  workflow;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.

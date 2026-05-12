@@ -337,6 +337,7 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     mode: evolutionEvaluator.mode,
     optimizationCandidates: evolutionEvaluator.summary.optimization_candidate_count,
     preflightPassed: evolutionEvaluator.summary.preflight_passed_count,
+    hygieneReportable: evolutionEvaluator.summary.hygiene_reportable_count,
     reportQueue: evolutionEvaluator.summary.report_queue_count,
     held: evolutionEvaluator.summary.held_count,
     suppressed: evolutionEvaluator.summary.suppressed_count,

@@ -13,6 +13,7 @@ if (asJson) {
   console.log(`ok: ${result.ok}`);
   console.log(`optimization_candidates: ${result.summary.optimization_candidate_count}`);
   console.log(`preflight_passed: ${result.summary.preflight_passed_count}`);
+  console.log(`hygiene_reportable: ${result.summary.hygiene_reportable_count}`);
   console.log(`report_queue: ${result.summary.report_queue_count}`);
   console.log(`held: ${result.summary.held_count}`);
   console.log(`suppressed: ${result.summary.suppressed_count}`);
