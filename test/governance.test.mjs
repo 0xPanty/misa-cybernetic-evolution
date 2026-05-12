@@ -1018,6 +1018,34 @@ test("LangGraph bridge example stays aligned with generated contract constants",
   assert.deepEqual(example.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
 });
 
+test("LangGraph bridge maps compact Hermes high-risk work orders to human interrupts", async () => {
+  const input = JSON.parse(await fs.readFile(
+    path.join(process.cwd(), "examples", "hermes-distillation-mapping", "high-risk.input.json"),
+    "utf8"
+  ));
+  const mapping = await mapHermesDistillation(input);
+  const result = buildLangGraphQianxuesenBridge({
+    workOrderRouting: {
+      work_order: mapping.work_order
+    },
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(mapping.routing.suggested_executor, "human_owner");
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.work_order_count, 1);
+  assert.equal(result.summary.interrupt_count, 1);
+  assert.equal(result.state_projection.human_owner_work_order_count, 1);
+
+  const interrupt = result.interrupt_queue[0];
+  assert.equal(interrupt.suggested_executor, "human_owner");
+  assert.equal(interrupt.resume_policy.human_owner_required, true);
+  assert.equal(interrupt.effect_boundary.durable_or_public_effect, true);
+  assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("persistent_memory"));
+  assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("runtime_service"));
+  assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("provider_or_credential"));
+});
+
 test("work-order routing policy can allow only bounded low-risk autonomous work", () => {
   const report = {
     schema: "misa.hermes.farcaster.daily_report.v1",

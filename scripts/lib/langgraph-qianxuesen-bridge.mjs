@@ -28,6 +28,44 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function workOrdersFromRouting(workOrderRouting) {
+  if (Array.isArray(workOrderRouting?.work_orders)) {
+    return workOrderRouting.work_orders;
+  }
+  if (workOrderRouting?.work_order) {
+    return [workOrderRouting.work_order];
+  }
+  return [];
+}
+
+function executorTypeForOrder(order) {
+  return order.suggested_executor?.executor_type
+    ?? order.suggested_executor
+    ?? "primary_agent";
+}
+
+function requiresUserConfirmation(order) {
+  return order.execution_policy?.requires_user_confirmation
+    ?? order.requires_user_confirmation
+    ?? true;
+}
+
+function durableOrPublicEffectAllowed(order) {
+  return order.execution_policy?.durable_or_public_effect_allowed === true;
+}
+
+function rollbackRequired(order) {
+  return order.traceability?.rollback_required
+    ?? order.rollback_required
+    ?? false;
+}
+
+function forbiddenScopeForOrder(order) {
+  return order.traceability?.forbidden_scope
+    ?? order.forbidden_scope
+    ?? [];
+}
+
 function sourceRefIds(workOrders) {
   const refs = [];
   for (const order of workOrders) {
@@ -64,13 +102,13 @@ function buildCustomNodes() {
 }
 
 function interruptReason(order) {
-  if (order.suggested_executor?.executor_type === "human_owner") {
+  if (executorTypeForOrder(order) === "human_owner") {
     return "work order routes to human owner";
   }
-  if (order.execution_policy?.requires_user_confirmation) {
+  if (requiresUserConfirmation(order)) {
     return "work order requires user confirmation";
   }
-  if (order.execution_policy?.durable_or_public_effect_allowed === false) {
+  if (durableOrPublicEffectAllowed(order) === false) {
     return "durable/public effects are blocked unless a human resumes";
   }
   return "human boundary required before execution";
@@ -78,7 +116,7 @@ function interruptReason(order) {
 
 function inferBlockedSurfaces(order) {
   const text = [
-    ...(order.traceability?.forbidden_scope ?? []),
+    ...forbiddenScopeForOrder(order),
     order.source?.source_kind,
     order.category
   ].join(" ").toLowerCase();
@@ -95,32 +133,33 @@ function effectBoundaryForWorkOrder(order, durableOrPublicEffect) {
   return {
     durable_or_public_effect: durableOrPublicEffect,
     execution_allowed_without_human: false,
-    requires_interrupt: order.execution_policy?.requires_user_confirmation !== false
+    requires_interrupt: requiresUserConfirmation(order) !== false
       || durableOrPublicEffect
-      || order.suggested_executor?.executor_type === "human_owner",
+      || executorTypeForOrder(order) === "human_owner",
     blocked_surfaces: inferBlockedSurfaces(order),
     source_policy: "work_order.execution_policy plus traceability.forbidden_scope"
   };
 }
 
 function interruptFromWorkOrder(order) {
-  const durableOrPublicEffect = order.execution_policy?.durable_or_public_effect_allowed === true
-    || order.suggested_executor?.executor_type === "human_owner"
-    || order.traceability?.rollback_required === true;
+  const executorType = executorTypeForOrder(order);
+  const durableOrPublicEffect = durableOrPublicEffectAllowed(order)
+    || executorType === "human_owner"
+    || rollbackRequired(order) === true;
   const effectBoundary = effectBoundaryForWorkOrder(order, durableOrPublicEffect);
 
   return {
     interrupt_id: `interrupt-${stableSlug(order.work_order_id)}`,
     source_type: "work_order",
     source_id: order.work_order_id,
-    title: order.title,
+    title: order.title ?? order.work_order_id,
     reason: interruptReason(order),
-    suggested_executor: order.suggested_executor?.executor_type ?? "primary_agent",
-    requires_user_confirmation: order.execution_policy?.requires_user_confirmation !== false,
+    suggested_executor: executorType,
+    requires_user_confirmation: requiresUserConfirmation(order) !== false,
     durable_or_public_effect: durableOrPublicEffect,
     effect_boundary: effectBoundary,
     resume_policy: {
-      human_owner_required: durableOrPublicEffect || order.suggested_executor?.executor_type === "human_owner",
+      human_owner_required: durableOrPublicEffect || executorType === "human_owner",
       accepted_decisions: [...INTERRUPT_DECISIONS],
       require_source_refs: true,
       require_approval_record: true
@@ -129,11 +168,11 @@ function interruptFromWorkOrder(order) {
 }
 
 function buildInterruptQueue(workOrderRouting) {
-  return (workOrderRouting?.work_orders ?? [])
+  return workOrdersFromRouting(workOrderRouting)
     .filter((order) => (
-      order.execution_policy?.requires_user_confirmation !== false
-      || order.suggested_executor?.executor_type === "human_owner"
-      || order.execution_policy?.durable_or_public_effect_allowed === true
+      requiresUserConfirmation(order) !== false
+      || executorTypeForOrder(order) === "human_owner"
+      || durableOrPublicEffectAllowed(order)
     ))
     .map(interruptFromWorkOrder);
 }
@@ -228,7 +267,7 @@ export function buildLangGraphQianxuesenBridge({
   repairTicketReview,
   now = new Date("2026-05-12T00:00:00Z")
 } = {}) {
-  const workOrders = workOrderRouting?.work_orders ?? [];
+  const workOrders = workOrdersFromRouting(workOrderRouting);
   const repairTicketCount = repairTicketReview?.summary?.ticket_count
     ?? workOrders.filter((order) => order.source?.source_type === "repair_ticket").length;
   const customNodes = buildCustomNodes();
@@ -272,7 +311,7 @@ export function buildLangGraphQianxuesenBridge({
       repair_ticket_count: repairTicketCount,
       work_order_count: workOrders.length,
       high_risk_work_order_count: workOrders.filter((order) => ["P0", "P1"].includes(order.severity)).length,
-      human_owner_work_order_count: workOrders.filter((order) => order.suggested_executor?.executor_type === "human_owner").length
+      human_owner_work_order_count: workOrders.filter((order) => executorTypeForOrder(order) === "human_owner").length
     },
     governance_hooks: governanceHooks,
     interrupt_queue: interruptQueue,

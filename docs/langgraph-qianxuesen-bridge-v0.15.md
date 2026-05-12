@@ -94,6 +94,11 @@ Interrupts separate two ideas that should not be mixed:
 For this bridge, execution without a human is always false. Blocked surfaces are
 listed as boundary evidence, not as permission to touch those surfaces.
 
+The bridge accepts both the canonical `work-order:route` artifact and the
+compact `work_order` shape emitted by the Hermes mapping fixtures. This keeps a
+high-risk Hermes owner-review order from losing its `human_owner` interrupt when
+it is projected into the LangGraph contract.
+
 ## First Local Artifact
 
 The first version is intentionally dependency-free. It does not install
