@@ -112,6 +112,50 @@ function badPromotions(review) {
     }));
 }
 
+function readableSourceKind(sourceKind) {
+  const known = {
+    local_distillation_sources: "local distillation sources",
+    vps_sanitized_conversation_artifacts: "VPS sanitized conversation artifacts",
+    json_handoff_contract: "machine JSON handoff artifacts"
+  };
+  return known[sourceKind] ?? sourceKind.replace(/[_-]+/g, " ");
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values.filter(Boolean))].sort();
+}
+
+function promotionRouteSummary(promotions) {
+  const routes = uniqueSorted(promotions.map((promotion) => promotion.wrong_route_promoted_as_skill));
+  if (routes.length === 0) {
+    return "no non-skill routes";
+  }
+  if (routes.length === 1) {
+    return routes[0];
+  }
+  return `${routes.slice(0, -1).join(", ")} and ${routes.at(-1)}`;
+}
+
+function ticketTitle(review, promotions) {
+  if (!promotions.length) {
+    return `Auto-L3 promotion watch for ${readableSourceKind(review.source.source_kind)}`;
+  }
+  return `Auto-L3 non-skill promotion from ${readableSourceKind(review.source.source_kind)}`;
+}
+
+function problemStatement(review, promotions) {
+  const sourceLabel = readableSourceKind(review.source.source_kind);
+  if (!promotions.length) {
+    return `No non-skill promotion was observed in ${sourceLabel}; keep this as observe-only regression evidence.`;
+  }
+  const routes = promotionRouteSummary(promotions);
+  return [
+    `Broad Auto-L3 would promote ${routes} lessons from ${sourceLabel} into skills.`,
+    "Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident.",
+    "Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson."
+  ].join(" ");
+}
+
 function acceptanceCriteria() {
   return [
     "minimal_positive_l3.non_skill_promoted_count == 0",
@@ -133,13 +177,11 @@ function buildTicket(review) {
 
   return {
     ticket_id: `repair-${sourceKind}-auto-l3-overpromotion`,
-    title: "Memory-layer Auto-L3 over-promotion check",
+    title: ticketTitle(review, promotions),
     severity,
     status: statusFor(severity, promotions.length),
     source_kind: review.source.source_kind,
-    problem_statement: promotions.length
-      ? "Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording."
-      : "No non-skill promotion was observed on this sample; keep the ticket as observe-only evidence.",
+    problem_statement: problemStatement(review, promotions),
     evidence: {
       source_count: review.layers.l0_sources.source_count,
       turn_count: review.layers.l0_sources.turn_count,
@@ -172,7 +214,7 @@ function buildTicket(review) {
         "Minimal-positive export must remain the only exportable path."
       ],
       should_improve: [
-        "Repair-ticket wording should explain whether a candidate belongs to case, policy, memory, or damping.",
+        "Repair-ticket wording should name the exact non-skill route owner for each candidate.",
         "Regression tests should cover non-skill over-promotion with exact source_event_id evidence.",
         "Markdown output should be readable by Huan and precise enough for Codex."
       ],

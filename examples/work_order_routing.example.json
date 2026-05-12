@@ -52,7 +52,7 @@
   "work_orders": [
     {
       "work_order_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
-      "title": "Memory-layer Auto-L3 over-promotion check",
+      "title": "Auto-L3 non-skill promotion from local distillation sources",
       "category": "engineering_repair",
       "severity": "P2",
       "risk_level": "medium",
@@ -62,11 +62,15 @@
         "source_id": "repair-local-distillation-sources-auto-l3-overpromotion",
         "source_kind": "local_distillation_sources"
       },
-      "summary": "Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording.",
+      "summary": "Broad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
       "source_refs": [
         {
           "kind": "repair_ticket",
           "id": "repair-local-distillation-sources-auto-l3-overpromotion"
+        },
+        {
+          "kind": "source_kind",
+          "id": "local_distillation_sources"
         },
         {
           "kind": "source_event",
@@ -142,13 +146,13 @@
       "model_handoff": {
         "current_model_fit": "use_for_intake_or_small_patch_only",
         "stronger_model_recommended": true,
-        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.",
+        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution. Durable or public effects remain blocked.",
         "stronger_model_slots": [
           "stronger_model"
         ],
         "user_can_override": true
       },
-      "user_prompt": "I received a work order: Memory-layer Auto-L3 over-promotion check. Summary: Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording. Suggested executor: Specialized engineering agent. Risk level: medium. Do you want me to handle it, keep it pending, or hand it to a stronger model?"
+      "user_prompt": "I received a work order: Auto-L3 non-skill promotion from local distillation sources. Summary: Broad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson. Suggested executor: Specialized engineering agent. Risk level: medium (local design/regression risk; minimal-positive mode already blocked the bad export). Do you want me to handle it, keep it pending, or hand it to a stronger model?"
     },
     {
       "work_order_id": "wo-operator-quality-2026-05-12",
@@ -252,13 +256,13 @@
       "model_handoff": {
         "current_model_fit": "use_for_intake_or_small_patch_only",
         "stronger_model_recommended": true,
-        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.",
+        "reason": "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution. Durable or public effects remain blocked.",
         "stronger_model_slots": [
           "stronger_model"
         ],
         "user_can_override": true
       },
-      "user_prompt": "I received a work order: Operator quality review for 2026-05-12. Summary: lower priority for repeated author/thread/topic before the next cycle quality brakes are active; inspect blocks before loosening thresholds. Suggested executor: Persona or operator agent. Risk level: high. Do you want me to handle it, keep it pending, or hand it to a stronger model?"
+      "user_prompt": "I received a work order: Operator quality review for 2026-05-12. Summary: lower priority for repeated author/thread/topic before the next cycle quality brakes are active; inspect blocks before loosening thresholds. Suggested executor: Persona or operator agent. Risk level: high (persona/operator behavior can change only after user choice). Do you want me to handle it, keep it pending, or hand it to a stronger model?"
     }
   ],
   "safety": {

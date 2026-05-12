@@ -35,11 +35,11 @@
   "tickets": [
     {
       "ticket_id": "repair-local-distillation-sources-auto-l3-overpromotion",
-      "title": "Memory-layer Auto-L3 over-promotion check",
+      "title": "Auto-L3 non-skill promotion from local distillation sources",
       "severity": "P1",
       "status": "repair_candidate",
       "source_kind": "local_distillation_sources",
-      "problem_statement": "Broad Auto-L3 would turn non-skill routes into skill candidates. Minimal positive mode prevents the export, but this pattern should remain covered by regression tests and repair-ticket wording.",
+      "problem_statement": "Broad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
       "evidence": {
         "source_count": 3,
         "turn_count": 6,
@@ -79,9 +79,9 @@
         }
       ],
       "reproduction_commands": [
-        "npm run memory-layer:misa -- --json",
-        "npm run repair-ticket:misa -- --json --dry-run",
-        "npm run export-skills:misa -- --json"
+        "npm --silent run memory-layer:misa -- --json",
+        "npm --silent run repair-ticket:misa -- --json --dry-run",
+        "npm --silent run export-skills:misa -- --json"
       ],
       "acceptance_criteria": [
         "minimal_positive_l3.non_skill_promoted_count == 0",
@@ -97,13 +97,18 @@
       "codex_scope": {
         "may_edit": [
           "scripts/lib/memory-layer.mjs",
+          "scripts/lib/cli-output.mjs",
+          "scripts/lib/json-handoff-contract.mjs",
           "scripts/lib/repair-ticket.mjs",
+          "scripts/work-order-router.mjs",
           "scripts/repair-ticket.mjs",
           "schemas/memory_layer.schema.json",
           "schemas/repair_ticket.schema.json",
+          "schemas/work_order_routing.schema.json",
           "test/governance.test.mjs",
           "docs/memory-layer-skill-export-v0.13.md",
-          "docs/repair-ticket-v0.13.md"
+          "docs/repair-ticket-v0.13.md",
+          "docs/work-order-routing-v0.14.md"
         ],
         "must_not_edit": [
           "Hermes runtime files",
@@ -127,10 +132,13 @@
           "Minimal-positive export must remain the only exportable path."
         ],
         "should_improve": [
-          "Repair-ticket wording should explain whether a candidate belongs to case, policy, memory, or damping."
+          "Repair-ticket wording should name the exact non-skill route owner for each candidate.",
+          "Regression tests should cover non-skill over-promotion with exact source_event_id evidence.",
+          "Markdown output should be readable by Huan and precise enough for Codex."
         ],
         "observe_only": [
-          "original_auto_l3 remains a comparison simulation, not a production recommendation."
+          "original_auto_l3 remains a comparison simulation, not a production recommendation.",
+          "A P1/P2 ticket from original_auto_l3 is not a live failure while minimal_positive_l3 blocks export."
         ]
       },
       "quality_notes": [

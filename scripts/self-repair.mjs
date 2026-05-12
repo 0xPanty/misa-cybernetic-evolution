@@ -12,6 +12,7 @@ function readArg(name) {
 
 const asJson = process.argv.includes("--json");
 const verify = !process.argv.includes("--no-verify");
+const validationMode = process.argv.includes("--validation-mode");
 const candidateId = readArg("--candidate-id");
 const runRoot = readArg("--run-root");
 const generatedRoot = readArg("--generated-root");
@@ -24,6 +25,7 @@ const result = await runMisaSelfRepair({
   runRoot,
   generatedRoot,
   repairPlanRoot,
+  validationMode,
   verify,
   timeoutMs
 });
@@ -35,6 +37,7 @@ if (asJson) {
   console.log(`mode: ${result.mode}`);
   console.log(`ok: ${result.ok}`);
   console.log(`verify: ${result.verify}`);
+  console.log(`validation_mode: ${result.validation_mode}`);
   console.log(`candidates: ${result.candidate_count}`);
   console.log("write scope:");
   for (const scope of result.write_scope) {

@@ -1,6 +1,6 @@
 {
   "name": "misa-cybernetic-evolution",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "description": "A control-theoretic learning plane for Hermes-style AI agents.",
   "type": "module",
   "license": "Apache-2.0",

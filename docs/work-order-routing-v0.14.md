@@ -164,6 +164,11 @@ Each work order includes:
   should recommend a stronger model before execution;
 - `user_prompt`: a plain-language prompt the primary agent can show to the user.
 
+For repair tickets where minimal-positive mode already blocked the bad export,
+the prompt says so directly. A P1/P2 local over-promotion ticket should feel
+important, but it should not sound like Misa's live memory or production
+runtime has already been changed.
+
 ## Safety
 
 The router does not:

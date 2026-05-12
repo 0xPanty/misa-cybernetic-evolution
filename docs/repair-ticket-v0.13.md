@@ -10,6 +10,12 @@ The command captures cases where broad automatic L3 promotion would create bad
 skills from non-skill routes. It keeps the evidence, reproduction commands,
 acceptance criteria, edit scope, and non-goals in one place.
 
+Ticket titles and summaries name the concrete source and route ownership. For
+example, a local case/memory/policy over-promotion is reported as
+`Auto-L3 non-skill promotion from local distillation sources`, and the summary
+spells out that minimal-positive mode already blocked the export. That makes it
+a local design/regression repair, not a live production incident.
+
 ```text
 memory-layer review
 -> bad-promotion clusters

@@ -14,7 +14,10 @@ import {
 } from "../scripts/lib/learning-loop.mjs";
 import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
 import { crystallizeMisaSkills } from "../scripts/lib/skill-crystallization.mjs";
-import { runMisaSelfRepair } from "../scripts/lib/self-repair.mjs";
+import {
+  buildCommandInvocation,
+  runMisaSelfRepair
+} from "../scripts/lib/self-repair.mjs";
 import { reviewGenericAgentContextDensity } from "../scripts/lib/genericagent-density.mjs";
 import { reviewAdaptiveCandidateGate } from "../scripts/lib/adaptive-candidate-gate.mjs";
 import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contract.mjs";
@@ -807,6 +810,9 @@ test("repair-ticket queue converts over-promotion evidence into Codex-ready tick
 
   const ticket = result.tickets[0];
   assert.match(ticket.ticket_id, /auto-l3-overpromotion/);
+  assert.match(ticket.title, /Auto-L3 non-skill promotion from local distillation sources/);
+  assert.match(ticket.problem_statement, /local design\/regression risk/);
+  assert.match(ticket.problem_statement, /not a live production incident/);
   assert.ok(["P1", "P2"].includes(ticket.severity));
   assert.equal(ticket.status, "repair_candidate");
   assert.ok(ticket.bad_promotions.length >= 1);
@@ -893,9 +899,11 @@ test("work-order routing sends repair tickets through primary-agent user choice"
   assert.equal(order.execution_policy.durable_or_public_effect_allowed, false);
   assert.equal(order.escalation.user_can_decline_execution, true);
   assert.equal(order.model_handoff.stronger_model_recommended, true);
+  assert.match(order.model_handoff.reason, /Durable or public effects remain blocked/);
   assert.ok(order.source_refs.some((ref) => ref.kind === "repair_ticket"));
   assert.ok(order.traceability.acceptance_criteria.includes("minimal_positive_l3.non_skill_promoted_count == 0"));
   assert.match(order.user_prompt, /I received a work order/);
+  assert.match(order.user_prompt, /minimal-positive mode already blocked the bad export/);
 });
 
 test("work-order routing policy can allow only bounded low-risk autonomous work", () => {
@@ -1168,6 +1176,31 @@ test("Misa self repair writes draft artifacts without production effects", async
   }
 });
 
+test("Misa self repair validation mode keeps drafts under ignored run roots", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-self-repair-validation-"));
+
+  try {
+    const result = await runMisaSelfRepair({
+      repoRoot: process.cwd(),
+      candidateId: "skill-candidate-misa-skill-recovery-workflow-001",
+      runRoot: path.join(tempRoot, "runs", "self-repair-validation"),
+      validationMode: true,
+      verify: false,
+      now: new Date("2026-05-11T01:32:00Z")
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.validation_mode, true);
+
+    const run = result.runs[0];
+    assert.ok(run.generated_files.every((file) => file.startsWith(path.relative(process.cwd(), tempRoot).split(path.sep).join("/"))));
+    assert.ok(run.generated_files.every((file) => file.includes("/runs/self-repair-validation/")));
+    assert.ok(run.generated_files.every((file) => !file.startsWith("generated/")));
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("self repair trims generated draft and repair-plan titles", async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-self-repair-trim-"));
 
@@ -1193,6 +1226,23 @@ test("self repair trims generated draft and repair-plan titles", async () => {
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
+});
+
+test("self repair verifier builds shell-free Windows npm invocations", () => {
+  const command = {
+    label: "validate:schemas",
+    command: "npm run validate:schemas",
+    args: ["run", "validate:schemas"]
+  };
+  const windows = buildCommandInvocation(command, "win32");
+  const linux = buildCommandInvocation(command, "linux");
+
+  assert.equal(windows.file, "cmd.exe");
+  assert.deepEqual(windows.args, ["/d", "/c", "npm", "run", "validate:schemas"]);
+  assert.equal(windows.shell, false);
+  assert.equal(linux.file, "npm");
+  assert.deepEqual(linux.args, ["run", "validate:schemas"]);
+  assert.equal(linux.shell, false);
 });
 
 test("routes explicit public posting boundary to policy draft", () => {

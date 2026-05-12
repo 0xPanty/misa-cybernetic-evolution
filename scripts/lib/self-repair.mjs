@@ -38,8 +38,23 @@ const SECRET_PATTERNS = [
   /eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}/g
 ];
 
-function npmExecutable() {
-  return process.platform === "win32" ? "npm.cmd" : "npm";
+function npmExecutable(platform = process.platform) {
+  return platform === "win32" ? "npm.cmd" : "npm";
+}
+
+export function buildCommandInvocation(command, platform = process.platform) {
+  if (platform === "win32") {
+    return {
+      file: "cmd.exe",
+      args: ["/d", "/c", "npm", ...command.args],
+      shell: false
+    };
+  }
+  return {
+    file: npmExecutable(platform),
+    args: command.args,
+    shell: false
+  };
 }
 
 function toTimestamp(date) {
@@ -158,11 +173,11 @@ async function runAllowedCommand({ repoRoot, runDir, command, timeoutMs }) {
   const stdoutChunks = [];
   const stderrChunks = [];
   let timedOut = false;
-  const isWindows = process.platform === "win32";
+  const invocation = buildCommandInvocation(command);
 
-  const child = spawn(isWindows ? command.command : npmExecutable(), isWindows ? [] : command.args, {
+  const child = spawn(invocation.file, invocation.args, {
     cwd: repoRoot,
-    shell: isWindows,
+    shell: invocation.shell,
     stdio: ["ignore", "pipe", "pipe"]
   });
 
@@ -329,13 +344,25 @@ async function runOneCandidate({
 export async function runMisaSelfRepair({
   repoRoot = process.cwd(),
   candidateId,
-  runRoot = path.join(repoRoot, "runs", "self-repair"),
-  generatedRoot = path.join(repoRoot, "generated", "skill-drafts"),
-  repairPlanRoot = path.join(repoRoot, "generated", "repair-plans"),
+  runRoot,
+  generatedRoot,
+  repairPlanRoot,
+  validationMode = false,
   verify = true,
   timeoutMs = 120000,
   now = new Date()
 } = {}) {
+  const resolvedRunRoot = runRoot ?? path.join(repoRoot, validationMode ? "runs/self-repair-validation" : "runs/self-repair");
+  const resolvedGeneratedRoot = generatedRoot ?? (
+    validationMode
+      ? path.join(resolvedRunRoot, "generated", "skill-drafts")
+      : path.join(repoRoot, "generated", "skill-drafts")
+  );
+  const resolvedRepairPlanRoot = repairPlanRoot ?? (
+    validationMode
+      ? path.join(resolvedRunRoot, "generated", "repair-plans")
+      : path.join(repoRoot, "generated", "repair-plans")
+  );
   const crystallization = await crystallizeMisaSkills({ repoRoot });
   const candidates = crystallization.candidates.filter((candidate) => (
     candidate.self_repair.allowed
@@ -349,9 +376,9 @@ export async function runMisaSelfRepair({
     runs.push(await runOneCandidate({
       repoRoot,
       candidate,
-      runRoot,
-      generatedRoot,
-      repairPlanRoot,
+      runRoot: resolvedRunRoot,
+      generatedRoot: resolvedGeneratedRoot,
+      repairPlanRoot: resolvedRepairPlanRoot,
       verify,
       timeoutMs,
       now
@@ -364,6 +391,7 @@ export async function runMisaSelfRepair({
     selected_candidate_id: candidateId ?? null,
     candidate_count: candidates.length,
     verify,
+    validation_mode: validationMode,
     write_scope: [...DEFAULT_WRITE_SCOPE],
     safety: { ...SAFETY },
     runs

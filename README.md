@@ -23,7 +23,7 @@ channels.
 npm install
 npm run simulate:misa
 npm run crystallize:misa
-npm run self-repair:misa -- --no-verify
+npm run self-repair:misa -- --no-verify --validation-mode
 npm run distill:misa
 npm run hermes:map-distillation -- --json
 npm run density:misa
@@ -87,7 +87,8 @@ Expected result:
   positive path and does not install Skills, write memory, or update VPS;
 - the repair-ticket queue turns memory-layer over-promotion evidence into
   Codex-ready local tickets with reproduction commands, acceptance criteria,
-  edit scope, and explicit non-goals;
+  edit scope, explicit non-goals, and wording that names whether the risk is
+  case, memory, policy, or another non-skill route;
 - the work-order router converts repair tickets and operator-quality reports
   into traceable primary-agent handoff packets, with suggested executors,
   escalation options, user confirmation, and source refs preserved;
@@ -450,6 +451,10 @@ publish the Skill or change production.
 For full validation or CI, redirect self-repair outputs with `--run-root`,
 `--generated-root`, and `--repair-plan-root` so the check does not rewrite
 tracked `generated/` artifacts.
+
+For a quick validation pass, use `--validation-mode`. It keeps generated drafts
+inside `runs/self-repair-validation/` instead of the tracked `generated/`
+sample area.
 
 v0.7 adds `npm run density:misa`, a second GenericAgent-inspired gate. It borrows
 contextual information density, layered pointer memory, and action-verified

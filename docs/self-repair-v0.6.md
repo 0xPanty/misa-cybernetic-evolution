@@ -9,6 +9,7 @@ loop. It is still not a production publisher.
 npm run self-repair:misa
 npm run self-repair:misa -- --candidate-id skill-candidate-misa-skill-recovery-workflow-001
 npm run self-repair:misa -- --no-verify
+npm run self-repair:misa -- --no-verify --validation-mode
 npm run self-repair:misa -- --no-verify --run-root runs/self-repair-check --generated-root runs/self-repair-check/skill-drafts --repair-plan-root runs/self-repair-check/repair-plans
 ```
 
@@ -17,6 +18,8 @@ artifacts, and optionally verifies them.
 
 Use the custom output-root flags during full validation or CI when you want to
 inspect self-repair behavior without rewriting tracked `generated/` artifacts.
+`--validation-mode` is the shortcut for that posture: it keeps draft files under
+`runs/self-repair-validation/` unless explicit output roots are supplied.
 
 ## Write Scope
 

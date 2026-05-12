@@ -142,12 +142,12 @@ function escalationForRepairTicket(ticket) {
   };
 }
 
-function promptForWorkOrder({ title, summary, executorLabel, riskLevel }) {
+function promptForWorkOrder({ title, summary, executorLabel, riskLevel, riskContext }) {
   return [
     `I received a work order: ${title}.`,
     `Summary: ${summary}`,
     `Suggested executor: ${executorLabel}.`,
-    `Risk level: ${riskLevel}.`,
+    riskContext ? `Risk level: ${riskLevel} (${riskContext}).` : `Risk level: ${riskLevel}.`,
     "Do you want me to handle it, keep it pending, or hand it to a stronger model?"
   ].join(" ");
 }
@@ -157,12 +157,15 @@ function modelHandoffForOrder(order) {
   const broadEdit = (order.traceability.editable_scope ?? []).length >= 4;
   const complexGate = order.task_gate.complex_enough && order.task_gate.error_discovery_cost !== "low";
   const strongerRecommended = highRisk || broadEdit || complexGate;
+  const blockedEffects = order.execution_policy.durable_or_public_effect_allowed === false
+    ? " Durable or public effects remain blocked."
+    : "";
 
   return {
     current_model_fit: strongerRecommended ? "use_for_intake_or_small_patch_only" : "suitable_for_first_pass",
     stronger_model_recommended: strongerRecommended,
     reason: strongerRecommended
-      ? "The work order is high risk, broad, or complex enough that a stronger model should be offered before execution."
+      ? `The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.${blockedEffects}`
       : "The work order is bounded enough for the current agent to attempt after user choice.",
     stronger_model_slots: order.escalation.stronger_model_slots,
     user_can_override: true
@@ -233,11 +236,27 @@ function repairTicketSourceRefs(ticket) {
   return refs;
 }
 
+function repairTicketRiskContext(ticket) {
+  const evidence = ticket.evidence ?? {};
+  if (
+    ticket.status === "repair_candidate"
+    && evidence.minimal_non_skill_promoted_count === 0
+    && evidence.verdict === "minimal_positive_is_safer"
+  ) {
+    return "local design/regression risk; minimal-positive mode already blocked the bad export";
+  }
+  if (ticket.source_kind === "json_handoff_contract") {
+    return "machine handoff reliability risk; no production mutation happened";
+  }
+  return "durable and public effects remain blocked";
+}
+
 function workOrderFromRepairTicket(ticket, index) {
   const riskLevel = SEVERITY_RISK[ticket.severity] ?? "low";
   const suggestedExecutor = executorForRepairTicket(ticket);
   const taskGate = taskGateForRepairTicket(ticket);
   const summary = ticket.problem_statement;
+  const riskContext = repairTicketRiskContext(ticket);
 
   return {
     work_order_id: `wo-${stableSlug(ticket.ticket_id || index)}`,
@@ -285,7 +304,8 @@ function workOrderFromRepairTicket(ticket, index) {
       title: ticket.title,
       summary,
       executorLabel: suggestedExecutor.label,
-      riskLevel
+      riskLevel,
+      riskContext
     })
   };
 }
@@ -392,7 +412,8 @@ export function workOrderFromOperationalQualityReport(report, {
       title,
       summary,
       executorLabel: executor.label,
-      riskLevel: risk
+      riskLevel: risk,
+      riskContext: "persona/operator behavior can change only after user choice"
     })
   };
 }
