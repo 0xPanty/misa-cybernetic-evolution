@@ -793,7 +793,12 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
   assert.equal(result.judge_escalation.mode, "judge_escalation_gate.v1");
   assert.equal(result.judge_escalation.recommended, false);
+  assert.equal(result.judge_escalation.near_threshold, false);
   assert.equal(result.judge_escalation.llm_api_calls, 0);
+  assert.equal(result.judge_escalation.reasons.includes("null"), false);
+  assert.equal(result.judge_escalation.llm_review_value.level, "none");
+  assert.equal(result.judge_escalation.llm_review_value.call_policy, "do_not_call");
+  assert.equal(result.judge_escalation.llm_review_value.should_change_winner, false);
   assert.equal(result.judge.mode, "advise");
   assert.equal(result.judge.status, "advice_only");
   assert.equal(result.judge.llm_api_calls, 0);
@@ -815,6 +820,7 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.ok(winner);
     assert.equal(winner.constraints.hard_gate_passed, true);
     assert.equal(winner.route_target, tournament.route_target);
+    assert.equal(typeof winner.scores.strategy_fit, "number");
     assert.equal(Object.values(winner.safety.live_effects).some(Boolean), false);
   }
 
@@ -834,15 +840,71 @@ test("v0.17 tournament gate can compare source-backed VPS samples without LLM ca
   assert.equal(result.summary.route_counts.case, 1);
   assert.equal(result.summary.route_counts.policy, 1);
   assert.equal(result.judge_escalation.recommended, true);
+  assert.equal(result.judge_escalation.near_threshold, false);
   assert.ok(result.judge_escalation.score >= result.judge_escalation.threshold);
   assert.ok(result.judge_escalation.reasons.includes("real_vps_sample"));
-  assert.ok(result.judge_escalation.reasons.includes("winner_strategy_monoculture"));
+  assert.ok(result.judge_escalation.reasons.includes("policy_skill_pressure"));
+  assert.equal(result.judge_escalation.llm_review_value.level, "high");
+  assert.equal(result.judge_escalation.llm_review_value.call_policy, "call_when_auto_enabled");
+  assert.equal(result.judge_escalation.llm_review_value.waste_risk, "low");
+  assert.ok(result.judge_escalation.llm_review_value.targets.some((target) => target.target === "public_boundary"));
+  assert.equal(result.judge_escalation.reasons.includes("null"), false);
+  assert.ok(result.judge_escalation.signals.winner_strategy_diversity >= 2);
   assert.equal(result.judge.mode, "advise");
   assert.equal(result.judge.status, "advice_only");
   assert.equal(result.judge.llm_api_calls, 0);
   assert.equal(result.quality_assessment.llm_api_calls, 0);
   assert.ok(result.quality_assessment.overall_quality_score > 0.8);
   assert.equal(result.quality_comparison.decision_authority, "deterministic_qianxuesen_gate_only");
+  assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("v0.17 tournament gate picks route-sensitive winners for historical samples", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    sourceDir: "runs/history-flowtest-sources"
+  });
+  const winnerStrategies = new Set(result.winner_queue.map((winner) => winner.strategy));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.source.source_kind, "local_distillation_sources");
+  assert.ok(result.summary.tournament_count >= 5);
+  assert.ok(winnerStrategies.has("baseline"));
+  assert.ok(winnerStrategies.has("trace_reflective"));
+  assert.ok(winnerStrategies.has("pareto_compact"));
+  assert.equal(result.tournaments.every((tournament) => (
+    tournament.variants.every((variant) => typeof variant.scores.strategy_fit === "number")
+  )), true);
+  assert.equal(result.judge_escalation.recommended, true);
+  assert.equal(result.judge_escalation.near_threshold, false);
+  assert.equal(result.judge_escalation.llm_review_value.level, "high");
+  assert.ok(result.judge_escalation.llm_review_value.targets.some((target) => target.target === "batch_pattern_review"));
+  assert.equal(result.judge_escalation.signals.winner_strategy_monoculture, false);
+  assert.equal(result.judge_escalation.reasons.includes("null"), false);
+  assert.ok(result.judge_escalation.reasons.includes("large_batch_review"));
+  assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("near-threshold judge samples stay deterministic but are surfaced", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    sourceDir: "runs/history-atomic-flowtest-sources",
+    judgeMode: "auto"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.judge_escalation.recommended, false);
+  assert.equal(result.judge_escalation.near_threshold, true);
+  assert.equal(result.judge_escalation.llm_review_value.level, "medium");
+  assert.equal(result.judge_escalation.llm_review_value.call_policy, "deterministic_default_review_optional");
+  assert.equal(result.judge_escalation.llm_review_value.waste_risk, "medium");
+  assert.equal(result.judge_escalation.suggested_mode, "deterministic_default_review_optional");
+  assert.ok(result.judge_escalation.score < result.judge_escalation.threshold);
+  assert.ok(result.judge_escalation.threshold_delta < 0);
+  assert.ok(Math.abs(result.judge_escalation.threshold_delta) <= result.judge_escalation.near_threshold_margin);
+  assert.ok(result.judge_escalation.reasons.includes("near_threshold"));
+  assert.equal(result.judge.mode, "auto");
+  assert.equal(result.judge.status, "skipped_not_recommended");
+  assert.equal(result.judge.llm_api_calls, 0);
+  assert.ok(result.judge.notes.some((note) => note.includes("near threshold")));
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
 });
 
@@ -853,6 +915,9 @@ test("auto judge stays at zero calls when escalation gate says deterministic is 
 
   assert.equal(result.ok, true);
   assert.equal(result.judge_escalation.recommended, false);
+  assert.equal(result.judge_escalation.near_threshold, false);
+  assert.equal(result.judge_escalation.llm_review_value.level, "none");
+  assert.equal(result.judge_escalation.llm_review_value.call_policy, "do_not_call");
   assert.equal(result.judge.mode, "auto");
   assert.equal(result.judge.status, "skipped_not_recommended");
   assert.equal(result.judge.llm_api_calls, 0);
@@ -881,6 +946,7 @@ test("auto judge calls the optional reviewer only when escalation gate recommend
 
   assert.equal(result.ok, true);
   assert.equal(result.judge_escalation.recommended, true);
+  assert.equal(result.judge_escalation.llm_review_value.level, "high");
   assert.equal(result.judge.mode, "auto");
   assert.equal(result.judge.status, "completed");
   assert.equal(result.judge.llm_api_calls, 1);

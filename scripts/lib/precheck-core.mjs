@@ -42,6 +42,7 @@ const REQUIRED_FILES = [
   "docs/signal-candidate-rollup-v0.10.md",
   "docs/evolution-candidate-preflight-v0.11.md",
   "docs/evolution-tournament-gate-v0.17.md",
+  "docs/evolution-tournament-gate-v0.18.md",
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
   "docs/hermes-distillation-mapping-v0.15.md",

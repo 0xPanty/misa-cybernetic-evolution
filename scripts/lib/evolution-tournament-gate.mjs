@@ -9,6 +9,7 @@ import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
 
 const NOUS_SELF_EVOLUTION_COMMIT = "4693c8f0eed21e39f065c6f38d98d2a403a04095";
 const MAX_VARIANTS_PER_CANDIDATE = 4;
+const JUDGE_NEAR_THRESHOLD_MARGIN = 0.03;
 
 const LIVE_EFFECTS_OFF = {
   writes_persistent_memory: false,
@@ -54,7 +55,10 @@ function clamp01(value) {
 }
 
 function uniqueStrings(values) {
-  return [...new Set((values ?? []).map((value) => String(value).trim()).filter(Boolean))];
+  return [...new Set((values ?? [])
+    .filter((value) => value !== null && value !== undefined)
+    .map((value) => String(value).trim())
+    .filter(Boolean))];
 }
 
 function countBy(values, selector) {
@@ -492,6 +496,55 @@ function splitScore(caseResults, split) {
   return cases.reduce((sum, item) => sum + item.score, 0) / cases.length;
 }
 
+function strategyFitScore(candidate, variant) {
+  const route = candidate.route_target;
+  const riskLevel = candidate.evidence?.risk_level ?? "medium";
+  const evidenceCount = candidate.evidence?.evidence_count ?? 0;
+  const signals = new Set(candidate.evidence?.normalized_signals ?? []);
+  const sourceBacked = String(candidate.candidate_id ?? "").startsWith("source-");
+
+  if (variant.strategy === "baseline") {
+    return clamp01(
+      0.58
+        + (route === "damping" ? 0.3 : 0)
+        + (evidenceCount <= 2 ? 0.16 : 0)
+        + (riskLevel === "low" ? 0.08 : 0)
+        - (riskLevel === "high" || riskLevel === "critical" ? 0.14 : 0)
+        - (route === "policy" ? 0.12 : 0)
+    );
+  }
+
+  if (variant.strategy === "trace_reflective") {
+    return clamp01(
+      0.62
+        + (route === "policy" ? 0.24 : 0)
+        + (route === "case" ? 0.22 : 0)
+        + (route === "skill" ? 0.1 : 0)
+        + (riskLevel === "high" || riskLevel === "critical" ? 0.1 : 0)
+        + (sourceBacked ? 0.05 : 0)
+        + (signals.has("repeated_failure_pattern") ? 0.05 : 0)
+        + (signals.has("public_posting_boundary") ? 0.05 : 0)
+        + (signals.has("real_chat_validation_required") ? 0.04 : 0)
+    );
+  }
+
+  if (variant.strategy === "pareto_compact") {
+    return clamp01(
+      0.7
+        + (route === "memory" ? 0.2 : 0)
+        + (route === "skill" ? 0.12 : 0)
+        + (riskLevel === "low" ? 0.08 : 0)
+        + (evidenceCount >= 4 ? 0.06 : 0)
+        - (route === "policy" ? 0.18 : 0)
+        - (route === "case" ? 0.1 : 0)
+        - (route === "damping" ? 0.12 : 0)
+        - (signals.has("public_posting_boundary") ? 0.08 : 0)
+    );
+  }
+
+  return 0.1;
+}
+
 function scoreVariant(candidate, variant, evalCases) {
   const constraints = evaluateConstraints(candidate, variant);
   const caseResults = evalCases.map((evalCase) => scoreEvalCase(evalCase, constraints));
@@ -504,15 +557,17 @@ function scoreVariant(candidate, variant, evalCases) {
   const validationScore = splitScore(caseResults, "validation");
   const trainScore = splitScore(caseResults, "train");
   const regressionScore = constraints.hard_gate_passed ? 1 : 0.1;
+  const strategyFit = strategyFitScore(candidate, variant);
   const rawComposite = (
-    routeFit * 0.18
-    + evidenceFit * 0.18
-    + trainScore * 0.12
-    + validationScore * 0.12
-    + holdoutScore * 0.18
+    routeFit * 0.16
+    + evidenceFit * 0.16
+    + trainScore * 0.1
+    + validationScore * 0.1
+    + holdoutScore * 0.16
     + safetyScore * 0.14
     + compactness * 0.05
-    + variant.novelty_score * 0.03
+    + variant.novelty_score * 0.04
+    + strategyFit * 0.09
   );
   const composite = constraints.hard_gate_passed
     ? rawComposite
@@ -528,6 +583,7 @@ function scoreVariant(candidate, variant, evalCases) {
       safety: round(safetyScore),
       compactness: round(compactness),
       novelty: round(variant.novelty_score),
+      strategy_fit: round(strategyFit),
       regression: round(regressionScore),
       composite: round(Math.max(0, composite))
     },
@@ -658,6 +714,16 @@ export function evaluateEvolutionTournamentGate(result) {
   if (Object.values(result.safety?.live_effects ?? {}).some(Boolean)) {
     violations.push("live_effects_must_be_false");
   }
+  if (result.judge_escalation?.recommended && result.judge_escalation?.llm_review_value?.level !== "high") {
+    violations.push("llm_review_requires_high_expected_value");
+  }
+  if (result.judge_escalation?.recommended
+    && result.judge_escalation?.llm_review_value?.call_policy !== "call_when_auto_enabled") {
+    violations.push("llm_review_recommendation_requires_auto_call_policy");
+  }
+  if (result.judge_escalation?.llm_review_value?.should_change_winner !== false) {
+    violations.push("llm_review_must_not_change_winner");
+  }
 
   for (const tournament of result.tournaments ?? []) {
     if ((tournament.variants ?? []).length < 3) {
@@ -746,14 +812,24 @@ function buildQualityAssessment({ tournaments, source }) {
   };
 }
 
-function closeWinnerMargins(tournaments) {
+function topWinnerPairs(tournaments) {
   return tournaments
     .map((tournament) => tournament.variants
       .filter((variant) => variant.constraints.hard_gate_passed)
       .sort((a, b) => b.scores.composite - a.scores.composite)
-      .slice(0, 2))
+      .slice(0, 2)
+      .map((variant) => ({ tournament, variant })))
     .filter((top) => top.length === 2)
-    .map(([winner, runnerUp]) => round(winner.scores.composite - runnerUp.scores.composite));
+    .map(([winner, runnerUp]) => ({
+      tournament: winner.tournament,
+      winner: winner.variant,
+      runner_up: runnerUp.variant,
+      margin: round(winner.variant.scores.composite - runnerUp.variant.scores.composite)
+    }));
+}
+
+function closeWinnerMargins(tournaments) {
+  return topWinnerPairs(tournaments).map((pair) => pair.margin);
 }
 
 function rejectionReasonClusters(rejectedLedger) {
@@ -772,6 +848,143 @@ function winnerNoveltyAverage(result) {
   )));
 }
 
+function reviewTargetPriority(score) {
+  if (score >= 0.78) {
+    return "high";
+  }
+  if (score >= 0.58) {
+    return "medium";
+  }
+  return "low";
+}
+
+function buildLlmReviewValue({
+  result,
+  routes,
+  routeSet,
+  sourceBacked,
+  realVpsSample,
+  closeWinnerPairs,
+  closeWinnerCount,
+  highScoreNarrowStrategy,
+  repeatedRejectionPattern,
+  lowSourceCoverage,
+  policySkillPressure,
+  policyMemoryPressure,
+  largeBatchReview
+}) {
+  const tournamentCount = Math.max(1, result.summary.tournament_count);
+  const routeCounts = result.summary.route_counts ?? {};
+  const closeWinnerRatio = round(closeWinnerCount / tournamentCount);
+  const reviewableStrategyBias = highScoreNarrowStrategy
+    && (routes.length >= 2 || result.summary.winner_count >= 5);
+  const dampingClosePairs = closeWinnerPairs.filter((pair) => (
+    pair.tournament.route_target === "damping"
+      && pair.margin <= 0.005
+  ));
+  const targets = [];
+  const pushTarget = (target, score, sampleCount, evidence) => {
+    if (sampleCount <= 0) {
+      return;
+    }
+    targets.push({
+      target,
+      priority: reviewTargetPriority(score),
+      score: round(score),
+      sample_count: sampleCount,
+      evidence: uniqueStrings(evidence)
+    });
+  };
+
+  pushTarget("public_boundary", 0.86, realVpsSample ? tournamentCount : 0, [
+    "source_kind=vps_sanitized_conversation_artifacts",
+    "review redaction, public-channel wording, and no-live-effect boundary"
+  ]);
+  pushTarget("batch_pattern_review", 0.84, largeBatchReview ? tournamentCount : 0, [
+    `tournament_count=${result.summary.tournament_count}`,
+    `routes=${routes.join(",")}`
+  ]);
+  pushTarget("damping_vs_compact", 0.82, dampingClosePairs.length, [
+    `tight_damping_margin_count=${dampingClosePairs.length}`,
+    `min_damping_margin=${dampingClosePairs.length ? Math.min(...dampingClosePairs.map((pair) => pair.margin)) : null}`,
+    "review whether weak evidence should stay damped instead of being compacted"
+  ]);
+  pushTarget("winner_strategy_bias", 0.82, reviewableStrategyBias ? result.summary.winner_count : 0, [
+    "high deterministic score with narrow winner strategy",
+    "review whether one strategy is hiding route-specific alternatives across enough route/sample pressure"
+  ]);
+  pushTarget("policy_skill_boundary", 0.72, policySkillPressure ? (routeCounts.policy ?? 0) + (routeCounts.skill ?? 0) : 0, [
+    `policy_count=${routeCounts.policy ?? 0}`,
+    `skill_count=${routeCounts.skill ?? 0}`,
+    "review whether reusable workflow pressure should become a skill or stay policy-bound"
+  ]);
+  pushTarget("policy_memory_boundary", 0.64, policyMemoryPressure ? (routeCounts.policy ?? 0) + (routeCounts.memory ?? 0) : 0, [
+    `policy_count=${routeCounts.policy ?? 0}`,
+    `memory_count=${routeCounts.memory ?? 0}`,
+    "review whether policy pressure is being over-compressed into memory"
+  ]);
+  pushTarget("close_tiebreak_review", 0.55, closeWinnerCount >= 2 && closeWinnerRatio >= 0.5 ? closeWinnerCount : 0, [
+    `close_winner_count=${closeWinnerCount}`,
+    `close_winner_ratio=${closeWinnerRatio}`,
+    "review only the rationale, not deterministic winner authority"
+  ]);
+  pushTarget("rejection_pattern_review", 0.58, repeatedRejectionPattern ? result.summary.rejected_variant_count : 0, [
+    "few repeated rejection clusters",
+    "review whether one blocked shape needs a better negative fixture"
+  ]);
+  pushTarget("source_sampling_gap", 0.36, sourceBacked && lowSourceCoverage ? result.summary.tournament_count : 0, [
+    `source_coverage=${result.quality_assessment.dimensions.source_coverage}`,
+    "review sample coverage before spending model calls on conclusions"
+  ]);
+
+  const maxTargetScore = targets.length
+    ? Math.max(...targets.map((target) => target.score))
+    : 0;
+  const diversityBoost = Math.min(0.06, Math.max(0, targets.length - 1) * 0.015);
+  const score = round(clamp01(maxTargetScore + diversityBoost));
+  const level = score >= 0.78
+    ? "high"
+    : score >= 0.58
+      ? "medium"
+      : score >= 0.35
+        ? "low"
+        : "none";
+
+  return {
+    mode: "llm_review_value.v1",
+    level,
+    score,
+    expected_value: level === "none"
+      ? "none"
+      : level === "low"
+        ? "diagnostic_note_only"
+        : "critique_only",
+    should_change_winner: false,
+    call_policy: level === "high"
+      ? "call_when_auto_enabled"
+      : level === "medium"
+        ? "deterministic_default_review_optional"
+        : "do_not_call",
+    waste_risk: level === "high"
+      ? "low"
+      : level === "medium"
+        ? "medium"
+        : "high",
+    close_winner_ratio: closeWinnerRatio,
+    targets,
+    notes: [
+      targets.length > 0
+        ? `Concrete review targets: ${targets.map((target) => target.target).join(", ")}.`
+        : "No concrete LLM review target was found.",
+      level === "high"
+        ? "Auto mode may spend one offline LLM call because expected critique value is high."
+        : level === "medium"
+          ? "Default stays deterministic; review is optional because expected value is not high enough for auto spend."
+          : "Do not spend an LLM call unless a human explicitly overrides the gate."
+    ]
+  };
+}
+
 function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
   const normalizedThreshold = clamp01(threshold);
   const routes = Object.keys(result.summary.route_counts ?? {})
@@ -781,7 +994,8 @@ function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
   const sourceKind = result.source.source_kind ?? "default_candidate_preflight";
   const sourceBacked = sourceKind !== "default_candidate_preflight";
   const realVpsSample = sourceKind === "vps_sanitized_conversation_artifacts";
-  const margins = closeWinnerMargins(result.tournaments);
+  const closePairs = topWinnerPairs(result.tournaments);
+  const margins = closePairs.map((pair) => pair.margin);
   const closeWinnerCount = margins.filter((margin) => margin <= 0.03).length;
   const rejectionClusters = rejectionReasonClusters(result.rejected_variant_ledger);
   const winnerStrategyMonoculture = winnerStrategies.length <= 1 && result.summary.winner_count >= 2;
@@ -836,6 +1050,30 @@ function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
       + novelty * 0.15
       + anomaly * 0.1
   );
+  const llmReviewValue = buildLlmReviewValue({
+    result,
+    routes,
+    routeSet,
+    sourceBacked,
+    realVpsSample,
+    closeWinnerPairs: closePairs,
+    closeWinnerCount,
+    highScoreNarrowStrategy,
+    repeatedRejectionPattern,
+    lowSourceCoverage,
+    policySkillPressure,
+    policyMemoryPressure,
+    largeBatchReview
+  });
+  const recommended = llmReviewValue.level === "high"
+    && score >= normalizedThreshold - JUDGE_NEAR_THRESHOLD_MARGIN;
+  const reviewValueAtLeastMedium = ["medium", "high"].includes(llmReviewValue.level);
+  const nearThreshold = !recommended && (
+    reviewValueAtLeastMedium
+      && (score >= normalizedThreshold - JUDGE_NEAR_THRESHOLD_MARGIN
+        || (llmReviewValue.level === "medium" && score >= 0.45))
+  );
+  const thresholdDelta = round(score - normalizedThreshold);
   const reasons = uniqueStrings([
     closeWinnerCount > 0 ? "close_variant_scores" : null,
     winnerStrategyMonoculture ? "winner_strategy_monoculture" : null,
@@ -847,15 +1085,24 @@ function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
     policyMemoryPressure ? "policy_memory_pressure" : null,
     largeBatchReview ? "large_batch_review" : null,
     repeatedRejectionPattern ? "repeated_rejection_pattern" : null,
-    lowSourceCoverage ? "low_source_coverage" : null
+    lowSourceCoverage ? "low_source_coverage" : null,
+    llmReviewValue.level !== "none" ? `llm_review_value_${llmReviewValue.level}` : null,
+    nearThreshold ? "near_threshold" : null
   ]);
 
   return {
     mode: "judge_escalation_gate.v1",
-    recommended: score >= normalizedThreshold,
+    recommended,
+    near_threshold: nearThreshold,
     score,
     threshold: normalizedThreshold,
-    suggested_mode: score >= normalizedThreshold ? "auto_or_llm_review_only" : "deterministic_only",
+    threshold_delta: thresholdDelta,
+    near_threshold_margin: JUDGE_NEAR_THRESHOLD_MARGIN,
+    suggested_mode: recommended
+      ? "auto_or_llm_review_only"
+      : nearThreshold
+        ? "deterministic_default_review_optional"
+        : "deterministic_only",
     authority: "llm_cannot_change_route_or_winner",
     llm_api_calls: 0,
     dimensions: {
@@ -865,6 +1112,7 @@ function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
       novelty: round(novelty),
       anomaly: round(anomaly)
     },
+    llm_review_value: llmReviewValue,
     signals: {
       source_kind: sourceKind,
       source_backed: sourceBacked,
@@ -880,9 +1128,11 @@ function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
     reasons,
     notes: [
       "Escalation advice is deterministic and local; it never calls an LLM by itself.",
-      score >= normalizedThreshold
-        ? "The sample is worth optional LLM review for reflection, not for route or winner authority."
-        : "The deterministic proxy is enough for this sample unless a human forces LLM review."
+      recommended
+        ? "The sample has high concrete review value, so auto mode may call one offline LLM for critique only."
+        : nearThreshold
+          ? "Default stays deterministic, but this sample is worth human awareness or optional review if the decision matters."
+          : "The deterministic proxy is enough for this sample unless a human forces LLM review."
     ]
   };
 }
@@ -894,6 +1144,7 @@ function buildJudgePayload(result) {
     summary: result.summary,
     quality_assessment: result.quality_assessment,
     judge_escalation: result.judge_escalation,
+    llm_review_value: result.judge_escalation?.llm_review_value ?? null,
     tournaments: result.tournaments.map((tournament) => ({
       tournament_id: tournament.tournament_id,
       route_target: tournament.route_target,
@@ -956,13 +1207,14 @@ async function callOpenAiCompatibleJudge(payload, { model, apiKey, baseUrl }) {
           content: [
             "You are an offline reviewer for a Qianxuesen control-theory learning gate.",
             "Return JSON only. You may score and reflect, but you cannot approve production changes.",
-            "Keep route ownership with Qianxuesen and preserve no-live-effect boundaries."
+            "Keep route ownership with Qianxuesen and preserve no-live-effect boundaries.",
+            "Spend attention only where llm_review_value lists concrete critique targets."
           ].join(" ")
         },
         {
           role: "user",
           content: JSON.stringify({
-            task: "Score the tournament result for draft quality. Do not change the winner.",
+            task: "Score the tournament result for draft quality. Do not change the winner. If review targets are weak, say so instead of inventing value.",
             expected_json: {
               overall_quality_score: "number 0..1",
               dimensions: {
@@ -1027,6 +1279,11 @@ async function runOptionalJudge(result, {
   judgeEscalation,
   llmJudge
 } = {}) {
+  const reviewTargets = judgeEscalation?.llm_review_value?.targets?.map((target) => target.target) ?? [];
+  const reviewTargetNote = reviewTargets.length > 0
+    ? `Expected LLM review value targets: ${reviewTargets.join(", ")}.`
+    : "No concrete LLM review value target was found.";
+
   if (judgeMode === "off") {
     return skippedJudge({
       mode: "off",
@@ -1041,12 +1298,17 @@ async function runOptionalJudge(result, {
       status: "advice_only",
       notes: [
         judgeEscalation?.recommended
-          ? "Escalation gate recommends optional LLM review, but advise mode does not call a model."
+          ? "Escalation gate recommends optional LLM review because concrete critique value is high, but advise mode does not call a model."
+          : judgeEscalation?.near_threshold
+            ? "Escalation gate is near threshold or medium-value; advise mode keeps deterministic default and marks optional review as a human choice."
           : "Escalation gate does not recommend LLM review for this sample.",
+        reviewTargetNote,
         "Use --judge-mode auto to call the judge only when the gate recommends it, or --judge-mode llm to force it."
       ],
       suggestedNextExperiments: judgeEscalation?.recommended
         ? ["Run --judge-mode auto on the same local sample if model-review notes are worth the cost."]
+        : judgeEscalation?.near_threshold
+          ? ["Keep deterministic default; force --judge-mode llm only if this near-threshold sample is decision-critical."]
         : []
     });
   }
@@ -1056,7 +1318,12 @@ async function runOptionalJudge(result, {
       mode: "auto",
       status: "skipped_not_recommended",
       model: judgeModel,
-      notes: ["Escalation gate did not recommend LLM review; auto mode stayed at zero calls."]
+      notes: [
+        judgeEscalation?.near_threshold
+          ? "Escalation gate is near threshold or medium-value, but auto mode only calls LLM when concrete critique value is high; it stayed at zero calls."
+          : "Escalation gate did not find enough concrete review value; auto mode stayed at zero calls.",
+        reviewTargetNote
+      ]
     });
   }
 

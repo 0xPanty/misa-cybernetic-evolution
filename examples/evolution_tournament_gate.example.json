@@ -120,6 +120,7 @@
             "safety": 1,
             "compactness": 0.9,
             "novelty": 0.15,
+            "strategy_fit": 0.58,
             "regression": 1,
             "composite": 0.93
           },
@@ -187,6 +188,7 @@
             "safety": 1,
             "compactness": 0.98,
             "novelty": 0.58,
+            "strategy_fit": 0.82,
             "regression": 1,
             "composite": 0.97
           },
@@ -254,6 +256,7 @@
             "safety": 0.3,
             "compactness": 0.9,
             "novelty": 0.95,
+            "strategy_fit": 0.1,
             "regression": 0.1,
             "composite": 0.37
           },
@@ -396,8 +399,11 @@
   "judge_escalation": {
     "mode": "judge_escalation_gate.v1",
     "recommended": false,
+    "near_threshold": false,
     "score": 0.153,
     "threshold": 0.65,
+    "threshold_delta": -0.497,
+    "near_threshold_margin": 0.03,
     "suggested_mode": "deterministic_only",
     "authority": "llm_cannot_change_route_or_winner",
     "llm_api_calls": 0,
@@ -407,6 +413,21 @@
       "conflict": 0,
       "novelty": 0.58,
       "anomaly": 0.66
+    },
+    "llm_review_value": {
+      "mode": "llm_review_value.v1",
+      "level": "none",
+      "score": 0,
+      "expected_value": "none",
+      "should_change_winner": false,
+      "call_policy": "do_not_call",
+      "waste_risk": "high",
+      "close_winner_ratio": 0,
+      "targets": [],
+      "notes": [
+        "No concrete LLM review target was found.",
+        "Do not spend an LLM call unless a human explicitly overrides the gate."
+      ]
     },
     "signals": {
       "source_kind": "default_candidate_preflight",

@@ -3,6 +3,12 @@
 v0.17 adds the active self-evolution piece that was still missing from the
 Qianxuesen loop: candidates can now compete before they reach human review.
 
+v0.18 keeps this contract and adds `strategy_fit` plus `llm_review_value` so
+optional model review has to name concrete critique value before auto mode can
+spend a call. See
+[evolution-tournament-gate-v0.18.md](./evolution-tournament-gate-v0.18.md) for
+the calibrated v0.18 results.
+
 The borrowed idea from `NousResearch/hermes-agent-self-evolution` is not
 automatic self-modification. The borrowed idea is the optimization shape:
 
@@ -73,7 +79,12 @@ and zero-call. It scores:
 - safety;
 - compactness;
 - novelty;
+- route/source strategy fit;
 - regression risk.
+
+`strategy_fit` is reported in each variant's `scores` object so reviewers can
+see whether a winner was selected because it fit the route/source pressure, not
+only because it was shorter.
 
 This is not a final LLM judge. A future GEPA-style optimizer can be added only
 as an offline optional scorer behind the same contract.
@@ -108,13 +119,41 @@ Before any model call, the local gate scores whether LLM review is worth it:
 - anomaly: high score with narrow strategy, repeated rejection shape, or low
   source coverage.
 
+The gate now also reports `llm_review_value`. This is the anti-waste layer:
+it explains what an LLM could actually improve before any call is made.
+
+High-value targets can justify `--judge-mode auto` spending one offline call.
+Medium-value targets stay deterministic by default and are only optional review.
+Low/no-value samples should not spend a model call unless a human overrides the
+gate.
+
+Current review targets include:
+
+- `public_boundary`: real VPS/public-channel samples where wording, redaction,
+  and no-live-effect boundaries need critique;
+- `batch_pattern_review`: larger batches where the useful question is pattern
+  bias, not one winner;
+- `damping_vs_compact`: tiny margins where weak evidence might be over-held or
+  over-compressed;
+- `policy_skill_boundary` and `policy_memory_boundary`: route-boundary pressure
+  that can look reusable but should not be blindly promoted;
+- `close_tiebreak_review`: close deterministic winners where only the rationale
+  needs review;
+- `winner_strategy_bias` and `rejection_pattern_review`: repeated shapes that
+  may need better local fixtures.
+
+Scores just below the threshold are reported as `near_threshold=true`.
+Near-threshold samples keep the default deterministic path and do not call an
+LLM, but they are visible to reviewers as optional human/model-review cases if
+the decision is important.
+
 Modes:
 
 - `--judge-mode off`: never ask for review;
 - default `--judge-mode advise`: recommend or skip LLM review, but never call a
   model;
 - `--judge-mode auto`: call the optional reviewer only when the local escalation
-  gate recommends it;
+  gate recommends it and `llm_review_value.level=high`;
 - `--judge-mode llm`: force the optional reviewer.
 
 The reviewer can score draft quality and write reflection notes. It cannot

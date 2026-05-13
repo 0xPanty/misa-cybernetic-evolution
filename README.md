@@ -20,7 +20,7 @@ The diagram is also available as a Remotion storyboard source at
 [`docs/remotion/langgraph-qianxuesen-flow.tsx`](docs/remotion/langgraph-qianxuesen-flow.tsx)
 for future animation or video rendering.
 
-## v0.17 Quickstart
+## v0.18 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -134,6 +134,10 @@ Expected result:
   local variants, run train/validation/holdout proxy checks, select a
   Pareto-style draft winner, and retain unsafe auto-publish variants in a
   rejected ledger;
+- the v0.18 review-value gate keeps optional LLM review from becoming wasted
+  ceremony: `llm_review_value` must name concrete critique targets before
+  `--judge-mode auto` can spend a model call, and the reviewer still cannot
+  change routes or winners;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -146,11 +150,11 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.17 does not include is a background runtime service. It does not
+What this v0.18 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
-In plain terms, v0.17 is accepted as a local control-theoretic learning engine,
+In plain terms, v0.18 is accepted as a local control-theoretic learning engine,
 not as an autonomous production brain. It can read redacted local evidence,
 compress it, route it, draft safe local artifacts, and explain what should be
 repaired next. It cannot make production decisions by itself.
@@ -173,7 +177,7 @@ The current safety posture is deliberate: positive learning is allowed to move
 forward locally, but every durable or public effect stays behind an explicit
 human approval boundary.
 
-## v0.17 Closed Loop
+## v0.18 Closed Loop
 
 The current closed loop is:
 
@@ -194,6 +198,7 @@ or existing Hermes/Zilliz distillation artifact
 -> map external OmniAgent-style execution footprints into evidence-only learning events
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant and retain rejected variants as evidence
+-> mark whether optional LLM review has concrete critique value
 -> validate with schemas, precheck, and tests
 ```
 
@@ -277,6 +282,48 @@ violations: 0
 This remains the calibration set: the downstream routing works when the input
 lesson is small enough, and compound windows now get split before the system
 tries to promote anything durable.
+
+v0.17 then added the evolution tournament over real and synthetic candidates.
+v0.18 keeps the tournament local, but adds two decision-quality checks:
+
+- `strategy_fit`, so the winning variant must match the route/source pressure
+  instead of winning only because it is compact;
+- `llm_review_value`, so optional LLM review is treated as a costed critique
+  step, not a default second judge.
+
+The v0.18 calibration used the same historical sources plus sliced pressure
+runs. The workload intentionally includes both full-set runs and smaller
+subsets, so the 211 tournament decisions below are validation workload, not
+unique source count.
+
+| Sample group | Tournament decisions | Winner / review behavior |
+| --- | ---: | --- |
+| Default candidate preflight | 3 | deterministic only; `llm_review_value=none`; `llm_api_calls=0` |
+| VPS sanitized conversation sample | 3 | high-value review; targets `public_boundary`, `policy_skill_boundary`, `close_tiebreak_review` |
+| 30 compound historical summaries | 87 | high-value review; routes case 21 / memory 44 / skill 7 / policy 4 / damping 11 |
+| 15 atomic historical lessons | 17 | medium-value optional review; deterministic default; `llm_api_calls=0` |
+| History chunks, six 5-source runs | 87 | separates high-value damping/boundary review from low-value close-tie noise |
+| Atomic route slices, five route-specific runs | 14 | single-route small samples stay deterministic unless another high-value target exists |
+
+Aggregate v0.18 review-value results:
+
+```text
+sample_groups: 14
+tournament_decisions: 211
+legacy_pressure_only_recommended: 7
+v0.18_auto_recommended: 6
+v0.18_optional_review: 2
+v0.18_deterministic_only: 6
+avoided_low_value_calls: 2
+recommended_without_high_value: 0
+high_value_not_called: 0
+violations: 0
+```
+
+The practical result is that LLM review now has to say what it will improve.
+Large batches, public-boundary samples, tight damping-vs-compact margins, and
+policy/skill or policy/memory boundary pressure can justify review. Plain close
+scores in small single-route samples do not justify a model call by themselves.
 
 ## Repair Tickets
 
@@ -379,6 +426,8 @@ See [docs/evolution-candidate-preflight-v0.11.md](./docs/evolution-candidate-pre
 for the candidate preflight -> report queue gate.
 See [docs/evolution-tournament-gate-v0.17.md](./docs/evolution-tournament-gate-v0.17.md)
 for the active candidate tournament loop.
+See [docs/evolution-tournament-gate-v0.18.md](./docs/evolution-tournament-gate-v0.18.md)
+for the LLM review-value gate and historical sample calibration.
 See [docs/local-session-distillation-v0.12.md](./docs/local-session-distillation-v0.12.md)
 for the local window -> distillate -> learning event intake step.
 See [docs/window-distillation-pipeline-v0.13.md](./docs/window-distillation-pipeline-v0.13.md)
@@ -589,6 +638,17 @@ pass. The reviewer can score and reflect on draft quality, but it cannot change
 routes, approve winners, write memory, install Skills, change prompts, evolve
 code, or touch VPS.
 
+v0.18 tightens that gate. Variant scoring now includes `strategy_fit` so route
+pressure matters directly: damping can prefer a conservative hold, memory and
+skill can prefer compact reusable drafts, and policy/case pressure can prefer a
+trace-reflective rationale. Optional judge escalation now reports
+`llm_review_value`, including `level`, `call_policy`, `waste_risk`, and concrete
+targets such as `public_boundary`, `damping_vs_compact`,
+`policy_skill_boundary`, `policy_memory_boundary`, and `batch_pattern_review`.
+`--judge-mode auto` can call a model only when that value is high. Medium-value
+samples are visible but deterministic by default; low/no-value samples do not
+spend a call.
+
 ## Design Principles
 
 1. Separate the live runtime from the learning plane.
@@ -711,6 +771,8 @@ for the machine-readable form.
 │   ├── repair-ticket-v0.13.md
 │   ├── work-order-routing-v0.14.md
 │   ├── hermes-distillation-mapping-v0.15.md
+│   ├── evolution-tournament-gate-v0.17.md
+│   ├── evolution-tournament-gate-v0.18.md
 │   ├── memory-routing.md
 │   ├── source-synthesis.md
 │   ├── skill-lifecycle.md
@@ -801,7 +863,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.17 engineering scaffold. It is ready to publish as a public
+This is a v0.18 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures and local distillation
 sources.
@@ -828,6 +890,7 @@ Current scope:
 - signal candidate queue and daily rollup report;
 - candidate preflight and report queue;
 - local evolution tournament gate for multi-variant candidate optimization;
+- LLM review-value gate for anti-waste optional judge escalation;
 - source synthesis for Kura, SkillClaw, CSE, and self-evolution references;
 - governance Skill template;
 - local schema validation, dry-run precheck, and minimal tests.

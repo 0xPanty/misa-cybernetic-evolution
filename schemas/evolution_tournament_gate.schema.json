@@ -364,12 +364,16 @@
       "required": [
         "mode",
         "recommended",
+        "near_threshold",
         "score",
         "threshold",
+        "threshold_delta",
+        "near_threshold_margin",
         "suggested_mode",
         "authority",
         "llm_api_calls",
         "dimensions",
+        "llm_review_value",
         "signals",
         "reasons",
         "notes"
@@ -377,18 +381,77 @@
       "properties": {
         "mode": { "type": "string", "const": "judge_escalation_gate.v1" },
         "recommended": { "type": "boolean" },
+        "near_threshold": { "type": "boolean" },
         "score": { "type": "number", "minimum": 0, "maximum": 1 },
         "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+        "threshold_delta": { "type": "number", "minimum": -1, "maximum": 1 },
+        "near_threshold_margin": { "type": "number", "minimum": 0, "maximum": 1 },
         "suggested_mode": { "type": "string", "minLength": 1 },
         "authority": { "type": "string", "const": "llm_cannot_change_route_or_winner" },
         "llm_api_calls": { "type": "integer", "const": 0 },
         "dimensions": { "$ref": "#/$defs/judge_escalation_dimensions" },
+        "llm_review_value": { "$ref": "#/$defs/llm_review_value" },
         "signals": { "$ref": "#/$defs/judge_escalation_signals" },
         "reasons": {
           "type": "array",
           "items": { "type": "string" }
         },
         "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "llm_review_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "level",
+        "score",
+        "expected_value",
+        "should_change_winner",
+        "call_policy",
+        "waste_risk",
+        "close_winner_ratio",
+        "targets",
+        "notes"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "llm_review_value.v1" },
+        "level": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "expected_value": {
+          "type": "string",
+          "enum": ["none", "diagnostic_note_only", "critique_only"]
+        },
+        "should_change_winner": { "type": "boolean", "const": false },
+        "call_policy": {
+          "type": "string",
+          "enum": ["do_not_call", "deterministic_default_review_optional", "call_when_auto_enabled"]
+        },
+        "waste_risk": { "type": "string", "enum": ["low", "medium", "high"] },
+        "close_winner_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "targets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/llm_review_target" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "llm_review_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "priority", "score", "sample_count", "evidence"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "evidence": {
           "type": "array",
           "items": { "type": "string" }
         }
@@ -567,6 +630,7 @@
             "safety",
             "compactness",
             "novelty",
+            "strategy_fit",
             "regression",
             "composite"
           ],
@@ -579,6 +643,7 @@
             "safety": { "type": "number", "minimum": 0, "maximum": 1 },
             "compactness": { "type": "number", "minimum": 0, "maximum": 1 },
             "novelty": { "type": "number", "minimum": 0, "maximum": 1 },
+            "strategy_fit": { "type": "number", "minimum": 0, "maximum": 1 },
             "regression": { "type": "number", "minimum": 0, "maximum": 1 },
             "composite": { "type": "number", "minimum": 0, "maximum": 1 }
           }
