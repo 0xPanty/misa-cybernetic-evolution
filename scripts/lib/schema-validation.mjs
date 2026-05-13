@@ -30,7 +30,8 @@ const SCHEMA_DIRECTORY_PAIRS = [
 
 const SCHEMA_ONLY_FILES = [
   "schemas/session_distillation_review.schema.json",
-  "schemas/hermes_distillation_mapping.schema.json"
+  "schemas/hermes_distillation_mapping.schema.json",
+  "schemas/omniagent_footprint_bridge.schema.json"
 ];
 
 async function readJson(filePath) {
@@ -114,6 +115,19 @@ export async function validateJsonData({
   name = "data"
 } = {}) {
   const ajv = createAjv();
+  for (const dependencyRel of [
+    "schemas/misa_learning_fixture.schema.json",
+    "schemas/learning_cycle_trace.schema.json"
+  ]) {
+    if (dependencyRel === schemaRel) {
+      continue;
+    }
+    try {
+      ajv.addSchema(await readJson(path.join(repoRoot, dependencyRel)));
+    } catch {
+      // Optional dependency schemas are only needed for bridge-style composite schemas.
+    }
+  }
   const schema = await readJson(path.join(repoRoot, schemaRel));
   const validate = ajv.compile(schema);
   const ok = validate(data);

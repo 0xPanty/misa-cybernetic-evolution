@@ -1,0 +1,42 @@
+{
+  "schema_version": "external.omniagent_event_footprint.v1",
+  "source_id": "oa-repeated-readonly-audit",
+  "session_id": "oa-session-001",
+  "channel": "local",
+  "task_type": "coding-audit",
+  "task": "repeat local read-only audit workflow over repo evidence",
+  "occurrence_count": 3,
+  "redaction_status": "redacted",
+  "source_type": "synthetic",
+  "created_at": "2026-05-13T02:00:00Z",
+  "events": [
+    {
+      "type": "agent_start",
+      "timestamp": "2026-05-13T02:00:00Z",
+      "task": "repeat local read-only audit workflow over repo evidence"
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "read_file",
+      "path": "docs/control-theory-mapping.md",
+      "success": true
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "grep",
+      "path": "scripts/lib",
+      "success": true
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "read_file",
+      "path": "scripts/lib/memory-layer.mjs",
+      "success": true
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "iterations": 4
+    }
+  ]
+}

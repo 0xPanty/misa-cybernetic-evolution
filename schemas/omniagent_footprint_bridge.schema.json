@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/omniagent_footprint_bridge.schema.json",
+  "title": "OmniAgentFootprintBridge",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "source",
+    "omniagent_borrowed",
+    "footprint_summary",
+    "converted_learning_event",
+    "cycle_trace",
+    "route_summary",
+    "control_boundary",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.omniagent_footprint_bridge.v1" },
+    "mode": { "type": "string", "const": "omniagent-footprint-bridge" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "event_count",
+        "session_id",
+        "channel",
+        "task_type",
+        "occurrence_count",
+        "raw_private_content_persisted"
+      ],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "event_count": { "type": "integer", "minimum": 0 },
+        "session_id": { "type": "string", "minLength": 1 },
+        "channel": { "type": "string", "enum": ["discord", "farcaster", "agentmail", "local", "other"] },
+        "task_type": { "type": "string", "minLength": 1 },
+        "occurrence_count": { "type": "integer", "minimum": 0 },
+        "raw_private_content_persisted": { "type": "boolean", "const": false }
+      }
+    },
+    "omniagent_borrowed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_bus_lifecycle",
+        "sentinel_like_complexity_signal",
+        "guardian_like_risk_signal",
+        "reflexion_failure_signal",
+        "automatic_writes_imported",
+        "auto_agents_md_promotion_imported",
+        "auto_memory_write_imported",
+        "auto_skill_install_imported",
+        "llm_route_decision_imported"
+      ],
+      "properties": {
+        "event_bus_lifecycle": { "type": "boolean" },
+        "sentinel_like_complexity_signal": { "type": "boolean" },
+        "guardian_like_risk_signal": { "type": "boolean" },
+        "reflexion_failure_signal": { "type": "boolean" },
+        "automatic_writes_imported": { "type": "boolean", "const": false },
+        "auto_agents_md_promotion_imported": { "type": "boolean", "const": false },
+        "auto_memory_write_imported": { "type": "boolean", "const": false },
+        "auto_skill_install_imported": { "type": "boolean", "const": false },
+        "llm_route_decision_imported": { "type": "boolean", "const": false }
+      }
+    },
+    "footprint_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tools_used",
+        "successful_tool_count",
+        "failed_tool_count",
+        "tool_error_count",
+        "auto_write_indicators"
+      ],
+      "properties": {
+        "tools_used": { "type": "array", "items": { "type": "string" } },
+        "successful_tool_count": { "type": "integer", "minimum": 0 },
+        "failed_tool_count": { "type": "integer", "minimum": 0 },
+        "tool_error_count": { "type": "integer", "minimum": 0 },
+        "auto_write_indicators": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["agents_md_write", "memory_write", "skill_write", "public_send", "runtime_mutation"],
+          "properties": {
+            "agents_md_write": { "type": "boolean" },
+            "memory_write": { "type": "boolean" },
+            "skill_write": { "type": "boolean" },
+            "public_send": { "type": "boolean" },
+            "runtime_mutation": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "converted_learning_event": { "$ref": "https://example.org/misa-cybernetic-evolution/misa_learning_fixture.schema.json" },
+    "cycle_trace": { "$ref": "https://example.org/misa-cybernetic-evolution/learning_cycle_trace.schema.json" },
+    "route_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selected_route",
+        "status",
+        "publication_mode",
+        "candidate_state",
+        "qianxuesen_route_vocab"
+      ],
+      "properties": {
+        "selected_route": { "type": "string", "enum": ["memory", "skill", "case", "policy", "damping", "ignore"] },
+        "status": { "type": "string", "enum": ["draft", "verified", "requires_approval", "rejected", "held"] },
+        "publication_mode": { "type": "string", "enum": ["draft_only", "requires_approval", "no_publish"] },
+        "candidate_state": { "type": "string", "enum": ["none", "staged", "validated", "rejected", "held"] },
+        "qianxuesen_route_vocab": {
+          "type": "array",
+          "minItems": 6,
+          "items": { "type": "string" },
+          "allOf": [
+            { "contains": { "const": "memory" } },
+            { "contains": { "const": "skill" } },
+            { "contains": { "const": "case" } },
+            { "contains": { "const": "policy" } },
+            { "contains": { "const": "damping" } },
+            { "contains": { "const": "ignore" } }
+          ]
+        }
+      }
+    },
+    "control_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "footprint_role",
+        "route_owner",
+        "route_implementation",
+        "llm_route_decision_allowed",
+        "automatic_promotion_allowed",
+        "promotion_surface"
+      ],
+      "properties": {
+        "footprint_role": { "type": "string", "const": "sensor_input_only" },
+        "route_owner": { "type": "string", "const": "qianxuesen" },
+        "route_implementation": { "type": "string", "const": "existing_signal_rules_and_route_table" },
+        "llm_route_decision_allowed": { "type": "boolean", "const": false },
+        "automatic_promotion_allowed": { "type": "boolean", "const": false },
+        "promotion_surface": { "type": "string", "const": "none" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["production_authority", "publication_allowed", "blocked_operations", "live_effects"],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "live_effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "writes_persistent_memory",
+            "publishes_skill",
+            "starts_timer",
+            "changes_session_mechanics",
+            "posts_publicly"
+          ],
+          "properties": {
+            "writes_persistent_memory": { "type": "boolean", "const": false },
+            "publishes_skill": { "type": "boolean", "const": false },
+            "starts_timer": { "type": "boolean", "const": false },
+            "changes_session_mechanics": { "type": "boolean", "const": false },
+            "posts_publicly": { "type": "boolean", "const": false }
+          }
+        }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "violations": { "type": "array", "items": { "type": "string" } }
+  }
+}

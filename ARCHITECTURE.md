@@ -220,6 +220,24 @@ the route decision.
 The v0.15 bridge contract is described in
 [docs/langgraph-qianxuesen-bridge-v0.15.md](./docs/langgraph-qianxuesen-bridge-v0.15.md).
 
+### 8.2 OmniAgent Footprint Bridge
+
+OmniAgent is treated as an external footprint source, not as the learning
+controller.
+
+The useful parts are lifecycle events, complexity signals, Guardian-like risk
+signals, and Reflexion/failure signals. The bridge maps those events into local
+Qianxuesen learning events, then the existing route table decides memory, skill,
+case, policy, damping, or ignore.
+
+The forbidden shape is importing OmniAgent's automatic `AGENTS.md` promotion,
+memory writes, Skill installation, LLM-owned route decisions, or production
+runtime changes. If those appear in a footprint, they become policy evidence or
+damping pressure instead of live behavior.
+
+The v0.16 bridge is described in
+[docs/omniagent-footprint-bridge-v0.16.md](./docs/omniagent-footprint-bridge-v0.16.md).
+
 ### 9. Publication and Governance Plane
 
 Publication creates immutable records:

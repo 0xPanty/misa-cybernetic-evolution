@@ -53,6 +53,10 @@ import {
   evaluateLangGraphQianxuesenBridge,
   reviewLangGraphQianxuesenBridge
 } from "../scripts/lib/langgraph-qianxuesen-bridge.mjs";
+import {
+  evaluateOmniAgentFootprintBridge,
+  reviewOmniAgentFootprintBridge
+} from "../scripts/lib/omniagent-footprint-bridge.mjs";
 import { loadVpsConversationSources } from "../scripts/lib/vps-conversation-sources.mjs";
 import {
   CHECKPOINTER_FIELDS,
@@ -1700,6 +1704,68 @@ test("Misa learning simulation covers practical positive routes", async () => {
   assert.ok(result.routeCounts.policy >= 1);
   assert.ok(result.routeCounts.damping >= 1);
   assert.equal(result.traces.every((trace) => trace.result.positive_value), true);
+});
+
+test("OmniAgent repeated success footprint becomes evidence-only skill route", async () => {
+  const raw = await fs.readFile(
+    path.join(process.cwd(), "examples/omniagent-footprint-bridge/repeated-success.input.json"),
+    "utf8"
+  );
+  const result = reviewOmniAgentFootprintBridge({
+    footprint: JSON.parse(raw),
+    now: new Date("2026-05-13T00:00:00Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.route_summary.selected_route, "skill");
+  assert.equal(result.converted_learning_event.signals.includes("reusable_workflow"), true);
+  assert.equal(result.control_boundary.route_owner, "qianxuesen");
+  assert.equal(result.control_boundary.llm_route_decision_allowed, false);
+  assert.equal(result.control_boundary.automatic_promotion_allowed, false);
+  assert.equal(result.omniagent_borrowed.automatic_writes_imported, false);
+  assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+  assert.deepEqual(evaluateOmniAgentFootprintBridge(result), []);
+});
+
+test("OmniAgent automatic writes become policy evidence instead of imported evolution", async () => {
+  const raw = await fs.readFile(
+    path.join(process.cwd(), "examples/omniagent-footprint-bridge/auto-write-risk.input.json"),
+    "utf8"
+  );
+  const result = reviewOmniAgentFootprintBridge({
+    footprint: JSON.parse(raw),
+    now: new Date("2026-05-13T00:00:00Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.route_summary.selected_route, "policy");
+  assert.equal(result.route_summary.publication_mode, "requires_approval");
+  assert.equal(result.footprint_summary.auto_write_indicators.agents_md_write, true);
+  assert.equal(result.footprint_summary.auto_write_indicators.memory_write, true);
+  assert.equal(result.footprint_summary.auto_write_indicators.skill_write, true);
+  assert.equal(result.omniagent_borrowed.auto_agents_md_promotion_imported, false);
+  assert.equal(result.omniagent_borrowed.auto_memory_write_imported, false);
+  assert.equal(result.omniagent_borrowed.auto_skill_install_imported, false);
+  assert.equal(result.cycle_trace.candidate_review.publication_allowed, false);
+});
+
+test("OmniAgent patch-style AGENTS write is blocked as policy evidence", async () => {
+  const raw = await fs.readFile(
+    path.join(process.cwd(), "examples/omniagent-footprint-bridge/patch-agents-md-risk.input.json"),
+    "utf8"
+  );
+  const result = reviewOmniAgentFootprintBridge({
+    footprint: JSON.parse(raw),
+    now: new Date("2026-05-13T00:00:00Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.route_summary.selected_route, "policy");
+  assert.equal(result.footprint_summary.tools_used.includes("apply_patch"), true);
+  assert.equal(result.footprint_summary.auto_write_indicators.agents_md_write, true);
+  assert.equal(result.converted_learning_event.signals.includes("explicit_user_boundary"), true);
+  assert.equal(result.omniagent_borrowed.auto_agents_md_promotion_imported, false);
+  assert.equal(result.cycle_trace.candidate_review.publication_allowed, false);
 });
 
 test("Misa replay fixtures stay inside the redacted real-ish cap", async () => {

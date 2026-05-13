@@ -1,0 +1,39 @@
+{
+  "schema_version": "external.omniagent_event_footprint.v1",
+  "source_id": "oa-auto-write-risk",
+  "session_id": "oa-session-002",
+  "channel": "local",
+  "task_type": "self-evolution",
+  "task": "auto promote a learned rule after one run",
+  "occurrence_count": 1,
+  "redaction_status": "redacted",
+  "source_type": "synthetic",
+  "created_at": "2026-05-13T02:10:00Z",
+  "events": [
+    {
+      "type": "agent_start",
+      "timestamp": "2026-05-13T02:10:00Z",
+      "task": "auto promote a learned rule after one run"
+    },
+    {
+      "type": "lesson_promoted",
+      "description": "Validated lesson promoted to AGENTS.md as a learned rule",
+      "path": ".omniagent/AGENTS.md"
+    },
+    {
+      "type": "memory_write",
+      "description": "updated .omniagent memory.db",
+      "path": ".omniagent/memory.db"
+    },
+    {
+      "type": "skill_compiled",
+      "description": "compiled trial skill under .omniagent/skills",
+      "path": ".omniagent/skills/generated/SKILL.md"
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "iterations": 2
+    }
+  ]
+}

@@ -20,7 +20,7 @@ The diagram is also available as a Remotion storyboard source at
 [`docs/remotion/langgraph-qianxuesen-flow.tsx`](docs/remotion/langgraph-qianxuesen-flow.tsx)
 for future animation or video rendering.
 
-## v0.15 Quickstart
+## v0.16 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -44,6 +44,7 @@ npm run export-skills:misa
 npm run repair-ticket:misa -- --dry-run
 npm run work-order:route -- --dry-run
 npm run langgraph:bridge -- --json
+npm run omniagent:footprint
 npm run validate:schemas
 npm run precheck
 npm test
@@ -112,6 +113,10 @@ Expected result:
   matrix before bridge actions, and `decision_bom` records the owner, policy,
   action, outcome, evidence refs, human-boundary status, completeness score,
   and integrity hash for audit;
+- the OmniAgent footprint bridge borrows event-lifecycle, complexity, risk, and
+  failure signals as sensor input only, then converts them into Qianxuesen
+  learning events without importing automatic `AGENTS.md`, memory, Skill, LLM
+  route, or production side effects;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local
@@ -133,11 +138,11 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.15 does not include is a background runtime service. It does not
+What this v0.16 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
-In plain terms, v0.15 is accepted as a local control-theoretic learning engine,
+In plain terms, v0.16 is accepted as a local control-theoretic learning engine,
 not as an autonomous production brain. It can read redacted local evidence,
 compress it, route it, draft safe local artifacts, and explain what should be
 repaired next. It cannot make production decisions by itself.
@@ -159,7 +164,7 @@ The current safety posture is deliberate: positive learning is allowed to move
 forward locally, but every durable or public effect stays behind an explicit
 human approval boundary.
 
-## v0.13 Closed Loop
+## v0.16 Closed Loop
 
 The current closed loop is:
 
@@ -177,6 +182,7 @@ or existing Hermes/Zilliz distillation artifact
 -> generate repair tickets for unsafe over-promotion patterns
 -> route work orders to the primary agent with suggested executor and escalation options
 -> project the same work orders into a LangGraph-compatible interrupt/checkpoint contract
+-> map external OmniAgent-style execution footprints into evidence-only learning events
 -> validate with schemas, precheck, and tests
 ```
 

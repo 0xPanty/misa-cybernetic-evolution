@@ -19,6 +19,7 @@ import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import { buildWorkOrderRouting } from "./work-order-router.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
+import { reviewOmniAgentFootprintBridge } from "./omniagent-footprint-bridge.mjs";
 
 const REQUIRED_FILES = [
   "README.md",
@@ -46,6 +47,7 @@ const REQUIRED_FILES = [
   "docs/repair-ticket-v0.13.md",
   "docs/work-order-routing-v0.14.md",
   "docs/langgraph-qianxuesen-bridge-v0.15.md",
+  "docs/omniagent-footprint-bridge-v0.16.md",
   "docs/assets/langgraph-qianxuesen-flow.svg",
   "docs/remotion/langgraph-qianxuesen-flow.tsx",
   "docs/templates/governance-skill-template.md",
@@ -67,6 +69,7 @@ const REQUIRED_FILES = [
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
+  "schemas/omniagent_footprint_bridge.schema.json",
   "schemas/misa_learning_fixture.schema.json",
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
@@ -99,6 +102,9 @@ const REQUIRED_FILES = [
   "examples/hermes-distillation-mapping/missing-evidence.expected.json",
   "examples/hermes-distillation-mapping/high-risk.input.json",
   "examples/hermes-distillation-mapping/high-risk.expected.json",
+  "examples/omniagent-footprint-bridge/repeated-success.input.json",
+  "examples/omniagent-footprint-bridge/auto-write-risk.input.json",
+  "examples/omniagent-footprint-bridge/patch-agents-md-risk.input.json",
   "examples/misa-learning/memory_user_style.fixture.json",
   "examples/misa-learning/skill_recovery_workflow.fixture.json",
   "examples/misa-learning/case_provider_timeout.fixture.json",
@@ -124,6 +130,7 @@ const REQUIRED_FILES = [
   "scripts/repair-ticket.mjs",
   "scripts/work-order-router.mjs",
   "scripts/langgraph-qianxuesen-bridge.mjs",
+  "scripts/omniagent-footprint-bridge.mjs",
   "scripts/lib/self-repair.mjs",
   "scripts/lib/genericagent-density.mjs",
   "scripts/lib/adaptive-candidate-gate.mjs",
@@ -137,6 +144,7 @@ const REQUIRED_FILES = [
   "scripts/lib/work-order-router.mjs",
   "scripts/lib/langgraph-qianxuesen-contract.mjs",
   "scripts/lib/langgraph-qianxuesen-bridge.mjs",
+  "scripts/lib/omniagent-footprint-bridge.mjs",
   "scripts/lib/vps-conversation-sources.mjs",
   "generated/README.md"
 ];
@@ -467,6 +475,32 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     data: langGraphBridge,
     name: "validate LangGraph Qianxuesen bridge review"
   }));
+
+  for (const footprintRel of [
+    "examples/omniagent-footprint-bridge/repeated-success.input.json",
+    "examples/omniagent-footprint-bridge/auto-write-risk.input.json",
+    "examples/omniagent-footprint-bridge/patch-agents-md-risk.input.json"
+  ]) {
+    const omniAgentFootprint = await readJson(path.join(repoRoot, footprintRel));
+    const omniAgentBridge = reviewOmniAgentFootprintBridge({
+      footprint: omniAgentFootprint,
+      now: new Date("2026-05-13T00:00:00Z")
+    });
+    checks.push(checkResult(`OmniAgent footprint bridge contract check ${path.basename(footprintRel)}`, omniAgentBridge.ok, {
+      route: omniAgentBridge.route_summary.selected_route,
+      status: omniAgentBridge.route_summary.status,
+      autoWritesSeen: Object.values(omniAgentBridge.footprint_summary.auto_write_indicators).some(Boolean),
+      llmRouteDecisionAllowed: omniAgentBridge.control_boundary.llm_route_decision_allowed,
+      automaticPromotionAllowed: omniAgentBridge.control_boundary.automatic_promotion_allowed,
+      violations: omniAgentBridge.violations
+    }));
+    checks.push(await validateJsonData({
+      repoRoot,
+      schemaRel: "schemas/omniagent_footprint_bridge.schema.json",
+      data: omniAgentBridge,
+      name: `validate OmniAgent footprint bridge review ${path.basename(footprintRel)}`
+    }));
+  }
 
   const secretHits = await scanForSecretAssignments(repoRoot);
   checks.push(checkResult("no committed secret assignments", secretHits.length === 0, {

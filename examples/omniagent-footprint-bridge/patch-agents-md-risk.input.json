@@ -1,0 +1,30 @@
+{
+  "schema_version": "external.omniagent_event_footprint.v1",
+  "source_id": "oa-patch-agents-md-risk",
+  "session_id": "oa-session-003",
+  "channel": "local",
+  "task_type": "context-evolution",
+  "task": "patch learned rule into AGENTS.md",
+  "occurrence_count": 2,
+  "redaction_status": "redacted",
+  "source_type": "synthetic",
+  "created_at": "2026-05-13T02:20:00Z",
+  "events": [
+    {
+      "type": "agent_start",
+      "timestamp": "2026-05-13T02:20:00Z",
+      "task": "patch learned rule into AGENTS.md"
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "apply_patch",
+      "path": "AGENTS.md",
+      "success": true
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "iterations": 2
+    }
+  ]
+}
