@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/vector_memory_storage.schema.json",
+  "title": "VectorMemoryStorage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "strategy",
+    "collections",
+    "local_layout",
+    "metadata_contract",
+    "summary",
+    "records",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.vector_memory_storage.v1" },
+    "mode": { "type": "string", "const": "vector-memory-storage-classification" },
+    "ok": { "type": "boolean", "const": true },
+    "created_at": { "type": "string", "format": "date-time" },
+    "strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend_target",
+        "classification_only",
+        "collection_strategy",
+        "zilliz_written",
+        "external_api_calls",
+        "writes_persistent_memory",
+        "rule"
+      ],
+      "properties": {
+        "backend_target": { "type": "string", "const": "zilliz_or_local_vector_store" },
+        "classification_only": { "type": "boolean", "const": true },
+        "collection_strategy": { "type": "string", "const": "few_collections_with_metadata" },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "rule": { "type": "string" }
+      }
+    },
+    "collections": {
+      "type": "array",
+      "minItems": 6,
+      "items": { "$ref": "#/$defs/collection_contract" }
+    },
+    "local_layout": {
+      "type": "array",
+      "minItems": 6,
+      "items": { "$ref": "#/$defs/local_layout_entry" }
+    },
+    "metadata_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_fields", "behavior_authority_rule", "candidate_rule"],
+      "properties": {
+        "required_fields": {
+          "type": "array",
+          "minItems": 10,
+          "items": { "type": "string" }
+        },
+        "behavior_authority_rule": { "type": "string" },
+        "candidate_rule": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_count",
+        "by_kind",
+        "by_collection",
+        "candidate_count",
+        "promoted_count",
+        "policy_count",
+        "can_influence_behavior_count",
+        "owner_approval_required_count",
+        "zilliz_write_count"
+      ],
+      "properties": {
+        "record_count": { "type": "integer", "minimum": 0 },
+        "by_kind": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "by_collection": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "candidate_count": { "type": "integer", "minimum": 0 },
+        "promoted_count": { "type": "integer", "minimum": 0 },
+        "policy_count": { "type": "integer", "minimum": 0 },
+        "can_influence_behavior_count": { "type": "integer", "minimum": 0 },
+        "owner_approval_required_count": { "type": "integer", "minimum": 0 },
+        "zilliz_write_count": { "type": "integer", "const": 0 }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/vector_memory_record" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "zilliz_written",
+        "external_api_calls",
+        "writes_persistent_memory",
+        "public_posting_allowed",
+        "provider_or_credential_access_allowed",
+        "vps_or_runtime_touch_allowed",
+        "unpromoted_records_can_influence_behavior"
+      ],
+      "properties": {
+        "zilliz_written": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "public_posting_allowed": { "type": "boolean", "const": false },
+        "provider_or_credential_access_allowed": { "type": "boolean", "const": false },
+        "vps_or_runtime_touch_allowed": { "type": "boolean", "const": false },
+        "unpromoted_records_can_influence_behavior": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "memory_kind": {
+      "type": "string",
+      "enum": [
+        "audit_log",
+        "decision_trace",
+        "agent_experience_candidate",
+        "agent_experience_promoted",
+        "persona_memory_candidate",
+        "persona_memory_promoted",
+        "policy_boundary",
+        "repair_work_order"
+      ]
+    },
+    "authority": {
+      "type": "string",
+      "enum": ["audit_only", "candidate", "promoted", "policy"]
+    },
+    "collection_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collection",
+        "kinds",
+        "local_dir",
+        "authority",
+        "default_status",
+        "can_influence_behavior",
+        "requires_owner_approval"
+      ],
+      "properties": {
+        "collection": { "type": "string" },
+        "kinds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/memory_kind" }
+        },
+        "local_dir": { "type": "string" },
+        "authority": { "$ref": "#/$defs/authority" },
+        "default_status": { "type": "string" },
+        "can_influence_behavior": { "type": "boolean" },
+        "requires_owner_approval": { "type": "boolean" }
+      }
+    },
+    "local_layout_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local_dir", "collection", "kinds"],
+      "properties": {
+        "local_dir": { "type": "string" },
+        "collection": { "type": "string" },
+        "kinds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/memory_kind" }
+        }
+      }
+    },
+    "vector_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "authority",
+        "status",
+        "risk_level",
+        "source_type",
+        "source_id",
+        "created_by",
+        "promotion_state",
+        "can_influence_behavior",
+        "requires_owner_approval",
+        "allowed_surfaces",
+        "blocked_surfaces",
+        "decision_trace_id"
+      ],
+      "properties": {
+        "kind": { "$ref": "#/$defs/memory_kind" },
+        "authority": { "$ref": "#/$defs/authority" },
+        "status": { "type": "string" },
+        "risk_level": { "type": "string", "enum": ["critical", "high", "medium", "low", "P0", "P1", "P2", "P3"] },
+        "source_type": { "type": "string" },
+        "source_id": { "type": "string" },
+        "created_by": { "type": "string" },
+        "promotion_state": { "type": "string", "enum": ["not_promoted", "promoted"] },
+        "can_influence_behavior": { "type": "boolean" },
+        "requires_owner_approval": { "type": "boolean" },
+        "allowed_surfaces": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "blocked_surfaces": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "decision_trace_id": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "authority": { "enum": ["audit_only", "candidate"] } },
+            "required": ["authority"]
+          },
+          "then": {
+            "properties": { "can_influence_behavior": { "const": false } }
+          }
+        }
+      ]
+    },
+    "vector_memory_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "kind",
+        "collection",
+        "local_dir",
+        "title",
+        "summary",
+        "metadata"
+      ],
+      "properties": {
+        "record_id": { "type": "string" },
+        "kind": { "$ref": "#/$defs/memory_kind" },
+        "collection": { "type": "string" },
+        "local_dir": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/vector_metadata" }
+      }
+    }
+  }
+}

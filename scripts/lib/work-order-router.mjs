@@ -5,7 +5,7 @@ import { reviewRepairTickets } from "./repair-ticket.mjs";
 const DEFAULT_RECEIVER_SLOTS = {
   primary_agent: {
     label: "Primary agent",
-    role: "Receives the work order, explains it to the user, and asks before execution."
+    role: "Receives the work order first, self-reviews it, and either resolves within scope or reports upward based on routing policy."
   },
   persona_operator_agent: {
     label: "Persona or operator agent",
@@ -26,13 +26,46 @@ const DEFAULT_RECEIVER_SLOTS = {
 };
 
 const DEFAULT_ROUTING_POLICY = {
-  mode: "ask_before_execution",
-  auto_execute_allowed: false,
+  mode: "risk_graded_default",
+  auto_execute_allowed: true,
   max_auto_severity: "P3",
-  auto_execute_categories: [],
-  primary_agent_report_first: true,
+  auto_execute_categories: ["*"],
+  primary_agent_report_first: false,
   stronger_model_policy: "recommend_when_high_risk_or_complex",
   durable_or_public_effect_policy: "human_owner_required"
+};
+
+const ROUTING_POLICY_MODE_DEFAULTS = {
+  report_only: {
+    auto_execute_allowed: false,
+    auto_execute_categories: [],
+    primary_agent_report_first: true
+  },
+  ask_before_execution: {
+    auto_execute_allowed: false,
+    auto_execute_categories: [],
+    primary_agent_report_first: true
+  },
+  risk_graded_default: {
+    auto_execute_allowed: true,
+    auto_execute_categories: ["*"],
+    primary_agent_report_first: false
+  },
+  agent_autonomous_low_risk: {
+    auto_execute_allowed: false,
+    auto_execute_categories: [],
+    primary_agent_report_first: false
+  },
+  agent_autonomous_within_scope: {
+    auto_execute_allowed: false,
+    auto_execute_categories: [],
+    primary_agent_report_first: false
+  },
+  full_agent: {
+    auto_execute_allowed: false,
+    auto_execute_categories: ["*"],
+    primary_agent_report_first: false
+  }
 };
 
 const SEVERITY_RISK = {
@@ -59,10 +92,22 @@ function severityRank(severity) {
 }
 
 function normalizeRoutingPolicy(routingPolicy = {}) {
-  return {
+  const mode = routingPolicy.mode ?? DEFAULT_ROUTING_POLICY.mode;
+  const policy = {
     ...DEFAULT_ROUTING_POLICY,
-    ...routingPolicy
+    ...(ROUTING_POLICY_MODE_DEFAULTS[mode] ?? {}),
+    ...routingPolicy,
+    mode
   };
+  if (["report_only", "ask_before_execution"].includes(mode)) {
+    return {
+      ...policy,
+      auto_execute_allowed: false,
+      auto_execute_categories: [],
+      primary_agent_report_first: true
+    };
+  }
+  return policy;
 }
 
 function mergeReceiverSlots(receiverSlots = {}) {
@@ -78,6 +123,24 @@ function severityAllowedForAuto(severity, maxAutoSeverity) {
 
 function categoryAllowedForAuto(category, categories = []) {
   return categories.includes("*") || categories.includes(category);
+}
+
+function modeAllowsAutonomousExecution(mode) {
+  return [
+    "risk_graded_default",
+    "agent_autonomous_low_risk",
+    "agent_autonomous_within_scope",
+    "full_agent"
+  ].includes(mode);
+}
+
+function modePrefersAgentReviewFirst(mode) {
+  return [
+    "risk_graded_default",
+    "agent_autonomous_low_risk",
+    "agent_autonomous_within_scope",
+    "full_agent"
+  ].includes(mode);
 }
 
 function taskGateForRepairTicket(ticket) {
@@ -152,11 +215,12 @@ function promptForWorkOrder({ title, summary, executorLabel, riskLevel, riskCont
   ].join(" ");
 }
 
-function modelHandoffForOrder(order) {
+function modelHandoffForOrder(order, routingPolicy) {
   const highRisk = ["critical", "high"].includes(order.risk_level);
   const broadEdit = (order.traceability.editable_scope ?? []).length >= 4;
   const complexGate = order.task_gate.complex_enough && order.task_gate.error_discovery_cost !== "low";
   const strongerRecommended = highRisk || broadEdit || complexGate;
+  const fullAgentMode = routingPolicy?.mode === "full_agent";
   const blockedEffects = order.execution_policy.durable_or_public_effect_allowed === false
     ? " Durable or public effects remain blocked."
     : "";
@@ -165,7 +229,9 @@ function modelHandoffForOrder(order) {
     current_model_fit: strongerRecommended ? "use_for_intake_or_small_patch_only" : "suitable_for_first_pass",
     stronger_model_recommended: strongerRecommended,
     reason: strongerRecommended
-      ? `The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.${blockedEffects}`
+      ? fullAgentMode
+        ? `The work order is high risk, broad, or complex enough that a stronger model is still recommended, but full_agent treats this as advisory for non-durable in-scope work.${blockedEffects}`
+        : `The work order is high risk, broad, or complex enough that a stronger model should be offered before execution.${blockedEffects}`
       : "The work order is bounded enough for the current agent to attempt after user choice.",
     stronger_model_slots: order.escalation.stronger_model_slots,
     user_can_override: true
@@ -174,42 +240,83 @@ function modelHandoffForOrder(order) {
 
 function applyRoutingPolicy(order, routingPolicy) {
   const policy = normalizeRoutingPolicy(routingPolicy);
-  const autonomousMode = ["agent_autonomous_low_risk", "agent_autonomous_within_scope"].includes(policy.mode);
+  const autonomousMode = modeAllowsAutonomousExecution(policy.mode);
+  const fullAgentMode = policy.mode === "full_agent";
   const autoCandidate = Boolean(policy.auto_execute_allowed)
     && autonomousMode
     && order.execution_policy.self_evolution_allowed
     && !order.execution_policy.durable_or_public_effect_allowed
-    && severityAllowedForAuto(order.severity, policy.max_auto_severity)
-    && categoryAllowedForAuto(order.category, policy.auto_execute_categories);
+    && (
+      fullAgentMode
+      || (
+        severityAllowedForAuto(order.severity, policy.max_auto_severity)
+        && categoryAllowedForAuto(order.category, policy.auto_execute_categories)
+      )
+    );
+
+  const agentReviewOnly = !autoCandidate
+    && modePrefersAgentReviewFirst(policy.mode)
+    && order.execution_policy.agent_self_review_allowed;
 
   const deliveryPolicy = policy.mode === "report_only"
     ? "report_only_wait_for_user"
     : autoCandidate
       ? "notify_then_execute_within_scope"
-      : "report_to_user_before_execution";
+      : agentReviewOnly
+        ? "deliver_to_agent_for_review"
+        : "report_to_user_before_execution";
 
   const defaultNextStep = policy.mode === "report_only"
     ? "report_only_wait"
     : autoCandidate
       ? "execute_within_scope"
-      : order.execution_policy.default_next_step;
+      : agentReviewOnly
+        ? order.task_gate.verdict === "hold_or_observe"
+          ? "agent_review_then_hold"
+          : "agent_self_review_then_report_owner"
+        : order.execution_policy.default_next_step;
+
+  const ownerReportRequired = policy.mode === "report_only"
+    ? true
+    : autoCandidate
+      ? false
+      : agentReviewOnly
+        ? true
+        : order.execution_policy.owner_report_required;
+
+  const requiresUserConfirmation = policy.mode === "report_only"
+    ? true
+    : autoCandidate || agentReviewOnly
+      ? false
+      : order.execution_policy.requires_user_confirmation;
+
+  const status = autoCandidate
+    ? "agent_ready_to_execute"
+    : agentReviewOnly
+      ? "pending_agent_review"
+      : order.status;
 
   return {
     ...order,
+    status,
     delivery: {
       ...order.delivery,
       delivery_policy: deliveryPolicy,
       reason: autoCandidate
         ? "The routing policy allows this bounded low-risk work order to run within scope after notifying the user."
+        : agentReviewOnly
+          ? "The routing policy sends the work order to the primary agent first so it can self-review, capture experience, and report upward only if needed."
         : order.delivery.reason
     },
     execution_policy: {
       ...order.execution_policy,
-      requires_user_confirmation: !autoCandidate,
+      requires_user_confirmation: requiresUserConfirmation,
       auto_execute_allowed: autoCandidate,
+      agent_may_self_resolve: autoCandidate,
+      owner_report_required: ownerReportRequired,
       default_next_step: defaultNextStep
     },
-    model_handoff: modelHandoffForOrder(order)
+    model_handoff: modelHandoffForOrder(order, policy)
   };
 }
 
@@ -294,7 +401,13 @@ function workOrderFromRepairTicket(ticket, index) {
       requires_user_confirmation: true,
       auto_execute_allowed: false,
       self_evolution_allowed: ticket.status !== "observe_only" && ticket.severity !== "P0",
+      agent_self_review_allowed: ticket.status !== "observe_only",
+      agent_may_self_resolve: false,
+      owner_report_required: true,
       durable_or_public_effect_allowed: false,
+      experience_capture_mode: ticket.status === "observe_only"
+        ? "none"
+        : "candidate_log_only",
       default_next_step: taskGate.verdict === "hold_or_observe"
         ? "explain_and_hold"
         : "ask_user_to_choose_executor"
@@ -399,7 +512,11 @@ export function workOrderFromOperationalQualityReport(report, {
       requires_user_confirmation: true,
       auto_execute_allowed: false,
       self_evolution_allowed: true,
+      agent_self_review_allowed: true,
+      agent_may_self_resolve: false,
+      owner_report_required: true,
       durable_or_public_effect_allowed: false,
+      experience_capture_mode: "candidate_log_only",
       default_next_step: severity === "P3" ? "explain_and_hold" : "ask_user_to_choose_executor"
     },
     escalation: {
@@ -465,6 +582,8 @@ export function buildWorkOrderRouting({
       }, {}),
       requires_user_confirmation_count: sorted.filter((order) => order.execution_policy.requires_user_confirmation).length,
       auto_executable_count: sorted.filter((order) => order.execution_policy.auto_execute_allowed).length,
+      agent_self_review_count: sorted.filter((order) => order.execution_policy.agent_self_review_allowed).length,
+      owner_report_required_count: sorted.filter((order) => order.execution_policy.owner_report_required).length,
       escalation_available_count: sorted.filter((order) => order.escalation.allowed).length,
       stronger_model_recommended_count: sorted.filter((order) => order.model_handoff.stronger_model_recommended).length
     },
@@ -473,12 +592,15 @@ export function buildWorkOrderRouting({
       auto_execute_allowed: policy.auto_execute_allowed,
       durable_or_public_effect_allowed: false,
       primary_agent_must_report_first: policy.primary_agent_report_first,
+      agent_self_review_default: modePrefersAgentReviewFirst(policy.mode),
       user_may_escalate_to_stronger_model: true,
       traceability_required: true
     },
     warnings: [
       "Work orders are routing packets, not automatic execution.",
-      "The primary agent must explain the work order and ask the user before acting.",
+      modePrefersAgentReviewFirst(policy.mode)
+        ? "The primary agent may self-review first, but durable or public effects still stay blocked from silent execution."
+        : "The primary agent must explain the work order and ask the user before acting.",
       "Every suggested executor can be overridden by the user."
     ]
   };
@@ -511,6 +633,8 @@ function renderMarkdown(routing) {
     `- work_order_count: ${routing.summary.work_order_count}`,
     `- requires_user_confirmation_count: ${routing.summary.requires_user_confirmation_count}`,
     `- auto_executable_count: ${routing.summary.auto_executable_count}`,
+    `- agent_self_review_count: ${routing.summary.agent_self_review_count}`,
+    `- owner_report_required_count: ${routing.summary.owner_report_required_count}`,
     `- escalation_available_count: ${routing.summary.escalation_available_count}`,
     `- stronger_model_recommended_count: ${routing.summary.stronger_model_recommended_count}`,
     `- routing_mode: ${routing.routing_policy.mode}`,
@@ -520,6 +644,7 @@ function renderMarkdown(routing) {
     `- auto_execute_allowed: ${routing.safety.auto_execute_allowed}`,
     `- durable_or_public_effect_allowed: ${routing.safety.durable_or_public_effect_allowed}`,
     `- primary_agent_must_report_first: ${routing.safety.primary_agent_must_report_first}`,
+    `- agent_self_review_default: ${routing.safety.agent_self_review_default}`,
     `- traceability_required: ${routing.safety.traceability_required}`,
     ""
   ];

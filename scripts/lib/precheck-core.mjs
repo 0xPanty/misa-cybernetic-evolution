@@ -20,6 +20,8 @@ import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import { buildWorkOrderRouting } from "./work-order-router.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
+import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
+import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
 import { reviewOmniAgentFootprintBridge } from "./omniagent-footprint-bridge.mjs";
 
 const REQUIRED_FILES = [
@@ -34,6 +36,8 @@ const REQUIRED_FILES = [
   "docs/evolution-tournament-gate-v0.18.md",
   "docs/memory-layer-skill-export-v0.13.md",
   "docs/work-order-routing-v0.14.md",
+  "docs/vector-memory-storage-v0.19.md",
+  "docs/zilliz-vector-adapter-v0.19.md",
   "scripts/precheck.mjs",
   "scripts/validate-schemas.mjs",
   "scripts/simulate-learning.mjs",
@@ -50,6 +54,8 @@ const REQUIRED_FILES = [
   "scripts/export-skills.mjs",
   "scripts/repair-ticket.mjs",
   "scripts/work-order-router.mjs",
+  "scripts/vector-memory-storage.mjs",
+  "scripts/zilliz-vector-adapter.mjs",
   "scripts/langgraph-qianxuesen-bridge.mjs",
   "scripts/omniagent-footprint-bridge.mjs",
   "scripts/lib/precheck-core.mjs",
@@ -67,6 +73,8 @@ const REQUIRED_FILES = [
   "scripts/lib/memory-layer.mjs",
   "scripts/lib/repair-ticket.mjs",
   "scripts/lib/work-order-router.mjs",
+  "scripts/lib/vector-memory-storage.mjs",
+  "scripts/lib/zilliz-vector-adapter.mjs",
   "scripts/lib/langgraph-qianxuesen-contract.mjs",
   "scripts/lib/langgraph-qianxuesen-bridge.mjs",
   "scripts/lib/omniagent-footprint-bridge.mjs",
@@ -117,6 +125,8 @@ const MACHINE_CONTRACT_FILES = [
   "schemas/repair_ticket.schema.json",
   "schemas/work_order_routing.schema.json",
   "schemas/langgraph_qianxuesen_bridge.schema.json",
+  "schemas/vector_memory_storage.schema.json",
+  "schemas/zilliz_vector_adapter.schema.json",
   "schemas/local_distillation_source.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
@@ -141,6 +151,8 @@ const MACHINE_CONTRACT_FILES = [
   "examples/repair_ticket.example.json",
   "examples/work_order_routing.example.json",
   "examples/langgraph_qianxuesen_bridge.example.json",
+  "examples/vector_memory_storage.example.json",
+  "examples/zilliz_vector_adapter.example.json",
   "examples/damping_rules.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
@@ -530,8 +542,11 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
   checks.push(checkResult("Misa work-order routing check", workOrderRouting.ok, {
     workOrderCount: workOrderRouting.summary.work_order_count,
     requiresUserConfirmation: workOrderRouting.summary.requires_user_confirmation_count,
+    ownerReportRequired: workOrderRouting.summary.owner_report_required_count,
+    autoExecutable: workOrderRouting.summary.auto_executable_count,
     escalationAvailable: workOrderRouting.summary.escalation_available_count,
-    autoExecuteAllowed: workOrderRouting.safety.auto_execute_allowed
+    autoExecuteAllowed: workOrderRouting.safety.auto_execute_allowed,
+    routingMode: workOrderRouting.routing_policy.mode
   }));
   checks.push(await validateJsonData({
     repoRoot,
@@ -559,6 +574,44 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/langgraph_qianxuesen_bridge.schema.json",
     data: langGraphBridge,
     name: "validate LangGraph Qianxuesen bridge review"
+  }));
+
+  const vectorMemoryStorage = buildVectorMemoryStoragePlan({
+    workOrderRouting,
+    langGraphBridge,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  checks.push(checkResult("Vector memory storage classification check", vectorMemoryStorage.ok, {
+    records: vectorMemoryStorage.summary.record_count,
+    candidates: vectorMemoryStorage.summary.candidate_count,
+    policies: vectorMemoryStorage.summary.policy_count,
+    canInfluenceBehavior: vectorMemoryStorage.summary.can_influence_behavior_count,
+    zillizWritten: vectorMemoryStorage.safety.zilliz_written
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/vector_memory_storage.schema.json",
+    data: vectorMemoryStorage,
+    name: "validate vector memory storage classification"
+  }));
+
+  const zillizVectorAdapter = buildZillizVectorAdapterPlan({
+    vectorMemoryStorage,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  checks.push(checkResult("Zilliz vector adapter dry-run check", zillizVectorAdapter.ok, {
+    collections: zillizVectorAdapter.summary.collection_count,
+    records: zillizVectorAdapter.summary.record_count,
+    batches: zillizVectorAdapter.summary.batch_count,
+    metadataViolations: zillizVectorAdapter.summary.metadata_violation_count,
+    zillizWritten: zillizVectorAdapter.safety.zilliz_written,
+    embeddingCreated: zillizVectorAdapter.safety.embedding_created
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/zilliz_vector_adapter.schema.json",
+    data: zillizVectorAdapter,
+    name: "validate Zilliz vector adapter dry-run"
   }));
 
   for (const footprintRel of [

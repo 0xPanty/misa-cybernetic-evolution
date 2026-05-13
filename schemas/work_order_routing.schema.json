@@ -42,6 +42,8 @@
         "by_suggested_executor",
         "requires_user_confirmation_count",
         "auto_executable_count",
+        "agent_self_review_count",
+        "owner_report_required_count",
         "escalation_available_count",
         "stronger_model_recommended_count"
       ],
@@ -51,6 +53,8 @@
         "by_suggested_executor": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
         "requires_user_confirmation_count": { "type": "integer", "minimum": 0 },
         "auto_executable_count": { "type": "integer", "minimum": 0 },
+        "agent_self_review_count": { "type": "integer", "minimum": 0 },
+        "owner_report_required_count": { "type": "integer", "minimum": 0 },
         "escalation_available_count": { "type": "integer", "minimum": 0 },
         "stronger_model_recommended_count": { "type": "integer", "minimum": 0 }
       }
@@ -66,6 +70,7 @@
         "auto_execute_allowed",
         "durable_or_public_effect_allowed",
         "primary_agent_must_report_first",
+        "agent_self_review_default",
         "user_may_escalate_to_stronger_model",
         "traceability_required"
       ],
@@ -73,6 +78,7 @@
         "auto_execute_allowed": { "type": "boolean" },
         "durable_or_public_effect_allowed": { "type": "boolean", "const": false },
         "primary_agent_must_report_first": { "type": "boolean" },
+        "agent_self_review_default": { "type": "boolean" },
         "user_may_escalate_to_stronger_model": { "type": "boolean", "const": true },
         "traceability_required": { "type": "boolean", "const": true }
       }
@@ -121,8 +127,10 @@
           "enum": [
             "report_only",
             "ask_before_execution",
+            "risk_graded_default",
             "agent_autonomous_low_risk",
-            "agent_autonomous_within_scope"
+            "agent_autonomous_within_scope",
+            "full_agent"
           ]
         },
         "auto_execute_allowed": { "type": "boolean" },
@@ -161,7 +169,8 @@
           "enum": [
             "report_to_user_before_execution",
             "report_only_wait_for_user",
-            "notify_then_execute_within_scope"
+            "notify_then_execute_within_scope",
+            "deliver_to_agent_for_review"
           ]
         },
         "reason": { "type": "string" }
@@ -252,17 +261,35 @@
         "requires_user_confirmation",
         "auto_execute_allowed",
         "self_evolution_allowed",
+        "agent_self_review_allowed",
+        "agent_may_self_resolve",
+        "owner_report_required",
         "durable_or_public_effect_allowed",
+        "experience_capture_mode",
         "default_next_step"
       ],
       "properties": {
         "requires_user_confirmation": { "type": "boolean" },
         "auto_execute_allowed": { "type": "boolean" },
         "self_evolution_allowed": { "type": "boolean" },
+        "agent_self_review_allowed": { "type": "boolean" },
+        "agent_may_self_resolve": { "type": "boolean" },
+        "owner_report_required": { "type": "boolean" },
         "durable_or_public_effect_allowed": { "type": "boolean", "const": false },
+        "experience_capture_mode": {
+          "type": "string",
+          "enum": ["none", "candidate_log_only"]
+        },
         "default_next_step": {
           "type": "string",
-          "enum": ["ask_user_to_choose_executor", "explain_and_hold", "execute_within_scope", "report_only_wait"]
+          "enum": [
+            "ask_user_to_choose_executor",
+            "explain_and_hold",
+            "execute_within_scope",
+            "report_only_wait",
+            "agent_self_review_then_report_owner",
+            "agent_review_then_hold"
+          ]
         }
       }
     },
@@ -331,7 +358,10 @@
         "category": { "type": "string", "enum": ["engineering_repair", "operator_quality"] },
         "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
         "risk_level": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-        "status": { "type": "string", "const": "pending_user_choice" },
+        "status": {
+          "type": "string",
+          "enum": ["pending_user_choice", "pending_agent_review", "agent_ready_to_execute"]
+        },
         "source": {
           "type": "object",
           "additionalProperties": false,

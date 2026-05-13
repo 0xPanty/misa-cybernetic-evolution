@@ -9,8 +9,9 @@ The generic pattern is:
 evidence
 -> ticket or quality report
 -> work order
--> primary agent explains it to the user
--> user chooses execute / hold / escalate
+-> primary agent self-reviews first
+-> low-risk items may self-resolve within scope
+-> broader items report upward or escalate
 -> selected executor acts under the work order scope
 ```
 
@@ -24,11 +25,12 @@ The router keeps those choices explicit:
 
 - the `primary_agent` receives every work order first;
 - the work order names a `suggested_executor`;
-- the user can decline, hold, or escalate to a stronger model;
+- low-risk local work can be auto-resolved when policy allows it;
+- higher-risk work can still report upward or escalate to a stronger model;
 - source refs, evidence, acceptance criteria, and forbidden scope stay attached.
 - `routing_policy` records the chosen operating mode, so later reviewers can see
-  whether the agent was only reporting, asking first, or allowed to handle
-  bounded work by itself.
+  whether the agent was only reporting, asking first, reviewing first, or
+  allowed to handle bounded work by itself.
 
 ## Receiver Slots
 
@@ -53,14 +55,14 @@ Other projects can rename the slot labels without changing the safety contract.
 
 ## Routing Policy Switches
 
-The default mode is conservative:
+The default open-source mode is risk-graded:
 
 ```json
 {
-  "mode": "ask_before_execution",
-  "auto_execute_allowed": false,
+  "mode": "risk_graded_default",
+  "auto_execute_allowed": true,
   "max_auto_severity": "P3",
-  "auto_execute_categories": []
+  "auto_execute_categories": ["*"]
 }
 ```
 
@@ -70,8 +72,10 @@ Supported modes:
 |---|---|
 | `report_only` | The primary agent only reports the work order and waits |
 | `ask_before_execution` | The primary agent asks the user to execute, hold, or escalate |
+| `risk_graded_default` | The primary agent self-reviews first; low-risk in-scope work may self-resolve, broader work reports upward |
 | `agent_autonomous_low_risk` | The agent may execute only categories and severities allowed by policy |
 | `agent_autonomous_within_scope` | The agent may execute allowed in-scope work orders, still blocking durable/public effects |
+| `full_agent` | The agent may auto-handle any non-durable in-scope work order, regardless of severity/category |
 
 The important switches are:
 
@@ -145,6 +149,12 @@ Allow low-risk operator-quality work orders to run within scope:
 npm run work-order:route -- --routing-mode agent_autonomous_low_risk --auto-execute --max-auto-severity P3 --auto-categories operator_quality --json --dry-run
 ```
 
+Let the agent take the whole local non-durable scope:
+
+```bash
+npm run work-order:route -- --routing-mode full_agent --auto-execute --json --dry-run
+```
+
 ## Work Order Contents
 
 Each work order includes:
@@ -156,9 +166,8 @@ Each work order includes:
 - `task_gate`: complexity, value, doability, and error-discovery cost;
 - `traceability`: evidence, reproduction commands, acceptance criteria, editable
   scope, forbidden scope, audit requirement, and rollback need;
-- `execution_policy`: user confirmation, no auto execution, and no durable or
-  public effect by default, unless routing policy allows bounded low-risk
-  execution;
+- `execution_policy`: whether the agent may self-review, self-resolve, must
+  report upward, and whether the experience should stay as candidate-only log;
 - `escalation`: when stronger-model handoff is reasonable;
 - `model_handoff`: whether the current model is enough for a first pass or
   should recommend a stronger model before execution;
@@ -191,10 +200,12 @@ This creates the practical self-evolution loop without silent mutation:
 agent observes
 -> control layer detects error or opportunity
 -> work order is created with evidence
--> primary agent reports it to the user
--> user chooses self-review, engineering repair, stronger-model escalation, or hold
+-> primary agent self-reviews and records candidate experience
+-> low-risk work may self-resolve within scope
+-> broader work reports to the owner or escalates
 -> result is auditable and can feed the next cycle
 ```
 
-That is the conservative layer: the system can notice and propose its own
-improvement, but execution remains scoped, traceable, and user-directed.
+That is the public default: the system can practice and accumulate experience
+without pretending every self-review is a permanent truth or a live-effect
+permission slip.

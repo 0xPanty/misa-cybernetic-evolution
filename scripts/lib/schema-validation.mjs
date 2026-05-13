@@ -20,6 +20,8 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/repair_ticket.schema.json", "examples/repair_ticket.example.json"],
   ["schemas/work_order_routing.schema.json", "examples/work_order_routing.example.json"],
   ["schemas/langgraph_qianxuesen_bridge.schema.json", "examples/langgraph_qianxuesen_bridge.example.json"],
+  ["schemas/vector_memory_storage.schema.json", "examples/vector_memory_storage.example.json"],
+  ["schemas/zilliz_vector_adapter.schema.json", "examples/zilliz_vector_adapter.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];

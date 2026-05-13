@@ -38,7 +38,7 @@ The framework has three layers:
 | --- | --- | --- |
 | Input and carrier | LangGraph-compatible carrier, local files, existing Hermes/Zilliz refs | carry state, source refs, checkpoints, interrupts, and resume traces |
 | Qianxuesen control | this repo's deterministic sidecar | distill, split, route, gate, compare, and keep live effects off |
-| Output and human boundary | primary agent plus human owner | turn safe drafts into work orders, then approve, hold, or reject durable changes |
+| Output and human boundary | primary agent plus human owner | let the agent self-review and fix low-risk local items, while durable changes still need approval |
 
 The important rule is simple: carrier tools may move evidence around, but the
 Qianxuesen route table owns learning decisions.
@@ -74,6 +74,8 @@ or existing Hermes/Zilliz distillation artifact
 -> export only safe local skill drafts
 -> generate repair tickets for unsafe over-promotion patterns
 -> route work orders to the primary agent
+-> let the agent self-review and resolve low-risk local work when policy allows
+-> classify logs, decisions, candidate experience, policy, and work orders for vector storage
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant
 -> mark whether optional LLM review has concrete critique value
@@ -112,7 +114,9 @@ Two rules matter most:
 | Memory-layer comparison | `npm run memory-layer:misa` | compares broad vs minimal L3 |
 | Local skill export | `npm run export-skills:misa` | writes draft files, does not install Skills |
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
-| Work-order routing | `npm run work-order:route -- --dry-run` | handoff packet, no execution |
+| Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
+| Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
+| Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
 
@@ -169,6 +173,8 @@ npm run evolution:tournament:misa
 npm run memory-layer:misa
 npm run repair-ticket:misa -- --dry-run
 npm run work-order:route -- --dry-run
+npm run vector-memory:classify -- --json
+npm run zilliz:adapt -- --json
 ```
 
 For machine-to-machine JSON handoff, do not redirect plain `npm run ... -- --json`
@@ -188,6 +194,10 @@ Do not add another governance layer by default. The next useful work is:
 
 The scarce thing now is not more abstraction. It is calibration evidence.
 
+The new public default for work orders follows that rule too: let the agent
+practice on bounded local work, keep self-review logs as candidate experience,
+and only widen authority when the user explicitly asks for it.
+
 ## Documentation Map
 
 Current-state docs:
@@ -198,6 +208,8 @@ Current-state docs:
 - [Source synthesis](./docs/source-synthesis.md)
 - [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
+- [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
+- [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)
 - [Evolution tournament v0.18](./docs/evolution-tournament-gate-v0.18.md)
 
 Bridge docs:

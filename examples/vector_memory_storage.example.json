@@ -1,0 +1,374 @@
+{
+  "schema_version": "misa.vector_memory_storage.v1",
+  "mode": "vector-memory-storage-classification",
+  "ok": true,
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "strategy": {
+    "backend_target": "zilliz_or_local_vector_store",
+    "classification_only": true,
+    "collection_strategy": "few_collections_with_metadata",
+    "zilliz_written": false,
+    "external_api_calls": 0,
+    "writes_persistent_memory": false,
+    "rule": "Stored vectors are retrieval inventory; only promoted or policy records may influence behavior."
+  },
+  "collections": [
+    {
+      "collection": "misa_audit_memory",
+      "kinds": [
+        "audit_log"
+      ],
+      "local_dir": "memory/audit-log",
+      "authority": "audit_only",
+      "default_status": "observed",
+      "can_influence_behavior": false,
+      "requires_owner_approval": false
+    },
+    {
+      "collection": "misa_decision_memory",
+      "kinds": [
+        "decision_trace"
+      ],
+      "local_dir": "memory/decision-trace",
+      "authority": "audit_only",
+      "default_status": "observed",
+      "can_influence_behavior": false,
+      "requires_owner_approval": false
+    },
+    {
+      "collection": "misa_experience_memory",
+      "kinds": [
+        "agent_experience_candidate"
+      ],
+      "local_dir": "memory/agent-experience/candidate",
+      "authority": "candidate",
+      "default_status": "unverified",
+      "can_influence_behavior": false,
+      "requires_owner_approval": false
+    },
+    {
+      "collection": "misa_experience_memory",
+      "kinds": [
+        "agent_experience_promoted"
+      ],
+      "local_dir": "memory/agent-experience/promoted",
+      "authority": "promoted",
+      "default_status": "verified",
+      "can_influence_behavior": true,
+      "requires_owner_approval": false
+    },
+    {
+      "collection": "misa_persona_memory",
+      "kinds": [
+        "persona_memory_candidate"
+      ],
+      "local_dir": "memory/persona-memory/candidate",
+      "authority": "candidate",
+      "default_status": "unverified",
+      "can_influence_behavior": false,
+      "requires_owner_approval": true
+    },
+    {
+      "collection": "misa_persona_memory",
+      "kinds": [
+        "persona_memory_promoted"
+      ],
+      "local_dir": "memory/persona-memory/promoted",
+      "authority": "promoted",
+      "default_status": "verified",
+      "can_influence_behavior": true,
+      "requires_owner_approval": true
+    },
+    {
+      "collection": "misa_policy_memory",
+      "kinds": [
+        "policy_boundary"
+      ],
+      "local_dir": "memory/policy-boundary",
+      "authority": "policy",
+      "default_status": "active",
+      "can_influence_behavior": true,
+      "requires_owner_approval": true
+    },
+    {
+      "collection": "misa_work_order_memory",
+      "kinds": [
+        "repair_work_order"
+      ],
+      "local_dir": "memory/repair-work-order",
+      "authority": "candidate",
+      "default_status": "pending",
+      "can_influence_behavior": false,
+      "requires_owner_approval": false
+    }
+  ],
+  "local_layout": [
+    {
+      "local_dir": "memory/audit-log",
+      "collection": "misa_audit_memory",
+      "kinds": [
+        "audit_log"
+      ]
+    },
+    {
+      "local_dir": "memory/decision-trace",
+      "collection": "misa_decision_memory",
+      "kinds": [
+        "decision_trace"
+      ]
+    },
+    {
+      "local_dir": "memory/agent-experience/candidate",
+      "collection": "misa_experience_memory",
+      "kinds": [
+        "agent_experience_candidate"
+      ]
+    },
+    {
+      "local_dir": "memory/agent-experience/promoted",
+      "collection": "misa_experience_memory",
+      "kinds": [
+        "agent_experience_promoted"
+      ]
+    },
+    {
+      "local_dir": "memory/persona-memory/candidate",
+      "collection": "misa_persona_memory",
+      "kinds": [
+        "persona_memory_candidate"
+      ]
+    },
+    {
+      "local_dir": "memory/persona-memory/promoted",
+      "collection": "misa_persona_memory",
+      "kinds": [
+        "persona_memory_promoted"
+      ]
+    },
+    {
+      "local_dir": "memory/policy-boundary",
+      "collection": "misa_policy_memory",
+      "kinds": [
+        "policy_boundary"
+      ]
+    },
+    {
+      "local_dir": "memory/repair-work-order",
+      "collection": "misa_work_order_memory",
+      "kinds": [
+        "repair_work_order"
+      ]
+    }
+  ],
+  "metadata_contract": {
+    "required_fields": [
+      "kind",
+      "authority",
+      "status",
+      "risk_level",
+      "source_type",
+      "source_id",
+      "created_by",
+      "promotion_state",
+      "can_influence_behavior",
+      "requires_owner_approval",
+      "allowed_surfaces",
+      "blocked_surfaces",
+      "decision_trace_id"
+    ],
+    "behavior_authority_rule": "can_influence_behavior=true requires authority=promoted or authority=policy",
+    "candidate_rule": "candidate records can be retrieved for review but cannot rewrite persona, policy, or production behavior"
+  },
+  "summary": {
+    "record_count": 5,
+    "by_kind": {
+      "decision_trace": 1,
+      "audit_log": 1,
+      "repair_work_order": 1,
+      "agent_experience_candidate": 1,
+      "policy_boundary": 1
+    },
+    "by_collection": {
+      "misa_decision_memory": 1,
+      "misa_audit_memory": 1,
+      "misa_work_order_memory": 1,
+      "misa_experience_memory": 1,
+      "misa_policy_memory": 1
+    },
+    "candidate_count": 2,
+    "promoted_count": 0,
+    "policy_count": 1,
+    "can_influence_behavior_count": 1,
+    "owner_approval_required_count": 3,
+    "zilliz_write_count": 0
+  },
+  "records": [
+    {
+      "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+      "kind": "decision_trace",
+      "collection": "misa_decision_memory",
+      "local_dir": "memory/decision-trace",
+      "title": "Decision trace bridge-9b4d9ecfa394466f",
+      "summary": "Action policy result: require_interrupt.",
+      "metadata": {
+        "kind": "decision_trace",
+        "authority": "audit_only",
+        "status": "observed",
+        "risk_level": "high",
+        "source_type": "langgraph_qianxuesen_bridge",
+        "source_id": "bridge-9b4d9ecfa394466f",
+        "created_by": "qianxuesen_vector_memory_classifier",
+        "promotion_state": "not_promoted",
+        "can_influence_behavior": false,
+        "requires_owner_approval": false,
+        "allowed_surfaces": [
+          "retrieval_context"
+        ],
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_or_channel_output",
+          "runtime_service",
+          "provider_or_credential"
+        ],
+        "decision_trace_id": "bridge-9b4d9ecfa394466f"
+      }
+    },
+    {
+      "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+      "kind": "audit_log",
+      "collection": "misa_audit_memory",
+      "local_dir": "memory/audit-log",
+      "title": "Audit log bridge-9b4d9ecfa394466f",
+      "summary": "Read-only audit record for work-order routing and action-policy reconstruction.",
+      "metadata": {
+        "kind": "audit_log",
+        "authority": "audit_only",
+        "status": "observed",
+        "risk_level": "high",
+        "source_type": "langgraph_qianxuesen_bridge",
+        "source_id": "bridge-9b4d9ecfa394466f",
+        "created_by": "qianxuesen_vector_memory_classifier",
+        "promotion_state": "not_promoted",
+        "can_influence_behavior": false,
+        "requires_owner_approval": false,
+        "allowed_surfaces": [
+          "retrieval_context"
+        ],
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_or_channel_output",
+          "runtime_service",
+          "provider_or_credential"
+        ],
+        "decision_trace_id": "bridge-9b4d9ecfa394466f"
+      }
+    },
+    {
+      "record_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "kind": "repair_work_order",
+      "collection": "misa_work_order_memory",
+      "local_dir": "memory/repair-work-order",
+      "title": "Auto-L3 non-skill promotion from local distillation sources",
+      "summary": "Broad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
+      "metadata": {
+        "kind": "repair_work_order",
+        "authority": "candidate",
+        "status": "pending_agent_review",
+        "risk_level": "high",
+        "source_type": "repair_ticket",
+        "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+        "created_by": "qianxuesen_vector_memory_classifier",
+        "promotion_state": "not_promoted",
+        "can_influence_behavior": false,
+        "requires_owner_approval": true,
+        "allowed_surfaces": [
+          "retrieval_context"
+        ],
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_posting",
+          "vps_or_runtime_service",
+          "provider_credentials"
+        ],
+        "decision_trace_id": "bridge-9b4d9ecfa394466f"
+      }
+    },
+    {
+      "record_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "kind": "agent_experience_candidate",
+      "collection": "misa_experience_memory",
+      "local_dir": "memory/agent-experience/candidate",
+      "title": "Candidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "summary": "Agent self-review may use this as candidate experience, but it cannot become durable behavior until promoted.",
+      "metadata": {
+        "kind": "agent_experience_candidate",
+        "authority": "candidate",
+        "status": "unverified",
+        "risk_level": "high",
+        "source_type": "repair_ticket",
+        "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+        "created_by": "qianxuesen_vector_memory_classifier",
+        "promotion_state": "not_promoted",
+        "can_influence_behavior": false,
+        "requires_owner_approval": true,
+        "allowed_surfaces": [
+          "local_docs",
+          "local_tests",
+          "retrieval_context"
+        ],
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_posting",
+          "vps_or_runtime_service",
+          "provider_credentials"
+        ],
+        "decision_trace_id": "bridge-9b4d9ecfa394466f"
+      }
+    },
+    {
+      "record_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "kind": "policy_boundary",
+      "collection": "misa_policy_memory",
+      "local_dir": "memory/policy-boundary",
+      "title": "Blocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion",
+      "summary": "Forbidden surfaces from the work order must stay visible even when bounded local work is allowed.",
+      "metadata": {
+        "kind": "policy_boundary",
+        "authority": "policy",
+        "status": "active",
+        "risk_level": "high",
+        "source_type": "repair_ticket",
+        "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+        "created_by": "qianxuesen_vector_memory_classifier",
+        "promotion_state": "promoted",
+        "can_influence_behavior": true,
+        "requires_owner_approval": true,
+        "allowed_surfaces": [
+          "policy_retrieval",
+          "safety_filter"
+        ],
+        "blocked_surfaces": [
+          "persistent_memory",
+          "public_posting",
+          "vps_or_runtime_service",
+          "provider_credentials"
+        ],
+        "decision_trace_id": "bridge-9b4d9ecfa394466f"
+      }
+    }
+  ],
+  "safety": {
+    "zilliz_written": false,
+    "external_api_calls": 0,
+    "writes_persistent_memory": false,
+    "public_posting_allowed": false,
+    "provider_or_credential_access_allowed": false,
+    "vps_or_runtime_touch_allowed": false,
+    "unpromoted_records_can_influence_behavior": false
+  },
+  "warnings": [
+    "This is a storage classification plan, not a vector-store write.",
+    "Zilliz storage does not equal promoted memory.",
+    "Candidate experience may be retrieved for review, but only promoted or policy records can influence behavior."
+  ]
+}

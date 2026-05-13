@@ -58,6 +58,14 @@ import {
   reviewLangGraphQianxuesenBridge
 } from "../scripts/lib/langgraph-qianxuesen-bridge.mjs";
 import {
+  buildVectorMemoryStoragePlan,
+  reviewVectorMemoryStoragePlan
+} from "../scripts/lib/vector-memory-storage.mjs";
+import {
+  buildZillizVectorAdapterPlan,
+  reviewZillizVectorAdapterPlan
+} from "../scripts/lib/zilliz-vector-adapter.mjs";
+import {
   evaluateOmniAgentFootprintBridge,
   reviewOmniAgentFootprintBridge
 } from "../scripts/lib/omniagent-footprint-bridge.mjs";
@@ -1179,7 +1187,7 @@ test("repair-ticket artifacts write JSON and Markdown without runtime effects", 
   }
 });
 
-test("work-order routing sends repair tickets through primary-agent user choice", async () => {
+test("work-order routing defaults to agent-first risk grading", async () => {
   const repairTickets = await reviewRepairTickets({
     now: new Date("2026-05-12T00:00:00Z")
   });
@@ -1190,20 +1198,29 @@ test("work-order routing sends repair tickets through primary-agent user choice"
 
   assert.equal(result.mode, "work-order-routing");
   assert.equal(result.ok, true);
-  assert.equal(result.routing_policy.mode, "ask_before_execution");
-  assert.equal(result.safety.auto_execute_allowed, false);
-  assert.equal(result.safety.primary_agent_must_report_first, true);
+  assert.equal(result.routing_policy.mode, "risk_graded_default");
+  assert.equal(result.safety.auto_execute_allowed, true);
+  assert.equal(result.safety.primary_agent_must_report_first, false);
+  assert.equal(result.safety.agent_self_review_default, true);
   assert.equal(result.summary.work_order_count, repairTickets.tickets.length);
-  assert.equal(result.summary.requires_user_confirmation_count, result.summary.work_order_count);
+  assert.equal(result.summary.requires_user_confirmation_count, 0);
   assert.equal(result.summary.auto_executable_count, 0);
+  assert.equal(result.summary.agent_self_review_count, result.summary.work_order_count);
+  assert.equal(result.summary.owner_report_required_count, result.summary.work_order_count);
 
   const order = result.work_orders[0];
+  assert.equal(order.status, "pending_agent_review");
   assert.equal(order.delivery.receiver_type, "primary_agent");
-  assert.equal(order.delivery.delivery_policy, "report_to_user_before_execution");
+  assert.equal(order.delivery.delivery_policy, "deliver_to_agent_for_review");
   assert.equal(order.suggested_executor.executor_type, "specialized_engineering_agent");
-  assert.equal(order.execution_policy.requires_user_confirmation, true);
+  assert.equal(order.execution_policy.requires_user_confirmation, false);
   assert.equal(order.execution_policy.auto_execute_allowed, false);
+  assert.equal(order.execution_policy.agent_self_review_allowed, true);
+  assert.equal(order.execution_policy.agent_may_self_resolve, false);
+  assert.equal(order.execution_policy.owner_report_required, true);
+  assert.equal(order.execution_policy.experience_capture_mode, "candidate_log_only");
   assert.equal(order.execution_policy.durable_or_public_effect_allowed, false);
+  assert.equal(order.execution_policy.default_next_step, "agent_self_review_then_report_owner");
   assert.equal(order.escalation.user_can_decline_execution, true);
   assert.equal(order.model_handoff.stronger_model_recommended, true);
   assert.match(order.model_handoff.reason, /Durable or public effects remain blocked/);
@@ -1249,7 +1266,7 @@ test("LangGraph bridge keeps Qianxuesen in charge of learning routes", async () 
   assert.equal(result.langgraph_contract.checkpointer.required, true);
   assert.equal(result.langgraph_contract.interrupt.required, true);
   assert.equal(result.summary.work_order_count, workOrderRouting.summary.work_order_count);
-  assert.equal(result.summary.interrupt_count, workOrderRouting.summary.requires_user_confirmation_count);
+  assert.equal(result.summary.interrupt_count, workOrderRouting.summary.owner_report_required_count);
   assert.equal(result.summary.llm_owned_learning_decision_count, 0);
   assert.equal(result.summary.action_policy_effective_decision, "require_interrupt");
   assert.equal(result.summary.decision_bom_completeness_score, 1);
@@ -1278,6 +1295,8 @@ test("LangGraph bridge keeps Qianxuesen in charge of learning routes", async () 
   assert.deepEqual(result.governance_hooks.map((hook) => hook.to_node), GOVERNANCE_STAGES.map((stage) => stage.to_node));
   assert.deepEqual(result.decision_boundary.llm_agent_must_not, LLM_MUST_NOT);
   assert.deepEqual(result.langgraph_contract.llm_nodes.forbidden_learning_decisions, LLM_MUST_NOT);
+  assert.equal(result.interrupt_queue.length, workOrderRouting.summary.owner_report_required_count);
+  assert.equal(result.interrupt_queue.every((item) => item.owner_report_required === true), true);
   assert.equal(result.interrupt_queue.every((item) => item.effect_boundary.execution_allowed_without_human === false), true);
   assert.equal(result.interrupt_queue.every((item) => item.effect_boundary.requires_interrupt === true), true);
   assert.deepEqual(result.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
@@ -1307,7 +1326,29 @@ test("LangGraph bridge flags downgraded LLM-owned governance", async () => {
     .filter((item) => item !== "touch_vps_or_services");
   downgraded.langgraph_contract.checkpointer.persist_fields = downgraded.langgraph_contract.checkpointer.persist_fields
     .filter((item) => item !== "interrupt_decisions");
-  downgraded.interrupt_queue[0].resume_policy.accepted_decisions = ["execute_locally"];
+  downgraded.interrupt_queue = [
+    {
+      interrupt_id: "interrupt-bad-example",
+      source_id: "repair-local-distillation-sources-auto-l3-overpromotion",
+      source_type: "work_order",
+      title: "Bad example",
+      reason: "bad resume policy",
+      suggested_executor: "specialized_engineering_agent",
+      requires_user_confirmation: false,
+      owner_report_required: true,
+      durable_or_public_effect: false,
+      resume_policy: {
+        accepted_decisions: ["execute_locally"],
+        require_source_refs: true,
+        require_approval_record: true
+      },
+      effect_boundary: {
+        requires_interrupt: true,
+        execution_allowed_without_human: false
+      }
+    }
+  ];
+  downgraded.summary.interrupt_count = 1;
 
   const checked = evaluateLangGraphQianxuesenBridge(downgraded);
 
@@ -1353,6 +1394,7 @@ test("LangGraph bridge example stays aligned with generated contract constants",
     result.governance_hooks.map((hook) => [hook.stage_id, hook.from_node, hook.to_node, hook.hook])
   );
   assert.deepEqual(example.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
+  assert.deepEqual(result.interrupt_queue[0].resume_policy.accepted_decisions, INTERRUPT_DECISIONS);
 });
 
 test("LangGraph bridge maps compact Hermes high-risk work orders to human interrupts", async () => {
@@ -1382,6 +1424,180 @@ test("LangGraph bridge maps compact Hermes high-risk work orders to human interr
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("persistent_memory"));
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("runtime_service"));
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("provider_or_credential"));
+});
+
+test("vector memory storage classification separates audit, decision, experience, policy, and work orders", async () => {
+  const routing = await routeWorkOrders({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const bridge = await reviewLangGraphQianxuesenBridge({
+    workOrderRouting: routing,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const result = buildVectorMemoryStoragePlan({
+    workOrderRouting: routing,
+    langGraphBridge: bridge,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const schemaCheck = await validateJsonData({
+    repoRoot: process.cwd(),
+    schemaRel: "schemas/vector_memory_storage.schema.json",
+    data: result,
+    name: "validate generated vector memory storage classification"
+  });
+
+  assert.equal(result.mode, "vector-memory-storage-classification");
+  assert.equal(result.ok, true);
+  assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
+  assert.equal(result.strategy.classification_only, true);
+  assert.equal(result.safety.zilliz_written, false);
+  assert.equal(result.safety.writes_persistent_memory, false);
+  assert.equal(result.summary.zilliz_write_count, 0);
+  assert.ok(result.collections.some((item) => item.collection === "misa_experience_memory"));
+  assert.ok(result.local_layout.some((item) => item.local_dir === "memory/agent-experience/candidate"));
+  assert.ok(result.records.some((record) => record.kind === "audit_log"));
+  assert.ok(result.records.some((record) => record.kind === "decision_trace"));
+  assert.ok(result.records.some((record) => record.kind === "agent_experience_candidate"));
+  assert.ok(result.records.some((record) => record.kind === "repair_work_order"));
+  assert.ok(result.records.some((record) => record.kind === "policy_boundary"));
+  assert.equal(
+    result.records
+      .filter((record) => ["audit_only", "candidate"].includes(record.metadata.authority))
+      .every((record) => record.metadata.can_influence_behavior === false),
+    true
+  );
+});
+
+test("vector memory classification keeps low-risk autonomous work bounded", async () => {
+  const report = {
+    schema: "misa.hermes.farcaster.daily_report.v1",
+    report_date: "2026-05-12",
+    counts: {
+      outcomes_considered: 4
+    },
+    operator_quality: {
+      schema: "misa.hermes.farcaster.operator_quality.v1",
+      verdict: "healthy",
+      recommendations: [
+        "operator quality looks steady; keep current soft-presence settings"
+      ]
+    }
+  };
+  const routing = buildWorkOrderRouting({
+    operationalReports: [report],
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const bridge = buildLangGraphQianxuesenBridge({
+    workOrderRouting: routing,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const result = buildVectorMemoryStoragePlan({
+    workOrderRouting: routing,
+    langGraphBridge: bridge,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(routing.summary.auto_executable_count, 1);
+  assert.equal(bridge.action_policy_contract.effective_decision, "allow_bounded_local_work");
+  assert.equal(result.summary.owner_approval_required_count > 0, true);
+  assert.ok(result.summary.by_kind.agent_experience_candidate >= 1);
+  assert.ok(result.summary.by_kind.policy_boundary >= 1);
+  assert.equal(result.summary.zilliz_write_count, 0);
+  assert.ok(result.records.some((record) => (
+    record.kind === "policy_boundary"
+    && record.metadata.blocked_surfaces.includes("public_posting")
+    && record.metadata.blocked_surfaces.includes("provider_credentials")
+  )));
+});
+
+test("Zilliz vector adapter prepares dry-run collection schemas and upsert payloads", async () => {
+  const routing = await routeWorkOrders({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const bridge = await reviewLangGraphQianxuesenBridge({
+    workOrderRouting: routing,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const storage = buildVectorMemoryStoragePlan({
+    workOrderRouting: routing,
+    langGraphBridge: bridge,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const result = buildZillizVectorAdapterPlan({
+    vectorMemoryStorage: storage,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const reviewed = await reviewZillizVectorAdapterPlan({
+    vectorMemoryStorage: storage,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const schemaCheck = await validateJsonData({
+    repoRoot: process.cwd(),
+    schemaRel: "schemas/zilliz_vector_adapter.schema.json",
+    data: result,
+    name: "validate generated Zilliz vector adapter dry-run"
+  });
+
+  assert.equal(result.mode, "zilliz-vector-adapter-dry-run");
+  assert.equal(result.ok, true);
+  assert.equal(reviewed.summary.record_count, result.summary.record_count);
+  assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
+  assert.equal(result.adapter.vector_dimension, 768);
+  assert.equal(result.adapter.embedding_model, "gemini-embedding-001");
+  assert.equal(result.safety.dry_run, true);
+  assert.equal(result.safety.zilliz_written, false);
+  assert.equal(result.safety.embedding_created, false);
+  assert.equal(result.safety.external_api_calls, 0);
+  assert.equal(result.summary.zilliz_write_count, 0);
+  assert.equal(result.summary.records_requiring_embedding, storage.summary.record_count);
+  assert.ok(result.collection_plans.some((plan) => plan.collection === "misa_work_order_memory"));
+  assert.ok(result.collection_plans.every((plan) => plan.vector.embedding_created === false));
+  assert.ok(result.upsert_batches.length > 0);
+  assert.ok(result.upsert_batches.every((batch) => batch.zilliz_written === false));
+  assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => (
+    record.embedding === null
+    && record.embedding_status === "not_created"
+    && record.metadata.record_id === record.record_id
+  )));
+  assert.equal(result.metadata_checks.every((check) => check.ok), true);
+  assert.equal(
+    result.upsert_batches
+      .flatMap((batch) => batch.records)
+      .filter((record) => ["audit_only", "candidate"].includes(record.metadata.authority))
+      .every((record) => record.metadata.can_influence_behavior === false),
+    true
+  );
+});
+
+test("Zilliz vector adapter flags unsafe metadata instead of silently preparing writes", async () => {
+  const storage = await reviewVectorMemoryStoragePlan({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  const badStorage = {
+    ...storage,
+    records: storage.records.map((record, index) => index === 0
+      ? {
+          ...record,
+          metadata: {
+            ...record.metadata,
+            authority: "candidate",
+            can_influence_behavior: true
+          }
+        }
+      : record)
+  };
+  const result = buildZillizVectorAdapterPlan({
+    vectorMemoryStorage: badStorage,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.metadata_violation_count > 0, true);
+  assert.ok(result.metadata_checks.some((check) => (
+    check.check === "behavior_authority"
+    && check.ok === false
+  )));
+  assert.equal(result.safety.zilliz_written, false);
 });
 
 test("VPS conversation loader accepts symlinked sanitized JSON files", async (t) => {
@@ -1452,12 +1668,91 @@ test("work-order routing policy can allow only bounded low-risk autonomous work"
   const order = result.work_orders[0];
   assert.equal(order.category, "operator_quality");
   assert.equal(order.severity, "P3");
+  assert.equal(order.status, "agent_ready_to_execute");
   assert.equal(order.delivery.delivery_policy, "notify_then_execute_within_scope");
   assert.equal(order.execution_policy.requires_user_confirmation, false);
   assert.equal(order.execution_policy.auto_execute_allowed, true);
+  assert.equal(order.execution_policy.agent_self_review_allowed, true);
+  assert.equal(order.execution_policy.agent_may_self_resolve, true);
+  assert.equal(order.execution_policy.owner_report_required, false);
   assert.equal(order.execution_policy.default_next_step, "execute_within_scope");
   assert.equal(order.execution_policy.durable_or_public_effect_allowed, false);
   assert.equal(order.model_handoff.stronger_model_recommended, false);
+
+  const bridge = buildLangGraphQianxuesenBridge({
+    workOrderRouting: result,
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+  assert.equal(bridge.action_policy_contract.effective_decision, "allow_bounded_local_work");
+  assert.equal(bridge.summary.interrupt_count, 0);
+  assert.ok(bridge.action_policy_contract.evaluated_action.blocked_surfaces.includes("public_or_channel_output"));
+  assert.ok(bridge.action_policy_contract.evaluated_action.blocked_surfaces.includes("provider_or_credential"));
+});
+
+test("work-order routing conservative modes do not inherit public-default auto flags", async () => {
+  const repairTickets = await reviewRepairTickets({
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  for (const mode of ["report_only", "ask_before_execution"]) {
+    const result = buildWorkOrderRouting({
+      repairTicketReview: repairTickets,
+      routingPolicy: {
+        mode,
+        auto_execute_allowed: true,
+        auto_execute_categories: ["*"],
+        primary_agent_report_first: false
+      },
+      now: new Date("2026-05-12T00:00:00Z")
+    });
+
+    assert.equal(result.routing_policy.mode, mode);
+    assert.equal(result.safety.auto_execute_allowed, false);
+    assert.equal(result.safety.primary_agent_must_report_first, true);
+    assert.equal(result.summary.auto_executable_count, 0);
+    assert.equal(result.work_orders.every((order) => order.execution_policy.auto_execute_allowed === false), true);
+  }
+});
+
+test("work-order routing full-agent mode can auto-handle non-durable higher-risk work", () => {
+  const report = {
+    schema: "misa.hermes.farcaster.daily_report.v1",
+    report_date: "2026-05-12",
+    counts: {
+      outcomes_considered: 12,
+      blocked_transitions: 2
+    },
+    operator_quality: {
+      schema: "misa.hermes.farcaster.operator_quality.v1",
+      verdict: "tighten",
+      recommendations: [
+        "lower priority for repeated author/thread/topic before the next cycle",
+        "quality brakes are active; inspect blocks before loosening thresholds"
+      ]
+    }
+  };
+
+  const result = buildWorkOrderRouting({
+    operationalReports: [report],
+    routingPolicy: {
+      mode: "full_agent",
+      auto_execute_allowed: true
+    },
+    now: new Date("2026-05-12T00:00:00Z")
+  });
+
+  const order = result.work_orders[0];
+  assert.equal(result.routing_policy.mode, "full_agent");
+  assert.equal(result.summary.auto_executable_count, 1);
+  assert.equal(order.severity, "P1");
+  assert.equal(order.status, "agent_ready_to_execute");
+  assert.equal(order.delivery.delivery_policy, "notify_then_execute_within_scope");
+  assert.equal(order.execution_policy.auto_execute_allowed, true);
+  assert.equal(order.execution_policy.agent_may_self_resolve, true);
+  assert.equal(order.execution_policy.owner_report_required, false);
+  assert.equal(order.execution_policy.experience_capture_mode, "candidate_log_only");
+  assert.equal(order.model_handoff.stronger_model_recommended, true);
+  assert.match(order.model_handoff.reason, /advisory for non-durable in-scope work/);
 });
 
 test("work-order routing maps operator quality to persona self-review instead of engineering", () => {
@@ -1487,7 +1782,11 @@ test("work-order routing maps operator quality to persona self-review instead of
   assert.equal(order.delivery.receiver_type, "primary_agent");
   assert.equal(order.suggested_executor.executor_type, "persona_operator_agent");
   assert.equal(order.execution_policy.self_evolution_allowed, true);
+  assert.equal(order.execution_policy.agent_self_review_allowed, true);
   assert.equal(order.execution_policy.auto_execute_allowed, false);
+  assert.equal(order.execution_policy.agent_may_self_resolve, false);
+  assert.equal(order.execution_policy.owner_report_required, true);
+  assert.equal(order.execution_policy.experience_capture_mode, "candidate_log_only");
   assert.ok(order.traceability.forbidden_scope.includes("live publisher"));
   assert.match(order.user_prompt, /hand it to a stronger model/);
 });
@@ -1510,9 +1809,10 @@ test("work-order artifacts write traceable JSON and Markdown without execution",
     const markdown = await fs.readFile(written.output.markdown_path, "utf8");
 
     assert.equal(persisted.mode, "work-order-routing");
-    assert.equal(persisted.safety.auto_execute_allowed, false);
+    assert.equal(persisted.safety.auto_execute_allowed, true);
     assert.equal(persisted.safety.durable_or_public_effect_allowed, false);
     assert.match(markdown, /# Work Order Routing/);
+    assert.match(markdown, /agent_self_review_count:/);
     assert.match(markdown, /### User Prompt/);
     assert.match(markdown, /### Traceability/);
   } finally {
@@ -1636,8 +1936,10 @@ test("work-order routing reports contaminated repair-ticket files as JSON handof
     assert.equal(order.source.source_kind, "json_handoff_contract");
     assert.equal(order.severity, "P2");
     assert.equal(order.category, "engineering_repair");
-    assert.equal(order.execution_policy.requires_user_confirmation, true);
+    assert.equal(order.execution_policy.requires_user_confirmation, false);
     assert.equal(order.execution_policy.auto_execute_allowed, false);
+    assert.equal(order.execution_policy.agent_self_review_allowed, true);
+    assert.equal(order.execution_policy.owner_report_required, true);
     assert.equal(order.traceability.evidence.issue_code, "npm_lifecycle_banner_before_json");
     assert.match(order.summary, /machine JSON artifact is not strict JSON/);
   } finally {

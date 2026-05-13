@@ -1,0 +1,963 @@
+{
+  "schema_version": "misa.zilliz_vector_adapter.v1",
+  "mode": "zilliz-vector-adapter-dry-run",
+  "ok": true,
+  "created_at": "2026-05-12T00:00:00.000Z",
+  "adapter": {
+    "target_backend": "zilliz",
+    "execution_mode": "dry_run",
+    "collection_strategy": "few_collections_with_metadata",
+    "vector_dimension": 768,
+    "metric_type": "COSINE",
+    "embedding_model": "gemini-embedding-001",
+    "embedding_required": true,
+    "dynamic_metadata_allowed": true,
+    "zilliz_written": false,
+    "embedding_created": false,
+    "external_api_calls": 0
+  },
+  "collection_plans": [
+    {
+      "collection": "misa_audit_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "audit_log"
+      ],
+      "local_dirs": [
+        "memory/audit-log"
+      ],
+      "record_count": 1
+    },
+    {
+      "collection": "misa_decision_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "decision_trace"
+      ],
+      "local_dirs": [
+        "memory/decision-trace"
+      ],
+      "record_count": 1
+    },
+    {
+      "collection": "misa_experience_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "agent_experience_candidate",
+        "agent_experience_promoted"
+      ],
+      "local_dirs": [
+        "memory/agent-experience/candidate",
+        "memory/agent-experience/promoted"
+      ],
+      "record_count": 1
+    },
+    {
+      "collection": "misa_persona_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "persona_memory_candidate",
+        "persona_memory_promoted"
+      ],
+      "local_dirs": [
+        "memory/persona-memory/candidate",
+        "memory/persona-memory/promoted"
+      ],
+      "record_count": 0
+    },
+    {
+      "collection": "misa_policy_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "policy_boundary"
+      ],
+      "local_dirs": [
+        "memory/policy-boundary"
+      ],
+      "record_count": 1
+    },
+    {
+      "collection": "misa_work_order_memory",
+      "description": "Qianxuesen vector memory adapter collection.",
+      "vector": {
+        "field": "embedding",
+        "type": "FloatVector",
+        "dimension": 768,
+        "metric_type": "COSINE",
+        "embedding_model": "gemini-embedding-001",
+        "embedding_required": true,
+        "embedding_created": false
+      },
+      "primary_key": {
+        "field": "record_id",
+        "type": "VarChar",
+        "max_length": 256
+      },
+      "text_field": {
+        "field": "text",
+        "type": "VarChar",
+        "max_length": 8192
+      },
+      "metadata_field": {
+        "field": "metadata",
+        "type": "JSON",
+        "required_fields": [
+          "kind",
+          "authority",
+          "status",
+          "risk_level",
+          "source_type",
+          "source_id",
+          "created_by",
+          "promotion_state",
+          "can_influence_behavior",
+          "requires_owner_approval",
+          "allowed_surfaces",
+          "blocked_surfaces",
+          "decision_trace_id"
+        ]
+      },
+      "scalar_fields": [
+        {
+          "name": "kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "authority",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "status",
+          "type": "VarChar",
+          "max_length": 64
+        },
+        {
+          "name": "risk_level",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "source_type",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "created_by",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
+          "name": "promotion_state",
+          "type": "VarChar",
+          "max_length": 32
+        },
+        {
+          "name": "can_influence_behavior",
+          "type": "Bool"
+        },
+        {
+          "name": "requires_owner_approval",
+          "type": "Bool"
+        },
+        {
+          "name": "allowed_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "blocked_surfaces",
+          "type": "JSON"
+        },
+        {
+          "name": "decision_trace_id",
+          "type": "VarChar",
+          "max_length": 256
+        }
+      ],
+      "dynamic_metadata_allowed": true,
+      "kinds": [
+        "repair_work_order"
+      ],
+      "local_dirs": [
+        "memory/repair-work-order"
+      ],
+      "record_count": 1
+    }
+  ],
+  "upsert_batches": [
+    {
+      "collection": "misa_audit_memory",
+      "record_count": 1,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "records": [
+        {
+          "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+          "collection": "misa_audit_memory",
+          "text": "Audit log bridge-9b4d9ecfa394466f\n\nRead-only audit record for work-order routing and action-policy reconstruction.",
+          "embedding": null,
+          "embedding_status": "not_created",
+          "embedding_required": true,
+          "metadata": {
+            "kind": "audit_log",
+            "authority": "audit_only",
+            "status": "observed",
+            "risk_level": "high",
+            "source_type": "langgraph_qianxuesen_bridge",
+            "source_id": "bridge-9b4d9ecfa394466f",
+            "created_by": "qianxuesen_vector_memory_classifier",
+            "promotion_state": "not_promoted",
+            "can_influence_behavior": false,
+            "requires_owner_approval": false,
+            "allowed_surfaces": [
+              "retrieval_context"
+            ],
+            "blocked_surfaces": [
+              "persistent_memory",
+              "public_or_channel_output",
+              "runtime_service",
+              "provider_or_credential"
+            ],
+            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+            "title": "Audit log bridge-9b4d9ecfa394466f",
+            "local_dir": "memory/audit-log"
+          }
+        }
+      ]
+    },
+    {
+      "collection": "misa_decision_memory",
+      "record_count": 1,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "records": [
+        {
+          "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+          "collection": "misa_decision_memory",
+          "text": "Decision trace bridge-9b4d9ecfa394466f\n\nAction policy result: require_interrupt.",
+          "embedding": null,
+          "embedding_status": "not_created",
+          "embedding_required": true,
+          "metadata": {
+            "kind": "decision_trace",
+            "authority": "audit_only",
+            "status": "observed",
+            "risk_level": "high",
+            "source_type": "langgraph_qianxuesen_bridge",
+            "source_id": "bridge-9b4d9ecfa394466f",
+            "created_by": "qianxuesen_vector_memory_classifier",
+            "promotion_state": "not_promoted",
+            "can_influence_behavior": false,
+            "requires_owner_approval": false,
+            "allowed_surfaces": [
+              "retrieval_context"
+            ],
+            "blocked_surfaces": [
+              "persistent_memory",
+              "public_or_channel_output",
+              "runtime_service",
+              "provider_or_credential"
+            ],
+            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+            "title": "Decision trace bridge-9b4d9ecfa394466f",
+            "local_dir": "memory/decision-trace"
+          }
+        }
+      ]
+    },
+    {
+      "collection": "misa_experience_memory",
+      "record_count": 1,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "records": [
+        {
+          "record_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+          "collection": "misa_experience_memory",
+          "text": "Candidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nAgent self-review may use this as candidate experience, but it cannot become durable behavior until promoted.",
+          "embedding": null,
+          "embedding_status": "not_created",
+          "embedding_required": true,
+          "metadata": {
+            "kind": "agent_experience_candidate",
+            "authority": "candidate",
+            "status": "unverified",
+            "risk_level": "high",
+            "source_type": "repair_ticket",
+            "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "created_by": "qianxuesen_vector_memory_classifier",
+            "promotion_state": "not_promoted",
+            "can_influence_behavior": false,
+            "requires_owner_approval": true,
+            "allowed_surfaces": [
+              "local_docs",
+              "local_tests",
+              "retrieval_context"
+            ],
+            "blocked_surfaces": [
+              "persistent_memory",
+              "public_posting",
+              "vps_or_runtime_service",
+              "provider_credentials"
+            ],
+            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "record_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "title": "Candidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "local_dir": "memory/agent-experience/candidate"
+          }
+        }
+      ]
+    },
+    {
+      "collection": "misa_policy_memory",
+      "record_count": 1,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "records": [
+        {
+          "record_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+          "collection": "misa_policy_memory",
+          "text": "Blocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nForbidden surfaces from the work order must stay visible even when bounded local work is allowed.",
+          "embedding": null,
+          "embedding_status": "not_created",
+          "embedding_required": true,
+          "metadata": {
+            "kind": "policy_boundary",
+            "authority": "policy",
+            "status": "active",
+            "risk_level": "high",
+            "source_type": "repair_ticket",
+            "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "created_by": "qianxuesen_vector_memory_classifier",
+            "promotion_state": "promoted",
+            "can_influence_behavior": true,
+            "requires_owner_approval": true,
+            "allowed_surfaces": [
+              "policy_retrieval",
+              "safety_filter"
+            ],
+            "blocked_surfaces": [
+              "persistent_memory",
+              "public_posting",
+              "vps_or_runtime_service",
+              "provider_credentials"
+            ],
+            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "record_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "title": "Blocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "local_dir": "memory/policy-boundary"
+          }
+        }
+      ]
+    },
+    {
+      "collection": "misa_work_order_memory",
+      "record_count": 1,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "records": [
+        {
+          "record_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+          "collection": "misa_work_order_memory",
+          "text": "Auto-L3 non-skill promotion from local distillation sources\n\nBroad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
+          "embedding": null,
+          "embedding_status": "not_created",
+          "embedding_required": true,
+          "metadata": {
+            "kind": "repair_work_order",
+            "authority": "candidate",
+            "status": "pending_agent_review",
+            "risk_level": "high",
+            "source_type": "repair_ticket",
+            "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "created_by": "qianxuesen_vector_memory_classifier",
+            "promotion_state": "not_promoted",
+            "can_influence_behavior": false,
+            "requires_owner_approval": true,
+            "allowed_surfaces": [
+              "retrieval_context"
+            ],
+            "blocked_surfaces": [
+              "persistent_memory",
+              "public_posting",
+              "vps_or_runtime_service",
+              "provider_credentials"
+            ],
+            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "record_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "title": "Auto-L3 non-skill promotion from local distillation sources",
+            "local_dir": "memory/repair-work-order"
+          }
+        }
+      ]
+    }
+  ],
+  "metadata_checks": [
+    {
+      "check": "required_metadata_fields",
+      "ok": true,
+      "violations": []
+    },
+    {
+      "check": "behavior_authority",
+      "ok": true,
+      "violations": []
+    },
+    {
+      "check": "collection_and_text_payload",
+      "ok": true,
+      "violations": []
+    }
+  ],
+  "summary": {
+    "collection_count": 6,
+    "record_count": 5,
+    "batch_count": 5,
+    "by_collection": {
+      "misa_decision_memory": 1,
+      "misa_audit_memory": 1,
+      "misa_work_order_memory": 1,
+      "misa_experience_memory": 1,
+      "misa_policy_memory": 1
+    },
+    "records_requiring_embedding": 5,
+    "metadata_violation_count": 0,
+    "zilliz_write_count": 0
+  },
+  "safety": {
+    "dry_run": true,
+    "zilliz_written": false,
+    "embedding_created": false,
+    "external_api_calls": 0,
+    "provider_credentials_read": false,
+    "persistent_memory_written": false,
+    "vps_or_runtime_touch_allowed": false,
+    "live_writer_included": false,
+    "requires_explicit_write_flag": true,
+    "requires_reversible_probe_before_live": true
+  },
+  "warnings": [
+    "This adapter only prepares Zilliz collection and upsert payloads.",
+    "It does not create embeddings and does not write Zilliz.",
+    "Run a reversible synthetic write/delete probe before connecting this payload to a live writer.",
+    "Candidate and audit records remain non-authoritative even if they are searchable."
+  ]
+}

@@ -336,13 +336,18 @@
             "action_type",
             "work_order_count",
             "interrupt_count",
-            "durable_or_public_effect_count"
+            "durable_or_public_effect_count",
+            "blocked_surfaces"
           ],
           "properties": {
             "action_type": { "type": "string", "const": "learning_route_and_work_order_handoff" },
             "work_order_count": { "type": "integer", "minimum": 0 },
             "interrupt_count": { "type": "integer", "minimum": 0 },
-            "durable_or_public_effect_count": { "type": "integer", "minimum": 0 }
+            "durable_or_public_effect_count": { "type": "integer", "minimum": 0 },
+            "blocked_surfaces": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
           }
         },
         "decision_trace": {
@@ -587,6 +592,7 @@
         "reason",
         "suggested_executor",
         "requires_user_confirmation",
+        "owner_report_required",
         "durable_or_public_effect",
         "effect_boundary",
         "resume_policy"
@@ -599,6 +605,7 @@
         "reason": { "type": "string" },
         "suggested_executor": { "type": "string" },
         "requires_user_confirmation": { "type": "boolean" },
+        "owner_report_required": { "type": "boolean" },
         "durable_or_public_effect": { "type": "boolean" },
         "effect_boundary": {
           "type": "object",

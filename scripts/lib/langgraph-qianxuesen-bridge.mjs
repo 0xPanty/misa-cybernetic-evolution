@@ -71,6 +71,10 @@ function requiresUserConfirmation(order) {
     ?? true;
 }
 
+function ownerReportRequired(order) {
+  return order.execution_policy?.owner_report_required === true;
+}
+
 function durableOrPublicEffectAllowed(order) {
   return order.execution_policy?.durable_or_public_effect_allowed === true;
 }
@@ -187,6 +191,7 @@ function matchedRuleForEffectiveDecision(effectiveDecision) {
 
 function buildActionPolicyContract(workOrders, interruptQueue) {
   const effectiveDecision = effectiveDecisionForBridge(workOrders, interruptQueue);
+  const blockedSurfaces = unique(workOrders.flatMap((order) => inferBlockedSurfaces(order)));
 
   return {
     policy_engine: {
@@ -215,7 +220,7 @@ function buildActionPolicyContract(workOrders, interruptQueue) {
         rule_id: "require_interrupt_for_durable_or_public_effect",
         stage_id: "work_order",
         priority: 900,
-        match: "durable_or_public_effect=true or suggested_executor=human_owner",
+        match: "durable_or_public_effect=true or suggested_executor=human_owner or owner_report_required=true",
         decision: "require_interrupt"
       },
       {
@@ -229,7 +234,7 @@ function buildActionPolicyContract(workOrders, interruptQueue) {
         rule_id: "allow_bounded_local_work_after_policy",
         stage_id: "work_order",
         priority: 300,
-        match: "requires_user_confirmation=false and durable_or_public_effect=false",
+        match: "requires_user_confirmation=false and owner_report_required=false and durable_or_public_effect=false",
         decision: "allow_bounded_local_work"
       }
     ],
@@ -237,7 +242,8 @@ function buildActionPolicyContract(workOrders, interruptQueue) {
       action_type: "learning_route_and_work_order_handoff",
       work_order_count: workOrders.length,
       interrupt_count: interruptQueue.length,
-      durable_or_public_effect_count: interruptQueue.filter((item) => item.durable_or_public_effect).length
+      durable_or_public_effect_count: interruptQueue.filter((item) => item.durable_or_public_effect).length,
+      blocked_surfaces: blockedSurfaces
     },
     decision_trace: [
       {
@@ -357,6 +363,9 @@ function interruptReason(order) {
   if (executorTypeForOrder(order) === "human_owner") {
     return "work order routes to human owner";
   }
+  if (ownerReportRequired(order)) {
+    return "work order requires owner report after agent self-review";
+  }
   if (requiresUserConfirmation(order)) {
     return "work order requires user confirmation";
   }
@@ -386,6 +395,7 @@ function effectBoundaryForWorkOrder(order, durableOrPublicEffect) {
     durable_or_public_effect: durableOrPublicEffect,
     execution_allowed_without_human: false,
     requires_interrupt: requiresUserConfirmation(order) !== false
+      || ownerReportRequired(order)
       || durableOrPublicEffect
       || executorTypeForOrder(order) === "human_owner",
     blocked_surfaces: inferBlockedSurfaces(order),
@@ -408,6 +418,7 @@ function interruptFromWorkOrder(order) {
     reason: interruptReason(order),
     suggested_executor: executorType,
     requires_user_confirmation: requiresUserConfirmation(order) !== false,
+    owner_report_required: ownerReportRequired(order),
     durable_or_public_effect: durableOrPublicEffect,
     effect_boundary: effectBoundary,
     resume_policy: {
@@ -423,6 +434,7 @@ function buildInterruptQueue(workOrderRouting) {
   return workOrdersFromRouting(workOrderRouting)
     .filter((order) => (
       requiresUserConfirmation(order) !== false
+      || ownerReportRequired(order)
       || executorTypeForOrder(order) === "human_owner"
       || durableOrPublicEffectAllowed(order)
     ))

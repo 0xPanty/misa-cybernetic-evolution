@@ -25,6 +25,8 @@
     "export-skills:misa": "node scripts/export-skills.mjs",
     "repair-ticket:misa": "node scripts/repair-ticket.mjs",
     "work-order:route": "node scripts/work-order-router.mjs",
+    "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
+    "zilliz:adapt": "node scripts/zilliz-vector-adapter.mjs",
     "langgraph:bridge": "node scripts/langgraph-qianxuesen-bridge.mjs",
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",
     "precheck": "node scripts/precheck.mjs",
