@@ -1,0 +1,457 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/evolution_tournament_gate.schema.json",
+  "title": "EvolutionTournamentGateReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "source",
+    "algorithm_adaptation",
+    "tournament_policy",
+    "summary",
+    "tournaments",
+    "winner_queue",
+    "rejected_variant_ledger",
+    "control_boundary",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.evolution_tournament_gate.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "evolution-tournament-gate"
+    },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preflight_mode",
+        "optimization_candidate_count",
+        "report_queue_count",
+        "tournament_candidate_count"
+      ],
+      "properties": {
+        "preflight_mode": { "type": "string", "minLength": 1 },
+        "optimization_candidate_count": { "type": "integer", "minimum": 0 },
+        "report_queue_count": { "type": "integer", "minimum": 0 },
+        "tournament_candidate_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "algorithm_adaptation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "inspected_commit", "borrowed", "rejected"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "inspected_commit": { "type": "string", "minLength": 7 },
+        "borrowed": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rejected": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tournament_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_owner",
+        "candidate_generation",
+        "scorer",
+        "max_variants_per_candidate",
+        "winner_surface",
+        "loser_policy",
+        "production_effect"
+      ],
+      "properties": {
+        "route_owner": { "type": "string", "const": "qianxuesen" },
+        "candidate_generation": { "type": "string", "const": "multi_variant_local" },
+        "scorer": { "type": "string", "const": "deterministic_proxy_v1" },
+        "max_variants_per_candidate": { "type": "integer", "minimum": 3 },
+        "winner_surface": { "type": "string", "const": "draft_recommendation_only" },
+        "loser_policy": { "type": "string", "minLength": 1 },
+        "production_effect": { "type": "string", "const": "blocked" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tournament_count",
+        "variant_count",
+        "winner_count",
+        "rejected_variant_count",
+        "route_counts",
+        "production_authority"
+      ],
+      "properties": {
+        "tournament_count": { "type": "integer", "minimum": 0 },
+        "variant_count": { "type": "integer", "minimum": 0 },
+        "winner_count": { "type": "integer", "minimum": 0 },
+        "rejected_variant_count": { "type": "integer", "minimum": 0 },
+        "route_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "tournaments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/tournament" }
+    },
+    "winner_queue": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/winner" }
+    },
+    "rejected_variant_ledger": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["variant_id", "strategy", "violations", "blocked_requests", "retained_as"],
+        "properties": {
+          "variant_id": { "type": "string", "minLength": 1 },
+          "strategy": { "type": "string", "minLength": 1 },
+          "violations": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "blocked_requests": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "retained_as": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "control_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optimizer_role",
+        "route_owner",
+        "route_implementation",
+        "llm_route_decision_allowed",
+        "automatic_promotion_allowed",
+        "promotion_surface"
+      ],
+      "properties": {
+        "optimizer_role": { "type": "string", "const": "candidate_layer_only" },
+        "route_owner": { "type": "string", "const": "qianxuesen" },
+        "route_implementation": { "type": "string", "minLength": 1 },
+        "llm_route_decision_allowed": { "type": "boolean", "const": false },
+        "automatic_promotion_allowed": { "type": "boolean", "const": false },
+        "promotion_surface": { "type": "string", "const": "none" }
+      }
+    },
+    "safety": { "$ref": "#/$defs/safety" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "publication_allowed",
+        "automatic_write_allowed",
+        "llm_route_decision_allowed",
+        "requires_human_approval_for_production",
+        "live_effects",
+        "blocked_operations"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "automatic_write_allowed": { "type": "boolean", "const": false },
+        "llm_route_decision_allowed": { "type": "boolean", "const": false },
+        "requires_human_approval_for_production": { "type": "boolean", "const": true },
+        "live_effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "writes_persistent_memory",
+            "publishes_skill",
+            "starts_timer",
+            "changes_session_mechanics",
+            "posts_publicly"
+          ],
+          "properties": {
+            "writes_persistent_memory": { "type": "boolean", "const": false },
+            "publishes_skill": { "type": "boolean", "const": false },
+            "starts_timer": { "type": "boolean", "const": false },
+            "changes_session_mechanics": { "type": "boolean", "const": false },
+            "posts_publicly": { "type": "boolean", "const": false }
+          }
+        },
+        "blocked_operations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "winner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant_id",
+        "strategy",
+        "composite_score",
+        "holdout_score",
+        "safety_score",
+        "recommended_surface",
+        "publication_allowed",
+        "production_authority",
+        "rationale"
+      ],
+      "properties": {
+        "variant_id": { "type": "string", "minLength": 1 },
+        "strategy": { "type": "string", "minLength": 1 },
+        "composite_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "holdout_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "safety_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "recommended_surface": { "type": "string", "const": "local_draft_report_only" },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tournament": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tournament_id",
+        "candidate_id",
+        "source_event_id",
+        "route_target",
+        "baseline_score",
+        "eval_dataset",
+        "variants",
+        "winner",
+        "loser_ledger",
+        "safety"
+      ],
+      "properties": {
+        "tournament_id": { "type": "string", "minLength": 1 },
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "source_event_id": { "type": "string", "minLength": 1 },
+        "route_target": {
+          "type": "string",
+          "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+        },
+        "baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "eval_dataset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total_cases", "train_count", "validation_count", "holdout_count", "cases"],
+          "properties": {
+            "total_cases": { "type": "integer", "minimum": 1 },
+            "train_count": { "type": "integer", "minimum": 0 },
+            "validation_count": { "type": "integer", "minimum": 0 },
+            "holdout_count": { "type": "integer", "minimum": 0 },
+            "cases": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/eval_case" }
+            }
+          }
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "$ref": "#/$defs/variant" }
+        },
+        "winner": { "$ref": "#/$defs/winner" },
+        "loser_ledger": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["variant_id", "status", "reason", "route_target", "blocked_requests", "becomes"],
+            "properties": {
+              "variant_id": { "type": "string", "minLength": 1 },
+              "status": { "type": "string", "enum": ["winner", "loser", "rejected"] },
+              "reason": { "type": "string", "minLength": 1 },
+              "route_target": { "type": "string", "minLength": 1 },
+              "blocked_requests": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "becomes": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "safety": { "$ref": "#/$defs/safety" }
+      }
+    },
+    "eval_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "split", "objective", "weight", "required_checks"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "split": { "type": "string", "enum": ["train", "validation", "holdout"] },
+        "objective": { "type": "string", "minLength": 1 },
+        "weight": { "type": "number", "minimum": 0 },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variant_id",
+        "strategy",
+        "mutation_kind",
+        "route_target",
+        "source_event_id",
+        "proposed_change",
+        "rationale",
+        "procedure_outline",
+        "requested_operations",
+        "changed_surfaces",
+        "verification_commands",
+        "novelty_score",
+        "safety",
+        "scores",
+        "constraints",
+        "case_results",
+        "tournament_status",
+        "pareto"
+      ],
+      "properties": {
+        "variant_id": { "type": "string", "minLength": 1 },
+        "strategy": { "type": "string", "minLength": 1 },
+        "mutation_kind": { "type": "string", "minLength": 1 },
+        "route_target": { "type": "string", "minLength": 1 },
+        "source_event_id": { "type": "string", "minLength": 1 },
+        "proposed_change": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "procedure_outline": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "requested_operations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "changed_surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "verification_commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "novelty_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "safety": { "$ref": "#/$defs/safety" },
+        "scores": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "route_fit",
+            "evidence_fit",
+            "train",
+            "validation",
+            "holdout",
+            "safety",
+            "compactness",
+            "novelty",
+            "regression",
+            "composite"
+          ],
+          "properties": {
+            "route_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+            "evidence_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+            "train": { "type": "number", "minimum": 0, "maximum": 1 },
+            "validation": { "type": "number", "minimum": 0, "maximum": 1 },
+            "holdout": { "type": "number", "minimum": 0, "maximum": 1 },
+            "safety": { "type": "number", "minimum": 0, "maximum": 1 },
+            "compactness": { "type": "number", "minimum": 0, "maximum": 1 },
+            "novelty": { "type": "number", "minimum": 0, "maximum": 1 },
+            "regression": { "type": "number", "minimum": 0, "maximum": 1 },
+            "composite": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hard_gate_passed", "checks", "blocked_requests", "violations"],
+          "properties": {
+            "hard_gate_passed": { "type": "boolean" },
+            "checks": {
+              "type": "object",
+              "additionalProperties": { "type": "boolean" }
+            },
+            "blocked_requests": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "violations": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "case_results": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["case_id", "split", "passed", "score", "notes"],
+            "properties": {
+              "case_id": { "type": "string", "minLength": 1 },
+              "split": { "type": "string", "enum": ["train", "validation", "holdout"] },
+              "passed": { "type": "boolean" },
+              "score": { "type": "number", "minimum": 0, "maximum": 1 },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "tournament_status": { "type": "string", "enum": ["winner", "loser", "rejected"] },
+        "pareto": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dominated", "reason"],
+          "properties": {
+            "dominated": { "type": "boolean" },
+            "reason": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

@@ -238,6 +238,26 @@ damping pressure instead of live behavior.
 The v0.16 bridge is described in
 [docs/omniagent-footprint-bridge-v0.16.md](./docs/omniagent-footprint-bridge-v0.16.md).
 
+### 8.3 Evolution Tournament Gate
+
+The evolution tournament is treated as an inner optimizer, not as the learning
+controller.
+
+The useful parts borrowed from Hermes-style self-evolution are multi-variant
+candidate search, train/validation/holdout checks, trace-aware failure
+reflection, and Pareto-style winner selection. The tournament starts only after
+the Qianxuesen route table and candidate preflight have already produced
+reportable local candidates.
+
+The forbidden shape is an optimizer that writes memory, installs Skills,
+rewrites prompts, evolves code, changes providers, starts timers, touches VPS,
+or decides memory/skill/policy routes. Those actions stay outside this gate.
+Unsafe aggressive variants can appear as negative samples, but they must be
+rejected before any effect happens.
+
+The v0.17 tournament gate is described in
+[docs/evolution-tournament-gate-v0.17.md](./docs/evolution-tournament-gate-v0.17.md).
+
 ### 9. Publication and Governance Plane
 
 Publication creates immutable records:

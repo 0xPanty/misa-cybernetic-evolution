@@ -20,7 +20,7 @@ The diagram is also available as a Remotion storyboard source at
 [`docs/remotion/langgraph-qianxuesen-flow.tsx`](docs/remotion/langgraph-qianxuesen-flow.tsx)
 for future animation or video rendering.
 
-## v0.16 Quickstart
+## v0.17 Quickstart
 
 This repository is safe to run locally. The default checks are dry-run checks:
 they read repository files, validate schemas, and report governance failures.
@@ -39,6 +39,7 @@ npm run adaptive:misa
 npm run intake:misa
 npm run rollup:misa
 npm run evolution:evaluate:misa
+npm run evolution:tournament:misa
 npm run memory-layer:misa
 npm run export-skills:misa
 npm run repair-ticket:misa -- --dry-run
@@ -126,6 +127,11 @@ Expected result:
   four-question task fit out of the report queue, then adds codebase-first
   clarification and terminology checks without importing a second doc or issue
   workflow;
+- the v0.17 evolution tournament gate makes the self-evolution lane more active
+  without widening production authority: reportable candidates generate multiple
+  local variants, run train/validation/holdout proxy checks, select a
+  Pareto-style draft winner, and retain unsafe auto-publish variants in a
+  rejected ledger;
 - the dry-run precheck passes required-file, governance, damping, and secret
   assignment checks;
 - the minimal test suite passes.
@@ -138,11 +144,11 @@ layer, dry-run learning-loop simulator, and read-only replay fixture suite.
 That is a real launch shape: Misa can rely on the docs, schemas, templates, and
 checks when designing future learning/memory/skill changes.
 
-What this v0.16 does not include is a background runtime service. It does not
+What this v0.17 does not include is a background runtime service. It does not
 start timers, change Discord/Farcaster session mechanics, call model providers,
 post publicly, publish skills, or write Misa memory by itself.
 
-In plain terms, v0.16 is accepted as a local control-theoretic learning engine,
+In plain terms, v0.17 is accepted as a local control-theoretic learning engine,
 not as an autonomous production brain. It can read redacted local evidence,
 compress it, route it, draft safe local artifacts, and explain what should be
 repaired next. It cannot make production decisions by itself.
@@ -153,6 +159,7 @@ repaired next. It cannot make production decisions by itself.
 | Local real-sample simulation | accepted |
 | Memory/skill/case/policy/damping routing | accepted for dry-run use |
 | Minimal L3 draft skill export | accepted as local files only |
+| Active candidate tournament | accepted as local draft optimization only |
 | Repair-ticket generation | accepted as a local Codex work queue |
 | Work-order routing | accepted as primary-agent handoff packets |
 | Automatic memory writes | not enabled |
@@ -164,7 +171,7 @@ The current safety posture is deliberate: positive learning is allowed to move
 forward locally, but every durable or public effect stays behind an explicit
 human approval boundary.
 
-## v0.16 Closed Loop
+## v0.17 Closed Loop
 
 The current closed loop is:
 
@@ -183,6 +190,8 @@ or existing Hermes/Zilliz distillation artifact
 -> route work orders to the primary agent with suggested executor and escalation options
 -> project the same work orders into a LangGraph-compatible interrupt/checkpoint contract
 -> map external OmniAgent-style execution footprints into evidence-only learning events
+-> run reportable candidates through a local evolution tournament
+-> choose the best safe draft variant and retain rejected variants as evidence
 -> validate with schemas, precheck, and tests
 ```
 
@@ -366,6 +375,8 @@ See [docs/signal-candidate-rollup-v0.10.md](./docs/signal-candidate-rollup-v0.10
 for the local signal adapter -> candidate queue -> daily rollup chain.
 See [docs/evolution-candidate-preflight-v0.11.md](./docs/evolution-candidate-preflight-v0.11.md)
 for the candidate preflight -> report queue gate.
+See [docs/evolution-tournament-gate-v0.17.md](./docs/evolution-tournament-gate-v0.17.md)
+for the active candidate tournament loop.
 See [docs/local-session-distillation-v0.12.md](./docs/local-session-distillation-v0.12.md)
 for the local window -> distillate -> learning event intake step.
 See [docs/window-distillation-pipeline-v0.13.md](./docs/window-distillation-pipeline-v0.13.md)
@@ -558,6 +569,14 @@ repository into a general Zilliz memory framework or a Farcaster bot. It is a
 pure local script by default: zero LLM calls, zero external API calls, no
 embedding, no Zilliz writes, no production journal writes, no Misa memory
 writes, and no public sends.
+
+v0.17 adds `npm run evolution:tournament:misa`, a local evolution tournament
+gate. It borrows the useful Nous/Hermes self-evolution optimization shape:
+generate multiple candidate variants, score them on train/validation/holdout
+checks, select a Pareto-style winner, and keep rejected variants as evidence.
+It does not borrow automatic memory writes, Skill installation, LLM-owned route
+decisions, automatic prompt rewrites, code evolution, or continuous production
+self-improvement.
 
 ## Design Principles
 
@@ -771,7 +790,7 @@ Teams should measure the learning plane itself:
 
 ## Status
 
-This is a v0.15 engineering scaffold. It is ready to publish as a public
+This is a v0.17 engineering scaffold. It is ready to publish as a public
 architecture blueprint with local dry-run validation and a runnable Misa
 learning-loop simulation plus read-only replay fixtures and local distillation
 sources.
@@ -797,6 +816,7 @@ Current scope:
 - EvoMap-inspired adaptive candidate gate;
 - signal candidate queue and daily rollup report;
 - candidate preflight and report queue;
+- local evolution tournament gate for multi-variant candidate optimization;
 - source synthesis for Kura, SkillClaw, CSE, and self-evolution references;
 - governance Skill template;
 - local schema validation, dry-run precheck, and minimal tests.

@@ -13,6 +13,7 @@ import { reviewAdaptiveCandidateGate } from "./adaptive-candidate-gate.mjs";
 import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
+import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
 import { evaluateHermesMappingFixtures } from "./hermes-distillation-mapper.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
@@ -40,6 +41,7 @@ const REQUIRED_FILES = [
   "docs/signal-intake-cadence-v0.9.md",
   "docs/signal-candidate-rollup-v0.10.md",
   "docs/evolution-candidate-preflight-v0.11.md",
+  "docs/evolution-tournament-gate-v0.17.md",
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
   "docs/hermes-distillation-mapping-v0.15.md",
@@ -62,6 +64,7 @@ const REQUIRED_FILES = [
   "schemas/adaptive_candidate_gate.schema.json",
   "schemas/signal_intake_contract.schema.json",
   "schemas/signal_candidate_rollup.schema.json",
+  "schemas/evolution_tournament_gate.schema.json",
   "schemas/memory_layer.schema.json",
   "schemas/repair_ticket.schema.json",
   "schemas/work_order_routing.schema.json",
@@ -85,6 +88,7 @@ const REQUIRED_FILES = [
   "examples/adaptive_candidate_gate.example.json",
   "examples/signal_intake_contract.example.json",
   "examples/signal_candidate_rollup.example.json",
+  "examples/evolution_tournament_gate.example.json",
   "examples/memory_layer.example.json",
   "examples/repair_ticket.example.json",
   "examples/work_order_routing.example.json",
@@ -125,6 +129,7 @@ const REQUIRED_FILES = [
   "scripts/hermes-distillation-mapper.mjs",
   "scripts/signal-rollup.mjs",
   "scripts/evolution-evaluator.mjs",
+  "scripts/evolution-tournament.mjs",
   "scripts/memory-layer.mjs",
   "scripts/export-skills.mjs",
   "scripts/repair-ticket.mjs",
@@ -139,6 +144,7 @@ const REQUIRED_FILES = [
   "scripts/lib/hermes-distillation-mapper.mjs",
   "scripts/lib/signal-candidate-rollup.mjs",
   "scripts/lib/evolution-evaluator.mjs",
+  "scripts/lib/evolution-tournament-gate.mjs",
   "scripts/lib/memory-layer.mjs",
   "scripts/lib/repair-ticket.mjs",
   "scripts/lib/work-order-router.mjs",
@@ -402,6 +408,23 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     suppressed: evolutionEvaluator.summary.suppressed_count,
     realChatPreflightStatus: evolutionEvaluator.summary.real_chat_preflight_status,
     violations: evolutionEvaluator.violations
+  }));
+
+  const evolutionTournament = await reviewEvolutionTournamentGate({ repoRoot });
+  checks.push(checkResult("Misa evolution tournament gate check", evolutionTournament.ok, {
+    mode: evolutionTournament.mode,
+    tournaments: evolutionTournament.summary.tournament_count,
+    variants: evolutionTournament.summary.variant_count,
+    winners: evolutionTournament.summary.winner_count,
+    rejectedVariants: evolutionTournament.summary.rejected_variant_count,
+    productionAuthority: evolutionTournament.summary.production_authority,
+    violations: evolutionTournament.violations
+  }));
+  checks.push(await validateJsonData({
+    repoRoot,
+    schemaRel: "schemas/evolution_tournament_gate.schema.json",
+    data: evolutionTournament,
+    name: "validate evolution tournament gate review"
   }));
 
   const memoryLayer = await reviewMemoryLayerComparison({ repoRoot });

@@ -9,6 +9,7 @@ signal adapter
 -> optimization candidate
 -> local preflight
 -> report queue or internal ledger
+-> evolution tournament for reportable candidates
 ```
 
 The purpose is not to judge an outside framework as a whole. The purpose is to
@@ -31,6 +32,11 @@ A candidate can only enter the report queue when:
 
 Passing preflight means "ready to ask Huan whether to change something." It does
 not mean the change is approved.
+
+In v0.17, reportable candidates also feed
+`npm run evolution:tournament:misa`. That second gate generates multiple local
+variants, scores them, and recommends a draft winner. It still does not approve
+publication.
 
 The report queue is capped at the top `3` preflight-passed candidates per daily
 rollup. Other passed candidates remain local candidates and can be surfaced in a

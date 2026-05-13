@@ -24,6 +24,10 @@ import { reviewSignalIntakeContract } from "../scripts/lib/signal-intake-contrac
 import { reviewSignalCandidateRollup } from "../scripts/lib/signal-candidate-rollup.mjs";
 import { evaluateMisaEvolution } from "../scripts/lib/evolution-evaluator.mjs";
 import {
+  evaluateEvolutionTournamentGate,
+  reviewEvolutionTournamentGate
+} from "../scripts/lib/evolution-tournament-gate.mjs";
+import {
   distillLocalMisaSources,
   distillMisaSources
 } from "../scripts/lib/session-distiller.mjs";
@@ -765,6 +769,48 @@ test("v0.11 preflights optimization candidates before reporting to Huan", async 
   assert.equal(result.safety.production_authority, false);
   assert.equal(result.safety.publication_allowed, false);
   assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+});
+
+test("v0.17 tournament gate optimizes candidates without production authority", async () => {
+  const result = await reviewEvolutionTournamentGate();
+  const winnerIds = new Set(result.winner_queue.map((winner) => winner.variant_id));
+
+  assert.equal(result.mode, "evolution-tournament-gate");
+  assert.equal(result.ok, true);
+  assert.equal(result.tournament_policy.route_owner, "qianxuesen");
+  assert.equal(result.tournament_policy.candidate_generation, "multi_variant_local");
+  assert.equal(result.tournament_policy.winner_surface, "draft_recommendation_only");
+  assert.equal(result.control_boundary.optimizer_role, "candidate_layer_only");
+  assert.equal(result.control_boundary.llm_route_decision_allowed, false);
+  assert.equal(result.control_boundary.automatic_promotion_allowed, false);
+  assert.equal(result.summary.tournament_count, result.source.report_queue_count);
+  assert.ok(result.summary.variant_count >= result.summary.tournament_count * 3);
+  assert.equal(result.summary.winner_count, result.summary.tournament_count);
+  assert.ok(result.summary.rejected_variant_count >= result.summary.tournament_count);
+  assert.equal(result.safety.production_authority, false);
+  assert.equal(result.safety.publication_allowed, false);
+  assert.equal(result.safety.automatic_write_allowed, false);
+  assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+  assert.ok(result.algorithm_adaptation.borrowed.includes("multi-variant candidate search"));
+  assert.ok(result.algorithm_adaptation.rejected.includes("automatic memory writes"));
+  assert.ok(result.rejected_variant_ledger.some((item) => (
+    item.blocked_requests.includes("skill_publication")
+  )));
+
+  for (const tournament of result.tournaments) {
+    assert.ok(winnerIds.has(tournament.winner.variant_id));
+    assert.equal(tournament.winner.publication_allowed, false);
+    assert.equal(tournament.winner.production_authority, false);
+    assert.equal(tournament.variants.some((variant) => variant.tournament_status === "rejected"), true);
+
+    const winner = tournament.variants.find((variant) => variant.variant_id === tournament.winner.variant_id);
+    assert.ok(winner);
+    assert.equal(winner.constraints.hard_gate_passed, true);
+    assert.equal(winner.route_target, tournament.route_target);
+    assert.equal(Object.values(winner.safety.live_effects).some(Boolean), false);
+  }
+
+  assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
 });
 
 test("memory layer comparison rejects broad automatic L3 promotion", async () => {
