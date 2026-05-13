@@ -1,0 +1,55 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "judge-source-04",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-13T01:03:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic compact fixture for near-threshold judge calibration.",
+  "summary": "Fourth near-threshold fixture keeps the batch below automatic LLM review strength.",
+  "setpoint": "surface optional critique value without spending an automatic LLM call",
+  "evidence_count": 4,
+  "outcome": "success",
+  "risk_level": "medium",
+  "source_refs": ["fixture:judge-source-04"],
+  "signals": [
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "reusable_workflow",
+    "repeated_failure_pattern",
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["fixture:judge-source-04"],
+    "modified": [],
+    "tool_errors": ["fixture:retry-timeout"]
+  },
+  "turns": [
+    {
+      "speaker": "fixture-policy",
+      "ref": "fixture:judge-source-04:policy",
+      "text": "Do not turn public Farcaster reply pressure into production changes without approval."
+    },
+    {
+      "speaker": "fixture-skill",
+      "ref": "fixture:judge-source-04:skill",
+      "text": "A reusable workflow template should run validate, preflight, simulate, and verify."
+    },
+    {
+      "speaker": "fixture-case",
+      "ref": "fixture:judge-source-04:case",
+      "text": "Repeated timeout failure error retry should stay as case evidence."
+    },
+    {
+      "speaker": "fixture-memory",
+      "ref": "fixture:judge-source-04:memory",
+      "text": "Stable project facts cover local repo, VPS, GitHub, window, and distill context."
+    }
+  ]
+}

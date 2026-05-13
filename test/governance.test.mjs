@@ -859,9 +859,9 @@ test("v0.17 tournament gate can compare source-backed VPS samples without LLM ca
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
 });
 
-test("v0.17 tournament gate picks route-sensitive winners for historical samples", async () => {
+test("v0.17 tournament gate picks route-sensitive winners for compact fixture samples", async () => {
   const result = await reviewEvolutionTournamentGate({
-    sourceDir: "test/fixtures/evolution/history-flowtest-sources"
+    sourceDir: "test/fixtures/evolution/route-sensitive-sources"
   });
   const winnerStrategies = new Set(result.winner_queue.map((winner) => winner.strategy));
 
@@ -886,7 +886,7 @@ test("v0.17 tournament gate picks route-sensitive winners for historical samples
 
 test("near-threshold judge samples stay deterministic but are surfaced", async () => {
   const result = await reviewEvolutionTournamentGate({
-    sourceDir: "test/fixtures/evolution/history-atomic-flowtest-sources",
+    sourceDir: "test/fixtures/evolution/judge-calibration-sources",
     judgeMode: "auto"
   });
 

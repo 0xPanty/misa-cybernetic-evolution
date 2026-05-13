@@ -1,0 +1,62 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "route-source-04",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-13T00:03:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic compact fixture for route-sensitive tournament calibration.",
+  "summary": "Fourth compact fixture gives the batch enough samples for optional review value.",
+  "setpoint": "preserve route-specific winners without importing historical run inventory",
+  "evidence_count": 5,
+  "outcome": "success",
+  "risk_level": "medium",
+  "source_refs": ["fixture:route-source-04"],
+  "signals": [
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "single_failure",
+    "avoid_overreaction",
+    "reusable_workflow",
+    "repeated_failure_pattern",
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["fixture:route-source-04"],
+    "modified": [],
+    "tool_errors": ["fixture:retry-timeout"]
+  },
+  "turns": [
+    {
+      "speaker": "fixture-policy",
+      "ref": "fixture:route-source-04:policy",
+      "text": "Do not publish public Farcaster casts or replies without approval."
+    },
+    {
+      "speaker": "fixture-damping",
+      "ref": "fixture:route-source-04:damping",
+      "text": "A single transient failure should remain damped instead of causing overreaction."
+    },
+    {
+      "speaker": "fixture-skill",
+      "ref": "fixture:route-source-04:skill",
+      "text": "A repeatable workflow template should run validate, preflight, and simulate."
+    },
+    {
+      "speaker": "fixture-case",
+      "ref": "fixture:route-source-04:case",
+      "text": "Repeated timeout failure error retry patterns should become local case evidence."
+    },
+    {
+      "speaker": "fixture-memory",
+      "ref": "fixture:route-source-04:memory",
+      "text": "User preference and stable local repo, VPS, GitHub, window, distill facts should be preserved."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "route-source-01",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic compact fixture for route-sensitive tournament calibration.",
+  "summary": "Compact fixture covering policy, damping, skill, case, and memory routes.",
+  "setpoint": "preserve route-specific winners without importing historical run inventory",
+  "evidence_count": 5,
+  "outcome": "success",
+  "risk_level": "medium",
+  "source_refs": ["fixture:route-source-01"],
+  "signals": [
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "single_failure",
+    "avoid_overreaction",
+    "reusable_workflow",
+    "repeated_failure_pattern",
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["fixture:route-source-01"],
+    "modified": [],
+    "tool_errors": ["fixture:retry-timeout"]
+  },
+  "turns": [
+    {
+      "speaker": "fixture-policy",
+      "ref": "fixture:route-source-01:policy",
+      "text": "Do not publish a Farcaster public reply or cast without approval."
+    },
+    {
+      "speaker": "fixture-damping",
+      "ref": "fixture:route-source-01:damping",
+      "text": "A single transient failure should not overreact into a broader route change."
+    },
+    {
+      "speaker": "fixture-skill",
+      "ref": "fixture:route-source-01:skill",
+      "text": "A reusable workflow template should run validate, preflight, and simulate before reuse."
+    },
+    {
+      "speaker": "fixture-case",
+      "ref": "fixture:route-source-01:case",
+      "text": "Repeated timeout failure error retry behavior should become a local case first."
+    },
+    {
+      "speaker": "fixture-memory",
+      "ref": "fixture:route-source-01:memory",
+      "text": "User prefers concise evidence-first recovery for the local repo, VPS, GitHub, window, and distill flow."
+    }
+  ]
+}
