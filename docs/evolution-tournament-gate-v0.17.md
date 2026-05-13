@@ -78,10 +78,57 @@ and zero-call. It scores:
 This is not a final LLM judge. A future GEPA-style optimizer can be added only
 as an offline optional scorer behind the same contract.
 
+## Real-Sample Input
+
+The tournament can now run over source-backed local artifacts instead of only
+the default candidate preflight queue:
+
+```text
+local source dir or VPS sanitized copy
+-> local distillation
+-> Qianxuesen route
+-> source-backed shadow candidates
+-> tournament
+```
+
+This path still reads local files only. It does not connect to VPS. It is meant
+to compare real route pressure such as `skill`, `case`, and `policy` candidates
+inside the same tournament contract.
+
+## Judge Escalation Gate
+
+The default judge mode is now `advise`, so `llm_api_calls=0`.
+
+Before any model call, the local gate scores whether LLM review is worth it:
+
+- uncertainty: close winners or one winner strategy dominating too much;
+- value: real source-backed/VPS samples or larger batches;
+- conflict: mixed routes such as skill + policy;
+- novelty: new source pressure or high-novelty winners;
+- anomaly: high score with narrow strategy, repeated rejection shape, or low
+  source coverage.
+
+Modes:
+
+- `--judge-mode off`: never ask for review;
+- default `--judge-mode advise`: recommend or skip LLM review, but never call a
+  model;
+- `--judge-mode auto`: call the optional reviewer only when the local escalation
+  gate recommends it;
+- `--judge-mode llm`: force the optional reviewer.
+
+The reviewer can score draft quality and write reflection notes. It cannot
+choose routes, approve winners, publish Skills, write memory, change prompts,
+evolve code, or touch VPS. The deterministic Qianxuesen gate remains the only
+decision authority.
+
 ## Commands
 
 ```bash
 npm run evolution:tournament:misa
+npm run evolution:tournament:misa -- --vps-raw-dir runs/vps-real-conversation-source
+npm run evolution:tournament:misa -- --vps-raw-dir runs/vps-real-conversation-source --judge-mode auto
+npm run evolution:tournament:misa -- --vps-raw-dir runs/vps-real-conversation-source --judge-mode llm
 npm --silent run evolution:tournament:misa -- --json
 ```
 

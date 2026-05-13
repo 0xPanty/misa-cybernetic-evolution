@@ -5,6 +5,9 @@
   "created_at": "2026-05-13T00:00:00.000Z",
   "source": {
     "preflight_mode": "candidate-preflight-local-simulation",
+    "source_kind": "default_candidate_preflight",
+    "source_dir": null,
+    "vps_raw_dir": null,
     "optimization_candidate_count": 3,
     "report_queue_count": 1,
     "tournament_candidate_count": 1
@@ -372,6 +375,84 @@
       "posts_publicly": false
     },
     "blocked_operations": ["persistent_memory_write", "skill_publication"]
+  },
+  "quality_assessment": {
+    "mode": "deterministic_proxy_v1",
+    "llm_api_calls": 0,
+    "overall_quality_score": 0.931,
+    "dimensions": {
+      "route_preservation": 1,
+      "safety_lock": 1,
+      "holdout_strength": 1,
+      "failure_learning": 1,
+      "compactness": 0.98,
+      "source_coverage": 0.333
+    },
+    "notes": [
+      "Quality score is deterministic and local; no model was called.",
+      "The score measures route preservation, safety lock, holdout strength, failure learning, compactness, and source coverage."
+    ]
+  },
+  "judge_escalation": {
+    "mode": "judge_escalation_gate.v1",
+    "recommended": false,
+    "score": 0.153,
+    "threshold": 0.65,
+    "suggested_mode": "deterministic_only",
+    "authority": "llm_cannot_change_route_or_winner",
+    "llm_api_calls": 0,
+    "dimensions": {
+      "uncertainty": 0,
+      "value": 0,
+      "conflict": 0,
+      "novelty": 0.58,
+      "anomaly": 0.66
+    },
+    "signals": {
+      "source_kind": "default_candidate_preflight",
+      "source_backed": false,
+      "real_vps_sample": false,
+      "route_kinds": 1,
+      "route_targets": ["skill"],
+      "winner_strategy_diversity": 1,
+      "winner_strategy_monoculture": false,
+      "close_winner_count": 0,
+      "rejected_reason_cluster_count": 3,
+      "repeated_rejection_pattern": false
+    },
+    "reasons": ["low_source_coverage"],
+    "notes": [
+      "Escalation advice is deterministic and local; it never calls an LLM by itself.",
+      "The deterministic proxy is enough for this sample unless a human forces LLM review."
+    ]
+  },
+  "judge": {
+    "mode": "advise",
+    "status": "advice_only",
+    "llm_api_calls": 0,
+    "model": null,
+    "overall_quality_score": null,
+    "dimensions": {
+      "route_preservation": null,
+      "safety_lock": null,
+      "holdout_strength": null,
+      "failure_learning": null,
+      "compactness": null,
+      "source_coverage": null
+    },
+    "notes": [
+      "Escalation gate does not recommend LLM review for this sample.",
+      "Use --judge-mode auto to call the judge only when the gate recommends it, or --judge-mode llm to force it."
+    ],
+    "suggested_next_experiments": []
+  },
+  "quality_comparison": {
+    "mode": "deterministic_vs_optional_llm",
+    "status": "baseline_only",
+    "deterministic_overall_quality_score": 0.931,
+    "llm_overall_quality_score": null,
+    "delta": null,
+    "decision_authority": "deterministic_qianxuesen_gate_only"
   },
   "warnings": [
     "Tournament winners are draft recommendations only.",

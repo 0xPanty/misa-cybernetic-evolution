@@ -40,6 +40,8 @@ npm run intake:misa
 npm run rollup:misa
 npm run evolution:evaluate:misa
 npm run evolution:tournament:misa
+npm run evolution:tournament:misa -- --vps-raw-dir runs/vps-real-conversation-source
+npm run evolution:tournament:misa -- --vps-raw-dir runs/vps-real-conversation-source --judge-mode auto
 npm run memory-layer:misa
 npm run export-skills:misa
 npm run repair-ticket:misa -- --dry-run
@@ -577,6 +579,15 @@ checks, select a Pareto-style winner, and keep rejected variants as evidence.
 It does not borrow automatic memory writes, Skill installation, LLM-owned route
 decisions, automatic prompt rewrites, code evolution, or continuous production
 self-improvement.
+
+The tournament also accepts local source-backed samples such as
+`--vps-raw-dir runs/vps-real-conversation-source`. Default judge mode is
+`advise`: the local escalation gate says whether LLM review is worth it while
+keeping `llm_api_calls=0`. `--judge-mode auto` calls the optional reviewer only
+when that gate recommends it; `--judge-mode llm` forces the offline comparison
+pass. The reviewer can score and reflect on draft quality, but it cannot change
+routes, approve winners, write memory, install Skills, change prompts, evolve
+code, or touch VPS.
 
 ## Design Principles
 

@@ -18,6 +18,10 @@
     "rejected_variant_ledger",
     "control_boundary",
     "safety",
+    "quality_assessment",
+    "judge_escalation",
+    "judge",
+    "quality_comparison",
     "warnings",
     "violations"
   ],
@@ -37,12 +41,18 @@
       "additionalProperties": false,
       "required": [
         "preflight_mode",
+        "source_kind",
+        "source_dir",
+        "vps_raw_dir",
         "optimization_candidate_count",
         "report_queue_count",
         "tournament_candidate_count"
       ],
       "properties": {
         "preflight_mode": { "type": "string", "minLength": 1 },
+        "source_kind": { "type": "string", "minLength": 1 },
+        "source_dir": { "type": ["string", "null"] },
+        "vps_raw_dir": { "type": ["string", "null"] },
         "optimization_candidate_count": { "type": "integer", "minimum": 0 },
         "report_queue_count": { "type": "integer", "minimum": 0 },
         "tournament_candidate_count": { "type": "integer", "minimum": 0 }
@@ -162,6 +172,10 @@
       }
     },
     "safety": { "$ref": "#/$defs/safety" },
+    "quality_assessment": { "$ref": "#/$defs/quality_assessment" },
+    "judge_escalation": { "$ref": "#/$defs/judge_escalation" },
+    "judge": { "$ref": "#/$defs/judge" },
+    "quality_comparison": { "$ref": "#/$defs/quality_comparison" },
     "warnings": {
       "type": "array",
       "items": { "type": "string" }
@@ -307,6 +321,170 @@
           }
         },
         "safety": { "$ref": "#/$defs/safety" }
+      }
+    },
+    "quality_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "llm_api_calls", "overall_quality_score", "dimensions", "notes"],
+      "properties": {
+        "mode": { "type": "string", "minLength": 1 },
+        "llm_api_calls": { "type": "integer", "minimum": 0 },
+        "overall_quality_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "dimensions": { "$ref": "#/$defs/quality_dimensions" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "quality_dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_preservation",
+        "safety_lock",
+        "holdout_strength",
+        "failure_learning",
+        "compactness",
+        "source_coverage"
+      ],
+      "properties": {
+        "route_preservation": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "safety_lock": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "holdout_strength": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "failure_learning": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "compactness": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "source_coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "judge_escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "recommended",
+        "score",
+        "threshold",
+        "suggested_mode",
+        "authority",
+        "llm_api_calls",
+        "dimensions",
+        "signals",
+        "reasons",
+        "notes"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "judge_escalation_gate.v1" },
+        "recommended": { "type": "boolean" },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "threshold": { "type": "number", "minimum": 0, "maximum": 1 },
+        "suggested_mode": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "const": "llm_cannot_change_route_or_winner" },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "dimensions": { "$ref": "#/$defs/judge_escalation_dimensions" },
+        "signals": { "$ref": "#/$defs/judge_escalation_signals" },
+        "reasons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "judge_escalation_dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uncertainty", "value", "conflict", "novelty", "anomaly"],
+      "properties": {
+        "uncertainty": { "type": "number", "minimum": 0, "maximum": 1 },
+        "value": { "type": "number", "minimum": 0, "maximum": 1 },
+        "conflict": { "type": "number", "minimum": 0, "maximum": 1 },
+        "novelty": { "type": "number", "minimum": 0, "maximum": 1 },
+        "anomaly": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "judge_escalation_signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_backed",
+        "real_vps_sample",
+        "route_kinds",
+        "route_targets",
+        "winner_strategy_diversity",
+        "winner_strategy_monoculture",
+        "close_winner_count",
+        "rejected_reason_cluster_count",
+        "repeated_rejection_pattern"
+      ],
+      "properties": {
+        "source_kind": { "type": "string", "minLength": 1 },
+        "source_backed": { "type": "boolean" },
+        "real_vps_sample": { "type": "boolean" },
+        "route_kinds": { "type": "integer", "minimum": 0 },
+        "route_targets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "winner_strategy_diversity": { "type": "integer", "minimum": 0 },
+        "winner_strategy_monoculture": { "type": "boolean" },
+        "close_winner_count": { "type": "integer", "minimum": 0 },
+        "rejected_reason_cluster_count": { "type": "integer", "minimum": 0 },
+        "repeated_rejection_pattern": { "type": "boolean" }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "status",
+        "llm_api_calls",
+        "model",
+        "overall_quality_score",
+        "dimensions",
+        "notes",
+        "suggested_next_experiments"
+      ],
+      "properties": {
+        "mode": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "llm_api_calls": { "type": "integer", "minimum": 0 },
+        "model": { "type": ["string", "null"] },
+        "overall_quality_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "dimensions": { "$ref": "#/$defs/quality_dimensions" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "suggested_next_experiments": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "quality_comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "status",
+        "deterministic_overall_quality_score",
+        "llm_overall_quality_score",
+        "delta",
+        "decision_authority"
+      ],
+      "properties": {
+        "mode": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "deterministic_overall_quality_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "llm_overall_quality_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "delta": { "type": ["number", "null"], "minimum": -1, "maximum": 1 },
+        "decision_authority": { "type": "string", "const": "deterministic_qianxuesen_gate_only" }
       }
     },
     "eval_case": {

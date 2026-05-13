@@ -1,4 +1,11 @@
+import path from "node:path";
 import { evaluateMisaEvolution } from "./evolution-evaluator.mjs";
+import {
+  distillLocalMisaSources,
+  loadLocalDistillationSources
+} from "./session-distiller.mjs";
+import { simulateLearningCycle } from "./learning-loop.mjs";
+import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
 
 const NOUS_SELF_EVOLUTION_COMMIT = "4693c8f0eed21e39f065c6f38d98d2a403a04095";
 const MAX_VARIANTS_PER_CANDIDATE = 4;
@@ -31,6 +38,8 @@ const LOCAL_COMMAND_ALLOWLIST = [
   "npm run rollup:misa",
   "npm run evolution:evaluate:misa",
   "npm run evolution:tournament:misa",
+  "npm run memory-layer:misa",
+  "npm run repair-ticket:misa",
   "npm run validate:schemas",
   "npm run precheck",
   "npm test"
@@ -38,6 +47,10 @@ const LOCAL_COMMAND_ALLOWLIST = [
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
 }
 
 function uniqueStrings(values) {
@@ -77,6 +90,192 @@ function reportableCandidates(evolution) {
   return evolution.report_queue
     .map((report) => byId.get(report.candidate_id))
     .filter(Boolean);
+}
+
+function routeValue(route) {
+  return {
+    skill: 0.9,
+    memory: 0.84,
+    case: 0.82,
+    policy: 0.8,
+    damping: 0.58,
+    ignore: 0
+  }[route] ?? 0.2;
+}
+
+function riskPenalty(riskLevel) {
+  return {
+    low: 0,
+    medium: 0.04,
+    high: 0.08,
+    critical: 0.16
+  }[riskLevel] ?? 0.06;
+}
+
+function noLiveEffects(effects) {
+  return !Object.values(effects ?? {}).some(Boolean);
+}
+
+async function loadSourceBackedDistillation({ repoRoot, sourceDir, vpsRawDir }) {
+  const sources = vpsRawDir
+    ? await loadVpsConversationSources({
+        rawDir: path.isAbsolute(vpsRawDir) ? vpsRawDir : path.join(repoRoot, vpsRawDir)
+      })
+    : await loadLocalDistillationSources({
+        repoRoot,
+        sourceDir: sourceDir ?? path.join("examples", "misa-distillation")
+      });
+
+  const distillation = await distillLocalMisaSources({
+    repoRoot,
+    sources,
+    requireTemplateCoverage: !sourceDir && !vpsRawDir
+  });
+
+  return { sources, distillation };
+}
+
+function scoreTraceCandidate(trace) {
+  const evidenceScore = Math.min(trace.observe.evidence_count ?? 0, 4) / 4;
+  const routeScore = routeValue(trace.route.target);
+  const safetyScore = noLiveEffects(trace.result.live_effects) && trace.candidate_review.publication_allowed === false ? 1 : 0;
+  const stateScore = trace.candidate_review.state === "staged" ? 1 : 0.65;
+  return round(
+    evidenceScore * 0.32
+      + routeScore * 0.28
+      + safetyScore * 0.26
+      + stateScore * 0.14
+      - riskPenalty(trace.observe.risk_level)
+  );
+}
+
+function candidateFromTrace(trace) {
+  const passed = trace.verification.passed
+    && trace.result.positive_value
+    && noLiveEffects(trace.result.live_effects)
+    && trace.route.target !== "ignore";
+  const commands = uniqueStrings([
+    ...trace.verification.commands,
+    "npm run memory-layer:misa",
+    "npm run repair-ticket:misa",
+    "npm run evolution:tournament:misa",
+    "npm run validate:schemas",
+    "npm run precheck",
+    "npm test"
+  ]);
+
+  return {
+    candidate_id: `source-${safeId(trace.source_event_id)}`,
+    source_event_id: trace.source_event_id,
+    route_target: trace.route.target,
+    queue_state: passed ? "ready_for_daily_rollup" : "watch_for_more_evidence",
+    proposed_optimization: {
+      action: passed ? "report_to_huan_for_approval" : "do_not_report_yet",
+      reason: trace.proposed_change.summary,
+      requires_huan_approval: true,
+      production_authority: false
+    },
+    local_preflight: {
+      status: passed ? "preflight_passed" : "held_for_more_evidence",
+      score: scoreTraceCandidate(trace),
+      checks: [
+        {
+          id: "source_trace_replayed",
+          ok: Boolean(trace.source_event_id),
+          reason: "The candidate must preserve the source event id."
+        },
+        {
+          id: "qianxuesen_route_selected",
+          ok: trace.route.target !== "ignore",
+          reason: "The source-backed candidate must stay on a known Qianxuesen route."
+        },
+        {
+          id: "no_live_effects",
+          ok: noLiveEffects(trace.result.live_effects),
+          reason: "Source-backed tournament candidates remain local shadow recommendations only."
+        }
+      ],
+      commands: passed ? commands : [],
+      simulated_before_report: passed,
+      report_to_huan: passed
+    },
+    candidate_hygiene: {
+      reportable: passed,
+      verdict: passed ? "passes_source_backed_shadow_gate" : "hold_or_reduce_scope"
+    },
+    evidence: {
+      evidence_count: trace.observe.evidence_count,
+      risk_level: trace.observe.risk_level,
+      redaction_status: trace.observe.redaction_status,
+      normalized_signals: trace.observe.signals
+    },
+    prediction: passed ? "safe_to_report_after_local_preflight" : "hold_until_more_evidence",
+    label: passed ? "source_backed_ready" : "source_backed_hold",
+    trajectory: [
+      "source_loader",
+      "local_distillation",
+      "qianxuesen_route",
+      `candidate:${safeId(trace.source_event_id)}`,
+      passed ? "report_queue" : "internal_only"
+    ],
+    safety: commonSafety()
+  };
+}
+
+async function evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir }) {
+  const { sources, distillation } = await loadSourceBackedDistillation({ repoRoot, sourceDir, vpsRawDir });
+  const traces = distillation.learning_events.map((event) => simulateLearningCycle(event));
+  const candidates = traces.map(candidateFromTrace);
+  const reportQueue = candidates
+    .filter((candidate) => candidate.local_preflight.report_to_huan)
+    .sort((a, b) => b.local_preflight.score - a.local_preflight.score)
+    .map((candidate, index) => ({
+      report_id: `report-${candidate.source_event_id}`,
+      rank: index + 1,
+      candidate_id: candidate.candidate_id,
+      source_event_id: candidate.source_event_id,
+      route_target: candidate.route_target,
+      score: candidate.local_preflight.score,
+      hygiene_verdict: candidate.candidate_hygiene.verdict,
+      clarification_status: "resolved_by_source_trace",
+      next_unresolved_question: null,
+      terminology_status: "aligned",
+      summary: candidate.proposed_optimization.reason,
+      ask_huan: "Approve or reject this source-backed optimization before any durable change.",
+      allowed_next_step: "human_review_only",
+      report_policy: "source_backed_shadow_candidates",
+      production_authority: false
+    }));
+  const violations = [...distillation.violations];
+
+  if (sources.length === 0) {
+    violations.push("Source-backed tournament found no local sources.");
+  }
+  if (reportQueue.length === 0) {
+    violations.push("Source-backed tournament produced no reportable candidates.");
+  }
+
+  return {
+    mode: "source-backed-candidate-preflight",
+    ok: violations.length === 0,
+    source_kind: vpsRawDir ? "vps_sanitized_conversation_artifacts" : "local_distillation_sources",
+    source_dir: sourceDir ?? null,
+    vps_raw_dir: vpsRawDir ?? null,
+    summary: {
+      source_count: sources.length,
+      optimization_candidate_count: candidates.length,
+      report_queue_count: reportQueue.length
+    },
+    optimization_candidates: candidates,
+    report_queue: reportQueue,
+    hold_queue: candidates.filter((candidate) => candidate.local_preflight.status !== "preflight_passed"),
+    experience_ledger: [],
+    safety: commonSafety(),
+    warnings: [
+      "Source-backed tournament input reads local artifacts only; it does not update VPS or production services."
+    ],
+    violations
+  };
 }
 
 function buildEvalCases(candidate) {
@@ -489,11 +688,454 @@ export function evaluateEvolutionTournamentGate(result) {
   return violations;
 }
 
+function average(values) {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function buildQualityAssessment({ tournaments, source }) {
+  const winners = tournaments
+    .map((tournament) => tournament.variants.find((variant) => variant.variant_id === tournament.winner.variant_id))
+    .filter(Boolean);
+  const variants = tournaments.flatMap((tournament) => tournament.variants);
+  const rejected = variants.filter((variant) => variant.tournament_status === "rejected");
+  const routePreservation = winners.length === 0
+    ? 0
+    : average(winners.map((winner) => winner.constraints.checks.route_preserved ? 1 : 0));
+  const safetyLock = winners.length === 0
+    ? 0
+    : average(winners.map((winner) => (
+      winner.constraints.hard_gate_passed
+      && winner.safety.production_authority === false
+      && winner.safety.publication_allowed === false
+      && noLiveEffects(winner.safety.live_effects)
+    ) ? 1 : 0));
+  const holdout = average(winners.map((winner) => winner.scores.holdout));
+  const compactness = average(winners.map((winner) => winner.scores.compactness));
+  const failureLearning = tournaments.length === 0
+    ? 0
+    : Math.min(1, rejected.length / tournaments.length);
+  const sampleCoverage = source.optimization_candidate_count === 0
+    ? 0
+    : Math.min(1, source.tournament_candidate_count / source.optimization_candidate_count);
+  const overall = round(
+    routePreservation * 0.22
+      + safetyLock * 0.24
+      + holdout * 0.2
+      + failureLearning * 0.14
+      + compactness * 0.1
+      + sampleCoverage * 0.1
+  );
+
+  return {
+    mode: "deterministic_proxy_v1",
+    llm_api_calls: 0,
+    overall_quality_score: overall,
+    dimensions: {
+      route_preservation: round(routePreservation),
+      safety_lock: round(safetyLock),
+      holdout_strength: round(holdout),
+      failure_learning: round(failureLearning),
+      compactness: round(compactness),
+      source_coverage: round(sampleCoverage)
+    },
+    notes: [
+      "Quality score is deterministic and local; no model was called.",
+      "The score measures route preservation, safety lock, holdout strength, failure learning, compactness, and source coverage."
+    ]
+  };
+}
+
+function closeWinnerMargins(tournaments) {
+  return tournaments
+    .map((tournament) => tournament.variants
+      .filter((variant) => variant.constraints.hard_gate_passed)
+      .sort((a, b) => b.scores.composite - a.scores.composite)
+      .slice(0, 2))
+    .filter((top) => top.length === 2)
+    .map(([winner, runnerUp]) => round(winner.scores.composite - runnerUp.scores.composite));
+}
+
+function rejectionReasonClusters(rejectedLedger) {
+  return uniqueStrings((rejectedLedger ?? []).flatMap((item) => [
+    ...(item.violations ?? []),
+    ...(item.blocked_requests ?? []).map((request) => `blocked:${request}`)
+  ]));
+}
+
+function winnerNoveltyAverage(result) {
+  const variantsById = new Map(result.tournaments
+    .flatMap((tournament) => tournament.variants)
+    .map((variant) => [variant.variant_id, variant]));
+  return average(result.winner_queue.map((winner) => (
+    variantsById.get(winner.variant_id)?.scores.novelty ?? 0
+  )));
+}
+
+function buildJudgeEscalationGate(result, { threshold = 0.65 } = {}) {
+  const normalizedThreshold = clamp01(threshold);
+  const routes = Object.keys(result.summary.route_counts ?? {})
+    .filter((route) => (result.summary.route_counts[route] ?? 0) > 0);
+  const routeSet = new Set(routes);
+  const winnerStrategies = uniqueStrings(result.winner_queue.map((winner) => winner.strategy));
+  const sourceKind = result.source.source_kind ?? "default_candidate_preflight";
+  const sourceBacked = sourceKind !== "default_candidate_preflight";
+  const realVpsSample = sourceKind === "vps_sanitized_conversation_artifacts";
+  const margins = closeWinnerMargins(result.tournaments);
+  const closeWinnerCount = margins.filter((margin) => margin <= 0.03).length;
+  const rejectionClusters = rejectionReasonClusters(result.rejected_variant_ledger);
+  const winnerStrategyMonoculture = winnerStrategies.length <= 1 && result.summary.winner_count >= 2;
+  const highScoreNarrowStrategy = Boolean(
+    winnerStrategyMonoculture
+      && result.quality_assessment.overall_quality_score >= 0.9
+      && result.summary.winner_count >= 2
+  );
+  const lowSourceCoverage = result.quality_assessment.dimensions.source_coverage < 0.5;
+  const repeatedRejectionPattern = Boolean(
+    result.summary.rejected_variant_count >= 3
+      && rejectionClusters.length > 0
+      && rejectionClusters.length <= 2
+  );
+  const policySkillPressure = routeSet.has("policy") && routeSet.has("skill");
+  const policyMemoryPressure = routeSet.has("policy") && routeSet.has("memory");
+  const mixedRoutePressure = routes.length >= 3;
+  const largeBatchReview = result.summary.tournament_count >= 20;
+
+  const uncertainty = clamp01(Math.max(
+    closeWinnerCount / Math.max(1, result.summary.tournament_count),
+    winnerStrategyMonoculture ? 0.55 : 0,
+    highScoreNarrowStrategy ? 0.72 : 0
+  ));
+  const value = clamp01(Math.max(
+    realVpsSample ? 0.82 : 0,
+    sourceBacked ? 0.62 : 0,
+    largeBatchReview ? 0.78 : 0,
+    routeSet.has("policy") ? 0.58 : 0,
+    result.summary.tournament_count >= 5 ? 0.45 : 0
+  ));
+  const conflict = clamp01(Math.max(
+    routes.length >= 5 ? 0.9 : 0,
+    mixedRoutePressure ? 0.68 : 0,
+    policySkillPressure ? 0.74 : 0,
+    policyMemoryPressure ? 0.7 : 0
+  ));
+  const novelty = clamp01(Math.max(
+    sourceBacked ? 0.46 : 0,
+    routes.length >= 4 ? 0.62 : 0,
+    winnerNoveltyAverage(result)
+  ));
+  const anomaly = clamp01(Math.max(
+    highScoreNarrowStrategy ? 0.82 : 0,
+    repeatedRejectionPattern ? 0.58 : 0,
+    lowSourceCoverage ? 0.66 : 0
+  ));
+  const score = round(
+    uncertainty * 0.3
+      + value * 0.25
+      + conflict * 0.2
+      + novelty * 0.15
+      + anomaly * 0.1
+  );
+  const reasons = uniqueStrings([
+    closeWinnerCount > 0 ? "close_variant_scores" : null,
+    winnerStrategyMonoculture ? "winner_strategy_monoculture" : null,
+    highScoreNarrowStrategy ? "high_score_but_narrow_strategy" : null,
+    realVpsSample ? "real_vps_sample" : null,
+    sourceBacked && !realVpsSample ? "source_backed_sample" : null,
+    mixedRoutePressure ? "mixed_route_pressure" : null,
+    policySkillPressure ? "policy_skill_pressure" : null,
+    policyMemoryPressure ? "policy_memory_pressure" : null,
+    largeBatchReview ? "large_batch_review" : null,
+    repeatedRejectionPattern ? "repeated_rejection_pattern" : null,
+    lowSourceCoverage ? "low_source_coverage" : null
+  ]);
+
+  return {
+    mode: "judge_escalation_gate.v1",
+    recommended: score >= normalizedThreshold,
+    score,
+    threshold: normalizedThreshold,
+    suggested_mode: score >= normalizedThreshold ? "auto_or_llm_review_only" : "deterministic_only",
+    authority: "llm_cannot_change_route_or_winner",
+    llm_api_calls: 0,
+    dimensions: {
+      uncertainty: round(uncertainty),
+      value: round(value),
+      conflict: round(conflict),
+      novelty: round(novelty),
+      anomaly: round(anomaly)
+    },
+    signals: {
+      source_kind: sourceKind,
+      source_backed: sourceBacked,
+      real_vps_sample: realVpsSample,
+      route_kinds: routes.length,
+      route_targets: routes,
+      winner_strategy_diversity: winnerStrategies.length,
+      winner_strategy_monoculture: winnerStrategyMonoculture,
+      close_winner_count: closeWinnerCount,
+      rejected_reason_cluster_count: rejectionClusters.length,
+      repeated_rejection_pattern: repeatedRejectionPattern
+    },
+    reasons,
+    notes: [
+      "Escalation advice is deterministic and local; it never calls an LLM by itself.",
+      score >= normalizedThreshold
+        ? "The sample is worth optional LLM review for reflection, not for route or winner authority."
+        : "The deterministic proxy is enough for this sample unless a human forces LLM review."
+    ]
+  };
+}
+
+function buildJudgePayload(result) {
+  return {
+    mode: result.mode,
+    source: result.source,
+    summary: result.summary,
+    quality_assessment: result.quality_assessment,
+    judge_escalation: result.judge_escalation,
+    tournaments: result.tournaments.map((tournament) => ({
+      tournament_id: tournament.tournament_id,
+      route_target: tournament.route_target,
+      winner: tournament.winner,
+      loser_ledger: tournament.loser_ledger,
+      variants: tournament.variants.map((variant) => ({
+        variant_id: variant.variant_id,
+        strategy: variant.strategy,
+        status: variant.tournament_status,
+        scores: variant.scores,
+        violations: variant.constraints.violations,
+        blocked_requests: variant.constraints.blocked_requests,
+        proposed_change: variant.proposed_change.slice(0, 600)
+      }))
+    }))
+  };
+}
+
+function normalizeJudgeResponse(raw, { mode, model, calls }) {
+  const dimensions = raw?.dimensions && typeof raw.dimensions === "object"
+    ? raw.dimensions
+    : {};
+  const boundedScore = typeof raw?.overall_quality_score === "number"
+    ? Math.min(1, Math.max(0, raw.overall_quality_score))
+    : null;
+
+  return {
+    mode,
+    status: "completed",
+    llm_api_calls: calls,
+    model,
+    overall_quality_score: boundedScore,
+    dimensions: {
+      route_preservation: typeof dimensions.route_preservation === "number" ? round(dimensions.route_preservation) : null,
+      safety_lock: typeof dimensions.safety_lock === "number" ? round(dimensions.safety_lock) : null,
+      holdout_strength: typeof dimensions.holdout_strength === "number" ? round(dimensions.holdout_strength) : null,
+      failure_learning: typeof dimensions.failure_learning === "number" ? round(dimensions.failure_learning) : null,
+      compactness: typeof dimensions.compactness === "number" ? round(dimensions.compactness) : null,
+      source_coverage: typeof dimensions.source_coverage === "number" ? round(dimensions.source_coverage) : null
+    },
+    notes: uniqueStrings(raw?.notes ?? raw?.reflection_notes ?? []),
+    suggested_next_experiments: uniqueStrings(raw?.suggested_next_experiments ?? [])
+  };
+}
+
+async function callOpenAiCompatibleJudge(payload, { model, apiKey, baseUrl }) {
+  const response = await fetch(baseUrl ?? "https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are an offline reviewer for a Qianxuesen control-theory learning gate.",
+            "Return JSON only. You may score and reflect, but you cannot approve production changes.",
+            "Keep route ownership with Qianxuesen and preserve no-live-effect boundaries."
+          ].join(" ")
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Score the tournament result for draft quality. Do not change the winner.",
+            expected_json: {
+              overall_quality_score: "number 0..1",
+              dimensions: {
+                route_preservation: "number 0..1",
+                safety_lock: "number 0..1",
+                holdout_strength: "number 0..1",
+                failure_learning: "number 0..1",
+                compactness: "number 0..1",
+                source_coverage: "number 0..1"
+              },
+              notes: ["short actionable reflections"],
+              suggested_next_experiments: ["local-only experiments"]
+            },
+            payload
+          })
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`judge request failed: ${response.status} ${await response.text()}`);
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("judge response did not include message content");
+  }
+  return JSON.parse(content);
+}
+
+function emptyJudgeDimensions() {
+  return {
+    route_preservation: null,
+    safety_lock: null,
+    holdout_strength: null,
+    failure_learning: null,
+    compactness: null,
+    source_coverage: null
+  };
+}
+
+function skippedJudge({ mode, status, model = null, notes, suggestedNextExperiments = [] }) {
+  return {
+    mode,
+    status,
+    llm_api_calls: 0,
+    model,
+    overall_quality_score: null,
+    dimensions: emptyJudgeDimensions(),
+    notes,
+    suggested_next_experiments: suggestedNextExperiments
+  };
+}
+
+async function runOptionalJudge(result, {
+  judgeMode = "advise",
+  judgeModel = process.env.MISA_EVOLUTION_JUDGE_MODEL ?? "gpt-4.1-mini",
+  judgeApiKey = process.env.MISA_EVOLUTION_JUDGE_API_KEY ?? process.env.OPENAI_API_KEY,
+  judgeBaseUrl = process.env.MISA_EVOLUTION_JUDGE_BASE_URL,
+  judgeEscalation,
+  llmJudge
+} = {}) {
+  if (judgeMode === "off") {
+    return skippedJudge({
+      mode: "off",
+      status: "not_requested",
+      notes: ["LLM judge is off; deterministic quality score is the comparison baseline."]
+    });
+  }
+
+  if (judgeMode === "advise") {
+    return skippedJudge({
+      mode: "advise",
+      status: "advice_only",
+      notes: [
+        judgeEscalation?.recommended
+          ? "Escalation gate recommends optional LLM review, but advise mode does not call a model."
+          : "Escalation gate does not recommend LLM review for this sample.",
+        "Use --judge-mode auto to call the judge only when the gate recommends it, or --judge-mode llm to force it."
+      ],
+      suggestedNextExperiments: judgeEscalation?.recommended
+        ? ["Run --judge-mode auto on the same local sample if model-review notes are worth the cost."]
+        : []
+    });
+  }
+
+  if (judgeMode === "auto" && !judgeEscalation?.recommended) {
+    return skippedJudge({
+      mode: "auto",
+      status: "skipped_not_recommended",
+      model: judgeModel,
+      notes: ["Escalation gate did not recommend LLM review; auto mode stayed at zero calls."]
+    });
+  }
+
+  if (!["auto", "llm"].includes(judgeMode)) {
+    return skippedJudge({
+      mode: judgeMode,
+      status: "unsupported_mode",
+      notes: [`Unsupported judge mode: ${judgeMode}`]
+    });
+  }
+
+  if (!llmJudge && !judgeApiKey) {
+    return skippedJudge({
+      mode: judgeMode,
+      status: "skipped_missing_api_key",
+      model: judgeModel,
+      notes: ["Set MISA_EVOLUTION_JUDGE_API_KEY or OPENAI_API_KEY to run the optional offline LLM judge."]
+    });
+  }
+
+  try {
+    const payload = buildJudgePayload(result);
+    const raw = llmJudge
+      ? await llmJudge(payload)
+      : await callOpenAiCompatibleJudge(payload, {
+          model: judgeModel,
+          apiKey: judgeApiKey,
+          baseUrl: judgeBaseUrl
+        });
+    return normalizeJudgeResponse(raw, { mode: judgeMode, model: judgeModel, calls: 1 });
+  } catch (error) {
+    return {
+      mode: judgeMode,
+      status: "failed",
+      llm_api_calls: llmJudge ? 0 : 1,
+      model: judgeModel,
+      overall_quality_score: null,
+      dimensions: emptyJudgeDimensions(),
+      notes: [`LLM judge failed: ${error.message}`],
+      suggested_next_experiments: []
+    };
+  }
+}
+
+function buildQualityComparison(qualityAssessment, judge) {
+  const llmScore = judge.status === "completed" ? judge.overall_quality_score : null;
+  const baselineOnly = ["off", "advise"].includes(judge.mode)
+    || judge.status === "skipped_not_recommended";
+  return {
+    mode: "deterministic_vs_optional_llm",
+    status: judge.status === "completed"
+      ? "completed"
+      : baselineOnly
+        ? "baseline_only"
+        : "llm_not_available",
+    deterministic_overall_quality_score: qualityAssessment.overall_quality_score,
+    llm_overall_quality_score: llmScore,
+    delta: typeof llmScore === "number"
+      ? round(llmScore - qualityAssessment.overall_quality_score)
+      : null,
+    decision_authority: "deterministic_qianxuesen_gate_only"
+  };
+}
+
 export async function reviewEvolutionTournamentGate({
   repoRoot = process.cwd(),
-  now = new Date("2026-05-13T00:00:00Z")
+  now = new Date("2026-05-13T00:00:00Z"),
+  sourceDir,
+  vpsRawDir,
+  judgeMode = "advise",
+  judgeModel,
+  judgeApiKey,
+  judgeBaseUrl,
+  judgeEscalationThreshold,
+  llmJudge
 } = {}) {
-  const preflight = await evaluateMisaEvolution({ repoRoot });
+  const preflight = sourceDir || vpsRawDir
+    ? await evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir })
+    : await evaluateMisaEvolution({ repoRoot });
   const candidates = reportableCandidates(preflight);
   const tournaments = candidates.map(buildTournament);
   const variantList = tournaments.flatMap((tournament) => tournament.variants);
@@ -511,6 +1153,9 @@ export async function reviewEvolutionTournamentGate({
     created_at: now.toISOString(),
     source: {
       preflight_mode: preflight.mode,
+      source_kind: preflight.source_kind ?? "default_candidate_preflight",
+      source_dir: preflight.source_dir ?? null,
+      vps_raw_dir: preflight.vps_raw_dir ?? null,
       optimization_candidate_count: preflight.summary.optimization_candidate_count,
       report_queue_count: preflight.summary.report_queue_count,
       tournament_candidate_count: candidates.length
@@ -568,10 +1213,30 @@ export async function reviewEvolutionTournamentGate({
       promotion_surface: "none"
     },
     safety: commonSafety(),
+    quality_assessment: null,
+    judge_escalation: null,
+    judge: null,
+    quality_comparison: null,
     warnings,
     violations: []
   };
 
+  result.quality_assessment = buildQualityAssessment({
+    tournaments,
+    source: result.source
+  });
+  result.judge_escalation = buildJudgeEscalationGate(result, {
+    threshold: judgeEscalationThreshold ?? 0.65
+  });
+  result.judge = await runOptionalJudge(result, {
+    judgeMode,
+    judgeModel,
+    judgeApiKey,
+    judgeBaseUrl,
+    judgeEscalation: result.judge_escalation,
+    llmJudge
+  });
+  result.quality_comparison = buildQualityComparison(result.quality_assessment, result.judge);
   result.violations = evaluateEvolutionTournamentGate(result);
   result.ok = preflight.ok && result.violations.length === 0;
   return result;

@@ -791,6 +791,14 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.safety.publication_allowed, false);
   assert.equal(result.safety.automatic_write_allowed, false);
   assert.equal(Object.values(result.safety.live_effects).some(Boolean), false);
+  assert.equal(result.judge_escalation.mode, "judge_escalation_gate.v1");
+  assert.equal(result.judge_escalation.recommended, false);
+  assert.equal(result.judge_escalation.llm_api_calls, 0);
+  assert.equal(result.judge.mode, "advise");
+  assert.equal(result.judge.status, "advice_only");
+  assert.equal(result.judge.llm_api_calls, 0);
+  assert.equal(result.quality_assessment.llm_api_calls, 0);
+  assert.equal(result.quality_comparison.status, "baseline_only");
   assert.ok(result.algorithm_adaptation.borrowed.includes("multi-variant candidate search"));
   assert.ok(result.algorithm_adaptation.rejected.includes("automatic memory writes"));
   assert.ok(result.rejected_variant_ledger.some((item) => (
@@ -811,6 +819,110 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   }
 
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("v0.17 tournament gate can compare source-backed VPS samples without LLM calls", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    vpsRawDir: "runs/vps-real-conversation-source"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.source.source_kind, "vps_sanitized_conversation_artifacts");
+  assert.equal(result.source.vps_raw_dir, "runs/vps-real-conversation-source");
+  assert.equal(result.summary.tournament_count, 3);
+  assert.equal(result.summary.route_counts.skill, 1);
+  assert.equal(result.summary.route_counts.case, 1);
+  assert.equal(result.summary.route_counts.policy, 1);
+  assert.equal(result.judge_escalation.recommended, true);
+  assert.ok(result.judge_escalation.score >= result.judge_escalation.threshold);
+  assert.ok(result.judge_escalation.reasons.includes("real_vps_sample"));
+  assert.ok(result.judge_escalation.reasons.includes("winner_strategy_monoculture"));
+  assert.equal(result.judge.mode, "advise");
+  assert.equal(result.judge.status, "advice_only");
+  assert.equal(result.judge.llm_api_calls, 0);
+  assert.equal(result.quality_assessment.llm_api_calls, 0);
+  assert.ok(result.quality_assessment.overall_quality_score > 0.8);
+  assert.equal(result.quality_comparison.decision_authority, "deterministic_qianxuesen_gate_only");
+  assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("auto judge stays at zero calls when escalation gate says deterministic is enough", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    judgeMode: "auto"
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.judge_escalation.recommended, false);
+  assert.equal(result.judge.mode, "auto");
+  assert.equal(result.judge.status, "skipped_not_recommended");
+  assert.equal(result.judge.llm_api_calls, 0);
+  assert.equal(result.quality_comparison.status, "baseline_only");
+});
+
+test("auto judge calls the optional reviewer only when escalation gate recommends it", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    vpsRawDir: "runs/vps-real-conversation-source",
+    judgeMode: "auto",
+    judgeModel: "mock-judge",
+    llmJudge: async () => ({
+      overall_quality_score: 0.89,
+      dimensions: {
+        route_preservation: 1,
+        safety_lock: 1,
+        holdout_strength: 0.88,
+        failure_learning: 0.84,
+        compactness: 0.74,
+        source_coverage: 1
+      },
+      notes: ["Mock judge adds reflection only."],
+      suggested_next_experiments: ["Add one mixed-route holdout sample."]
+    })
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.judge_escalation.recommended, true);
+  assert.equal(result.judge.mode, "auto");
+  assert.equal(result.judge.status, "completed");
+  assert.equal(result.judge.llm_api_calls, 1);
+  assert.equal(result.quality_comparison.status, "completed");
+  assert.equal(result.control_boundary.llm_route_decision_allowed, false);
+});
+
+test("optional LLM judge adds comparison data without changing the deterministic winner", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    vpsRawDir: "runs/vps-real-conversation-source",
+    judgeMode: "llm",
+    judgeModel: "mock-judge",
+    llmJudge: async () => ({
+      overall_quality_score: 0.91,
+      dimensions: {
+        route_preservation: 1,
+        safety_lock: 1,
+        holdout_strength: 0.9,
+        failure_learning: 0.88,
+        compactness: 0.78,
+        source_coverage: 1
+      },
+      notes: ["Mock judge sees clean route preservation and useful loser evidence."],
+      suggested_next_experiments: ["Run one more local holdout with mixed skill-policy signals."]
+    })
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.judge.mode, "llm");
+  assert.equal(result.judge.status, "completed");
+  assert.equal(result.judge.llm_api_calls, 1);
+  assert.equal(result.judge.model, "mock-judge");
+  assert.equal(result.quality_comparison.status, "completed");
+  assert.equal(result.quality_comparison.llm_overall_quality_score, 0.91);
+  assert.equal(result.control_boundary.llm_route_decision_allowed, false);
+
+  for (const tournament of result.tournaments) {
+    assert.equal(tournament.winner.production_authority, false);
+    assert.equal(tournament.winner.publication_allowed, false);
+    const winner = tournament.variants.find((variant) => variant.variant_id === tournament.winner.variant_id);
+    assert.equal(winner.route_target, tournament.route_target);
+  }
 });
 
 test("memory layer comparison rejects broad automatic L3 promotion", async () => {

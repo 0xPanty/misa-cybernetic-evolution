@@ -26,7 +26,7 @@ noise are also valid outputs.
 | SkillClaw | session evidence can evolve skills after real interaction | borrow the summarize/aggregate/verify shape | proxy integration, daemon evolution, auto skill publication |
 | GenericAgent | completed work can be crystallized into small reusable skills; active context should maximize information density | add a skill candidate index, bounded self-repair draft loop, and context-density gate over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes, production publication, desktop/browser/ADB live control |
 | EvoMap/evolver | self-evolution benefits from wide mutation candidates, adaptive strategy switching, hard/soft failure classification, suppression, and blast-radius gates | add a local adaptive candidate gate: generate more candidates/signals first, filter with safety gates, verify surviving candidates, keep production hard-locked | daemon loop, Hub worker execution, marketplace/ATP auto-delivery, host-runtime `sessions_spawn` authority, automatic production writes |
-| NousResearch/hermes-agent-self-evolution | self-evolution should compare multiple variants with train/validation/holdout data and Pareto-style scoring | add a local tournament gate after Qianxuesen preflight: generate variants, score them, choose a draft-only winner, and record rejected variants as evidence | automatic Skill writes, memory writes, LLM-owned route decisions, prompt/code auto-evolution, continuous production loop |
+| NousResearch/hermes-agent-self-evolution | self-evolution should compare multiple variants with train/validation/holdout data and Pareto-style scoring | add a local tournament gate after Qianxuesen preflight: generate variants, score them, choose a draft-only winner, record rejected variants as evidence, and use a local escalation gate to decide whether optional LLM review is worth the cost | automatic Skill writes, memory writes, LLM-owned route decisions, prompt/code auto-evolution, continuous production loop |
 | Cybernetic Systems Engineering | control/data/state surfaces and minimal control input | use surface language only where it prevents real confusion | a heavy approval process for every small change |
 | self-evolution | simple categories and experience summary template | use plain route labels and positive-value checks | Heartbeat/timer learning or unimplemented scripts |
 
@@ -44,7 +44,9 @@ noise are also valid outputs.
    authority remains blocked until explicit human approval and separate live
    rollout evidence exist.
 8. v0.17 may run aggressive candidate tournaments, but only inside the local
-   draft sandbox; winner selection is not publication approval.
+   draft sandbox; winner selection is not publication approval. Optional LLM
+   review is gated by deterministic local escalation advice and cannot change
+   routes or winners.
 
 ## Route Model
 
