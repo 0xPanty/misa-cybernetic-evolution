@@ -908,7 +908,7 @@
         {
           "record_id": "vm-audit-log-bridge-c94091e4c147b96f",
           "collection": "misa_audit_memory",
-          "text": "Audit log bridge-c94091e4c147b96f\n\nRead-only audit record for work-order routing and action-policy reconstruction.",
+          "text": "Memory kind: audit_log.\n\nRetrieval role: audit-only execution log.\n\nPrimary for: audit lookup and evidence reconstruction.\n\nNot primary for: repair planning, policy enforcement, persona memory.\n\nAuthority: audit_only.\n\nCollection: misa_audit_memory.\n\nOriginal source id: bridge-c94091e4c147b96f.\n\nAudit log bridge-c94091e4c147b96f\n\nRead-only audit record for work-order routing and action-policy reconstruction.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -1077,7 +1077,7 @@
         {
           "record_id": "vm-decision-trace-bridge-c94091e4c147b96f",
           "collection": "misa_decision_memory",
-          "text": "Decision trace bridge-c94091e4c147b96f\n\nAction policy result: require_interrupt.",
+          "text": "Memory kind: decision_trace.\n\nRetrieval role: decision-path trace.\n\nPrimary for: explaining why a routing or control decision happened.\n\nNot primary for: repair work order execution, policy enforcement.\n\nAuthority: audit_only.\n\nCollection: misa_decision_memory.\n\nOriginal source id: bridge-c94091e4c147b96f.\n\nDecision trace bridge-c94091e4c147b96f\n\nAction policy result: require_interrupt.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -1246,7 +1246,7 @@
         {
           "record_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
           "collection": "misa_experience_memory",
-          "text": "Candidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nAgent self-review may use this as candidate experience, but it cannot become durable behavior until promoted.",
+          "text": "Memory kind: agent_experience_candidate.\n\nRetrieval role: unverified agent experience candidate.\n\nPrimary for: reviewing possible reusable agent experience.\n\nNot primary for: authoritative behavior change until promoted.\n\nAuthority: candidate.\n\nCollection: misa_experience_memory.\n\nOriginal source id: misa-distilled-failure-log-provider-timeout-006.\n\nCandidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nAgent self-review may use this as candidate experience, but it cannot become durable behavior until promoted.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -1421,7 +1421,7 @@
         {
           "record_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
           "collection": "misa_policy_memory",
-          "text": "Blocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nForbidden surfaces from the work order must stay visible even when bounded local work is allowed.",
+          "text": "Memory kind: policy_boundary.\n\nRetrieval role: policy and safety boundary.\n\nPrimary for: blocked surface, approval, and safety checks.\n\nNot primary for: repair work order retrieval.\n\nAuthority: policy.\n\nCollection: misa_policy_memory.\n\nOriginal source id: misa-distilled-failure-log-provider-timeout-006.\n\nBlocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion\n\nForbidden surfaces from the work order must stay visible even when bounded local work is allowed.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -1594,7 +1594,7 @@
         {
           "record_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
           "collection": "misa_work_order_memory",
-          "text": "Auto-L3 non-skill promotion from local distillation sources\n\nBroad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
+          "text": "Memory kind: repair_work_order.\n\nRetrieval role: repair work order.\n\nPrimary for: repair planning, follow-up work, and bug-fix task retrieval.\n\nNot primary for: policy boundary retrieval.\n\nAuthority: candidate.\n\nCollection: misa_work_order_memory.\n\nOriginal source id: misa-distilled-failure-log-provider-timeout-006.\n\nAuto-L3 non-skill promotion from local distillation sources\n\nBroad Auto-L3 would promote case, memory and policy lessons from local distillation sources into skills. Minimal-positive mode blocked the export, so this is a local design/regression risk, not a live production incident. Keep regression coverage and repair-ticket wording specific enough that future agents know which route owns each lesson.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,

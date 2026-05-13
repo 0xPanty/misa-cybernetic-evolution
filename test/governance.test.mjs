@@ -1576,6 +1576,9 @@ test("Zilliz vector adapter prepares dry-run collection schemas and upsert paylo
   assert.ok(result.collection_plans.every((plan) => plan.scalar_fields.some((field) => field.name === "original_source_id")));
   assert.ok(result.upsert_batches.length > 0);
   assert.ok(result.upsert_batches.every((batch) => batch.zilliz_written === false));
+  assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => record.text.includes(`Memory kind: ${record.metadata.kind}.`)));
+  assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => record.text.includes("Primary for:")));
+  assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => record.text.includes("Not primary for:")));
   assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => (
     record.embedding === null
     && record.embedding_status === "not_created"

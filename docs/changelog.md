@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.20.0`.
+The package is currently `0.20.1`.
 
 The current direction is v0.20 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -35,6 +35,7 @@ separate from production Zilliz writes.
 | v0.18 | `strategy_fit` and `llm_review_value` | LLM critique only, no route/winner authority |
 | v0.19 | Vector-memory original-source lineage and retrieval hints | dry-run metadata only, no Zilliz write |
 | v0.20 | Kind-filtered retrieval plan and same-source reranker | read-side dry-run only, no embeddings or Zilliz write |
+| v0.20.1 | Kind-aware embedding text headers | dry-run payload text only, no provider call or Zilliz write |
 
 ## Historical Sample Validation
 

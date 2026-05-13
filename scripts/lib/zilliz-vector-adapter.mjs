@@ -54,8 +54,67 @@ function asIsoDate(value) {
   return Number.isNaN(date.getTime()) ? new Date("2026-05-12T00:00:00Z").toISOString() : date.toISOString();
 }
 
+function semanticRoleForKind(kind) {
+  const roles = {
+    audit_log: {
+      role: "audit-only execution log",
+      primary_for: "audit lookup and evidence reconstruction",
+      not_primary_for: "repair planning, policy enforcement, persona memory"
+    },
+    decision_trace: {
+      role: "decision-path trace",
+      primary_for: "explaining why a routing or control decision happened",
+      not_primary_for: "repair work order execution, policy enforcement"
+    },
+    agent_experience_candidate: {
+      role: "unverified agent experience candidate",
+      primary_for: "reviewing possible reusable agent experience",
+      not_primary_for: "authoritative behavior change until promoted"
+    },
+    agent_experience_promoted: {
+      role: "verified promoted agent experience",
+      primary_for: "stable behavior guidance and answer context",
+      not_primary_for: "policy boundary replacement"
+    },
+    persona_memory_candidate: {
+      role: "unverified persona memory candidate",
+      primary_for: "owner-reviewed style or preference candidate",
+      not_primary_for: "automatic persona change"
+    },
+    persona_memory_promoted: {
+      role: "verified persona memory",
+      primary_for: "stable owner style or preference retrieval",
+      not_primary_for: "policy or repair work order retrieval"
+    },
+    policy_boundary: {
+      role: "policy and safety boundary",
+      primary_for: "blocked surface, approval, and safety checks",
+      not_primary_for: "repair work order retrieval"
+    },
+    repair_work_order: {
+      role: "repair work order",
+      primary_for: "repair planning, follow-up work, and bug-fix task retrieval",
+      not_primary_for: "policy boundary retrieval"
+    }
+  };
+  return roles[kind] ?? {
+    role: "vector memory record",
+    primary_for: "retrieval context",
+    not_primary_for: "unknown"
+  };
+}
+
 function compactText(record) {
+  const metadata = record.metadata ?? {};
+  const role = semanticRoleForKind(record.kind);
   return [
+    `Memory kind: ${record.kind}.`,
+    `Retrieval role: ${role.role}.`,
+    `Primary for: ${role.primary_for}.`,
+    `Not primary for: ${role.not_primary_for}.`,
+    `Authority: ${metadata.authority ?? "unknown"}.`,
+    `Collection: ${record.collection}.`,
+    `Original source id: ${metadata.original_source_id ?? "unknown"}.`,
     record.title,
     record.summary
   ]

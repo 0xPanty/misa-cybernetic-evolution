@@ -10,6 +10,9 @@ be filtered and explained by original source, not only vector similarity.
 v0.20 also includes a dry-run retrieval strategy so a live retriever can search
 the requested `kind` first and use same-source records as context instead of
 letting sibling records steal the top result.
+v0.20.1 adds kind-aware text headers to the payload. The embedding text now says
+what the record is primary for and what it is not primary for, so similar
+same-source records have clearer semantic separation before rerank.
 
 ## Why It Exists
 
@@ -62,6 +65,17 @@ query -> infer/request kind -> primary kind-filtered search
 That prevents the common failure where a same-source `policy_boundary` outranks
 a requested `repair_work_order` just because the vector text is semantically
 close.
+
+The payload text also carries a compact role header:
+
+```text
+Memory kind: repair_work_order.
+Retrieval role: repair work order.
+Primary for: repair planning, follow-up work, and bug-fix task retrieval.
+Not primary for: policy boundary retrieval.
+```
+
+This is still safe public metadata. It does not expose raw private source text.
 
 Default vector settings:
 
