@@ -201,7 +201,7 @@ export async function loadVpsConversationSources({ rawDir }) {
 
   const entries = await fs.readdir(rawDir, { withFileTypes: true }).catch(() => []);
   const jsonFiles = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .filter((entry) => (entry.isFile() || entry.isSymbolicLink()) && entry.name.endsWith(".json"))
     .map((entry) => entry.name)
     .sort();
   const sources = [];

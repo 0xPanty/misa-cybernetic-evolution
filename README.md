@@ -105,6 +105,13 @@ Expected result:
   LangGraph may provide State, checkpointer, interrupt, and custom-node carrier
   mechanics, while Qianxuesen keeps deterministic learning-route authority and
   maps repair/work orders into human-boundary interrupts;
+  its generated `determinism_contract` scopes that claim to the local
+  Qianxuesen sidecar after input ingest: rule/symbolic distill, local
+  `local-token-vector-v1`, fixed route table, and zero LLM route decisions;
+  its AGT-inspired `action_policy_contract` adds a fail-closed local rule
+  matrix before bridge actions, and `decision_bom` records the owner, policy,
+  action, outcome, evidence refs, human-boundary status, completeness score,
+  and integrity hash for audit;
 - the v0.10 signal rollup connects signal adapters, the candidate queue, and
   the daily Qianxuesen rollup without adding live runtime authority;
 - the v0.11 candidate preflight gate turns daily-rollup candidates into local

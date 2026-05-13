@@ -74,6 +74,26 @@
   "export_policy": {
     "export_command": "npm run export-skills:misa",
     "export_scope": "minimal_positive_l3_only",
+    "skill_promotion_contract": {
+      "allowed_route_target": "skill",
+      "required_signals": [
+        "reusable_workflow"
+      ],
+      "blocking_signals": [
+        "explicit_user_boundary",
+        "public_posting_boundary",
+        "farcaster_public_memory_risk",
+        "candidate_replay_failed",
+        "avoid_overreaction",
+        "single_failure",
+        "repeated_failure_pattern"
+      ],
+      "requires_candidate_state": "staged",
+      "requires_verification_passed": true,
+      "requires_positive_value": true,
+      "requires_no_live_effects": true,
+      "ambiguous_signal_policy": "stay_in_source_route_or_open_repair_ticket"
+    },
     "installs_skills": false,
     "writes_persistent_memory": false,
     "updates_vps": false,

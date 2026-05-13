@@ -31,11 +31,20 @@ promotions.
 `minimal_positive_l3` is the recommended path:
 
 ```text
-verified lesson + skill route + staged candidate -> local L3 draft skill
+verified lesson + skill route + reusable_workflow + staged candidate
+-> local L3 draft skill
 ```
 
 Memory stays memory, cases stay cases, policies stay approval-only policy
 candidates, and damping stays suppression or hold evidence.
+
+The export gate now records this as `skill_promotion_contract`. It is deliberately
+narrow: a skill candidate must carry `reusable_workflow`, pass local
+verification, have no live effects, and avoid policy/damping boundary signals
+such as `farcaster_public_memory_risk`, `public_posting_boundary`,
+`candidate_replay_failed`, `single_failure`, and `repeated_failure_pattern`. If
+the sample is ambiguous, it stays in its source route or opens a repair ticket
+instead of becoming a skill.
 
 ## Mixed Route Pressure
 

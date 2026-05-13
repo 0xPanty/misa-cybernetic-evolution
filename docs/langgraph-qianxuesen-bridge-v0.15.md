@@ -42,6 +42,70 @@ evidence -> LangGraph State
 -> resume only with recorded human decision
 ```
 
+## Determinism Boundary
+
+The word deterministic is intentionally scoped.
+
+Inside this repo, Qianxuesen's `distill` and `route` stages are deterministic
+after input ingest:
+
+- distill uses rule extraction, symbolic signals, segmentation, and the local
+  `local-token-vector-v1` index;
+- route uses signal rules and the fixed route table for `memory`, `skill`,
+  `case`, `policy`, `damping`, and `ignore`;
+- both stages report `uses_llm=false`, `llm_api_calls=0`, and
+  `external_api_calls=0`;
+- LangGraph and LLM agents may carry state, explain results, draft text, or run
+  bounded approved work, but they must not choose learning routes.
+
+This does not claim every upstream artifact was born deterministically. Existing
+Hermes/Zilliz distillation bundles may contain LLM-produced summaries. The
+bridge treats those bundles as evidence inputs, not as authority. The local
+Qianxuesen decision remains rule-bound after that input arrives.
+
+The generated bridge artifact carries this as `determinism_contract` so future
+runtime code can validate the boundary instead of relying on prose.
+
+## AGT-Inspired Governance Contract
+
+Microsoft's Agent Governance Toolkit has a useful production lesson: do not put
+the final allow/deny decision inside an LLM loop. Put a deterministic policy
+gate before the action, make it fail closed, and leave an audit trail.
+
+This bridge now borrows that shape without adding a runtime dependency:
+
+- `action_policy_contract` records the local rule matrix, `default_action=deny`,
+  `conflict_resolution=deny_overrides`, and `llm_in_decision_loop=false`;
+- durable/public effects and `human_owner` work orders resolve to
+  `require_interrupt`;
+- bounded local work can resolve to `allow_bounded_local_work`;
+- a read-only bridge with no work orders resolves to `allow_readonly_projection`;
+- the policy trace is data, not prose, so tests can catch downgrade attempts.
+
+This is narrower than AGT. It governs the Qianxuesen bridge decision, not every
+tool call in a live runtime.
+
+## Decision BOM
+
+The bridge also emits `decision_bom`, a small local bill of materials for the
+bridge decision. It is reconstructed from fields we already collect:
+`state_projection`, `governance_hooks`, `action_policy_contract`,
+`interrupt_queue`, and `decision_boundary`.
+
+The required fields are:
+
+- `control_owner`
+- `policy_rules_evaluated`
+- `action_type`
+- `decision_outcome`
+- `evidence_source_refs`
+- `human_boundary_status`
+
+The current local bridge requires `completeness_score=1` and an integrity hash.
+That gives us a cheap sanity check: if a future change still says "passed" but
+cannot explain who owned the decision, what policy ran, what action was judged,
+and whether a human boundary exists, the bridge verifier should fail.
+
 ## Ownership Split
 
 | Layer | Owns |

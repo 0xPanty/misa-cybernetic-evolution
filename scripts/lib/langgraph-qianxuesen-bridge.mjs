@@ -1,4 +1,5 @@
 import { routeWorkOrders } from "./work-order-router.mjs";
+import { createHash } from "node:crypto";
 import {
   CHECKPOINTER_FIELDS,
   DEFAULT_STATE_INPUTS,
@@ -26,6 +27,26 @@ function stableSlug(value) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(stableValue);
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, nested]) => [key, stableValue(nested)])
+    );
+  }
+  return value;
+}
+
+function stableHash(value) {
+  return createHash("sha256")
+    .update(JSON.stringify(stableValue(value)))
+    .digest("hex");
 }
 
 function workOrdersFromRouting(workOrderRouting) {
@@ -75,6 +96,21 @@ function sourceRefIds(workOrders) {
   return unique(refs);
 }
 
+function repairTicketIdsFromWorkOrders(workOrders) {
+  const ids = [];
+  for (const order of workOrders) {
+    if (order.source?.source_type === "repair_ticket") {
+      ids.push(order.source.source_id);
+    }
+    for (const ref of order.source_refs ?? []) {
+      if (ref.kind === "repair_ticket") {
+        ids.push(ref.id);
+      }
+    }
+  }
+  return unique(ids);
+}
+
 function buildGovernanceHooks() {
   return GOVERNANCE_STAGES.map((stage) => ({
     stage_id: stage.stage_id,
@@ -99,6 +135,222 @@ function buildCustomNodes() {
     llm_decision_allowed: false,
     description: stage.description
   }));
+}
+
+function buildDeterminismContract() {
+  return {
+    claim_scope: "qianxuesen_sidecar_after_input_ingest",
+    input_boundary: {
+      upstream_artifacts_may_be_llm_generated: true,
+      upstream_artifacts_are_evidence_not_authority: true,
+      raw_private_content_persisted: false
+    },
+    distill: {
+      implementation: "rule_symbolic_local_token_vector",
+      deterministic_after_input: true,
+      uses_llm: false,
+      llm_api_calls: 0,
+      external_api_calls: 0,
+      vector_backend: "local-token-vector-v1",
+      vector_lookup_required: false
+    },
+    route: {
+      implementation: "signal_rules_and_route_table",
+      deterministic_after_input: true,
+      uses_llm: false,
+      llm_may_override: false,
+      route_vocab: ["memory", "skill", "case", "policy", "damping", "ignore"]
+    },
+    handoff: {
+      implementation: "repair_ticket_work_order_interrupt",
+      durable_effects_require_interrupt: true,
+      execution_without_human: false
+    }
+  };
+}
+
+function effectiveDecisionForBridge(workOrders, interruptQueue) {
+  if (interruptQueue.length > 0) return "require_interrupt";
+  if (workOrders.length > 0) return "allow_bounded_local_work";
+  return "allow_readonly_projection";
+}
+
+function matchedRuleForEffectiveDecision(effectiveDecision) {
+  if (effectiveDecision === "require_interrupt") {
+    return "require_interrupt_for_durable_or_public_effect";
+  }
+  if (effectiveDecision === "allow_bounded_local_work") {
+    return "allow_bounded_local_work_after_policy";
+  }
+  return "allow_qianxuesen_readonly_projection";
+}
+
+function buildActionPolicyContract(workOrders, interruptQueue) {
+  const effectiveDecision = effectiveDecisionForBridge(workOrders, interruptQueue);
+
+  return {
+    policy_engine: {
+      kind: "qianxuesen_local_rule_matrix",
+      default_action: "deny",
+      conflict_resolution: "deny_overrides",
+      evaluation_timing: "before_control_action",
+      fail_closed: true,
+      llm_in_decision_loop: false,
+      allowed_outcomes: [
+        "allow_readonly_projection",
+        "allow_bounded_local_work",
+        "require_interrupt",
+        "deny"
+      ]
+    },
+    rules: [
+      {
+        rule_id: "deny_llm_learning_authority",
+        stage_id: "route",
+        priority: 1000,
+        match: "actor=llm_agent and action in llm_agent_must_not",
+        decision: "deny"
+      },
+      {
+        rule_id: "require_interrupt_for_durable_or_public_effect",
+        stage_id: "work_order",
+        priority: 900,
+        match: "durable_or_public_effect=true or suggested_executor=human_owner",
+        decision: "require_interrupt"
+      },
+      {
+        rule_id: "allow_qianxuesen_readonly_projection",
+        stage_id: "distill",
+        priority: 500,
+        match: "owner=qianxuesen_deterministic and raw_private_content_persisted=false",
+        decision: "allow_readonly_projection"
+      },
+      {
+        rule_id: "allow_bounded_local_work_after_policy",
+        stage_id: "work_order",
+        priority: 300,
+        match: "requires_user_confirmation=false and durable_or_public_effect=false",
+        decision: "allow_bounded_local_work"
+      }
+    ],
+    evaluated_action: {
+      action_type: "learning_route_and_work_order_handoff",
+      work_order_count: workOrders.length,
+      interrupt_count: interruptQueue.length,
+      durable_or_public_effect_count: interruptQueue.filter((item) => item.durable_or_public_effect).length
+    },
+    decision_trace: [
+      {
+        stage_id: "distill",
+        matched_rule: "allow_qianxuesen_readonly_projection",
+        decision: "allow_readonly_projection"
+      },
+      {
+        stage_id: "route",
+        matched_rule: "deny_llm_learning_authority",
+        decision: "deny",
+        applied_to_llm_attempts_only: true,
+        observed_llm_attempt_count: 0
+      },
+      {
+        stage_id: "work_order",
+        matched_rule: matchedRuleForEffectiveDecision(effectiveDecision),
+        decision: effectiveDecision
+      }
+    ],
+    effective_decision: effectiveDecision
+  };
+}
+
+function buildDecisionBom({
+  bridgeCore,
+  actionPolicyContract,
+  workOrders,
+  interruptQueue,
+  now
+}) {
+  const requiredFields = [
+    {
+      name: "control_owner",
+      category: "identity",
+      value: QIANXUESEN_OWNER,
+      source: "integration_principle.control_layer",
+      present: bridgeCore.integration_principle.control_layer === QIANXUESEN_CONTROL_LAYER,
+      inferred: false
+    },
+    {
+      name: "policy_rules_evaluated",
+      category: "policy",
+      value: actionPolicyContract.rules.map((rule) => rule.rule_id),
+      source: "action_policy_contract.rules",
+      present: actionPolicyContract.rules.length >= 4,
+      inferred: false
+    },
+    {
+      name: "action_type",
+      category: "action",
+      value: actionPolicyContract.evaluated_action.action_type,
+      source: "action_policy_contract.evaluated_action",
+      present: true,
+      inferred: false
+    },
+    {
+      name: "decision_outcome",
+      category: "outcome",
+      value: actionPolicyContract.effective_decision,
+      source: "action_policy_contract.effective_decision",
+      present: true,
+      inferred: false
+    },
+    {
+      name: "evidence_source_refs",
+      category: "lineage",
+      value: bridgeCore.state_projection.evidence_source_ids,
+      source: "state_projection.evidence_source_ids",
+      present: bridgeCore.state_projection.evidence_source_ids.length > 0 || workOrders.length === 0,
+      inferred: false
+    },
+    {
+      name: "human_boundary_status",
+      category: "boundary",
+      value: interruptQueue.length > 0 ? "interrupt_required" : "no_interrupt_required",
+      source: "interrupt_queue",
+      present: true,
+      inferred: false
+    }
+  ];
+  const missingRequiredFields = requiredFields
+    .filter((field) => !field.present)
+    .map((field) => field.name);
+  const completenessScore = requiredFields.length === 0
+    ? 0
+    : Number(((requiredFields.length - missingRequiredFields.length) / requiredFields.length).toFixed(4));
+  const bomCore = {
+    schema_version: "misa.qianxuesen_decision_bom.v1",
+    reconstruction_mode: "from_existing_bridge_signals",
+    decision_id: `bridge-${stableHash({
+      created_at: bridgeCore.created_at,
+      source_ids: bridgeCore.state_projection.evidence_source_ids,
+      work_order_ids: workOrders.map((order) => order.work_order_id),
+      effective_decision: actionPolicyContract.effective_decision
+    }).slice(0, 16)}`,
+    reconstructed_at: now.toISOString(),
+    sources_queried: [
+      "state_projection",
+      "governance_hooks",
+      "action_policy_contract",
+      "interrupt_queue",
+      "decision_boundary"
+    ],
+    required_fields: requiredFields,
+    missing_required_fields: missingRequiredFields,
+    completeness_score: completenessScore
+  };
+
+  return {
+    ...bomCore,
+    integrity_hash: stableHash(bomCore)
+  };
 }
 
 function interruptReason(order) {
@@ -244,6 +496,41 @@ function violationsForBridge(bridge) {
       violations.push(`${field}_must_be_false`);
     }
   }
+  if (!bridge.determinism_contract) {
+    violations.push("determinism_contract_required");
+  } else {
+    const contract = bridge.determinism_contract;
+    if (contract.claim_scope !== "qianxuesen_sidecar_after_input_ingest") {
+      violations.push("determinism_claim_scope_must_be_bounded");
+    }
+    if (
+      contract.input_boundary?.upstream_artifacts_may_be_llm_generated !== true
+      || contract.input_boundary?.upstream_artifacts_are_evidence_not_authority !== true
+    ) {
+      violations.push("upstream_llm_boundary_must_be_explicit");
+    }
+    if (
+      contract.distill?.uses_llm !== false
+      || contract.distill?.llm_api_calls !== 0
+      || contract.distill?.external_api_calls !== 0
+      || contract.distill?.vector_backend !== "local-token-vector-v1"
+    ) {
+      violations.push("distill_determinism_contract_mismatch");
+    }
+    if (
+      contract.route?.uses_llm !== false
+      || contract.route?.llm_may_override !== false
+      || !includesAll(contract.route?.route_vocab, ["memory", "skill", "case", "policy", "damping", "ignore"])
+    ) {
+      violations.push("route_determinism_contract_mismatch");
+    }
+    if (
+      contract.handoff?.durable_effects_require_interrupt !== true
+      || contract.handoff?.execution_without_human !== false
+    ) {
+      violations.push("handoff_determinism_contract_mismatch");
+    }
+  }
   for (const item of bridge.interrupt_queue ?? []) {
     if (!includesAll(item.resume_policy?.accepted_decisions, INTERRUPT_DECISIONS)) {
       violations.push("interrupt_resume_decisions_missing");
@@ -258,6 +545,55 @@ function violationsForBridge(bridge) {
   if (bridge.summary.llm_owned_learning_decision_count !== 0) {
     violations.push("llm_owned_learning_decision_count_must_be_zero");
   }
+  const actionPolicy = bridge.action_policy_contract;
+  if (!actionPolicy) {
+    violations.push("action_policy_contract_required");
+  } else {
+    if (
+      actionPolicy.policy_engine?.default_action !== "deny"
+      || actionPolicy.policy_engine?.conflict_resolution !== "deny_overrides"
+      || actionPolicy.policy_engine?.fail_closed !== true
+      || actionPolicy.policy_engine?.llm_in_decision_loop !== false
+    ) {
+      violations.push("action_policy_engine_must_be_fail_closed");
+    }
+    const ruleIds = (actionPolicy.rules ?? []).map((rule) => rule.rule_id);
+    if (!includesAll(ruleIds, [
+      "deny_llm_learning_authority",
+      "require_interrupt_for_durable_or_public_effect",
+      "allow_qianxuesen_readonly_projection",
+      "allow_bounded_local_work_after_policy"
+    ])) {
+      violations.push("action_policy_rules_missing");
+    }
+    const allowedOutcomes = actionPolicy.policy_engine?.allowed_outcomes ?? [];
+    if (
+      !allowedOutcomes.includes(actionPolicy.effective_decision)
+      || (actionPolicy.decision_trace ?? []).some((item) => !allowedOutcomes.includes(item.decision))
+    ) {
+      violations.push("action_policy_decision_outcome_unknown");
+    }
+    const hasInterrupts = (bridge.interrupt_queue ?? []).length > 0;
+    if (hasInterrupts && actionPolicy.effective_decision !== "require_interrupt") {
+      violations.push("interrupts_must_force_require_interrupt_decision");
+    }
+  }
+  const bom = bridge.decision_bom;
+  if (!bom) {
+    violations.push("decision_bom_required");
+  } else {
+    const missing = bom.missing_required_fields ?? [];
+    if (bom.completeness_score !== 1 || missing.length > 0) {
+      violations.push("decision_bom_must_be_complete");
+    }
+    const { integrity_hash: integrityHash, ...bomCore } = bom;
+    if (!integrityHash || integrityHash !== stableHash(bomCore)) {
+      violations.push("decision_bom_integrity_hash_mismatch");
+    }
+    if (actionPolicy && bom.required_fields?.find((field) => field.name === "decision_outcome")?.value !== actionPolicy.effective_decision) {
+      violations.push("decision_bom_outcome_must_match_policy");
+    }
+  }
 
   return violations;
 }
@@ -269,12 +605,13 @@ export function buildLangGraphQianxuesenBridge({
 } = {}) {
   const workOrders = workOrdersFromRouting(workOrderRouting);
   const repairTicketCount = repairTicketReview?.summary?.ticket_count
-    ?? workOrders.filter((order) => order.source?.source_type === "repair_ticket").length;
+    ?? repairTicketIdsFromWorkOrders(workOrders).length;
   const customNodes = buildCustomNodes();
   const governanceHooks = buildGovernanceHooks();
   const interruptQueue = buildInterruptQueue(workOrderRouting);
+  const actionPolicyContract = buildActionPolicyContract(workOrders, interruptQueue);
 
-  const bridge = {
+  const bridgeCore = {
     schema_version: "misa.langgraph_qianxuesen_bridge.v1",
     mode: "langgraph-qianxuesen-bridge",
     ok: true,
@@ -306,6 +643,7 @@ export function buildLangGraphQianxuesenBridge({
         forbidden_learning_decisions: [...LLM_MUST_NOT]
       }
     },
+    determinism_contract: buildDeterminismContract(),
     state_projection: {
       evidence_source_ids: sourceRefIds(workOrders),
       repair_ticket_count: repairTicketCount,
@@ -332,6 +670,7 @@ export function buildLangGraphQianxuesenBridge({
       graph_can_execute_live_effects: false,
       all_durable_public_effects_require_interrupt: true
     },
+    action_policy_contract: actionPolicyContract,
     summary: {
       work_order_count: workOrders.length,
       interrupt_count: interruptQueue.length,
@@ -339,6 +678,8 @@ export function buildLangGraphQianxuesenBridge({
       governance_hook_count: governanceHooks.length,
       llm_owned_learning_decision_count: 0,
       live_effect_allowed: false,
+      action_policy_effective_decision: actionPolicyContract.effective_decision,
+      decision_bom_completeness_score: 1,
       verifier: "passed"
     },
     warnings: [
@@ -348,10 +689,21 @@ export function buildLangGraphQianxuesenBridge({
     ],
     violations: []
   };
+  const bridge = {
+    ...bridgeCore,
+    decision_bom: buildDecisionBom({
+      bridgeCore,
+      actionPolicyContract,
+      workOrders,
+      interruptQueue,
+      now
+    })
+  };
 
   bridge.violations = violationsForBridge(bridge);
   bridge.ok = bridge.violations.length === 0;
   bridge.summary.verifier = bridge.ok ? "passed" : "failed";
+  bridge.summary.decision_bom_completeness_score = bridge.decision_bom.completeness_score;
 
   return bridge;
 }

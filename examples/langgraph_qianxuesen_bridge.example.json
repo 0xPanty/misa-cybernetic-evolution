@@ -103,6 +103,42 @@
       ]
     }
   },
+  "determinism_contract": {
+    "claim_scope": "qianxuesen_sidecar_after_input_ingest",
+    "input_boundary": {
+      "upstream_artifacts_may_be_llm_generated": true,
+      "upstream_artifacts_are_evidence_not_authority": true,
+      "raw_private_content_persisted": false
+    },
+    "distill": {
+      "implementation": "rule_symbolic_local_token_vector",
+      "deterministic_after_input": true,
+      "uses_llm": false,
+      "llm_api_calls": 0,
+      "external_api_calls": 0,
+      "vector_backend": "local-token-vector-v1",
+      "vector_lookup_required": false
+    },
+    "route": {
+      "implementation": "signal_rules_and_route_table",
+      "deterministic_after_input": true,
+      "uses_llm": false,
+      "llm_may_override": false,
+      "route_vocab": [
+        "memory",
+        "skill",
+        "case",
+        "policy",
+        "damping",
+        "ignore"
+      ]
+    },
+    "handoff": {
+      "implementation": "repair_ticket_work_order_interrupt",
+      "durable_effects_require_interrupt": true,
+      "execution_without_human": false
+    }
+  },
   "state_projection": {
     "evidence_source_ids": [
       "repair-local-distillation-sources-auto-l3-overpromotion",
@@ -124,8 +160,13 @@
       "after_node": "evidence_ingest",
       "hook": "qianxuesen_distill",
       "owner": "qianxuesen_deterministic",
-      "input_from_state": ["evidence_refs"],
-      "output_to_state": ["distillates", "learning_events"],
+      "input_from_state": [
+        "evidence_refs"
+      ],
+      "output_to_state": [
+        "distillates",
+        "learning_events"
+      ],
       "must_be_deterministic": true,
       "llm_may_override": false
     },
@@ -136,8 +177,12 @@
       "after_node": "qianxuesen_distill_node",
       "hook": "qianxuesen_route",
       "owner": "qianxuesen_deterministic",
-      "input_from_state": ["learning_events"],
-      "output_to_state": ["route_decisions"],
+      "input_from_state": [
+        "learning_events"
+      ],
+      "output_to_state": [
+        "route_decisions"
+      ],
       "must_be_deterministic": true,
       "llm_may_override": false
     },
@@ -148,8 +193,12 @@
       "after_node": "qianxuesen_route_node",
       "hook": "qianxuesen_repair_ticket",
       "owner": "qianxuesen_deterministic",
-      "input_from_state": ["route_decisions"],
-      "output_to_state": ["repair_tickets"],
+      "input_from_state": [
+        "route_decisions"
+      ],
+      "output_to_state": [
+        "repair_tickets"
+      ],
       "must_be_deterministic": true,
       "llm_may_override": false
     },
@@ -160,8 +209,12 @@
       "after_node": "qianxuesen_repair_ticket_node",
       "hook": "qianxuesen_work_order_route",
       "owner": "qianxuesen_deterministic",
-      "input_from_state": ["repair_tickets"],
-      "output_to_state": ["work_orders"],
+      "input_from_state": [
+        "repair_tickets"
+      ],
+      "output_to_state": [
+        "work_orders"
+      ],
       "must_be_deterministic": true,
       "llm_may_override": false
     }
@@ -248,6 +301,78 @@
     "graph_can_execute_live_effects": false,
     "all_durable_public_effects_require_interrupt": true
   },
+  "action_policy_contract": {
+    "policy_engine": {
+      "kind": "qianxuesen_local_rule_matrix",
+      "default_action": "deny",
+      "conflict_resolution": "deny_overrides",
+      "evaluation_timing": "before_control_action",
+      "fail_closed": true,
+      "llm_in_decision_loop": false,
+      "allowed_outcomes": [
+        "allow_readonly_projection",
+        "allow_bounded_local_work",
+        "require_interrupt",
+        "deny"
+      ]
+    },
+    "rules": [
+      {
+        "rule_id": "deny_llm_learning_authority",
+        "stage_id": "route",
+        "priority": 1000,
+        "match": "actor=llm_agent and action in llm_agent_must_not",
+        "decision": "deny"
+      },
+      {
+        "rule_id": "require_interrupt_for_durable_or_public_effect",
+        "stage_id": "work_order",
+        "priority": 900,
+        "match": "durable_or_public_effect=true or suggested_executor=human_owner",
+        "decision": "require_interrupt"
+      },
+      {
+        "rule_id": "allow_qianxuesen_readonly_projection",
+        "stage_id": "distill",
+        "priority": 500,
+        "match": "owner=qianxuesen_deterministic and raw_private_content_persisted=false",
+        "decision": "allow_readonly_projection"
+      },
+      {
+        "rule_id": "allow_bounded_local_work_after_policy",
+        "stage_id": "work_order",
+        "priority": 300,
+        "match": "requires_user_confirmation=false and durable_or_public_effect=false",
+        "decision": "allow_bounded_local_work"
+      }
+    ],
+    "evaluated_action": {
+      "action_type": "learning_route_and_work_order_handoff",
+      "work_order_count": 1,
+      "interrupt_count": 1,
+      "durable_or_public_effect_count": 0
+    },
+    "decision_trace": [
+      {
+        "stage_id": "distill",
+        "matched_rule": "allow_qianxuesen_readonly_projection",
+        "decision": "allow_readonly_projection"
+      },
+      {
+        "stage_id": "route",
+        "matched_rule": "deny_llm_learning_authority",
+        "decision": "deny",
+        "applied_to_llm_attempts_only": true,
+        "observed_llm_attempt_count": 0
+      },
+      {
+        "stage_id": "work_order",
+        "matched_rule": "require_interrupt_for_durable_or_public_effect",
+        "decision": "require_interrupt"
+      }
+    ],
+    "effective_decision": "require_interrupt"
+  },
   "summary": {
     "work_order_count": 1,
     "interrupt_count": 1,
@@ -255,6 +380,8 @@
     "governance_hook_count": 4,
     "llm_owned_learning_decision_count": 0,
     "live_effect_allowed": false,
+    "action_policy_effective_decision": "require_interrupt",
+    "decision_bom_completeness_score": 1,
     "verifier": "passed"
   },
   "warnings": [
@@ -262,5 +389,82 @@
     "LangGraph State is evidence input; Qianxuesen route output remains authoritative.",
     "Any repair ticket or durable/public work order should become an interrupt before execution."
   ],
-  "violations": []
+  "violations": [],
+  "decision_bom": {
+    "schema_version": "misa.qianxuesen_decision_bom.v1",
+    "reconstruction_mode": "from_existing_bridge_signals",
+    "decision_id": "bridge-9b4d9ecfa394466f",
+    "reconstructed_at": "2026-05-12T00:00:00.000Z",
+    "sources_queried": [
+      "state_projection",
+      "governance_hooks",
+      "action_policy_contract",
+      "interrupt_queue",
+      "decision_boundary"
+    ],
+    "required_fields": [
+      {
+        "name": "control_owner",
+        "category": "identity",
+        "value": "qianxuesen_deterministic",
+        "source": "integration_principle.control_layer",
+        "present": true,
+        "inferred": false
+      },
+      {
+        "name": "policy_rules_evaluated",
+        "category": "policy",
+        "value": [
+          "deny_llm_learning_authority",
+          "require_interrupt_for_durable_or_public_effect",
+          "allow_qianxuesen_readonly_projection",
+          "allow_bounded_local_work_after_policy"
+        ],
+        "source": "action_policy_contract.rules",
+        "present": true,
+        "inferred": false
+      },
+      {
+        "name": "action_type",
+        "category": "action",
+        "value": "learning_route_and_work_order_handoff",
+        "source": "action_policy_contract.evaluated_action",
+        "present": true,
+        "inferred": false
+      },
+      {
+        "name": "decision_outcome",
+        "category": "outcome",
+        "value": "require_interrupt",
+        "source": "action_policy_contract.effective_decision",
+        "present": true,
+        "inferred": false
+      },
+      {
+        "name": "evidence_source_refs",
+        "category": "lineage",
+        "value": [
+          "repair-local-distillation-sources-auto-l3-overpromotion",
+          "local_distillation_sources",
+          "misa-distilled-failure-log-provider-timeout-006",
+          "misa-distilled-farcaster-reply-audit-007",
+          "misa-distilled-local-window-zilliz-boundary-005"
+        ],
+        "source": "state_projection.evidence_source_ids",
+        "present": true,
+        "inferred": false
+      },
+      {
+        "name": "human_boundary_status",
+        "category": "boundary",
+        "value": "interrupt_required",
+        "source": "interrupt_queue",
+        "present": true,
+        "inferred": false
+      }
+    ],
+    "missing_required_fields": [],
+    "completeness_score": 1,
+    "integrity_hash": "9801a148b0838cb2f358e34539147245ea82af44f17da895d3d8023da3a2a61d"
+  }
 }

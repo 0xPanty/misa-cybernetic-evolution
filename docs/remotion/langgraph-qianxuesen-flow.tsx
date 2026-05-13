@@ -109,7 +109,7 @@ export const LangGraphQianxuesenFlow = () => {
           LangGraph carries the loop. Qianxuesen owns the learning.
         </div>
         <div style={{ fontSize: 22, color: "#475569", marginTop: 16 }}>
-          The bridge is a safe interface: graph mechanics in, deterministic control stays with Misa.
+          The bridge is a safe interface: graph mechanics in, route authority stays with Misa.
         </div>
       </div>
 
@@ -151,7 +151,10 @@ export const LangGraphQianxuesenFlow = () => {
       >
         <div style={{ fontSize: 22, fontWeight: 700, color: "#065f46" }}>QIANXUESEN CONTROL LAYER</div>
         <div style={{ fontSize: 18, color: "#475569", marginTop: 18 }}>
-          Deterministic distill, route, damping, repair tickets, work-order handoff, human boundary
+          Rule-bound distill/route after input ingest, local token index, work-order handoff, human boundary
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#065f46", marginTop: 14, marginLeft: 1085 }}>
+          LLM summaries are evidence, not route authority
         </div>
       </div>
 

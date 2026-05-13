@@ -26,6 +26,25 @@ const LIVE_EFFECTS_OFF = {
   posts_publicly: false
 };
 
+const SKILL_PROMOTION_CONTRACT = {
+  allowed_route_target: "skill",
+  required_signals: ["reusable_workflow"],
+  blocking_signals: [
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "farcaster_public_memory_risk",
+    "candidate_replay_failed",
+    "avoid_overreaction",
+    "single_failure",
+    "repeated_failure_pattern"
+  ],
+  requires_candidate_state: "staged",
+  requires_verification_passed: true,
+  requires_positive_value: true,
+  requires_no_live_effects: true,
+  ambiguous_signal_policy: "stay_in_source_route_or_open_repair_ticket"
+};
+
 function uniqueStrings(values) {
   return [...new Set((values ?? []).map((value) => String(value).trim()).filter(Boolean))];
 }
@@ -111,7 +130,58 @@ function isVerified(trace) {
     && !Object.values(trace.result.live_effects).some(Boolean);
 }
 
+export function reviewSkillPromotionCandidate(trace) {
+  const signals = uniqueStrings(trace.observe.signals);
+  const missingRequiredSignals = SKILL_PROMOTION_CONTRACT.required_signals
+    .filter((signal) => !signals.includes(signal));
+  const blockingSignals = SKILL_PROMOTION_CONTRACT.blocking_signals
+    .filter((signal) => signals.includes(signal));
+  const routeTarget = routeForTrace(trace);
+  const liveEffectsPresent = Object.values(trace.result.live_effects).some(Boolean);
+  const reasons = [];
+
+  if (routeTarget !== SKILL_PROMOTION_CONTRACT.allowed_route_target) {
+    reasons.push(`route_target=${routeTarget}`);
+  }
+  if (trace.candidate_review.state !== SKILL_PROMOTION_CONTRACT.requires_candidate_state) {
+    reasons.push(`candidate_state=${trace.candidate_review.state}`);
+  }
+  if (!trace.verification.passed) {
+    reasons.push("verification_failed");
+  }
+  if (!trace.result.positive_value) {
+    reasons.push("not_positive_value");
+  }
+  if (liveEffectsPresent) {
+    reasons.push("live_effects_present");
+  }
+  for (const signal of missingRequiredSignals) {
+    reasons.push(`missing_required_signal:${signal}`);
+  }
+  for (const signal of blockingSignals) {
+    reasons.push(`blocking_signal:${signal}`);
+  }
+
+  return {
+    approved: reasons.length === 0,
+    contract: "minimal_positive_l3_skill_promotion.v1",
+    required_signals: [...SKILL_PROMOTION_CONTRACT.required_signals],
+    blocking_signals: blockingSignals,
+    reasons,
+    evidence: {
+      route_target: routeTarget,
+      candidate_state: trace.candidate_review.state,
+      verification_passed: trace.verification.passed,
+      positive_value: trace.result.positive_value,
+      live_effects_present: liveEffectsPresent,
+      signals
+    }
+  };
+}
+
 function buildL3Skill(trace, mode) {
+  const promotionReview = reviewSkillPromotionCandidate(trace);
+
   return {
     skill_id: makeSkillId(trace),
     source_event_id: trace.source_event_id,
@@ -127,7 +197,8 @@ function buildL3Skill(trace, mode) {
       "Read source refs and evidence before applying the procedure.",
       "Run local validation again before any export or publication."
     ],
-    export_allowed: mode === "minimal_positive_l3" && routeForTrace(trace) === "skill",
+    promotion_review: promotionReview,
+    export_allowed: mode === "minimal_positive_l3" && promotionReview.approved,
     publication_allowed: false,
     safety: {
       production_authority: false,
@@ -161,8 +232,7 @@ function buildOriginalAutoL3(traces) {
 function buildMinimalPositiveL3(traces) {
   const skills = traces
     .filter(isVerified)
-    .filter((trace) => routeForTrace(trace) === "skill")
-    .filter((trace) => trace.candidate_review.state === "staged")
+    .filter((trace) => reviewSkillPromotionCandidate(trace).approved)
     .map((trace) => buildL3Skill(trace, "minimal_positive_l3"));
 
   return {
@@ -280,6 +350,7 @@ export async function reviewMemoryLayerComparison({
     export_policy: {
       export_command: "npm run export-skills:misa",
       export_scope: "minimal_positive_l3_only",
+      skill_promotion_contract: { ...SKILL_PROMOTION_CONTRACT },
       installs_skills: false,
       writes_persistent_memory: false,
       updates_vps: false,
@@ -347,6 +418,7 @@ export async function exportMinimalPositiveSkills({
       skill_id: skill.skill_id,
       source_event_id: skill.source_event_id,
       route_target: skill.route_target,
+      promotion_review: skill.promotion_review,
       path: rel,
       publication_allowed: false,
       installation_allowed: false

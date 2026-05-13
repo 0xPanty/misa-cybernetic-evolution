@@ -11,11 +11,14 @@
     "created_at",
     "integration_principle",
     "langgraph_contract",
+    "determinism_contract",
     "state_projection",
     "governance_hooks",
     "interrupt_queue",
     "decision_boundary",
     "safety",
+    "action_policy_contract",
+    "decision_bom",
     "summary",
     "warnings",
     "violations"
@@ -110,6 +113,97 @@
         }
       }
     },
+    "determinism_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim_scope", "input_boundary", "distill", "route", "handoff"],
+      "properties": {
+        "claim_scope": {
+          "type": "string",
+          "const": "qianxuesen_sidecar_after_input_ingest"
+        },
+        "input_boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "upstream_artifacts_may_be_llm_generated",
+            "upstream_artifacts_are_evidence_not_authority",
+            "raw_private_content_persisted"
+          ],
+          "properties": {
+            "upstream_artifacts_may_be_llm_generated": { "type": "boolean", "const": true },
+            "upstream_artifacts_are_evidence_not_authority": { "type": "boolean", "const": true },
+            "raw_private_content_persisted": { "type": "boolean", "const": false }
+          }
+        },
+        "distill": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "implementation",
+            "deterministic_after_input",
+            "uses_llm",
+            "llm_api_calls",
+            "external_api_calls",
+            "vector_backend",
+            "vector_lookup_required"
+          ],
+          "properties": {
+            "implementation": { "type": "string", "const": "rule_symbolic_local_token_vector" },
+            "deterministic_after_input": { "type": "boolean", "const": true },
+            "uses_llm": { "type": "boolean", "const": false },
+            "llm_api_calls": { "type": "integer", "const": 0 },
+            "external_api_calls": { "type": "integer", "const": 0 },
+            "vector_backend": { "type": "string", "const": "local-token-vector-v1" },
+            "vector_lookup_required": { "type": "boolean", "const": false }
+          }
+        },
+        "route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "implementation",
+            "deterministic_after_input",
+            "uses_llm",
+            "llm_may_override",
+            "route_vocab"
+          ],
+          "properties": {
+            "implementation": { "type": "string", "const": "signal_rules_and_route_table" },
+            "deterministic_after_input": { "type": "boolean", "const": true },
+            "uses_llm": { "type": "boolean", "const": false },
+            "llm_may_override": { "type": "boolean", "const": false },
+            "route_vocab": {
+              "type": "array",
+              "minItems": 6,
+              "items": { "type": "string" },
+              "allOf": [
+                { "contains": { "const": "memory" } },
+                { "contains": { "const": "skill" } },
+                { "contains": { "const": "case" } },
+                { "contains": { "const": "policy" } },
+                { "contains": { "const": "damping" } },
+                { "contains": { "const": "ignore" } }
+              ]
+            }
+          }
+        },
+        "handoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "implementation",
+            "durable_effects_require_interrupt",
+            "execution_without_human"
+          ],
+          "properties": {
+            "implementation": { "type": "string", "const": "repair_ticket_work_order_interrupt" },
+            "durable_effects_require_interrupt": { "type": "boolean", "const": true },
+            "execution_without_human": { "type": "boolean", "const": false }
+          }
+        }
+      }
+    },
     "state_projection": {
       "type": "object",
       "additionalProperties": false,
@@ -181,6 +275,157 @@
         "all_durable_public_effects_require_interrupt": { "type": "boolean", "const": true }
       }
     },
+    "action_policy_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_engine",
+        "rules",
+        "evaluated_action",
+        "decision_trace",
+        "effective_decision"
+      ],
+      "properties": {
+        "policy_engine": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "default_action",
+            "conflict_resolution",
+            "evaluation_timing",
+            "fail_closed",
+            "llm_in_decision_loop",
+            "allowed_outcomes"
+          ],
+          "properties": {
+            "kind": { "type": "string", "const": "qianxuesen_local_rule_matrix" },
+            "default_action": { "type": "string", "const": "deny" },
+            "conflict_resolution": { "type": "string", "const": "deny_overrides" },
+            "evaluation_timing": { "type": "string", "const": "before_control_action" },
+            "fail_closed": { "type": "boolean", "const": true },
+            "llm_in_decision_loop": { "type": "boolean", "const": false },
+            "allowed_outcomes": {
+              "type": "array",
+              "minItems": 4,
+              "items": { "type": "string" },
+              "allOf": [
+                { "contains": { "const": "allow_readonly_projection" } },
+                { "contains": { "const": "allow_bounded_local_work" } },
+                { "contains": { "const": "require_interrupt" } },
+                { "contains": { "const": "deny" } }
+              ]
+            }
+          }
+        },
+        "rules": {
+          "type": "array",
+          "minItems": 4,
+          "items": { "$ref": "#/$defs/action_policy_rule" },
+          "allOf": [
+            { "contains": { "properties": { "rule_id": { "const": "deny_llm_learning_authority" } }, "required": ["rule_id"] } },
+            { "contains": { "properties": { "rule_id": { "const": "require_interrupt_for_durable_or_public_effect" } }, "required": ["rule_id"] } },
+            { "contains": { "properties": { "rule_id": { "const": "allow_qianxuesen_readonly_projection" } }, "required": ["rule_id"] } },
+            { "contains": { "properties": { "rule_id": { "const": "allow_bounded_local_work_after_policy" } }, "required": ["rule_id"] } }
+          ]
+        },
+        "evaluated_action": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action_type",
+            "work_order_count",
+            "interrupt_count",
+            "durable_or_public_effect_count"
+          ],
+          "properties": {
+            "action_type": { "type": "string", "const": "learning_route_and_work_order_handoff" },
+            "work_order_count": { "type": "integer", "minimum": 0 },
+            "interrupt_count": { "type": "integer", "minimum": 0 },
+            "durable_or_public_effect_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "decision_trace": {
+          "type": "array",
+          "minItems": 3,
+          "items": { "$ref": "#/$defs/action_policy_decision_trace" }
+        },
+        "effective_decision": {
+          "type": "string",
+          "enum": [
+            "allow_readonly_projection",
+            "allow_bounded_local_work",
+            "require_interrupt",
+            "deny"
+          ]
+        }
+      }
+    },
+    "decision_bom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "reconstruction_mode",
+        "decision_id",
+        "reconstructed_at",
+        "sources_queried",
+        "required_fields",
+        "missing_required_fields",
+        "completeness_score",
+        "integrity_hash"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "misa.qianxuesen_decision_bom.v1"
+        },
+        "reconstruction_mode": {
+          "type": "string",
+          "const": "from_existing_bridge_signals"
+        },
+        "decision_id": {
+          "type": "string",
+          "pattern": "^bridge-[a-f0-9]{16}$"
+        },
+        "reconstructed_at": { "type": "string", "format": "date-time" },
+        "sources_queried": {
+          "type": "array",
+          "minItems": 5,
+          "items": { "type": "string" },
+          "allOf": [
+            { "contains": { "const": "state_projection" } },
+            { "contains": { "const": "governance_hooks" } },
+            { "contains": { "const": "action_policy_contract" } },
+            { "contains": { "const": "interrupt_queue" } },
+            { "contains": { "const": "decision_boundary" } }
+          ]
+        },
+        "required_fields": {
+          "type": "array",
+          "minItems": 6,
+          "items": { "$ref": "#/$defs/decision_bom_field" },
+          "allOf": [
+            { "contains": { "properties": { "name": { "const": "control_owner" } }, "required": ["name"] } },
+            { "contains": { "properties": { "name": { "const": "policy_rules_evaluated" } }, "required": ["name"] } },
+            { "contains": { "properties": { "name": { "const": "action_type" } }, "required": ["name"] } },
+            { "contains": { "properties": { "name": { "const": "decision_outcome" } }, "required": ["name"] } },
+            { "contains": { "properties": { "name": { "const": "evidence_source_refs" } }, "required": ["name"] } },
+            { "contains": { "properties": { "name": { "const": "human_boundary_status" } }, "required": ["name"] } }
+          ]
+        },
+        "missing_required_fields": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "completeness_score": { "type": "number", "const": 1 },
+        "integrity_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
     "summary": {
       "type": "object",
       "additionalProperties": false,
@@ -191,6 +436,8 @@
         "governance_hook_count",
         "llm_owned_learning_decision_count",
         "live_effect_allowed",
+        "action_policy_effective_decision",
+        "decision_bom_completeness_score",
         "verifier"
       ],
       "properties": {
@@ -200,6 +447,16 @@
         "governance_hook_count": { "type": "integer", "minimum": 1 },
         "llm_owned_learning_decision_count": { "type": "integer", "const": 0 },
         "live_effect_allowed": { "type": "boolean", "const": false },
+        "action_policy_effective_decision": {
+          "type": "string",
+          "enum": [
+            "allow_readonly_projection",
+            "allow_bounded_local_work",
+            "require_interrupt",
+            "deny"
+          ]
+        },
+        "decision_bom_completeness_score": { "type": "number", "const": 1 },
         "verifier": { "type": "string", "enum": ["passed", "failed"] }
       }
     },
@@ -261,6 +518,62 @@
         },
         "must_be_deterministic": { "type": "boolean", "const": true },
         "llm_may_override": { "type": "boolean", "const": false }
+      }
+    },
+    "action_policy_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule_id", "stage_id", "priority", "match", "decision"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "stage_id": { "type": "string" },
+        "priority": { "type": "integer" },
+        "match": { "type": "string" },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "allow_readonly_projection",
+            "allow_bounded_local_work",
+            "require_interrupt",
+            "deny"
+          ]
+        }
+      }
+    },
+    "action_policy_decision_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage_id", "matched_rule", "decision"],
+      "properties": {
+        "stage_id": { "type": "string" },
+        "matched_rule": { "type": "string" },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "allow_readonly_projection",
+            "allow_bounded_local_work",
+            "require_interrupt",
+            "deny"
+          ]
+        },
+        "applied_to_llm_attempts_only": { "type": "boolean" },
+        "observed_llm_attempt_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "decision_bom_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "category", "value", "source", "present", "inferred"],
+      "properties": {
+        "name": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["identity", "policy", "action", "outcome", "lineage", "boundary"]
+        },
+        "value": {},
+        "source": { "type": "string" },
+        "present": { "type": "boolean", "const": true },
+        "inferred": { "type": "boolean" }
       }
     },
     "interrupt": {

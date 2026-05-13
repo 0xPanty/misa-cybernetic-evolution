@@ -35,6 +35,7 @@ import {
 import { validateJsonData } from "../scripts/lib/schema-validation.mjs";
 import {
   exportMinimalPositiveSkills,
+  reviewSkillPromotionCandidate,
   reviewMemoryLayerComparison
 } from "../scripts/lib/memory-layer.mjs";
 import {
@@ -52,6 +53,7 @@ import {
   evaluateLangGraphQianxuesenBridge,
   reviewLangGraphQianxuesenBridge
 } from "../scripts/lib/langgraph-qianxuesen-bridge.mjs";
+import { loadVpsConversationSources } from "../scripts/lib/vps-conversation-sources.mjs";
 import {
   CHECKPOINTER_FIELDS,
   DEFAULT_STATE_INPUTS,
@@ -776,6 +778,70 @@ test("memory layer comparison rejects broad automatic L3 promotion", async () =>
   assert.equal(result.export_policy.installs_skills, false);
   assert.equal(result.export_policy.writes_persistent_memory, false);
   assert.equal(result.export_policy.updates_vps, false);
+  assert.equal(result.export_policy.skill_promotion_contract.allowed_route_target, "skill");
+  assert.ok(result.export_policy.skill_promotion_contract.required_signals.includes("reusable_workflow"));
+  assert.ok(result.export_policy.skill_promotion_contract.blocking_signals.includes("farcaster_public_memory_risk"));
+  assert.ok(result.export_policy.skill_promotion_contract.blocking_signals.includes("repeated_failure_pattern"));
+});
+
+test("minimal positive skill promotion keeps clean real workflows and blocks ambiguous routes", async () => {
+  const real = await reviewMemoryLayerComparison({
+    vpsRawDir: "runs/vps-real-conversation-source"
+  });
+  const exportedSkill = real.minimal_positive_l3.skills.find((skill) => (
+    skill.source_event_id === "misa-distilled-vps-live-edge-redaction-sanitized-redaction-workflow"
+  ));
+
+  assert.equal(real.ok, true);
+  assert.ok(exportedSkill);
+  assert.equal(exportedSkill.export_allowed, true);
+  assert.equal(exportedSkill.promotion_review.approved, true);
+  assert.deepEqual(exportedSkill.promotion_review.reasons, []);
+  assert.ok(exportedSkill.promotion_review.evidence.signals.includes("reusable_workflow"));
+
+  const unsafePublicSkill = reviewSkillPromotionCandidate({
+    observe: {
+      signals: ["reusable_workflow", "farcaster_public_memory_risk"],
+      risk_level: "high"
+    },
+    route: { target: "skill" },
+    candidate_review: { state: "staged" },
+    verification: { passed: true },
+    result: {
+      positive_value: true,
+      live_effects: {
+        writes_persistent_memory: false,
+        publishes_skill: false,
+        starts_timer: false,
+        changes_session_mechanics: false,
+        posts_publicly: false
+      }
+    }
+  });
+  const unsafeCaseSkill = reviewSkillPromotionCandidate({
+    observe: {
+      signals: ["reusable_workflow", "repeated_failure_pattern"],
+      risk_level: "medium"
+    },
+    route: { target: "skill" },
+    candidate_review: { state: "staged" },
+    verification: { passed: true },
+    result: {
+      positive_value: true,
+      live_effects: {
+        writes_persistent_memory: false,
+        publishes_skill: false,
+        starts_timer: false,
+        changes_session_mechanics: false,
+        posts_publicly: false
+      }
+    }
+  });
+
+  assert.equal(unsafePublicSkill.approved, false);
+  assert.ok(unsafePublicSkill.reasons.includes("blocking_signal:farcaster_public_memory_risk"));
+  assert.equal(unsafeCaseSkill.approved, false);
+  assert.ok(unsafeCaseSkill.reasons.includes("blocking_signal:repeated_failure_pattern"));
 });
 
 test("export-skills writes only minimal positive local drafts", async () => {
@@ -797,6 +863,7 @@ test("export-skills writes only minimal positive local drafts", async () => {
     const manifest = JSON.parse(await fs.readFile(path.join(tempRoot, "manifest.json"), "utf8"));
     assert.equal(manifest.exported_count, result.exported_count);
     assert.equal(manifest.exports.every((item) => item.route_target === "skill"), true);
+    assert.equal(manifest.exports.every((item) => item.promotion_review.approved === true), true);
     assert.equal(manifest.exports.every((item) => item.publication_allowed === false), true);
     assert.equal(manifest.exports.every((item) => item.installation_allowed === false), true);
   } finally {
@@ -943,13 +1010,37 @@ test("LangGraph bridge keeps Qianxuesen in charge of learning routes", async () 
   assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
   assert.equal(result.integration_principle.carrier_layer, "LangGraph");
   assert.equal(result.integration_principle.control_layer, "Qianxuesen");
+  assert.equal(result.determinism_contract.claim_scope, "qianxuesen_sidecar_after_input_ingest");
+  assert.equal(result.determinism_contract.input_boundary.upstream_artifacts_may_be_llm_generated, true);
+  assert.equal(result.determinism_contract.input_boundary.upstream_artifacts_are_evidence_not_authority, true);
+  assert.equal(result.determinism_contract.distill.implementation, "rule_symbolic_local_token_vector");
+  assert.equal(result.determinism_contract.distill.uses_llm, false);
+  assert.equal(result.determinism_contract.distill.vector_backend, "local-token-vector-v1");
+  assert.equal(result.determinism_contract.route.implementation, "signal_rules_and_route_table");
+  assert.equal(result.determinism_contract.route.uses_llm, false);
   assert.equal(result.langgraph_contract.checkpointer.required, true);
   assert.equal(result.langgraph_contract.interrupt.required, true);
   assert.equal(result.summary.work_order_count, workOrderRouting.summary.work_order_count);
   assert.equal(result.summary.interrupt_count, workOrderRouting.summary.requires_user_confirmation_count);
   assert.equal(result.summary.llm_owned_learning_decision_count, 0);
+  assert.equal(result.summary.action_policy_effective_decision, "require_interrupt");
+  assert.equal(result.summary.decision_bom_completeness_score, 1);
   assert.equal(result.safety.llm_route_decision_allowed, false);
   assert.equal(result.safety.graph_can_execute_live_effects, false);
+  assert.equal(result.action_policy_contract.policy_engine.default_action, "deny");
+  assert.equal(result.action_policy_contract.policy_engine.conflict_resolution, "deny_overrides");
+  assert.equal(result.action_policy_contract.policy_engine.fail_closed, true);
+  assert.equal(result.action_policy_contract.policy_engine.llm_in_decision_loop, false);
+  assert.equal(result.action_policy_contract.effective_decision, "require_interrupt");
+  assert.ok(result.action_policy_contract.rules.some((rule) => rule.rule_id === "deny_llm_learning_authority"));
+  assert.ok(result.action_policy_contract.rules.some((rule) => rule.rule_id === "require_interrupt_for_durable_or_public_effect"));
+  assert.equal(result.decision_bom.reconstruction_mode, "from_existing_bridge_signals");
+  assert.equal(result.decision_bom.completeness_score, 1);
+  assert.deepEqual(result.decision_bom.missing_required_fields, []);
+  assert.equal(
+    result.decision_bom.required_fields.find((field) => field.name === "decision_outcome").value,
+    result.action_policy_contract.effective_decision
+  );
   assert.equal(result.langgraph_contract.custom_nodes.every((node) => node.owner === "qianxuesen_deterministic"), true);
   assert.equal(result.langgraph_contract.custom_nodes.every((node) => node.llm_decision_allowed === false), true);
   assert.deepEqual(result.langgraph_contract.state_inputs, DEFAULT_STATE_INPUTS);
@@ -973,6 +1064,14 @@ test("LangGraph bridge flags downgraded LLM-owned governance", async () => {
   downgraded.langgraph_contract.custom_nodes[0].llm_decision_allowed = true;
   downgraded.governance_hooks[0].llm_may_override = true;
   downgraded.safety.llm_route_decision_allowed = true;
+  downgraded.determinism_contract.distill.uses_llm = true;
+  downgraded.determinism_contract.route.llm_may_override = true;
+  downgraded.action_policy_contract.policy_engine.default_action = "allow";
+  downgraded.action_policy_contract.policy_engine.llm_in_decision_loop = true;
+  downgraded.action_policy_contract.rules = downgraded.action_policy_contract.rules
+    .filter((rule) => rule.rule_id !== "deny_llm_learning_authority");
+  downgraded.decision_bom.completeness_score = 0.83;
+  downgraded.decision_bom.missing_required_fields = ["policy_rules_evaluated"];
   downgraded.summary.llm_owned_learning_decision_count = 1;
   downgraded.decision_boundary.llm_agent_must_not = downgraded.decision_boundary.llm_agent_must_not
     .filter((item) => item !== "write_persistent_memory");
@@ -990,6 +1089,12 @@ test("LangGraph bridge flags downgraded LLM-owned governance", async () => {
   assert.ok(checked.violations.includes("llm_route_decision_allowed_must_be_false"));
   assert.ok(checked.violations.includes("llm_owned_learning_decision_count_must_be_zero"));
   assert.ok(checked.violations.includes("llm_learning_route_boundary_missing"));
+  assert.ok(checked.violations.includes("distill_determinism_contract_mismatch"));
+  assert.ok(checked.violations.includes("route_determinism_contract_mismatch"));
+  assert.ok(checked.violations.includes("action_policy_engine_must_be_fail_closed"));
+  assert.ok(checked.violations.includes("action_policy_rules_missing"));
+  assert.ok(checked.violations.includes("decision_bom_must_be_complete"));
+  assert.ok(checked.violations.includes("decision_bom_integrity_hash_mismatch"));
   assert.ok(checked.violations.includes("langgraph_checkpointer_fields_missing"));
   assert.ok(checked.violations.includes("interrupt_resume_decisions_missing"));
 });
@@ -1004,6 +1109,10 @@ test("LangGraph bridge example stays aligned with generated contract constants",
   });
 
   assert.deepEqual(example.langgraph_contract.state_inputs, result.langgraph_contract.state_inputs);
+  assert.deepEqual(example.determinism_contract, result.determinism_contract);
+  assert.deepEqual(example.action_policy_contract, result.action_policy_contract);
+  assert.deepEqual(example.decision_bom.required_fields, result.decision_bom.required_fields);
+  assert.equal(example.decision_bom.completeness_score, result.decision_bom.completeness_score);
   assert.deepEqual(example.langgraph_contract.checkpointer.persist_fields, result.langgraph_contract.checkpointer.persist_fields);
   assert.deepEqual(example.langgraph_contract.llm_nodes.forbidden_learning_decisions, result.langgraph_contract.llm_nodes.forbidden_learning_decisions);
   assert.deepEqual(example.decision_boundary.llm_agent_must_not, result.decision_boundary.llm_agent_must_not);
@@ -1035,6 +1144,7 @@ test("LangGraph bridge maps compact Hermes high-risk work orders to human interr
   assert.equal(result.ok, true);
   assert.equal(result.summary.work_order_count, 1);
   assert.equal(result.summary.interrupt_count, 1);
+  assert.equal(result.state_projection.repair_ticket_count, 1);
   assert.equal(result.state_projection.human_owner_work_order_count, 1);
 
   const interrupt = result.interrupt_queue[0];
@@ -1044,6 +1154,40 @@ test("LangGraph bridge maps compact Hermes high-risk work orders to human interr
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("persistent_memory"));
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("runtime_service"));
   assert.ok(interrupt.effect_boundary.blocked_surfaces.includes("provider_or_credential"));
+});
+
+test("VPS conversation loader accepts symlinked sanitized JSON files", async (t) => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-vps-conversation-symlink-"));
+  try {
+    const targetPath = path.join(tempRoot, "sanitized-conversation-target.json");
+    const linkPath = path.join(tempRoot, "sanitized-conversation-link.json");
+    await fs.writeFile(targetPath, `${JSON.stringify({
+      conversation: {
+        cast: {
+          text: "A sanitized VPS conversation confirms public replies need local safety checks.",
+          direct_replies: [
+            { text: "Keep public-channel lessons behind approval before reuse." }
+          ]
+        }
+      }
+    })}\n`, "utf8");
+
+    try {
+      await fs.symlink(targetPath, linkPath, "file");
+    } catch (error) {
+      if (["EPERM", "EACCES", "ENOSYS"].includes(error.code)) {
+        t.skip(`symlink creation is not available: ${error.code}`);
+        return;
+      }
+      throw error;
+    }
+
+    const sources = await loadVpsConversationSources({ rawDir: tempRoot });
+    assert.equal(sources.length, 2);
+    assert.ok(sources.some((source) => source.source_id.includes("sanitized-conversation-link")));
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test("work-order routing policy can allow only bounded low-risk autonomous work", () => {

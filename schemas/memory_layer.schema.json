@@ -114,6 +114,7 @@
       "required": [
         "export_command",
         "export_scope",
+        "skill_promotion_contract",
         "installs_skills",
         "writes_persistent_memory",
         "updates_vps",
@@ -122,6 +123,39 @@
       "properties": {
         "export_command": { "type": "string" },
         "export_scope": { "type": "string" },
+        "skill_promotion_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "allowed_route_target",
+            "required_signals",
+            "blocking_signals",
+            "requires_candidate_state",
+            "requires_verification_passed",
+            "requires_positive_value",
+            "requires_no_live_effects",
+            "ambiguous_signal_policy"
+          ],
+          "properties": {
+            "allowed_route_target": { "type": "string", "const": "skill" },
+            "required_signals": {
+              "type": "array",
+              "minItems": 1,
+              "contains": { "const": "reusable_workflow" },
+              "items": { "type": "string" }
+            },
+            "blocking_signals": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "requires_candidate_state": { "type": "string", "const": "staged" },
+            "requires_verification_passed": { "type": "boolean", "const": true },
+            "requires_positive_value": { "type": "boolean", "const": true },
+            "requires_no_live_effects": { "type": "boolean", "const": true },
+            "ambiguous_signal_policy": { "type": "string" }
+          }
+        },
         "installs_skills": { "type": "boolean", "const": false },
         "writes_persistent_memory": { "type": "boolean", "const": false },
         "updates_vps": { "type": "boolean", "const": false },
@@ -177,6 +211,7 @@
               "route_target",
               "mode",
               "verification_passed",
+              "promotion_review",
               "export_allowed",
               "publication_allowed",
               "safety"
@@ -187,6 +222,19 @@
               "route_target": { "type": "string" },
               "mode": { "type": "string" },
               "verification_passed": { "type": "boolean", "const": true },
+              "promotion_review": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": ["approved", "contract", "required_signals", "blocking_signals", "reasons", "evidence"],
+                "properties": {
+                  "approved": { "type": "boolean" },
+                  "contract": { "type": "string", "const": "minimal_positive_l3_skill_promotion.v1" },
+                  "required_signals": { "type": "array", "items": { "type": "string" } },
+                  "blocking_signals": { "type": "array", "items": { "type": "string" } },
+                  "reasons": { "type": "array", "items": { "type": "string" } },
+                  "evidence": { "type": "object" }
+                }
+              },
               "export_allowed": { "type": "boolean" },
               "publication_allowed": { "type": "boolean", "const": false },
               "safety": { "type": "object" }
