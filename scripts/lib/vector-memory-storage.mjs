@@ -83,13 +83,19 @@ const REQUIRED_METADATA_FIELDS = [
   "risk_level",
   "source_type",
   "source_id",
+  "original_source_kind",
+  "original_source_id",
+  "original_chunk_hash",
   "created_by",
   "promotion_state",
   "can_influence_behavior",
   "requires_owner_approval",
   "allowed_surfaces",
   "blocked_surfaces",
-  "decision_trace_id"
+  "decision_trace_id",
+  "original_source",
+  "retrieval_trace",
+  "retrieval_hints"
 ];
 
 function countBy(values, selector) {
@@ -144,10 +150,161 @@ function blockedSurfacesForWorkOrder(order) {
   ]);
 }
 
+function normalizeSourceRef(ref = {}) {
+  return {
+    kind: String(ref.kind ?? "unknown"),
+    id: String(ref.id ?? "unknown"),
+    note: String(ref.note ?? "")
+  };
+}
+
+function normalizeOriginalSource(input = {}) {
+  const sourceKind = String(input.source_kind ?? input.source_type ?? "unknown");
+  const sourceId = String(input.source_id ?? "unknown");
+  const sourceRefs = (input.source_refs ?? []).map(normalizeSourceRef);
+  return {
+    source_system: String(input.source_system ?? "qianxuesen_sidecar"),
+    source_kind: sourceKind,
+    source_id: sourceId,
+    session_id: String(input.session_id ?? "unknown"),
+    message_id: String(input.message_id ?? "unknown"),
+    artifact_path: String(input.artifact_path ?? "none"),
+    chunk_hash: String(input.chunk_hash ?? "none"),
+    channel: String(input.channel ?? "local_artifact"),
+    actor: String(input.actor ?? "unknown"),
+    created_at: String(input.created_at ?? "unknown"),
+    redaction_status: String(input.redaction_status ?? "opaque_ref_only"),
+    source_refs: sourceRefs.length ? sourceRefs : [
+      { kind: sourceKind, id: sourceId, note: "primary source ref" }
+    ]
+  };
+}
+
+function originalSourceFromWorkOrder(order) {
+  const refs = (order.source_refs ?? []).map(normalizeSourceRef);
+  const primaryEvent = refs.find((ref) => ref.kind === "source_event") ?? refs[0];
+  return normalizeOriginalSource({
+    source_system: "qianxuesen_sidecar",
+    source_kind: order.source?.source_kind ?? primaryEvent?.kind ?? order.source?.source_type ?? "work_order",
+    source_id: primaryEvent?.id ?? order.source?.source_id ?? order.work_order_id,
+    artifact_path: order.source?.artifact_path ?? "work_order_routing",
+    channel: order.source?.channel ?? "local_artifact",
+    actor: order.source?.actor ?? "qianxuesen_router",
+    created_at: order.created_at ?? "unknown",
+    redaction_status: order.source?.redaction_status ?? "opaque_ref_only",
+    source_refs: refs
+  });
+}
+
+function originalSourceFromBridge(langGraphBridge, traceId) {
+  const evidenceRefs = (langGraphBridge?.state_projection?.evidence_source_ids ?? [])
+    .map((id) => ({ kind: "evidence_source", id, note: "bridge state projection" }));
+  return normalizeOriginalSource({
+    source_system: "qianxuesen_sidecar",
+    source_kind: "langgraph_qianxuesen_bridge",
+    source_id: traceId,
+    artifact_path: "langgraph_qianxuesen_bridge",
+    channel: "local_artifact",
+    actor: "qianxuesen_bridge",
+    created_at: langGraphBridge?.created_at ?? "unknown",
+    redaction_status: "opaque_ref_only",
+    source_refs: evidenceRefs
+  });
+}
+
+function buildRetrievalTrace({ recordId, kind, sourceType, sourceId, decisionTraceId, originalSource }) {
+  const sourceHops = [
+    {
+      stage: "original_source",
+      ref_type: originalSource.source_kind,
+      ref_id: originalSource.source_id,
+      artifact_path: originalSource.artifact_path
+    },
+    {
+      stage: "classification_source",
+      ref_type: sourceType,
+      ref_id: sourceId,
+      artifact_path: "vector_memory_classifier"
+    },
+    {
+      stage: "decision_trace",
+      ref_type: "decision_trace",
+      ref_id: decisionTraceId,
+      artifact_path: "langgraph_qianxuesen_bridge"
+    },
+    {
+      stage: "vector_record",
+      ref_type: kind,
+      ref_id: recordId,
+      artifact_path: "zilliz_adapter_payload"
+    }
+  ];
+  return {
+    trace_version: "misa.retrieval_trace.v1",
+    replayable: true,
+    replay_keys: unique([
+      recordId,
+      sourceId,
+      decisionTraceId,
+      originalSource.source_id,
+      originalSource.session_id,
+      originalSource.message_id,
+      originalSource.chunk_hash,
+      ...originalSource.source_refs.map((ref) => ref.id)
+    ]),
+    source_hops: sourceHops
+  };
+}
+
+function buildRetrievalHints({ kind, collection, metadata }) {
+  return {
+    filter_keys: [
+      "collection",
+      "kind",
+      "authority",
+      "source_type",
+      "source_id",
+      "decision_trace_id",
+      "original_source_kind",
+      "original_source_id",
+      "original_chunk_hash"
+    ],
+    boost_terms: unique([
+      kind,
+      collection,
+      metadata.authority,
+      metadata.status,
+      metadata.risk_level,
+      metadata.source_type,
+      metadata.original_source_kind,
+      ...metadata.allowed_surfaces,
+      ...metadata.blocked_surfaces
+    ]),
+    score_inputs: [
+      "vector_similarity",
+      "metadata_filter_match",
+      "authority_weight",
+      "source_recency_weight",
+      "trace_path_continuity",
+      "blocked_surface_penalty"
+    ],
+    false_positive_guards: [
+      "audit_only_or_candidate_records_cannot_change_behavior",
+      "persona_or_policy_records_require_owner_approval",
+      "opaque_source_refs_are_required_before_raw_content_lookup"
+    ]
+  };
+}
+
 function metadataForKind(kind, overrides = {}) {
   const contract = collectionForKind(kind);
   const authority = overrides.authority ?? contract.authority;
   const canInfluenceBehavior = overrides.can_influence_behavior ?? contract.can_influence_behavior;
+  const originalSource = normalizeOriginalSource({
+    source_kind: overrides.source_type ?? "unknown",
+    source_id: overrides.source_id ?? "unknown",
+    ...overrides.original_source
+  });
   return {
     kind,
     authority,
@@ -155,13 +312,17 @@ function metadataForKind(kind, overrides = {}) {
     risk_level: overrides.risk_level ?? "low",
     source_type: overrides.source_type ?? "unknown",
     source_id: overrides.source_id ?? "unknown",
+    original_source_kind: originalSource.source_kind,
+    original_source_id: originalSource.source_id,
+    original_chunk_hash: originalSource.chunk_hash,
     created_by: overrides.created_by ?? "qianxuesen_vector_memory_classifier",
     promotion_state: overrides.promotion_state ?? (authority === "promoted" || authority === "policy" ? "promoted" : "not_promoted"),
     can_influence_behavior: canInfluenceBehavior,
     requires_owner_approval: overrides.requires_owner_approval ?? contract.requires_owner_approval,
     allowed_surfaces: overrides.allowed_surfaces ?? ["retrieval_context"],
     blocked_surfaces: unique(overrides.blocked_surfaces ?? []),
-    decision_trace_id: overrides.decision_trace_id ?? "none"
+    decision_trace_id: overrides.decision_trace_id ?? "none",
+    original_source: originalSource
   };
 }
 
@@ -172,6 +333,23 @@ function recordForKind(kind, {
   metadata
 }) {
   const contract = collectionForKind(kind);
+  const baseMetadata = metadataForKind(kind, metadata);
+  const fullMetadata = {
+    ...baseMetadata,
+    retrieval_trace: buildRetrievalTrace({
+      recordId,
+      kind,
+      sourceType: baseMetadata.source_type,
+      sourceId: baseMetadata.source_id,
+      decisionTraceId: baseMetadata.decision_trace_id,
+      originalSource: baseMetadata.original_source
+    })
+  };
+  fullMetadata.retrieval_hints = buildRetrievalHints({
+    kind,
+    collection: contract.collection,
+    metadata: fullMetadata
+  });
   return {
     record_id: recordId,
     kind,
@@ -179,7 +357,7 @@ function recordForKind(kind, {
     local_dir: contract.local_dir,
     title,
     summary,
-    metadata: metadataForKind(kind, metadata)
+    metadata: fullMetadata
   };
 }
 
@@ -195,6 +373,7 @@ function recordsFromWorkOrder(order, traceId) {
     source_type: order.source?.source_type ?? "work_order",
     source_id: order.work_order_id,
     decision_trace_id: traceId,
+    original_source: originalSourceFromWorkOrder(order),
     blocked_surfaces: blockedSurfaces
   };
   const records = [
@@ -245,6 +424,7 @@ function recordsFromLangGraphBridge(langGraphBridge) {
   if (!langGraphBridge) return [];
   const traceId = decisionTraceId(langGraphBridge);
   const blockedSurfaces = langGraphBridge.action_policy_contract?.evaluated_action?.blocked_surfaces ?? [];
+  const originalSource = originalSourceFromBridge(langGraphBridge, traceId);
   return [
     recordForKind("decision_trace", {
       recordId: `vm-decision-trace-${slug(traceId)}`,
@@ -254,6 +434,7 @@ function recordsFromLangGraphBridge(langGraphBridge) {
         source_type: "langgraph_qianxuesen_bridge",
         source_id: traceId,
         decision_trace_id: traceId,
+        original_source: originalSource,
         risk_level: langGraphBridge.summary?.interrupt_count > 0 ? "high" : "low",
         blocked_surfaces: blockedSurfaces
       }
@@ -266,6 +447,7 @@ function recordsFromLangGraphBridge(langGraphBridge) {
         source_type: "langgraph_qianxuesen_bridge",
         source_id: traceId,
         decision_trace_id: traceId,
+        original_source: originalSource,
         risk_level: langGraphBridge.summary?.interrupt_count > 0 ? "high" : "low",
         blocked_surfaces: blockedSurfaces
       }
@@ -308,7 +490,9 @@ export function buildVectorMemoryStoragePlan({
     metadata_contract: {
       required_fields: [...REQUIRED_METADATA_FIELDS],
       behavior_authority_rule: "can_influence_behavior=true requires authority=promoted or authority=policy",
-      candidate_rule: "candidate records can be retrieved for review but cannot rewrite persona, policy, or production behavior"
+      candidate_rule: "candidate records can be retrieved for review but cannot rewrite persona, policy, or production behavior",
+      original_source_rule: "Every record carries opaque original-source refs so hits can be traced without exposing raw private content.",
+      retrieval_trace_rule: "Every record carries replay keys and source hops for hit explanation and path replay."
     },
     summary: {
       record_count: records.length,
@@ -319,6 +503,8 @@ export function buildVectorMemoryStoragePlan({
       policy_count: records.filter((record) => record.metadata.authority === "policy").length,
       can_influence_behavior_count: records.filter((record) => record.metadata.can_influence_behavior).length,
       owner_approval_required_count: records.filter((record) => record.metadata.requires_owner_approval).length,
+      original_source_count: records.filter((record) => record.metadata.original_source?.source_id !== "unknown").length,
+      replayable_trace_count: records.filter((record) => record.metadata.retrieval_trace?.replayable === true).length,
       zilliz_write_count: 0
     },
     records,

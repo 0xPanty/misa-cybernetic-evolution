@@ -38,6 +38,7 @@ const REQUIRED_FILES = [
   "docs/work-order-routing-v0.14.md",
   "docs/vector-memory-storage-v0.19.md",
   "docs/zilliz-vector-adapter-v0.19.md",
+  "docs/retrieval-lineage-v0.19.md",
   "scripts/precheck.mjs",
   "scripts/validate-schemas.mjs",
   "scripts/simulate-learning.mjs",

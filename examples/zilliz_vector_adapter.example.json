@@ -49,13 +49,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -90,6 +96,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -119,6 +140,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -162,13 +195,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -203,6 +242,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -232,6 +286,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -275,13 +341,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -316,6 +388,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -345,6 +432,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -390,13 +489,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -431,6 +536,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -460,6 +580,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -505,13 +637,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -546,6 +684,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -575,6 +728,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -618,13 +783,19 @@
           "risk_level",
           "source_type",
           "source_id",
+          "original_source_kind",
+          "original_source_id",
+          "original_chunk_hash",
           "created_by",
           "promotion_state",
           "can_influence_behavior",
           "requires_owner_approval",
           "allowed_surfaces",
           "blocked_surfaces",
-          "decision_trace_id"
+          "decision_trace_id",
+          "original_source",
+          "retrieval_trace",
+          "retrieval_hints"
         ]
       },
       "scalar_fields": [
@@ -659,6 +830,21 @@
           "max_length": 256
         },
         {
+          "name": "original_source_kind",
+          "type": "VarChar",
+          "max_length": 96
+        },
+        {
+          "name": "original_source_id",
+          "type": "VarChar",
+          "max_length": 256
+        },
+        {
+          "name": "original_chunk_hash",
+          "type": "VarChar",
+          "max_length": 128
+        },
+        {
           "name": "created_by",
           "type": "VarChar",
           "max_length": 128
@@ -688,6 +874,18 @@
           "name": "decision_trace_id",
           "type": "VarChar",
           "max_length": 256
+        },
+        {
+          "name": "original_source",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_trace",
+          "type": "JSON"
+        },
+        {
+          "name": "retrieval_hints",
+          "type": "JSON"
         }
       ],
       "dynamic_metadata_allowed": true,
@@ -721,6 +919,9 @@
             "risk_level": "high",
             "source_type": "langgraph_qianxuesen_bridge",
             "source_id": "bridge-9b4d9ecfa394466f",
+            "original_source_kind": "langgraph_qianxuesen_bridge",
+            "original_source_id": "bridge-9b4d9ecfa394466f",
+            "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
             "can_influence_behavior": false,
@@ -735,6 +936,126 @@
               "provider_or_credential"
             ],
             "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "original_source": {
+              "source_system": "qianxuesen_sidecar",
+              "source_kind": "langgraph_qianxuesen_bridge",
+              "source_id": "bridge-9b4d9ecfa394466f",
+              "session_id": "unknown",
+              "message_id": "unknown",
+              "artifact_path": "langgraph_qianxuesen_bridge",
+              "chunk_hash": "none",
+              "channel": "local_artifact",
+              "actor": "qianxuesen_bridge",
+              "created_at": "2026-05-12T00:00:00.000Z",
+              "redaction_status": "opaque_ref_only",
+              "source_refs": [
+                {
+                  "kind": "evidence_source",
+                  "id": "repair-local-distillation-sources-auto-l3-overpromotion",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "local_distillation_sources",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-failure-log-provider-timeout-006",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-farcaster-reply-audit-007",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-local-window-zilliz-boundary-005",
+                  "note": "bridge state projection"
+                }
+              ]
+            },
+            "retrieval_trace": {
+              "trace_version": "misa.retrieval_trace.v1",
+              "replayable": true,
+              "replay_keys": [
+                "vm-audit-log-bridge-9b4d9ecfa394466f",
+                "bridge-9b4d9ecfa394466f",
+                "unknown",
+                "none",
+                "repair-local-distillation-sources-auto-l3-overpromotion",
+                "local_distillation_sources",
+                "misa-distilled-failure-log-provider-timeout-006",
+                "misa-distilled-farcaster-reply-audit-007",
+                "misa-distilled-local-window-zilliz-boundary-005"
+              ],
+              "source_hops": [
+                {
+                  "stage": "original_source",
+                  "ref_type": "langgraph_qianxuesen_bridge",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "classification_source",
+                  "ref_type": "langgraph_qianxuesen_bridge",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "vector_memory_classifier"
+                },
+                {
+                  "stage": "decision_trace",
+                  "ref_type": "decision_trace",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "vector_record",
+                  "ref_type": "audit_log",
+                  "ref_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+                  "artifact_path": "zilliz_adapter_payload"
+                }
+              ]
+            },
+            "retrieval_hints": {
+              "filter_keys": [
+                "collection",
+                "kind",
+                "authority",
+                "source_type",
+                "source_id",
+                "decision_trace_id",
+                "original_source_kind",
+                "original_source_id",
+                "original_chunk_hash"
+              ],
+              "boost_terms": [
+                "audit_log",
+                "misa_audit_memory",
+                "audit_only",
+                "observed",
+                "high",
+                "langgraph_qianxuesen_bridge",
+                "retrieval_context",
+                "persistent_memory",
+                "public_or_channel_output",
+                "runtime_service",
+                "provider_or_credential"
+              ],
+              "score_inputs": [
+                "vector_similarity",
+                "metadata_filter_match",
+                "authority_weight",
+                "source_recency_weight",
+                "trace_path_continuity",
+                "blocked_surface_penalty"
+              ],
+              "false_positive_guards": [
+                "audit_only_or_candidate_records_cannot_change_behavior",
+                "persona_or_policy_records_require_owner_approval",
+                "opaque_source_refs_are_required_before_raw_content_lookup"
+              ]
+            },
             "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
             "title": "Audit log bridge-9b4d9ecfa394466f",
             "local_dir": "memory/audit-log"
@@ -762,6 +1083,9 @@
             "risk_level": "high",
             "source_type": "langgraph_qianxuesen_bridge",
             "source_id": "bridge-9b4d9ecfa394466f",
+            "original_source_kind": "langgraph_qianxuesen_bridge",
+            "original_source_id": "bridge-9b4d9ecfa394466f",
+            "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
             "can_influence_behavior": false,
@@ -776,6 +1100,126 @@
               "provider_or_credential"
             ],
             "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "original_source": {
+              "source_system": "qianxuesen_sidecar",
+              "source_kind": "langgraph_qianxuesen_bridge",
+              "source_id": "bridge-9b4d9ecfa394466f",
+              "session_id": "unknown",
+              "message_id": "unknown",
+              "artifact_path": "langgraph_qianxuesen_bridge",
+              "chunk_hash": "none",
+              "channel": "local_artifact",
+              "actor": "qianxuesen_bridge",
+              "created_at": "2026-05-12T00:00:00.000Z",
+              "redaction_status": "opaque_ref_only",
+              "source_refs": [
+                {
+                  "kind": "evidence_source",
+                  "id": "repair-local-distillation-sources-auto-l3-overpromotion",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "local_distillation_sources",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-failure-log-provider-timeout-006",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-farcaster-reply-audit-007",
+                  "note": "bridge state projection"
+                },
+                {
+                  "kind": "evidence_source",
+                  "id": "misa-distilled-local-window-zilliz-boundary-005",
+                  "note": "bridge state projection"
+                }
+              ]
+            },
+            "retrieval_trace": {
+              "trace_version": "misa.retrieval_trace.v1",
+              "replayable": true,
+              "replay_keys": [
+                "vm-decision-trace-bridge-9b4d9ecfa394466f",
+                "bridge-9b4d9ecfa394466f",
+                "unknown",
+                "none",
+                "repair-local-distillation-sources-auto-l3-overpromotion",
+                "local_distillation_sources",
+                "misa-distilled-failure-log-provider-timeout-006",
+                "misa-distilled-farcaster-reply-audit-007",
+                "misa-distilled-local-window-zilliz-boundary-005"
+              ],
+              "source_hops": [
+                {
+                  "stage": "original_source",
+                  "ref_type": "langgraph_qianxuesen_bridge",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "classification_source",
+                  "ref_type": "langgraph_qianxuesen_bridge",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "vector_memory_classifier"
+                },
+                {
+                  "stage": "decision_trace",
+                  "ref_type": "decision_trace",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "vector_record",
+                  "ref_type": "decision_trace",
+                  "ref_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+                  "artifact_path": "zilliz_adapter_payload"
+                }
+              ]
+            },
+            "retrieval_hints": {
+              "filter_keys": [
+                "collection",
+                "kind",
+                "authority",
+                "source_type",
+                "source_id",
+                "decision_trace_id",
+                "original_source_kind",
+                "original_source_id",
+                "original_chunk_hash"
+              ],
+              "boost_terms": [
+                "decision_trace",
+                "misa_decision_memory",
+                "audit_only",
+                "observed",
+                "high",
+                "langgraph_qianxuesen_bridge",
+                "retrieval_context",
+                "persistent_memory",
+                "public_or_channel_output",
+                "runtime_service",
+                "provider_or_credential"
+              ],
+              "score_inputs": [
+                "vector_similarity",
+                "metadata_filter_match",
+                "authority_weight",
+                "source_recency_weight",
+                "trace_path_continuity",
+                "blocked_surface_penalty"
+              ],
+              "false_positive_guards": [
+                "audit_only_or_candidate_records_cannot_change_behavior",
+                "persona_or_policy_records_require_owner_approval",
+                "opaque_source_refs_are_required_before_raw_content_lookup"
+              ]
+            },
             "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
             "title": "Decision trace bridge-9b4d9ecfa394466f",
             "local_dir": "memory/decision-trace"
@@ -803,6 +1247,9 @@
             "risk_level": "high",
             "source_type": "repair_ticket",
             "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "original_source_kind": "local_distillation_sources",
+            "original_source_id": "misa-distilled-failure-log-provider-timeout-006",
+            "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
             "can_influence_behavior": false,
@@ -819,6 +1266,130 @@
               "provider_credentials"
             ],
             "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "original_source": {
+              "source_system": "qianxuesen_sidecar",
+              "source_kind": "local_distillation_sources",
+              "source_id": "misa-distilled-failure-log-provider-timeout-006",
+              "session_id": "unknown",
+              "message_id": "unknown",
+              "artifact_path": "work_order_routing",
+              "chunk_hash": "none",
+              "channel": "local_artifact",
+              "actor": "qianxuesen_router",
+              "created_at": "unknown",
+              "redaction_status": "opaque_ref_only",
+              "source_refs": [
+                {
+                  "kind": "repair_ticket",
+                  "id": "repair-local-distillation-sources-auto-l3-overpromotion",
+                  "note": ""
+                },
+                {
+                  "kind": "source_kind",
+                  "id": "local_distillation_sources",
+                  "note": ""
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-failure-log-provider-timeout-006",
+                  "note": "Keep this as case, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-farcaster-reply-audit-007",
+                  "note": "Keep this as policy, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-local-window-zilliz-boundary-005",
+                  "note": "Keep this as memory, not L3 skill export."
+                }
+              ]
+            },
+            "retrieval_trace": {
+              "trace_version": "misa.retrieval_trace.v1",
+              "replayable": true,
+              "replay_keys": [
+                "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "bridge-9b4d9ecfa394466f",
+                "misa-distilled-failure-log-provider-timeout-006",
+                "unknown",
+                "none",
+                "repair-local-distillation-sources-auto-l3-overpromotion",
+                "local_distillation_sources",
+                "misa-distilled-farcaster-reply-audit-007",
+                "misa-distilled-local-window-zilliz-boundary-005"
+              ],
+              "source_hops": [
+                {
+                  "stage": "original_source",
+                  "ref_type": "local_distillation_sources",
+                  "ref_id": "misa-distilled-failure-log-provider-timeout-006",
+                  "artifact_path": "work_order_routing"
+                },
+                {
+                  "stage": "classification_source",
+                  "ref_type": "repair_ticket",
+                  "ref_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "vector_memory_classifier"
+                },
+                {
+                  "stage": "decision_trace",
+                  "ref_type": "decision_trace",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "vector_record",
+                  "ref_type": "agent_experience_candidate",
+                  "ref_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "zilliz_adapter_payload"
+                }
+              ]
+            },
+            "retrieval_hints": {
+              "filter_keys": [
+                "collection",
+                "kind",
+                "authority",
+                "source_type",
+                "source_id",
+                "decision_trace_id",
+                "original_source_kind",
+                "original_source_id",
+                "original_chunk_hash"
+              ],
+              "boost_terms": [
+                "agent_experience_candidate",
+                "misa_experience_memory",
+                "candidate",
+                "unverified",
+                "high",
+                "repair_ticket",
+                "local_distillation_sources",
+                "local_docs",
+                "local_tests",
+                "retrieval_context",
+                "persistent_memory",
+                "public_posting",
+                "vps_or_runtime_service",
+                "provider_credentials"
+              ],
+              "score_inputs": [
+                "vector_similarity",
+                "metadata_filter_match",
+                "authority_weight",
+                "source_recency_weight",
+                "trace_path_continuity",
+                "blocked_surface_penalty"
+              ],
+              "false_positive_guards": [
+                "audit_only_or_candidate_records_cannot_change_behavior",
+                "persona_or_policy_records_require_owner_approval",
+                "opaque_source_refs_are_required_before_raw_content_lookup"
+              ]
+            },
             "record_id": "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
             "title": "Candidate experience from wo-repair-local-distillation-sources-auto-l3-overpromotion",
             "local_dir": "memory/agent-experience/candidate"
@@ -846,6 +1417,9 @@
             "risk_level": "high",
             "source_type": "repair_ticket",
             "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "original_source_kind": "local_distillation_sources",
+            "original_source_id": "misa-distilled-failure-log-provider-timeout-006",
+            "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "promoted",
             "can_influence_behavior": true,
@@ -861,6 +1435,129 @@
               "provider_credentials"
             ],
             "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "original_source": {
+              "source_system": "qianxuesen_sidecar",
+              "source_kind": "local_distillation_sources",
+              "source_id": "misa-distilled-failure-log-provider-timeout-006",
+              "session_id": "unknown",
+              "message_id": "unknown",
+              "artifact_path": "work_order_routing",
+              "chunk_hash": "none",
+              "channel": "local_artifact",
+              "actor": "qianxuesen_router",
+              "created_at": "unknown",
+              "redaction_status": "opaque_ref_only",
+              "source_refs": [
+                {
+                  "kind": "repair_ticket",
+                  "id": "repair-local-distillation-sources-auto-l3-overpromotion",
+                  "note": ""
+                },
+                {
+                  "kind": "source_kind",
+                  "id": "local_distillation_sources",
+                  "note": ""
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-failure-log-provider-timeout-006",
+                  "note": "Keep this as case, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-farcaster-reply-audit-007",
+                  "note": "Keep this as policy, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-local-window-zilliz-boundary-005",
+                  "note": "Keep this as memory, not L3 skill export."
+                }
+              ]
+            },
+            "retrieval_trace": {
+              "trace_version": "misa.retrieval_trace.v1",
+              "replayable": true,
+              "replay_keys": [
+                "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "bridge-9b4d9ecfa394466f",
+                "misa-distilled-failure-log-provider-timeout-006",
+                "unknown",
+                "none",
+                "repair-local-distillation-sources-auto-l3-overpromotion",
+                "local_distillation_sources",
+                "misa-distilled-farcaster-reply-audit-007",
+                "misa-distilled-local-window-zilliz-boundary-005"
+              ],
+              "source_hops": [
+                {
+                  "stage": "original_source",
+                  "ref_type": "local_distillation_sources",
+                  "ref_id": "misa-distilled-failure-log-provider-timeout-006",
+                  "artifact_path": "work_order_routing"
+                },
+                {
+                  "stage": "classification_source",
+                  "ref_type": "repair_ticket",
+                  "ref_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "vector_memory_classifier"
+                },
+                {
+                  "stage": "decision_trace",
+                  "ref_type": "decision_trace",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "vector_record",
+                  "ref_type": "policy_boundary",
+                  "ref_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "zilliz_adapter_payload"
+                }
+              ]
+            },
+            "retrieval_hints": {
+              "filter_keys": [
+                "collection",
+                "kind",
+                "authority",
+                "source_type",
+                "source_id",
+                "decision_trace_id",
+                "original_source_kind",
+                "original_source_id",
+                "original_chunk_hash"
+              ],
+              "boost_terms": [
+                "policy_boundary",
+                "misa_policy_memory",
+                "policy",
+                "active",
+                "high",
+                "repair_ticket",
+                "local_distillation_sources",
+                "policy_retrieval",
+                "safety_filter",
+                "persistent_memory",
+                "public_posting",
+                "vps_or_runtime_service",
+                "provider_credentials"
+              ],
+              "score_inputs": [
+                "vector_similarity",
+                "metadata_filter_match",
+                "authority_weight",
+                "source_recency_weight",
+                "trace_path_continuity",
+                "blocked_surface_penalty"
+              ],
+              "false_positive_guards": [
+                "audit_only_or_candidate_records_cannot_change_behavior",
+                "persona_or_policy_records_require_owner_approval",
+                "opaque_source_refs_are_required_before_raw_content_lookup"
+              ]
+            },
             "record_id": "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
             "title": "Blocked surfaces for wo-repair-local-distillation-sources-auto-l3-overpromotion",
             "local_dir": "memory/policy-boundary"
@@ -888,6 +1585,9 @@
             "risk_level": "high",
             "source_type": "repair_ticket",
             "source_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+            "original_source_kind": "local_distillation_sources",
+            "original_source_id": "misa-distilled-failure-log-provider-timeout-006",
+            "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
             "can_influence_behavior": false,
@@ -902,6 +1602,128 @@
               "provider_credentials"
             ],
             "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "original_source": {
+              "source_system": "qianxuesen_sidecar",
+              "source_kind": "local_distillation_sources",
+              "source_id": "misa-distilled-failure-log-provider-timeout-006",
+              "session_id": "unknown",
+              "message_id": "unknown",
+              "artifact_path": "work_order_routing",
+              "chunk_hash": "none",
+              "channel": "local_artifact",
+              "actor": "qianxuesen_router",
+              "created_at": "unknown",
+              "redaction_status": "opaque_ref_only",
+              "source_refs": [
+                {
+                  "kind": "repair_ticket",
+                  "id": "repair-local-distillation-sources-auto-l3-overpromotion",
+                  "note": ""
+                },
+                {
+                  "kind": "source_kind",
+                  "id": "local_distillation_sources",
+                  "note": ""
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-failure-log-provider-timeout-006",
+                  "note": "Keep this as case, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-farcaster-reply-audit-007",
+                  "note": "Keep this as policy, not L3 skill export."
+                },
+                {
+                  "kind": "source_event",
+                  "id": "misa-distilled-local-window-zilliz-boundary-005",
+                  "note": "Keep this as memory, not L3 skill export."
+                }
+              ]
+            },
+            "retrieval_trace": {
+              "trace_version": "misa.retrieval_trace.v1",
+              "replayable": true,
+              "replay_keys": [
+                "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                "bridge-9b4d9ecfa394466f",
+                "misa-distilled-failure-log-provider-timeout-006",
+                "unknown",
+                "none",
+                "repair-local-distillation-sources-auto-l3-overpromotion",
+                "local_distillation_sources",
+                "misa-distilled-farcaster-reply-audit-007",
+                "misa-distilled-local-window-zilliz-boundary-005"
+              ],
+              "source_hops": [
+                {
+                  "stage": "original_source",
+                  "ref_type": "local_distillation_sources",
+                  "ref_id": "misa-distilled-failure-log-provider-timeout-006",
+                  "artifact_path": "work_order_routing"
+                },
+                {
+                  "stage": "classification_source",
+                  "ref_type": "repair_ticket",
+                  "ref_id": "wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "vector_memory_classifier"
+                },
+                {
+                  "stage": "decision_trace",
+                  "ref_type": "decision_trace",
+                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "artifact_path": "langgraph_qianxuesen_bridge"
+                },
+                {
+                  "stage": "vector_record",
+                  "ref_type": "repair_work_order",
+                  "ref_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
+                  "artifact_path": "zilliz_adapter_payload"
+                }
+              ]
+            },
+            "retrieval_hints": {
+              "filter_keys": [
+                "collection",
+                "kind",
+                "authority",
+                "source_type",
+                "source_id",
+                "decision_trace_id",
+                "original_source_kind",
+                "original_source_id",
+                "original_chunk_hash"
+              ],
+              "boost_terms": [
+                "repair_work_order",
+                "misa_work_order_memory",
+                "candidate",
+                "pending_agent_review",
+                "high",
+                "repair_ticket",
+                "local_distillation_sources",
+                "retrieval_context",
+                "persistent_memory",
+                "public_posting",
+                "vps_or_runtime_service",
+                "provider_credentials"
+              ],
+              "score_inputs": [
+                "vector_similarity",
+                "metadata_filter_match",
+                "authority_weight",
+                "source_recency_weight",
+                "trace_path_continuity",
+                "blocked_surface_penalty"
+              ],
+              "false_positive_guards": [
+                "audit_only_or_candidate_records_cannot_change_behavior",
+                "persona_or_policy_records_require_owner_approval",
+                "opaque_source_refs_are_required_before_raw_content_lookup"
+              ]
+            },
             "record_id": "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
             "title": "Auto-L3 non-skill promotion from local distillation sources",
             "local_dir": "memory/repair-work-order"
@@ -923,6 +1745,11 @@
     },
     {
       "check": "collection_and_text_payload",
+      "ok": true,
+      "violations": []
+    },
+    {
+      "check": "original_source_and_retrieval_trace",
       "ok": true,
       "violations": []
     }

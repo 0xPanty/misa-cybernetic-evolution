@@ -5,6 +5,8 @@ dry-run payload.
 
 It still does not write Zilliz. It prepares the shape a live writer would need:
 collections, vector fields, text payloads, metadata, and grouped upsert batches.
+The public payload now includes source-lineage fields, so future live records can
+be filtered and explained by original source, not only vector similarity.
 
 ## Why It Exists
 
@@ -24,10 +26,25 @@ The adapter emits:
   metadata field, scalar metadata fields, and record counts;
 - `upsert_batches`: records grouped by collection with `text`, `metadata`, and
   `embedding_status: "not_created"`;
-- `metadata_checks`: required metadata, authority boundary, collection, and text
-  payload checks;
+- `metadata_checks`: required metadata, authority boundary, source lineage,
+  collection, and text payload checks;
 - `safety`: dry-run proof that no embeddings were created and no Zilliz write
   happened.
+
+The Zilliz-ready metadata includes both scalar filters and JSON replay details:
+
+- scalar filters: `original_source_kind`, `original_source_id`,
+  `original_chunk_hash`;
+- JSON refs: `original_source`, `retrieval_trace`, `retrieval_hints`;
+- replay rule: every upsert record must include the vector `record_id` in
+  `retrieval_trace.replay_keys`.
+
+That gives a future retriever a stronger path:
+
+```text
+query -> vector candidates -> metadata filters -> authority gate
+      -> trace_path_continuity score -> source replay / explanation
+```
 
 Default vector settings:
 

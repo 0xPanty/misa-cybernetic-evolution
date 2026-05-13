@@ -2,10 +2,9 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.18.0`. The next work direction is v0.19 convergence:
-keep the control boundary stable, reduce maintenance noise, and calibrate the
-existing tournament/judge rules with real shadow samples instead of adding new
-governance layers.
+Current package version: `0.19.0`. The current line adds source-lineage and
+retrieval trace metadata for vector-memory dry runs while keeping the control
+boundary stable: no live Zilliz writes, no embeddings, and no runtime changes.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
 
@@ -76,6 +75,7 @@ or existing Hermes/Zilliz distillation artifact
 -> route work orders to the primary agent
 -> let the agent self-review and resolve low-risk local work when policy allows
 -> classify logs, decisions, candidate experience, policy, and work orders for vector storage
+-> attach original-source refs, replay keys, and retrieval hints for future hit explanation
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant
 -> mark whether optional LLM review has concrete critique value
@@ -183,16 +183,18 @@ stdout into the next command. Use `npm --silent run ... -- --json`, direct
 
 ## v0.19 Direction
 
-Do not add another governance layer by default. The next useful work is:
+Do not add another governance layer by default. The useful v0.19 work is:
 
 1. keep the current route labels and tournament variants stable;
-2. keep `should_change_winner=false` and LLM route authority blocked;
-3. record shadow tournament outcomes with human accept/reject labels;
-4. calibrate `strategy_fit`, `judge_escalation`, and `llm_review_value` against
+2. keep vector-memory records traceable back to opaque original-source refs;
+3. keep `should_change_winner=false` and LLM route authority blocked;
+4. record shadow tournament outcomes with human accept/reject labels;
+5. calibrate `strategy_fit`, `judge_escalation`, and `llm_review_value` against
    real samples;
-5. reduce maintenance noise in precheck, README, and tests.
+6. reduce maintenance noise in precheck, README, and tests.
 
-The scarce thing now is not more abstraction. It is calibration evidence.
+The scarce thing now is not more abstraction. It is calibration evidence and
+replayable source lineage.
 
 The new public default for work orders follows that rule too: let the agent
 practice on bounded local work, keep self-review logs as candidate experience,
@@ -210,6 +212,7 @@ Current-state docs:
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
 - [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)
+- [Retrieval lineage](./docs/retrieval-lineage-v0.19.md)
 - [Evolution tournament v0.18](./docs/evolution-tournament-gate-v0.18.md)
 
 Bridge docs:

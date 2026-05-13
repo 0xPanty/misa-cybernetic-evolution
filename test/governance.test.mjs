@@ -1460,6 +1460,17 @@ test("vector memory storage classification separates audit, decision, experience
   assert.ok(result.records.some((record) => record.kind === "agent_experience_candidate"));
   assert.ok(result.records.some((record) => record.kind === "repair_work_order"));
   assert.ok(result.records.some((record) => record.kind === "policy_boundary"));
+  assert.equal(result.summary.original_source_count, result.summary.record_count);
+  assert.equal(result.summary.replayable_trace_count, result.summary.record_count);
+  assert.ok(result.metadata_contract.required_fields.includes("original_source"));
+  assert.ok(result.metadata_contract.required_fields.includes("retrieval_trace"));
+  assert.ok(result.records.every((record) => (
+    record.metadata.original_source.source_id !== "unknown"
+    && record.metadata.original_source_id === record.metadata.original_source.source_id
+    && record.metadata.retrieval_trace.replayable === true
+    && record.metadata.retrieval_trace.replay_keys.includes(record.record_id)
+    && record.metadata.retrieval_hints.score_inputs.includes("trace_path_continuity")
+  )));
   assert.equal(
     result.records
       .filter((record) => ["audit_only", "candidate"].includes(record.metadata.authority))
@@ -1552,12 +1563,17 @@ test("Zilliz vector adapter prepares dry-run collection schemas and upsert paylo
   assert.equal(result.summary.records_requiring_embedding, storage.summary.record_count);
   assert.ok(result.collection_plans.some((plan) => plan.collection === "misa_work_order_memory"));
   assert.ok(result.collection_plans.every((plan) => plan.vector.embedding_created === false));
+  assert.ok(result.collection_plans.every((plan) => plan.metadata_field.required_fields.includes("original_source")));
+  assert.ok(result.collection_plans.every((plan) => plan.scalar_fields.some((field) => field.name === "original_source_id")));
   assert.ok(result.upsert_batches.length > 0);
   assert.ok(result.upsert_batches.every((batch) => batch.zilliz_written === false));
   assert.ok(result.upsert_batches.flatMap((batch) => batch.records).every((record) => (
     record.embedding === null
     && record.embedding_status === "not_created"
     && record.metadata.record_id === record.record_id
+    && record.metadata.original_source.source_id !== "unknown"
+    && record.metadata.retrieval_trace.replay_keys.includes(record.record_id)
+    && record.metadata.retrieval_hints.filter_keys.includes("original_source_id")
   )));
   assert.equal(result.metadata_checks.every((check) => check.ok), true);
   assert.equal(

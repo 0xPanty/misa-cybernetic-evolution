@@ -5,11 +5,12 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.18.0`.
+The package is currently `0.19.0`.
 
-The next direction is v0.19 convergence: keep the control boundary stable,
-calibrate the existing decision rules with real shadow samples, and reduce
-maintenance noise before adding new layers.
+The current direction is v0.19 convergence: keep the control boundary stable,
+make vector-memory hits traceable to opaque original-source refs, calibrate the
+existing decision rules with real shadow samples, and reduce maintenance noise
+before adding new layers.
 
 ## Version History
 
@@ -32,6 +33,7 @@ maintenance noise before adding new layers.
 | v0.16 | OmniAgent footprint bridge | footprint as evidence only |
 | v0.17 | Evolution tournament gate | local draft optimizer only |
 | v0.18 | `strategy_fit` and `llm_review_value` | LLM critique only, no route/winner authority |
+| v0.19 | Vector-memory original-source lineage and retrieval hints | dry-run metadata only, no Zilliz write |
 
 ## Historical Sample Validation
 
@@ -129,15 +131,17 @@ Regression coverage checks that:
 - `avoid_overreaction + farcaster_public_memory_risk` routes to `policy`;
 - `reusable_workflow + farcaster_public_memory_risk` does not export a Skill.
 
-## v0.19 Calibration Target
+## v0.19 Calibration and Lineage Target
 
 The next useful dataset is not another synthetic gate. It is a shadow result log
-with human labels:
+with human labels plus replayable source-lineage fields:
 
 - candidate route;
 - evidence count;
 - winner and runner-up;
 - winner margin;
+- original source id / chunk hash when available;
+- retrieval trace continuity;
 - rejected reason;
 - `llm_review_value.targets`;
 - human accept/reject;

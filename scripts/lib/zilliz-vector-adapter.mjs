@@ -11,13 +11,19 @@ const REQUIRED_METADATA_FIELDS = [
   "risk_level",
   "source_type",
   "source_id",
+  "original_source_kind",
+  "original_source_id",
+  "original_chunk_hash",
   "created_by",
   "promotion_state",
   "can_influence_behavior",
   "requires_owner_approval",
   "allowed_surfaces",
   "blocked_surfaces",
-  "decision_trace_id"
+  "decision_trace_id",
+  "original_source",
+  "retrieval_trace",
+  "retrieval_hints"
 ];
 
 function unique(values) {
@@ -65,13 +71,19 @@ function metadataFieldPlan() {
     { name: "risk_level", type: "VarChar", max_length: 32 },
     { name: "source_type", type: "VarChar", max_length: 96 },
     { name: "source_id", type: "VarChar", max_length: 256 },
+    { name: "original_source_kind", type: "VarChar", max_length: 96 },
+    { name: "original_source_id", type: "VarChar", max_length: 256 },
+    { name: "original_chunk_hash", type: "VarChar", max_length: 128 },
     { name: "created_by", type: "VarChar", max_length: 128 },
     { name: "promotion_state", type: "VarChar", max_length: 32 },
     { name: "can_influence_behavior", type: "Bool" },
     { name: "requires_owner_approval", type: "Bool" },
     { name: "allowed_surfaces", type: "JSON" },
     { name: "blocked_surfaces", type: "JSON" },
-    { name: "decision_trace_id", type: "VarChar", max_length: 256 }
+    { name: "decision_trace_id", type: "VarChar", max_length: 256 },
+    { name: "original_source", type: "JSON" },
+    { name: "retrieval_trace", type: "JSON" },
+    { name: "retrieval_hints", type: "JSON" }
   ];
 }
 
@@ -187,6 +199,30 @@ function metadataViolations(records, collectionNames) {
       });
     }
 
+    if (!metadata.original_source || metadata.original_source.source_id === "unknown") {
+      violations.push({
+        record_id: record.record_id,
+        check: "original_source",
+        reason: "record must carry an opaque original_source with a replayable source_id"
+      });
+    }
+
+    if (!metadata.retrieval_trace?.replayable || !Array.isArray(metadata.retrieval_trace.source_hops) || metadata.retrieval_trace.source_hops.length < 2) {
+      violations.push({
+        record_id: record.record_id,
+        check: "retrieval_trace",
+        reason: "record must carry a replayable retrieval_trace with source hops"
+      });
+    }
+
+    if (!metadata.retrieval_trace?.replay_keys?.includes(record.record_id)) {
+      violations.push({
+        record_id: record.record_id,
+        check: "retrieval_trace",
+        reason: "retrieval_trace replay_keys must include the vector record_id"
+      });
+    }
+
     if (!collectionNames.has(record.collection)) {
       violations.push({
         record_id: record.record_id,
@@ -224,6 +260,11 @@ function metadataChecks(records, collectionNames) {
       check: "collection_and_text_payload",
       ok: !violations.some((item) => ["collection_declared", "text_payload"].includes(item.check)),
       violations: violations.filter((item) => ["collection_declared", "text_payload"].includes(item.check))
+    },
+    {
+      check: "original_source_and_retrieval_trace",
+      ok: !violations.some((item) => ["original_source", "retrieval_trace"].includes(item.check)),
+      violations: violations.filter((item) => ["original_source", "retrieval_trace"].includes(item.check))
     }
   ];
 }

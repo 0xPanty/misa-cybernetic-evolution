@@ -269,6 +269,9 @@
         "risk_level",
         "source_type",
         "source_id",
+        "original_source_kind",
+        "original_source_id",
+        "original_chunk_hash",
         "created_by",
         "promotion_state",
         "can_influence_behavior",
@@ -276,6 +279,9 @@
         "allowed_surfaces",
         "blocked_surfaces",
         "decision_trace_id",
+        "original_source",
+        "retrieval_trace",
+        "retrieval_hints",
         "record_id",
         "title",
         "local_dir"
@@ -287,6 +293,9 @@
         "risk_level": { "type": "string" },
         "source_type": { "type": "string" },
         "source_id": { "type": "string" },
+        "original_source_kind": { "type": "string" },
+        "original_source_id": { "type": "string" },
+        "original_chunk_hash": { "type": "string" },
         "created_by": { "type": "string" },
         "promotion_state": { "type": "string", "enum": ["not_promoted", "promoted"] },
         "can_influence_behavior": { "type": "boolean" },
@@ -300,6 +309,9 @@
           "items": { "type": "string" }
         },
         "decision_trace_id": { "type": "string" },
+        "original_source": { "$ref": "#/$defs/original_source" },
+        "retrieval_trace": { "$ref": "#/$defs/retrieval_trace" },
+        "retrieval_hints": { "$ref": "#/$defs/retrieval_hints" },
         "record_id": { "type": "string" },
         "title": { "type": "string" },
         "local_dir": { "type": "string" }
@@ -315,6 +327,103 @@
           }
         }
       ]
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "note"],
+      "properties": {
+        "kind": { "type": "string" },
+        "id": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "original_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_system",
+        "source_kind",
+        "source_id",
+        "session_id",
+        "message_id",
+        "artifact_path",
+        "chunk_hash",
+        "channel",
+        "actor",
+        "created_at",
+        "redaction_status",
+        "source_refs"
+      ],
+      "properties": {
+        "source_system": { "type": "string" },
+        "source_kind": { "type": "string" },
+        "source_id": { "type": "string" },
+        "session_id": { "type": "string" },
+        "message_id": { "type": "string" },
+        "artifact_path": { "type": "string" },
+        "chunk_hash": { "type": "string" },
+        "channel": { "type": "string" },
+        "actor": { "type": "string" },
+        "created_at": { "type": "string" },
+        "redaction_status": { "type": "string" },
+        "source_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/source_ref" }
+        }
+      }
+    },
+    "trace_hop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "ref_type", "ref_id", "artifact_path"],
+      "properties": {
+        "stage": { "type": "string" },
+        "ref_type": { "type": "string" },
+        "ref_id": { "type": "string" },
+        "artifact_path": { "type": "string" }
+      }
+    },
+    "retrieval_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trace_version", "replayable", "replay_keys", "source_hops"],
+      "properties": {
+        "trace_version": { "type": "string", "const": "misa.retrieval_trace.v1" },
+        "replayable": { "type": "boolean" },
+        "replay_keys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "source_hops": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/trace_hop" }
+        }
+      }
+    },
+    "retrieval_hints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filter_keys", "boost_terms", "score_inputs", "false_positive_guards"],
+      "properties": {
+        "filter_keys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "boost_terms": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "score_inputs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "false_positive_guards": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
     },
     "metadata_check": {
       "type": "object",
