@@ -1,0 +1,65 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-11T08:24:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic deterministic fixture for local and VPS tests; no raw conversation or credential material.",
+  "summary": "Synthetic fixture for hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake covering repeated_failure_pattern, explicit_user_boundary, reusable_workflow, stable_user_preference, stable_project_fact.",
+  "setpoint": "keep this historical lesson behind policy or approval boundaries before runtime changes",
+  "evidence_count": 4,
+  "outcome": "partial",
+  "risk_level": "high",
+  "source_refs": [
+    "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake"
+  ],
+  "signals": [
+    "repeated_failure_pattern",
+    "explicit_user_boundary",
+    "reusable_workflow",
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "fixture:tool-error"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "fixture-repeated_failure_pattern",
+      "ref": "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake:turn:01",
+      "text": "Repeated timeout failure error retry pattern should become a local case before runtime changes."
+    },
+    {
+      "speaker": "fixture-explicit_user_boundary",
+      "ref": "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake:turn:02",
+      "text": "Do not publish, deploy, or write durable state without approval."
+    },
+    {
+      "speaker": "fixture-reusable_workflow",
+      "ref": "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake:turn:03",
+      "text": "Workflow template steps validate preflight simulate and verify before reuse."
+    },
+    {
+      "speaker": "fixture-stable_user_preference",
+      "ref": "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake:turn:04",
+      "text": "User prefers concise evidence-first recovery and explicit approval boundaries."
+    },
+    {
+      "speaker": "fixture-stable_project_fact",
+      "ref": "fixture:hist-25-2026-04-24t18-12-41-nynb-phase3-misa-readonly-material-intake:turn:05",
+      "text": "Local repo VPS GitHub window distill facts are stable project context."
+    }
+  ]
+}

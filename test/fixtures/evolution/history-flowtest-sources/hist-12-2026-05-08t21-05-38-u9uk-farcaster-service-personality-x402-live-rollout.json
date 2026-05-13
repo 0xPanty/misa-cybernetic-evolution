@@ -1,0 +1,89 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout",
+  "source_kind": "farcaster_audit",
+  "channel": "farcaster",
+  "created_at": "2026-05-11T08:11:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic deterministic fixture for local and VPS tests; no raw conversation or credential material.",
+  "summary": "Synthetic fixture for hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout covering single_failure, repeated_failure_pattern, explicit_user_boundary, public_posting_boundary, farcaster_public_memory_risk, reusable_workflow, stable_user_preference, stable_project_fact, farcaster_reply_success.",
+  "setpoint": "hold weak or single-sample evidence to avoid overreaction",
+  "evidence_count": 4,
+  "outcome": "partial",
+  "risk_level": "high",
+  "source_refs": [
+    "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout"
+  ],
+  "signals": [
+    "single_failure",
+    "repeated_failure_pattern",
+    "explicit_user_boundary",
+    "public_posting_boundary",
+    "farcaster_public_memory_risk",
+    "reusable_workflow",
+    "stable_user_preference",
+    "stable_project_fact",
+    "farcaster_reply_success"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "fixture:tool-error"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "fixture-single_failure",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:01",
+      "text": "One single transient failure should stay damped before any broader learning change."
+    },
+    {
+      "speaker": "fixture-repeated_failure_pattern",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:02",
+      "text": "Repeated timeout failure error retry pattern should become a local case before runtime changes."
+    },
+    {
+      "speaker": "fixture-explicit_user_boundary",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:03",
+      "text": "Do not publish, deploy, or write durable state without approval."
+    },
+    {
+      "speaker": "fixture-public_posting_boundary",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:04",
+      "text": "Farcaster public reply and public post behavior must stay behind approval."
+    },
+    {
+      "speaker": "fixture-farcaster_public_memory_risk",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:05",
+      "text": "Public memory privacy and privacy leak risk should stay policy-bound."
+    },
+    {
+      "speaker": "fixture-reusable_workflow",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:06",
+      "text": "Workflow template steps validate preflight simulate and verify before reuse."
+    },
+    {
+      "speaker": "fixture-stable_user_preference",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:07",
+      "text": "User prefers concise evidence-first recovery and explicit approval boundaries."
+    },
+    {
+      "speaker": "fixture-stable_project_fact",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:08",
+      "text": "Local repo VPS GitHub window distill facts are stable project context."
+    },
+    {
+      "speaker": "fixture-farcaster_reply_success",
+      "ref": "fixture:hist-12-2026-05-08t21-05-38-u9uk-farcaster-service-personality-x402-live-rollout:turn:09",
+      "text": "Useful reply success can be reviewed locally without live posting."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "conversation": {
+    "cast": {
+      "text": "Workflow template steps validate preflight local redaction before reuse.",
+      "direct_replies": [
+        {
+          "text": "Preserve source refs and run local validation before export."
+        }
+      ]
+    }
+  }
+}

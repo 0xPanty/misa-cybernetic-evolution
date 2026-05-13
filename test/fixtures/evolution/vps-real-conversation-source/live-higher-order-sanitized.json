@@ -1,0 +1,12 @@
+{
+  "conversation": {
+    "cast": {
+      "text": "Repeated timeout failure error retry in nested sanitized payload.",
+      "direct_replies": [
+        {
+          "text": "Record the sanitizer edge case as a local case candidate."
+        }
+      ]
+    }
+  }
+}

@@ -829,12 +829,12 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
 
 test("v0.17 tournament gate can compare source-backed VPS samples without LLM calls", async () => {
   const result = await reviewEvolutionTournamentGate({
-    vpsRawDir: "runs/vps-real-conversation-source"
+    vpsRawDir: "test/fixtures/evolution/vps-real-conversation-source"
   });
 
   assert.equal(result.ok, true);
   assert.equal(result.source.source_kind, "vps_sanitized_conversation_artifacts");
-  assert.equal(result.source.vps_raw_dir, "runs/vps-real-conversation-source");
+  assert.equal(result.source.vps_raw_dir, "test/fixtures/evolution/vps-real-conversation-source");
   assert.equal(result.summary.tournament_count, 3);
   assert.equal(result.summary.route_counts.skill, 1);
   assert.equal(result.summary.route_counts.case, 1);
@@ -861,7 +861,7 @@ test("v0.17 tournament gate can compare source-backed VPS samples without LLM ca
 
 test("v0.17 tournament gate picks route-sensitive winners for historical samples", async () => {
   const result = await reviewEvolutionTournamentGate({
-    sourceDir: "runs/history-flowtest-sources"
+    sourceDir: "test/fixtures/evolution/history-flowtest-sources"
   });
   const winnerStrategies = new Set(result.winner_queue.map((winner) => winner.strategy));
 
@@ -886,7 +886,7 @@ test("v0.17 tournament gate picks route-sensitive winners for historical samples
 
 test("near-threshold judge samples stay deterministic but are surfaced", async () => {
   const result = await reviewEvolutionTournamentGate({
-    sourceDir: "runs/history-atomic-flowtest-sources",
+    sourceDir: "test/fixtures/evolution/history-atomic-flowtest-sources",
     judgeMode: "auto"
   });
 
@@ -926,7 +926,7 @@ test("auto judge stays at zero calls when escalation gate says deterministic is 
 
 test("auto judge calls the optional reviewer only when escalation gate recommends it", async () => {
   const result = await reviewEvolutionTournamentGate({
-    vpsRawDir: "runs/vps-real-conversation-source",
+    vpsRawDir: "test/fixtures/evolution/vps-real-conversation-source",
     judgeMode: "auto",
     judgeModel: "mock-judge",
     llmJudge: async () => ({
@@ -956,7 +956,7 @@ test("auto judge calls the optional reviewer only when escalation gate recommend
 
 test("optional LLM judge adds comparison data without changing the deterministic winner", async () => {
   const result = await reviewEvolutionTournamentGate({
-    vpsRawDir: "runs/vps-real-conversation-source",
+    vpsRawDir: "test/fixtures/evolution/vps-real-conversation-source",
     judgeMode: "llm",
     judgeModel: "mock-judge",
     llmJudge: async () => ({
@@ -1014,7 +1014,7 @@ test("memory layer comparison rejects broad automatic L3 promotion", async () =>
 
 test("minimal positive skill promotion keeps clean real workflows and blocks ambiguous routes", async () => {
   const real = await reviewMemoryLayerComparison({
-    vpsRawDir: "runs/vps-real-conversation-source"
+    vpsRawDir: "test/fixtures/evolution/vps-real-conversation-source"
   });
   const exportedSkill = real.minimal_positive_l3.skills.find((skill) => (
     skill.source_event_id === "misa-distilled-vps-live-edge-redaction-sanitized-redaction-workflow"

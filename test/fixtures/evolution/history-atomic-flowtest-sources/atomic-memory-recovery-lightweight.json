@@ -1,0 +1,39 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "atomic-memory-recovery-lightweight",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-13T00:00:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Synthetic atomic fixture for judge calibration; no raw conversation or credential material.",
+  "summary": "Synthetic atomic fixture for atomic-memory-recovery-lightweight.",
+  "setpoint": "keep the deterministic gate calibrated before optional critique",
+  "evidence_count": 2,
+  "outcome": "success",
+  "risk_level": "low",
+  "source_refs": [
+    "fixture:atomic-memory-recovery-lightweight"
+  ],
+  "signals": [
+    "stable_user_preference"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "fixture:atomic-memory-recovery-lightweight"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "fixture-stable_user_preference",
+      "ref": "fixture:atomic-memory-recovery-lightweight:turn:01",
+      "text": "User likes short evidence first summaries."
+    }
+  ]
+}

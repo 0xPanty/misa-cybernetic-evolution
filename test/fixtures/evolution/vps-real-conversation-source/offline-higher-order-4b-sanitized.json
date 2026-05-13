@@ -1,0 +1,12 @@
+{
+  "conversation": {
+    "cast": {
+      "text": "Farcaster public reply post behavior should not publish without approval.",
+      "direct_replies": [
+        {
+          "text": "Keep public-channel lessons behind policy review."
+        }
+      ]
+    }
+  }
+}
