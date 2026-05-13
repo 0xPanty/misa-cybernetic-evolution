@@ -28,12 +28,57 @@ const REQUIRED_FILES = [
   "CONTROL_CONTRACT.md",
   "GOVERNANCE.md",
   "SECURITY.md",
+  "package.json",
+  "docs/source-synthesis.md",
+  "docs/verification-matrix.md",
+  "docs/evolution-tournament-gate-v0.18.md",
+  "docs/memory-layer-skill-export-v0.13.md",
+  "docs/work-order-routing-v0.14.md",
+  "scripts/precheck.mjs",
+  "scripts/validate-schemas.mjs",
+  "scripts/simulate-learning.mjs",
+  "scripts/evolution-tournament.mjs",
+  "scripts/self-repair.mjs",
+  "scripts/genericagent-density.mjs",
+  "scripts/adaptive-candidates.mjs",
+  "scripts/signal-intake.mjs",
+  "scripts/distill-misa.mjs",
+  "scripts/hermes-distillation-mapper.mjs",
+  "scripts/signal-rollup.mjs",
+  "scripts/evolution-evaluator.mjs",
+  "scripts/memory-layer.mjs",
+  "scripts/export-skills.mjs",
+  "scripts/repair-ticket.mjs",
+  "scripts/work-order-router.mjs",
+  "scripts/langgraph-qianxuesen-bridge.mjs",
+  "scripts/omniagent-footprint-bridge.mjs",
+  "scripts/lib/precheck-core.mjs",
+  "scripts/lib/schema-validation.mjs",
+  "scripts/lib/learning-loop.mjs",
+  "scripts/lib/self-repair.mjs",
+  "scripts/lib/genericagent-density.mjs",
+  "scripts/lib/adaptive-candidate-gate.mjs",
+  "scripts/lib/signal-intake-contract.mjs",
+  "scripts/lib/session-distiller.mjs",
+  "scripts/lib/hermes-distillation-mapper.mjs",
+  "scripts/lib/signal-candidate-rollup.mjs",
+  "scripts/lib/evolution-evaluator.mjs",
+  "scripts/lib/evolution-tournament-gate.mjs",
+  "scripts/lib/memory-layer.mjs",
+  "scripts/lib/repair-ticket.mjs",
+  "scripts/lib/work-order-router.mjs",
+  "scripts/lib/langgraph-qianxuesen-contract.mjs",
+  "scripts/lib/langgraph-qianxuesen-bridge.mjs",
+  "scripts/lib/omniagent-footprint-bridge.mjs",
+  "scripts/lib/vps-conversation-sources.mjs"
+];
+
+const INVENTORY_FILES = [
   "docs/damping-rules.md",
   "docs/misa-learning-evidence-v0.4.md",
   "docs/misa-learning-loop-v0.2.md",
   "docs/misa-learning-replay-v0.3.md",
   "docs/misa-readonly-integration.md",
-  "docs/source-synthesis.md",
   "docs/skill-crystallization-v0.5.md",
   "docs/self-repair-v0.6.md",
   "docs/genericagent-context-density-v0.7.md",
@@ -42,19 +87,21 @@ const REQUIRED_FILES = [
   "docs/signal-candidate-rollup-v0.10.md",
   "docs/evolution-candidate-preflight-v0.11.md",
   "docs/evolution-tournament-gate-v0.17.md",
-  "docs/evolution-tournament-gate-v0.18.md",
   "docs/local-session-distillation-v0.12.md",
   "docs/window-distillation-pipeline-v0.13.md",
   "docs/hermes-distillation-mapping-v0.15.md",
-  "docs/memory-layer-skill-export-v0.13.md",
   "docs/repair-ticket-v0.13.md",
-  "docs/work-order-routing-v0.14.md",
   "docs/langgraph-qianxuesen-bridge-v0.15.md",
   "docs/omniagent-footprint-bridge-v0.16.md",
   "docs/assets/langgraph-qianxuesen-flow.svg",
   "docs/remotion/langgraph-qianxuesen-flow.tsx",
   "docs/templates/governance-skill-template.md",
   "docs/templates/distillation/README.md",
+  "docs/changelog.md",
+  "generated/README.md"
+];
+
+const MACHINE_CONTRACT_FILES = [
   "schemas/control_contract.schema.json",
   "schemas/learning_event.schema.json",
   "schemas/learning_item.schema.json",
@@ -94,6 +141,7 @@ const REQUIRED_FILES = [
   "examples/repair_ticket.example.json",
   "examples/work_order_routing.example.json",
   "examples/langgraph_qianxuesen_bridge.example.json",
+  "examples/damping_rules.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json",
   "examples/misa-distillation/failure_log_provider_timeout.failure.json",
   "examples/misa-distillation/farcaster_reply_audit.farcaster.json",
@@ -120,40 +168,7 @@ const REQUIRED_FILES = [
   "examples/misa-learning/skill_real_chat_evolution_eval.fixture.json",
   "examples/misa-learning/case_retrieval_noise_realish.fixture.json",
   "examples/misa-learning/policy_timer_restore_realish.fixture.json",
-  "examples/misa-learning/damping_provider_retry_realish.fixture.json",
-  "examples/damping_rules.example.json",
-  "scripts/self-repair.mjs",
-  "scripts/genericagent-density.mjs",
-  "scripts/adaptive-candidates.mjs",
-  "scripts/signal-intake.mjs",
-  "scripts/distill-misa.mjs",
-  "scripts/hermes-distillation-mapper.mjs",
-  "scripts/signal-rollup.mjs",
-  "scripts/evolution-evaluator.mjs",
-  "scripts/evolution-tournament.mjs",
-  "scripts/memory-layer.mjs",
-  "scripts/export-skills.mjs",
-  "scripts/repair-ticket.mjs",
-  "scripts/work-order-router.mjs",
-  "scripts/langgraph-qianxuesen-bridge.mjs",
-  "scripts/omniagent-footprint-bridge.mjs",
-  "scripts/lib/self-repair.mjs",
-  "scripts/lib/genericagent-density.mjs",
-  "scripts/lib/adaptive-candidate-gate.mjs",
-  "scripts/lib/signal-intake-contract.mjs",
-  "scripts/lib/session-distiller.mjs",
-  "scripts/lib/hermes-distillation-mapper.mjs",
-  "scripts/lib/signal-candidate-rollup.mjs",
-  "scripts/lib/evolution-evaluator.mjs",
-  "scripts/lib/evolution-tournament-gate.mjs",
-  "scripts/lib/memory-layer.mjs",
-  "scripts/lib/repair-ticket.mjs",
-  "scripts/lib/work-order-router.mjs",
-  "scripts/lib/langgraph-qianxuesen-contract.mjs",
-  "scripts/lib/langgraph-qianxuesen-bridge.mjs",
-  "scripts/lib/omniagent-footprint-bridge.mjs",
-  "scripts/lib/vps-conversation-sources.mjs",
-  "generated/README.md"
+  "examples/misa-learning/damping_provider_retry_realish.fixture.json"
 ];
 
 const SECRET_PATTERNS = [
@@ -162,7 +177,16 @@ const SECRET_PATTERNS = [
   /\bsk-[A-Za-z0-9_-]{20,}\b/
 ];
 
-const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build"]);
+const IGNORED_DIRS = new Set([
+  ".git",
+  "node_modules",
+  "dist",
+  "build",
+  "runs",
+  "coverage",
+  ".cache",
+  ".turbo"
+]);
 
 async function fileExists(filePath) {
   try {
@@ -171,6 +195,16 @@ async function fileExists(filePath) {
   } catch {
     return false;
   }
+}
+
+async function missingFiles(repoRoot, relPaths) {
+  const missing = [];
+  for (const rel of relPaths) {
+    if (!await fileExists(path.join(repoRoot, rel))) {
+      missing.push(rel);
+    }
+  }
+  return missing;
 }
 
 async function readJson(filePath) {
@@ -224,12 +258,39 @@ function checkResult(name, ok, details = {}) {
   return { name, ok, ...details };
 }
 
+function fileSetCheck(name, missing, total, missingPrefix) {
+  return checkResult(name, missing.length === 0, {
+    checked: total,
+    missing,
+    violations: missing.map((rel) => `${missingPrefix}: ${rel}`)
+  });
+}
+
 export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
   const checks = [];
 
-  for (const rel of REQUIRED_FILES) {
-    checks.push(checkResult(`required file ${rel}`, await fileExists(path.join(repoRoot, rel))));
-  }
+  const missingRequired = await missingFiles(repoRoot, REQUIRED_FILES);
+  checks.push(fileSetCheck(
+    "required active file set",
+    missingRequired,
+    REQUIRED_FILES.length,
+    "required active file missing"
+  ));
+
+  const missingMachineContracts = await missingFiles(repoRoot, MACHINE_CONTRACT_FILES);
+  checks.push(fileSetCheck(
+    "required machine contract set",
+    missingMachineContracts,
+    MACHINE_CONTRACT_FILES.length,
+    "required machine contract missing"
+  ));
+
+  const missingInventory = await missingFiles(repoRoot, INVENTORY_FILES);
+  checks.push(checkResult("legacy and auxiliary inventory", true, {
+    checked: INVENTORY_FILES.length,
+    missing: missingInventory,
+    warnings: missingInventory.map((rel) => `optional inventory file missing: ${rel}`)
+  }));
 
   const schemaResult = await validateSchemas({ repoRoot });
   checks.push(...schemaResult.checks.map((check) => ({
