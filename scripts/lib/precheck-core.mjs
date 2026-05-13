@@ -22,6 +22,7 @@ import { buildWorkOrderRouting } from "./work-order-router.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
+import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
 import { reviewOmniAgentFootprintBridge } from "./omniagent-footprint-bridge.mjs";
 
 const REQUIRED_FILES = [
@@ -39,6 +40,7 @@ const REQUIRED_FILES = [
   "docs/vector-memory-storage-v0.19.md",
   "docs/zilliz-vector-adapter-v0.19.md",
   "docs/retrieval-lineage-v0.19.md",
+  "docs/vector-retrieval-ranker-v0.20.md",
   "scripts/precheck.mjs",
   "scripts/validate-schemas.mjs",
   "scripts/simulate-learning.mjs",
@@ -56,6 +58,7 @@ const REQUIRED_FILES = [
   "scripts/repair-ticket.mjs",
   "scripts/work-order-router.mjs",
   "scripts/vector-memory-storage.mjs",
+  "scripts/vector-retrieval-ranker.mjs",
   "scripts/zilliz-vector-adapter.mjs",
   "scripts/langgraph-qianxuesen-bridge.mjs",
   "scripts/omniagent-footprint-bridge.mjs",
@@ -75,6 +78,7 @@ const REQUIRED_FILES = [
   "scripts/lib/repair-ticket.mjs",
   "scripts/lib/work-order-router.mjs",
   "scripts/lib/vector-memory-storage.mjs",
+  "scripts/lib/vector-retrieval-ranker.mjs",
   "scripts/lib/zilliz-vector-adapter.mjs",
   "scripts/lib/langgraph-qianxuesen-contract.mjs",
   "scripts/lib/langgraph-qianxuesen-bridge.mjs",
@@ -613,6 +617,17 @@ export async function runPrecheck({ repoRoot = process.cwd() } = {}) {
     schemaRel: "schemas/zilliz_vector_adapter.schema.json",
     data: zillizVectorAdapter,
     name: "validate Zilliz vector adapter dry-run"
+  }));
+
+  const vectorRetrievalEval = evaluateVectorRetrievalScenarios();
+  checks.push(checkResult("Vector retrieval ranker multi-source check", vectorRetrievalEval.ok, {
+    scenarios: vectorRetrievalEval.summary.scenario_count,
+    uniqueSources: vectorRetrievalEval.summary.unique_source_count,
+    top1ExactRecall: vectorRetrievalEval.summary.top1_exact_recall,
+    top1KindPrecision: vectorRetrievalEval.summary.top1_kind_precision,
+    noiseTop1WrongKind: vectorRetrievalEval.summary.noise_top1_wrong_kind_count,
+    zillizWritten: vectorRetrievalEval.safety.zilliz_written,
+    externalApiCalls: vectorRetrievalEval.safety.external_api_calls
   }));
 
   for (const footprintRel of [

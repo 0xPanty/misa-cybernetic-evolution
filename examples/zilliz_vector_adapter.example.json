@@ -2,7 +2,7 @@
   "schema_version": "misa.zilliz_vector_adapter.v1",
   "mode": "zilliz-vector-adapter-dry-run",
   "ok": true,
-  "created_at": "2026-05-12T00:00:00.000Z",
+  "created_at": "2026-05-13T00:00:00.000Z",
   "adapter": {
     "target_backend": "zilliz",
     "execution_mode": "dry_run",
@@ -906,9 +906,9 @@
       "embedding_created": false,
       "records": [
         {
-          "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+          "record_id": "vm-audit-log-bridge-c94091e4c147b96f",
           "collection": "misa_audit_memory",
-          "text": "Audit log bridge-9b4d9ecfa394466f\n\nRead-only audit record for work-order routing and action-policy reconstruction.",
+          "text": "Audit log bridge-c94091e4c147b96f\n\nRead-only audit record for work-order routing and action-policy reconstruction.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -918,9 +918,9 @@
             "status": "observed",
             "risk_level": "high",
             "source_type": "langgraph_qianxuesen_bridge",
-            "source_id": "bridge-9b4d9ecfa394466f",
+            "source_id": "bridge-c94091e4c147b96f",
             "original_source_kind": "langgraph_qianxuesen_bridge",
-            "original_source_id": "bridge-9b4d9ecfa394466f",
+            "original_source_id": "bridge-c94091e4c147b96f",
             "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
@@ -935,18 +935,18 @@
               "runtime_service",
               "provider_or_credential"
             ],
-            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "decision_trace_id": "bridge-c94091e4c147b96f",
             "original_source": {
               "source_system": "qianxuesen_sidecar",
               "source_kind": "langgraph_qianxuesen_bridge",
-              "source_id": "bridge-9b4d9ecfa394466f",
+              "source_id": "bridge-c94091e4c147b96f",
               "session_id": "unknown",
               "message_id": "unknown",
               "artifact_path": "langgraph_qianxuesen_bridge",
               "chunk_hash": "none",
               "channel": "local_artifact",
               "actor": "qianxuesen_bridge",
-              "created_at": "2026-05-12T00:00:00.000Z",
+              "created_at": "2026-05-13T00:00:00.000Z",
               "redaction_status": "opaque_ref_only",
               "source_refs": [
                 {
@@ -980,8 +980,8 @@
               "trace_version": "misa.retrieval_trace.v1",
               "replayable": true,
               "replay_keys": [
-                "vm-audit-log-bridge-9b4d9ecfa394466f",
-                "bridge-9b4d9ecfa394466f",
+                "vm-audit-log-bridge-c94091e4c147b96f",
+                "bridge-c94091e4c147b96f",
                 "unknown",
                 "none",
                 "repair-local-distillation-sources-auto-l3-overpromotion",
@@ -994,25 +994,25 @@
                 {
                   "stage": "original_source",
                   "ref_type": "langgraph_qianxuesen_bridge",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
                   "stage": "classification_source",
                   "ref_type": "langgraph_qianxuesen_bridge",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "vector_memory_classifier"
                 },
                 {
                   "stage": "decision_trace",
                   "ref_type": "decision_trace",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
                   "stage": "vector_record",
                   "ref_type": "audit_log",
-                  "ref_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
+                  "ref_id": "vm-audit-log-bridge-c94091e4c147b96f",
                   "artifact_path": "zilliz_adapter_payload"
                 }
               ]
@@ -1044,20 +1044,25 @@
               ],
               "score_inputs": [
                 "vector_similarity",
+                "kind_intent_match",
                 "metadata_filter_match",
+                "query_phase_priority",
                 "authority_weight",
                 "source_recency_weight",
                 "trace_path_continuity",
+                "same_source_context_match",
                 "blocked_surface_penalty"
               ],
               "false_positive_guards": [
+                "query_kind_filter_runs_before_global_rerank",
+                "same_source_context_cannot_override_requested_kind",
                 "audit_only_or_candidate_records_cannot_change_behavior",
                 "persona_or_policy_records_require_owner_approval",
                 "opaque_source_refs_are_required_before_raw_content_lookup"
               ]
             },
-            "record_id": "vm-audit-log-bridge-9b4d9ecfa394466f",
-            "title": "Audit log bridge-9b4d9ecfa394466f",
+            "record_id": "vm-audit-log-bridge-c94091e4c147b96f",
+            "title": "Audit log bridge-c94091e4c147b96f",
             "local_dir": "memory/audit-log"
           }
         }
@@ -1070,9 +1075,9 @@
       "embedding_created": false,
       "records": [
         {
-          "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+          "record_id": "vm-decision-trace-bridge-c94091e4c147b96f",
           "collection": "misa_decision_memory",
-          "text": "Decision trace bridge-9b4d9ecfa394466f\n\nAction policy result: require_interrupt.",
+          "text": "Decision trace bridge-c94091e4c147b96f\n\nAction policy result: require_interrupt.",
           "embedding": null,
           "embedding_status": "not_created",
           "embedding_required": true,
@@ -1082,9 +1087,9 @@
             "status": "observed",
             "risk_level": "high",
             "source_type": "langgraph_qianxuesen_bridge",
-            "source_id": "bridge-9b4d9ecfa394466f",
+            "source_id": "bridge-c94091e4c147b96f",
             "original_source_kind": "langgraph_qianxuesen_bridge",
-            "original_source_id": "bridge-9b4d9ecfa394466f",
+            "original_source_id": "bridge-c94091e4c147b96f",
             "original_chunk_hash": "none",
             "created_by": "qianxuesen_vector_memory_classifier",
             "promotion_state": "not_promoted",
@@ -1099,18 +1104,18 @@
               "runtime_service",
               "provider_or_credential"
             ],
-            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "decision_trace_id": "bridge-c94091e4c147b96f",
             "original_source": {
               "source_system": "qianxuesen_sidecar",
               "source_kind": "langgraph_qianxuesen_bridge",
-              "source_id": "bridge-9b4d9ecfa394466f",
+              "source_id": "bridge-c94091e4c147b96f",
               "session_id": "unknown",
               "message_id": "unknown",
               "artifact_path": "langgraph_qianxuesen_bridge",
               "chunk_hash": "none",
               "channel": "local_artifact",
               "actor": "qianxuesen_bridge",
-              "created_at": "2026-05-12T00:00:00.000Z",
+              "created_at": "2026-05-13T00:00:00.000Z",
               "redaction_status": "opaque_ref_only",
               "source_refs": [
                 {
@@ -1144,8 +1149,8 @@
               "trace_version": "misa.retrieval_trace.v1",
               "replayable": true,
               "replay_keys": [
-                "vm-decision-trace-bridge-9b4d9ecfa394466f",
-                "bridge-9b4d9ecfa394466f",
+                "vm-decision-trace-bridge-c94091e4c147b96f",
+                "bridge-c94091e4c147b96f",
                 "unknown",
                 "none",
                 "repair-local-distillation-sources-auto-l3-overpromotion",
@@ -1158,25 +1163,25 @@
                 {
                   "stage": "original_source",
                   "ref_type": "langgraph_qianxuesen_bridge",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
                   "stage": "classification_source",
                   "ref_type": "langgraph_qianxuesen_bridge",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "vector_memory_classifier"
                 },
                 {
                   "stage": "decision_trace",
                   "ref_type": "decision_trace",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
                   "stage": "vector_record",
                   "ref_type": "decision_trace",
-                  "ref_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
+                  "ref_id": "vm-decision-trace-bridge-c94091e4c147b96f",
                   "artifact_path": "zilliz_adapter_payload"
                 }
               ]
@@ -1208,20 +1213,25 @@
               ],
               "score_inputs": [
                 "vector_similarity",
+                "kind_intent_match",
                 "metadata_filter_match",
+                "query_phase_priority",
                 "authority_weight",
                 "source_recency_weight",
                 "trace_path_continuity",
+                "same_source_context_match",
                 "blocked_surface_penalty"
               ],
               "false_positive_guards": [
+                "query_kind_filter_runs_before_global_rerank",
+                "same_source_context_cannot_override_requested_kind",
                 "audit_only_or_candidate_records_cannot_change_behavior",
                 "persona_or_policy_records_require_owner_approval",
                 "opaque_source_refs_are_required_before_raw_content_lookup"
               ]
             },
-            "record_id": "vm-decision-trace-bridge-9b4d9ecfa394466f",
-            "title": "Decision trace bridge-9b4d9ecfa394466f",
+            "record_id": "vm-decision-trace-bridge-c94091e4c147b96f",
+            "title": "Decision trace bridge-c94091e4c147b96f",
             "local_dir": "memory/decision-trace"
           }
         }
@@ -1265,7 +1275,7 @@
               "vps_or_runtime_service",
               "provider_credentials"
             ],
-            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "decision_trace_id": "bridge-c94091e4c147b96f",
             "original_source": {
               "source_system": "qianxuesen_sidecar",
               "source_kind": "local_distillation_sources",
@@ -1312,7 +1322,7 @@
               "replay_keys": [
                 "vm-agent-experience-candidate-wo-repair-local-distillation-sources-auto-l3-overpromotion",
                 "wo-repair-local-distillation-sources-auto-l3-overpromotion",
-                "bridge-9b4d9ecfa394466f",
+                "bridge-c94091e4c147b96f",
                 "misa-distilled-failure-log-provider-timeout-006",
                 "unknown",
                 "none",
@@ -1337,7 +1347,7 @@
                 {
                   "stage": "decision_trace",
                   "ref_type": "decision_trace",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
@@ -1378,13 +1388,18 @@
               ],
               "score_inputs": [
                 "vector_similarity",
+                "kind_intent_match",
                 "metadata_filter_match",
+                "query_phase_priority",
                 "authority_weight",
                 "source_recency_weight",
                 "trace_path_continuity",
+                "same_source_context_match",
                 "blocked_surface_penalty"
               ],
               "false_positive_guards": [
+                "query_kind_filter_runs_before_global_rerank",
+                "same_source_context_cannot_override_requested_kind",
                 "audit_only_or_candidate_records_cannot_change_behavior",
                 "persona_or_policy_records_require_owner_approval",
                 "opaque_source_refs_are_required_before_raw_content_lookup"
@@ -1434,7 +1449,7 @@
               "vps_or_runtime_service",
               "provider_credentials"
             ],
-            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "decision_trace_id": "bridge-c94091e4c147b96f",
             "original_source": {
               "source_system": "qianxuesen_sidecar",
               "source_kind": "local_distillation_sources",
@@ -1481,7 +1496,7 @@
               "replay_keys": [
                 "vm-policy-boundary-wo-repair-local-distillation-sources-auto-l3-overpromotion",
                 "wo-repair-local-distillation-sources-auto-l3-overpromotion",
-                "bridge-9b4d9ecfa394466f",
+                "bridge-c94091e4c147b96f",
                 "misa-distilled-failure-log-provider-timeout-006",
                 "unknown",
                 "none",
@@ -1506,7 +1521,7 @@
                 {
                   "stage": "decision_trace",
                   "ref_type": "decision_trace",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
@@ -1546,13 +1561,18 @@
               ],
               "score_inputs": [
                 "vector_similarity",
+                "kind_intent_match",
                 "metadata_filter_match",
+                "query_phase_priority",
                 "authority_weight",
                 "source_recency_weight",
                 "trace_path_continuity",
+                "same_source_context_match",
                 "blocked_surface_penalty"
               ],
               "false_positive_guards": [
+                "query_kind_filter_runs_before_global_rerank",
+                "same_source_context_cannot_override_requested_kind",
                 "audit_only_or_candidate_records_cannot_change_behavior",
                 "persona_or_policy_records_require_owner_approval",
                 "opaque_source_refs_are_required_before_raw_content_lookup"
@@ -1601,7 +1621,7 @@
               "vps_or_runtime_service",
               "provider_credentials"
             ],
-            "decision_trace_id": "bridge-9b4d9ecfa394466f",
+            "decision_trace_id": "bridge-c94091e4c147b96f",
             "original_source": {
               "source_system": "qianxuesen_sidecar",
               "source_kind": "local_distillation_sources",
@@ -1648,7 +1668,7 @@
               "replay_keys": [
                 "vm-repair-work-order-wo-repair-local-distillation-sources-auto-l3-overpromotion",
                 "wo-repair-local-distillation-sources-auto-l3-overpromotion",
-                "bridge-9b4d9ecfa394466f",
+                "bridge-c94091e4c147b96f",
                 "misa-distilled-failure-log-provider-timeout-006",
                 "unknown",
                 "none",
@@ -1673,7 +1693,7 @@
                 {
                   "stage": "decision_trace",
                   "ref_type": "decision_trace",
-                  "ref_id": "bridge-9b4d9ecfa394466f",
+                  "ref_id": "bridge-c94091e4c147b96f",
                   "artifact_path": "langgraph_qianxuesen_bridge"
                 },
                 {
@@ -1712,13 +1732,18 @@
               ],
               "score_inputs": [
                 "vector_similarity",
+                "kind_intent_match",
                 "metadata_filter_match",
+                "query_phase_priority",
                 "authority_weight",
                 "source_recency_weight",
                 "trace_path_continuity",
+                "same_source_context_match",
                 "blocked_surface_penalty"
               ],
               "false_positive_guards": [
+                "query_kind_filter_runs_before_global_rerank",
+                "same_source_context_cannot_override_requested_kind",
                 "audit_only_or_candidate_records_cannot_change_behavior",
                 "persona_or_policy_records_require_owner_approval",
                 "opaque_source_refs_are_required_before_raw_content_lookup"
@@ -1754,6 +1779,121 @@
       "violations": []
     }
   ],
+  "retrieval_strategy": {
+    "strategy_version": "misa.vector_retrieval_strategy.v1",
+    "default_top_k": 8,
+    "primary_rule": "Infer or receive the requested memory kind, then search that kind/collection before global semantic search.",
+    "same_source_rule": "Use original_source_id, source_id, and decision_trace_id to attach sibling context after the primary result is known.",
+    "fallback_rule": "Only widen to related kinds when no primary-kind candidate clears the minimum score.",
+    "kind_profiles": [
+      {
+        "kind": "audit_log",
+        "collection": "misa_audit_memory",
+        "authority": "audit_only",
+        "support_kinds": [
+          "decision_trace",
+          "repair_work_order",
+          "policy_boundary"
+        ]
+      },
+      {
+        "kind": "decision_trace",
+        "collection": "misa_decision_memory",
+        "authority": "audit_only",
+        "support_kinds": [
+          "audit_log",
+          "repair_work_order",
+          "policy_boundary"
+        ]
+      },
+      {
+        "kind": "agent_experience_candidate",
+        "collection": "misa_experience_memory",
+        "authority": "candidate",
+        "support_kinds": [
+          "agent_experience_promoted",
+          "decision_trace",
+          "audit_log",
+          "repair_work_order"
+        ]
+      },
+      {
+        "kind": "agent_experience_promoted",
+        "collection": "misa_experience_memory",
+        "authority": "promoted",
+        "support_kinds": [
+          "agent_experience_candidate",
+          "decision_trace",
+          "audit_log",
+          "policy_boundary"
+        ]
+      },
+      {
+        "kind": "persona_memory_candidate",
+        "collection": "misa_persona_memory",
+        "authority": "candidate",
+        "support_kinds": [
+          "persona_memory_promoted",
+          "decision_trace",
+          "audit_log",
+          "policy_boundary"
+        ]
+      },
+      {
+        "kind": "persona_memory_promoted",
+        "collection": "misa_persona_memory",
+        "authority": "promoted",
+        "support_kinds": [
+          "persona_memory_candidate",
+          "decision_trace",
+          "audit_log",
+          "policy_boundary"
+        ]
+      },
+      {
+        "kind": "policy_boundary",
+        "collection": "misa_policy_memory",
+        "authority": "policy",
+        "support_kinds": [
+          "repair_work_order",
+          "decision_trace",
+          "audit_log"
+        ]
+      },
+      {
+        "kind": "repair_work_order",
+        "collection": "misa_work_order_memory",
+        "authority": "candidate",
+        "support_kinds": [
+          "policy_boundary",
+          "decision_trace",
+          "audit_log"
+        ]
+      }
+    ],
+    "ranking_inputs": [
+      "vector_similarity",
+      "kind_intent_match",
+      "query_phase_priority",
+      "same_source_context_match",
+      "authority_weight",
+      "trace_path_continuity",
+      "surface_guard"
+    ],
+    "hard_rules": [
+      "kind filter runs before same-source rerank for explicit or high-confidence queries",
+      "same-source context cannot outrank a valid primary-kind hit",
+      "global fallback is diagnostic, not the default answer path",
+      "candidate and audit records remain non-authoritative"
+    ],
+    "safety": {
+      "dry_run": true,
+      "zilliz_written": false,
+      "embedding_created": false,
+      "external_api_calls": 0,
+      "live_writer_included": false
+    }
+  },
   "summary": {
     "collection_count": 6,
     "record_count": 5,
@@ -1767,6 +1907,7 @@
     },
     "records_requiring_embedding": 5,
     "metadata_violation_count": 0,
+    "retrieval_strategy_included": true,
     "zilliz_write_count": 0
   },
   "safety": {
@@ -1784,6 +1925,7 @@
   "warnings": [
     "This adapter only prepares Zilliz collection and upsert payloads.",
     "It does not create embeddings and does not write Zilliz.",
+    "Retrieval should use kind-filtered primary search before same-source rerank.",
     "Run a reversible synthetic write/delete probe before connecting this payload to a live writer.",
     "Candidate and audit records remain non-authoritative even if they are searchable."
   ]

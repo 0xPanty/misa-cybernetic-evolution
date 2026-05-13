@@ -116,6 +116,7 @@ Two rules matter most:
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
+| Vector retrieval ranker | `npm run vector-memory:rank -- --eval-fixtures` | kind filter and same-source rerank dry-run, no embeddings or writes |
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
@@ -174,6 +175,7 @@ npm run memory-layer:misa
 npm run repair-ticket:misa -- --dry-run
 npm run work-order:route -- --dry-run
 npm run vector-memory:classify -- --json
+npm run vector-memory:rank -- --eval-fixtures
 npm run zilliz:adapt -- --json
 ```
 
@@ -181,17 +183,18 @@ For machine-to-machine JSON handoff, do not redirect plain `npm run ... -- --jso
 stdout into the next command. Use `npm --silent run ... -- --json`, direct
 `node scripts/... --json`, or `--out-file <path>` so the file contains only JSON.
 
-## v0.19 Direction
+## v0.20 Direction
 
-Do not add another governance layer by default. The useful v0.19 work is:
+Do not add another governance layer by default. The useful v0.20 work is:
 
 1. keep the current route labels and tournament variants stable;
 2. keep vector-memory records traceable back to opaque original-source refs;
-3. keep `should_change_winner=false` and LLM route authority blocked;
-4. record shadow tournament outcomes with human accept/reject labels;
-5. calibrate `strategy_fit`, `judge_escalation`, and `llm_review_value` against
+3. rank retrieval hits by requested kind before same-source context;
+4. keep `should_change_winner=false` and LLM route authority blocked;
+5. record shadow tournament outcomes with human accept/reject labels;
+6. calibrate `strategy_fit`, `judge_escalation`, and `llm_review_value` against
    real samples;
-6. reduce maintenance noise in precheck, README, and tests.
+7. reduce maintenance noise in precheck, README, and tests.
 
 The scarce thing now is not more abstraction. It is calibration evidence and
 replayable source lineage.
@@ -213,6 +216,7 @@ Current-state docs:
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
 - [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)
 - [Retrieval lineage](./docs/retrieval-lineage-v0.19.md)
+- [Vector retrieval ranker](./docs/vector-retrieval-ranker-v0.20.md)
 - [Evolution tournament v0.18](./docs/evolution-tournament-gate-v0.18.md)
 
 Bridge docs:

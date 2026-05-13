@@ -57,6 +57,7 @@ if (hasArg("json")) {
   console.log(`batches=${result.summary.batch_count}`);
   console.log(`records_requiring_embedding=${result.summary.records_requiring_embedding}`);
   console.log(`metadata_violations=${result.summary.metadata_violation_count}`);
+  console.log(`retrieval_strategy=${result.retrieval_strategy.strategy_version}`);
   console.log(`zilliz_written=${result.safety.zilliz_written}`);
   console.log(`embedding_created=${result.safety.embedding_created}`);
 }

@@ -103,8 +103,8 @@ Every record carries the same minimum metadata:
   "retrieval_hints": {
     "filter_keys": ["kind", "authority", "original_source_id"],
     "boost_terms": ["agent_experience_candidate", "local_distillation_sources"],
-    "score_inputs": ["vector_similarity", "trace_path_continuity"],
-    "false_positive_guards": ["audit_only_or_candidate_records_cannot_change_behavior"]
+    "score_inputs": ["vector_similarity", "kind_intent_match", "trace_path_continuity", "same_source_context_match"],
+    "false_positive_guards": ["query_kind_filter_runs_before_global_rerank", "same_source_context_cannot_override_requested_kind"]
   }
 }
 ```
@@ -126,7 +126,7 @@ The source fields are intentionally reference-only:
 | `source_type` / `source_id` | The local artifact that created this vector record, such as a work order. |
 | `original_source` | The earliest known upstream source ref, such as a distilled event, session id, artifact path, or chunk hash. Unknown values stay explicit instead of being guessed. |
 | `retrieval_trace` | Replay keys and source hops for explaining a hit after retrieval. |
-| `retrieval_hints` | Filter keys, boost terms, and score inputs that a future retriever can use to improve hit quality. |
+| `retrieval_hints` | Filter keys, boost terms, score inputs, and guards used by the v0.20 kind-filter/same-source ranker. |
 
 Plain version: Misa can later say, "this hit is a policy boundary from this
 distilled event through this bridge decision," instead of just seeing a similar

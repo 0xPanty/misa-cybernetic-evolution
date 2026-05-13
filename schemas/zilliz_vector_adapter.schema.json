@@ -13,6 +13,7 @@
     "collection_plans",
     "upsert_batches",
     "metadata_checks",
+    "retrieval_strategy",
     "summary",
     "safety",
     "warnings"
@@ -66,6 +67,7 @@
       "minItems": 3,
       "items": { "$ref": "#/$defs/metadata_check" }
     },
+    "retrieval_strategy": { "$ref": "#/$defs/retrieval_strategy" },
     "summary": {
       "type": "object",
       "additionalProperties": false,
@@ -76,6 +78,7 @@
         "by_collection",
         "records_requiring_embedding",
         "metadata_violation_count",
+        "retrieval_strategy_included",
         "zilliz_write_count"
       ],
       "properties": {
@@ -88,6 +91,7 @@
         },
         "records_requiring_embedding": { "type": "integer", "minimum": 0 },
         "metadata_violation_count": { "type": "integer", "minimum": 0 },
+        "retrieval_strategy_included": { "type": "boolean", "const": true },
         "zilliz_write_count": { "type": "integer", "const": 0 }
       }
     },
@@ -423,6 +427,76 @@
           "type": "array",
           "items": { "type": "string" }
         }
+      }
+    },
+    "retrieval_strategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy_version",
+        "default_top_k",
+        "primary_rule",
+        "same_source_rule",
+        "fallback_rule",
+        "kind_profiles",
+        "ranking_inputs",
+        "hard_rules",
+        "safety"
+      ],
+      "properties": {
+        "strategy_version": { "type": "string", "const": "misa.vector_retrieval_strategy.v1" },
+        "default_top_k": { "type": "integer", "minimum": 1 },
+        "primary_rule": { "type": "string" },
+        "same_source_rule": { "type": "string" },
+        "fallback_rule": { "type": "string" },
+        "kind_profiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/retrieval_kind_profile" }
+        },
+        "ranking_inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "hard_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "safety": { "$ref": "#/$defs/retrieval_strategy_safety" }
+      }
+    },
+    "retrieval_kind_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "collection", "authority", "support_kinds"],
+      "properties": {
+        "kind": { "type": "string" },
+        "collection": { "type": "string" },
+        "authority": { "type": "string", "enum": ["audit_only", "candidate", "promoted", "policy"] },
+        "support_kinds": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "retrieval_strategy_safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dry_run",
+        "zilliz_written",
+        "embedding_created",
+        "external_api_calls",
+        "live_writer_included"
+      ],
+      "properties": {
+        "dry_run": { "type": "boolean", "const": true },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "live_writer_included": { "type": "boolean", "const": false }
       }
     },
     "metadata_check": {

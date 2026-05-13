@@ -282,13 +282,18 @@ function buildRetrievalHints({ kind, collection, metadata }) {
     ]),
     score_inputs: [
       "vector_similarity",
+      "kind_intent_match",
       "metadata_filter_match",
+      "query_phase_priority",
       "authority_weight",
       "source_recency_weight",
       "trace_path_continuity",
+      "same_source_context_match",
       "blocked_surface_penalty"
     ],
     false_positive_guards: [
+      "query_kind_filter_runs_before_global_rerank",
+      "same_source_context_cannot_override_requested_kind",
       "audit_only_or_candidate_records_cannot_change_behavior",
       "persona_or_policy_records_require_owner_approval",
       "opaque_source_refs_are_required_before_raw_content_lookup"

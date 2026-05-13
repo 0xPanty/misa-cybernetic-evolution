@@ -66,6 +66,11 @@ import {
   reviewZillizVectorAdapterPlan
 } from "../scripts/lib/zilliz-vector-adapter.mjs";
 import {
+  buildVectorMemoryRetrievalPlan,
+  evaluateVectorRetrievalScenarios,
+  rankVectorMemoryHits
+} from "../scripts/lib/vector-retrieval-ranker.mjs";
+import {
   evaluateOmniAgentFootprintBridge,
   reviewOmniAgentFootprintBridge
 } from "../scripts/lib/omniagent-footprint-bridge.mjs";
@@ -1560,6 +1565,10 @@ test("Zilliz vector adapter prepares dry-run collection schemas and upsert paylo
   assert.equal(result.safety.embedding_created, false);
   assert.equal(result.safety.external_api_calls, 0);
   assert.equal(result.summary.zilliz_write_count, 0);
+  assert.equal(result.summary.retrieval_strategy_included, true);
+  assert.equal(result.retrieval_strategy.strategy_version, "misa.vector_retrieval_strategy.v1");
+  assert.ok(result.retrieval_strategy.ranking_inputs.includes("same_source_context_match"));
+  assert.ok(result.retrieval_strategy.hard_rules.some((rule) => /same-source context cannot outrank/i.test(rule)));
   assert.equal(result.summary.records_requiring_embedding, storage.summary.record_count);
   assert.ok(result.collection_plans.some((plan) => plan.collection === "misa_work_order_memory"));
   assert.ok(result.collection_plans.every((plan) => plan.vector.embedding_created === false));
@@ -1614,6 +1623,101 @@ test("Zilliz vector adapter flags unsafe metadata instead of silently preparing 
     && check.ok === false
   )));
   assert.equal(result.safety.zilliz_written, false);
+});
+
+test("vector retrieval plan filters by requested kind before same-source context", () => {
+  const plan = buildVectorMemoryRetrievalPlan({
+    query: "What repair work order came from distill-window-alpha?",
+    topK: 6
+  });
+
+  assert.equal(plan.query_intent.requested_kind, "repair_work_order");
+  assert.equal(plan.kind_locked, true);
+  assert.equal(plan.phases[0].phase, "primary_kind_search");
+  assert.deepEqual(plan.phases[0].filter.kinds, ["repair_work_order"]);
+  assert.match(plan.phases[0].zilliz_filter, /kind == "repair_work_order"/);
+  assert.equal(plan.phases[1].phase, "same_source_context_search");
+  assert.ok(plan.phases[1].filter.kinds.includes("policy_boundary"));
+  assert.match(plan.phases[1].zilliz_filter_template, /original_source_id/);
+  assert.equal(plan.phases[2].only_if, "no_primary_kind_hit_above_min_primary_score");
+  assert.ok(plan.hard_rules.some((rule) => /cannot override the requested kind/.test(rule)));
+});
+
+test("vector retrieval ranker keeps same-source policy from stealing repair-work-order top1", () => {
+  const commonTrace = {
+    trace_version: "misa.retrieval_trace.v1",
+    replayable: true,
+    replay_keys: ["alpha-repair", "alpha-policy", "distill-window-alpha", "trace-alpha"],
+    source_hops: [
+      { stage: "original_source", ref_type: "redacted_sample", ref_id: "distill-window-alpha", artifact_path: "test" },
+      { stage: "classification_source", ref_type: "work_order", ref_id: "distill-window-alpha", artifact_path: "test" },
+      { stage: "decision_trace", ref_type: "decision_trace", ref_id: "trace-alpha", artifact_path: "test" },
+      { stage: "vector_record", ref_type: "record", ref_id: "alpha-repair", artifact_path: "test" }
+    ]
+  };
+  const traceFor = (recordId, sourceId) => sourceId === "distill-window-alpha"
+    ? commonTrace
+    : {
+        trace_version: "misa.retrieval_trace.v1",
+        replayable: true,
+        replay_keys: [recordId, sourceId, "trace-other"],
+        source_hops: [
+          { stage: "original_source", ref_type: "redacted_sample", ref_id: sourceId, artifact_path: "test" },
+          { stage: "classification_source", ref_type: "work_order", ref_id: sourceId, artifact_path: "test" },
+          { stage: "decision_trace", ref_type: "decision_trace", ref_id: "trace-other", artifact_path: "test" },
+          { stage: "vector_record", ref_type: "record", ref_id: recordId, artifact_path: "test" }
+        ]
+      };
+  const hit = (recordId, kind, score, sourceId = "distill-window-alpha") => ({
+    record_id: recordId,
+    score,
+    metadata: {
+      record_id: recordId,
+      title: recordId,
+      kind,
+      authority: kind === "policy_boundary" ? "policy" : kind === "repair_work_order" ? "candidate" : "audit_only",
+      source_id: sourceId,
+      original_source_id: sourceId,
+      decision_trace_id: sourceId === "distill-window-alpha" ? "trace-alpha" : "trace-other",
+      blocked_surfaces: kind === "policy_boundary" ? ["persistent_memory"] : [],
+      can_influence_behavior: kind === "policy_boundary",
+      requires_owner_approval: kind === "policy_boundary",
+      retrieval_trace: traceFor(recordId, sourceId)
+    }
+  });
+  const result = rankVectorMemoryHits({
+    query: "What repair work order came from distill-window-alpha?",
+    hits: [
+      hit("alpha-policy", "policy_boundary", 0.94),
+      hit("alpha-audit", "audit_log", 0.86),
+      hit("alpha-repair", "repair_work_order", 0.58),
+      hit("other-policy", "policy_boundary", 0.96, "other-source")
+    ],
+    topK: 4
+  });
+
+  assert.equal(result.summary.top1_kind_match, true);
+  assert.equal(result.ranked_hits[0].record_id, "alpha-repair");
+  assert.equal(result.ranked_hits[0].rank_bucket, "primary_kind");
+  assert.equal(result.ranked_hits[1].record_id, "alpha-policy");
+  assert.equal(result.ranked_hits[1].rank_bucket, "same_source_context");
+  assert.ok(result.filtered_out.some((item) => item.record_id === "other-policy"));
+});
+
+test("vector retrieval ranker passes multi-source regression rounds", () => {
+  const result = evaluateVectorRetrievalScenarios();
+  const uniqueScenarioSources = new Set(result.results.map((item) => item.scenario_id.split("_").at(-1)));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.scenario_count, 6);
+  assert.equal(result.summary.unique_source_count >= 6, true);
+  assert.equal(uniqueScenarioSources.size >= 4, true);
+  assert.equal(result.summary.top1_exact_recall, 1);
+  assert.equal(result.summary.top1_kind_precision, 1);
+  assert.equal(result.summary.top3_expected_recall, 1);
+  assert.equal(result.summary.noise_top1_wrong_kind_count, 0);
+  assert.equal(result.safety.zilliz_written, false);
+  assert.equal(result.safety.external_api_calls, 0);
 });
 
 test("VPS conversation loader accepts symlinked sanitized JSON files", async (t) => {

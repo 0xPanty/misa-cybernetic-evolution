@@ -7,6 +7,9 @@ It still does not write Zilliz. It prepares the shape a live writer would need:
 collections, vector fields, text payloads, metadata, and grouped upsert batches.
 The public payload now includes source-lineage fields, so future live records can
 be filtered and explained by original source, not only vector similarity.
+v0.20 also includes a dry-run retrieval strategy so a live retriever can search
+the requested `kind` first and use same-source records as context instead of
+letting sibling records steal the top result.
 
 ## Why It Exists
 
@@ -28,6 +31,8 @@ The adapter emits:
   `embedding_status: "not_created"`;
 - `metadata_checks`: required metadata, authority boundary, source lineage,
   collection, and text payload checks;
+- `retrieval_strategy`: kind-filtered query phases, same-source rerank rules,
+  score inputs, and hard safety rules;
 - `safety`: dry-run proof that no embeddings were created and no Zilliz write
   happened.
 
@@ -45,6 +50,18 @@ That gives a future retriever a stronger path:
 query -> vector candidates -> metadata filters -> authority gate
       -> trace_path_continuity score -> source replay / explanation
 ```
+
+v0.20 makes the intended read path sharper:
+
+```text
+query -> infer/request kind -> primary kind-filtered search
+      -> same-source context search -> fallback only if primary misses
+      -> score_parts + replay summary
+```
+
+That prevents the common failure where a same-source `policy_boundary` outranks
+a requested `repair_work_order` just because the vector text is semantically
+close.
 
 Default vector settings:
 

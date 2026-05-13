@@ -1,4 +1,5 @@
 import { reviewVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
+import { buildVectorRetrievalStrategy } from "./vector-retrieval-ranker.mjs";
 
 const DEFAULT_VECTOR_DIMENSION = 768;
 const DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001";
@@ -290,6 +291,7 @@ export function buildZillizVectorAdapterPlan({
     embeddingModel
   });
   const upsertBatches = buildUpsertBatches(records);
+  const retrievalStrategy = buildVectorRetrievalStrategy();
 
   return {
     schema_version: "misa.zilliz_vector_adapter.v1",
@@ -312,6 +314,7 @@ export function buildZillizVectorAdapterPlan({
     collection_plans: collectionPlans,
     upsert_batches: upsertBatches,
     metadata_checks: checks,
+    retrieval_strategy: retrievalStrategy,
     summary: {
       collection_count: collectionPlans.length,
       record_count: records.length,
@@ -319,6 +322,7 @@ export function buildZillizVectorAdapterPlan({
       by_collection: countBy(records, (record) => record.collection),
       records_requiring_embedding: records.length,
       metadata_violation_count: violations.length,
+      retrieval_strategy_included: true,
       zilliz_write_count: 0
     },
     safety: {
@@ -336,6 +340,7 @@ export function buildZillizVectorAdapterPlan({
     warnings: [
       "This adapter only prepares Zilliz collection and upsert payloads.",
       "It does not create embeddings and does not write Zilliz.",
+      "Retrieval should use kind-filtered primary search before same-source rerank.",
       "Run a reversible synthetic write/delete probe before connecting this payload to a live writer.",
       "Candidate and audit records remain non-authoritative even if they are searchable."
     ]

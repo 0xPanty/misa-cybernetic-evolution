@@ -74,15 +74,19 @@ If a field is `unknown`, the retriever should say so and avoid pretending it has
 raw proof. Unknown provenance should not block search, but it should lower
 confidence for durable behavior changes.
 
-## Next Useful Layer
+## Implemented v0.20 Layer
 
-The next implementation step, when live data is allowed, is not a writer first.
-It is a read-side scorer:
+The next useful layer is now implemented as a public local dry-run scorer:
+`npm run vector-memory:rank -- --eval-fixtures`.
 
 - input: query plus requested surface, such as answer context, policy check, or
   repair planning;
 - output: ranked hits with `score_parts` and `replay_summary`;
 - hard rule: candidate and audit records may be cited as context, but cannot
   alter behavior.
+
+The important change is phase order. The scorer searches the requested kind
+first, then fetches same-source sibling records for explanation. Same-source
+context is useful, but it cannot outrank a valid primary-kind hit.
 
 Only after that scorer is useful should a live Zilliz writer be considered.

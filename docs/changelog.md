@@ -5,12 +5,12 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.19.0`.
+The package is currently `0.20.0`.
 
-The current direction is v0.19 convergence: keep the control boundary stable,
-make vector-memory hits traceable to opaque original-source refs, calibrate the
-existing decision rules with real shadow samples, and reduce maintenance noise
-before adding new layers.
+The current direction is v0.20 convergence: keep the control boundary stable,
+make vector-memory hits traceable to opaque original-source refs, rank retrieval
+hits by requested kind before same-source context, and keep real shadow testing
+separate from production Zilliz writes.
 
 ## Version History
 
@@ -34,6 +34,7 @@ before adding new layers.
 | v0.17 | Evolution tournament gate | local draft optimizer only |
 | v0.18 | `strategy_fit` and `llm_review_value` | LLM critique only, no route/winner authority |
 | v0.19 | Vector-memory original-source lineage and retrieval hints | dry-run metadata only, no Zilliz write |
+| v0.20 | Kind-filtered retrieval plan and same-source reranker | read-side dry-run only, no embeddings or Zilliz write |
 
 ## Historical Sample Validation
 
