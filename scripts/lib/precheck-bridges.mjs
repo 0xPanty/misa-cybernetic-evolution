@@ -5,13 +5,27 @@ import {
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { reviewOmniAgentFootprintBridge } from "./omniagent-footprint-bridge.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
-import { checkResult, readJson } from "./precheck-shared.mjs";
+import { PHASES, checkResult, readJson } from "./precheck-shared.mjs";
+
+function bridgeCheck(name, ok, details = {}) {
+  return checkResult(name, ok, {
+    phase: PHASES.bridges,
+    ...details
+  });
+}
+
+function bridgeValidation(args) {
+  return validateJsonData({
+    ...args,
+    phase: PHASES.bridges
+  });
+}
 
 export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRouting }) {
   const checks = [];
 
   const hermesMapping = await evaluateHermesMappingFixtures({ repoRoot });
-  checks.push(checkResult("Hermes distillation mapping fixture check", hermesMapping.ok, {
+  checks.push(bridgeCheck("Hermes distillation mapping fixture check", hermesMapping.ok, {
     fixtureCount: hermesMapping.summary.fixture_count,
     mappedCount: hermesMapping.summary.mapped_count,
     workOrders: hermesMapping.summary.work_order_count,
@@ -23,7 +37,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
   }));
 
   for (const mapping of hermesMapping.results) {
-    checks.push(await validateJsonData({
+    checks.push(await bridgeValidation({
       repoRoot,
       schemaRel: "schemas/hermes_distillation_mapping.schema.json",
       data: mapping,
@@ -37,7 +51,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
     workOrderRouting,
     now: new Date("2026-05-12T00:00:00Z")
   });
-  checks.push(checkResult("LangGraph Qianxuesen bridge contract check", langGraphBridge.ok, {
+  checks.push(bridgeCheck("LangGraph Qianxuesen bridge contract check", langGraphBridge.ok, {
     workOrders: langGraphBridge.summary.work_order_count,
     interrupts: langGraphBridge.summary.interrupt_count,
     deterministicNodes: langGraphBridge.summary.deterministic_governance_node_count,
@@ -45,7 +59,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
     liveEffectAllowed: langGraphBridge.summary.live_effect_allowed,
     violations: langGraphBridge.violations
   }));
-  checks.push(await validateJsonData({
+  checks.push(await bridgeValidation({
     repoRoot,
     schemaRel: "schemas/langgraph_qianxuesen_bridge.schema.json",
     data: langGraphBridge,
@@ -62,7 +76,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
       footprint: omniAgentFootprint,
       now: new Date("2026-05-13T00:00:00Z")
     });
-    checks.push(checkResult(`OmniAgent footprint bridge contract check ${path.basename(footprintRel)}`, omniAgentBridge.ok, {
+    checks.push(bridgeCheck(`OmniAgent footprint bridge contract check ${path.basename(footprintRel)}`, omniAgentBridge.ok, {
       route: omniAgentBridge.route_summary.selected_route,
       status: omniAgentBridge.route_summary.status,
       autoWritesSeen: Object.values(omniAgentBridge.footprint_summary.auto_write_indicators).some(Boolean),
@@ -70,7 +84,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
       automaticPromotionAllowed: omniAgentBridge.control_boundary.automatic_promotion_allowed,
       violations: omniAgentBridge.violations
     }));
-    checks.push(await validateJsonData({
+    checks.push(await bridgeValidation({
       repoRoot,
       schemaRel: "schemas/omniagent_footprint_bridge.schema.json",
       data: omniAgentBridge,

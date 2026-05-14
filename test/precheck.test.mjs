@@ -5,9 +5,17 @@ import path from "node:path";
 import { test } from "node:test";
 import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
 import {
+  PHASES,
+  normalizeChecks,
   scanForSecretAssignments,
   walkFiles
 } from "../scripts/lib/precheck-shared.mjs";
+
+function assertPhaseCounts(summary, phase, total) {
+  assert.equal(summary[phase].total, total);
+  assert.equal(summary[phase].passed, total);
+  assert.equal(summary[phase].failed, 0);
+}
 
 test("repository dry-run precheck passes", async () => {
   const result = await runPrecheck();
@@ -17,8 +25,21 @@ test("repository dry-run precheck passes", async () => {
   assert.ok(result.phase_summary.static.total > 0);
   assert.ok(result.phase_summary.contracts.total > 0);
   assert.ok(result.phase_summary["current-line"].total > 0);
+  assertPhaseCounts(result.phase_summary, "static", 4);
+  assertPhaseCounts(result.phase_summary, "contracts", 88);
+  assertPhaseCounts(result.phase_summary, "bridges", 18);
+  assertPhaseCounts(result.phase_summary, "current-line", 13);
+  assertPhaseCounts(result.phase_summary, "smoke", 12);
+  assert.equal(result.checks.every((check) => Object.values(PHASES).includes(check.phase)), true);
   assert.ok(result.checks.some((check) => check.name === "README/package version sync"));
   assert.ok(result.checks.some((check) => check.name === "Session distiller cybernetic review check"));
+});
+
+test("precheck checks must carry explicit phases", () => {
+  assert.throws(
+    () => normalizeChecks([{ name: "renamed check without phase", ok: true }]),
+    /missing an explicit phase/
+  );
 });
 
 test("secret scan stays text-only and skips ignored output directories", async () => {

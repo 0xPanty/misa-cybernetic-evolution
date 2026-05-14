@@ -17,7 +17,7 @@ if (jsonMode) {
 
   for (const check of result.checks) {
     const label = check.ok ? "PASS" : "FAIL";
-    console.log(`${label} [${check.phase ?? "unassigned"}] ${check.name}`);
+    console.log(`${label} [${check.phase}] ${check.name}`);
 
     if (check.warnings?.length) {
       for (const warning of check.warnings) {

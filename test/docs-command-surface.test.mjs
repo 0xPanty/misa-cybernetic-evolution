@@ -52,13 +52,14 @@ test("current-line docs keep the validation command map aligned", async () => {
   const workflow = await fs.readFile(".github/workflows/current-line-shadow.yml", "utf8");
 
   for (const command of REQUIRED_CURRENT_LINE_COMMANDS) {
-    assert.match(readme, new RegExp(`npm run ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
-    assert.match(architecture, new RegExp(`npm run ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
     assert.match(verification, new RegExp(`npm run ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
     assert.match(workflow, new RegExp(`npm run ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   }
 
   assert.doesNotMatch(verification, /--no-verify/);
+  assert.match(readme, /docs\/verification-matrix\.md/);
+  assert.match(architecture, /docs\/verification-matrix\.md/);
   assert.match(readme, /Current-Line Command Map/);
   assert.match(verification, /Current Local Shadow Gate/);
+  assert.match(verification, /canonical command\s+surface/);
 });

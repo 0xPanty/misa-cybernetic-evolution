@@ -20,7 +20,8 @@ export async function runStaticFileChecks({ repoRoot }) {
     "core active file set",
     missingRequired,
     CORE_REQUIRED_FILES.length,
-    "core active file missing"
+    "core active file missing",
+    PHASES.static
   ));
 
   const missingMachineContracts = await missingFiles(repoRoot, MACHINE_CONTRACT_FILES);

@@ -6,6 +6,20 @@ import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
 import { PHASES, checkResult } from "./precheck-shared.mjs";
 
+function currentLineCheck(name, ok, details = {}) {
+  return checkResult(name, ok, {
+    phase: PHASES.currentLine,
+    ...details
+  });
+}
+
+function currentLineValidation(args) {
+  return validateJsonData({
+    ...args,
+    phase: PHASES.currentLine
+  });
+}
+
 export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langGraphBridge }) {
   const checks = [];
 
@@ -13,8 +27,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     summaryFile: path.join(repoRoot, "examples/session-distiller-summary.example.json"),
     now: new Date("2026-05-12T00:00:00Z")
   });
-  checks.push(checkResult("Session distiller cybernetic review check", sessionDistillerCyberneticReview.ok, {
-    phase: PHASES.currentLine,
+  checks.push(currentLineCheck("Session distiller cybernetic review check", sessionDistillerCyberneticReview.ok, {
     verdict: sessionDistillerCyberneticReview.summary.verdict,
     findings: sessionDistillerCyberneticReview.summary.finding_count,
     repairWorkOrders: sessionDistillerCyberneticReview.summary.repair_work_order_count,
@@ -29,14 +42,14 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     langGraphBridge,
     now: new Date("2026-05-12T00:00:00Z")
   });
-  checks.push(checkResult("Vector memory storage classification check", vectorMemoryStorage.ok, {
+  checks.push(currentLineCheck("Vector memory storage classification check", vectorMemoryStorage.ok, {
     records: vectorMemoryStorage.summary.record_count,
     candidates: vectorMemoryStorage.summary.candidate_count,
     policies: vectorMemoryStorage.summary.policy_count,
     canInfluenceBehavior: vectorMemoryStorage.summary.can_influence_behavior_count,
     zillizWritten: vectorMemoryStorage.safety.zilliz_written
   }));
-  checks.push(await validateJsonData({
+  checks.push(await currentLineValidation({
     repoRoot,
     schemaRel: "schemas/vector_memory_storage.schema.json",
     data: vectorMemoryStorage,
@@ -47,7 +60,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     vectorMemoryStorage,
     now: new Date("2026-05-12T00:00:00Z")
   });
-  checks.push(checkResult("Zilliz vector adapter dry-run check", zillizVectorAdapter.ok, {
+  checks.push(currentLineCheck("Zilliz vector adapter dry-run check", zillizVectorAdapter.ok, {
     collections: zillizVectorAdapter.summary.collection_count,
     records: zillizVectorAdapter.summary.record_count,
     batches: zillizVectorAdapter.summary.batch_count,
@@ -55,7 +68,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     zillizWritten: zillizVectorAdapter.safety.zilliz_written,
     embeddingCreated: zillizVectorAdapter.safety.embedding_created
   }));
-  checks.push(await validateJsonData({
+  checks.push(await currentLineValidation({
     repoRoot,
     schemaRel: "schemas/zilliz_vector_adapter.schema.json",
     data: zillizVectorAdapter,
@@ -63,7 +76,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
   }));
 
   const vectorRetrievalEval = evaluateVectorRetrievalScenarios();
-  checks.push(checkResult("Vector retrieval ranker multi-source check", vectorRetrievalEval.ok, {
+  checks.push(currentLineCheck("Vector retrieval ranker multi-source check", vectorRetrievalEval.ok, {
     scenarios: vectorRetrievalEval.summary.scenario_count,
     uniqueSources: vectorRetrievalEval.summary.unique_source_count,
     top1ExactRecall: vectorRetrievalEval.summary.top1_exact_recall,

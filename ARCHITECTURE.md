@@ -161,23 +161,10 @@ The verifier evaluates candidates through layered gates:
 The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
 
-The current local confidence chain is grouped by phase:
-
-```bash
-npm run validate:schemas
-npm run simulate:misa
-npm run crystallize:misa
-npm run self-repair:misa -- --validation-mode
-npm run hermes:map-distillation -- --json
-npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
-npm run vector-memory:classify -- --json
-npm run vector-memory:rank -- --eval-fixtures
-npm run zilliz:adapt -- --json
-npm run smoke:current-line
-npm run calibrate:current-line
-npm run precheck
-npm test
-```
+The current local confidence chain is grouped by phase and kept canonical in
+[docs/verification-matrix.md](./docs/verification-matrix.md). Architecture
+describes what the verifier proves; the verification matrix owns the exact
+command order.
 
 These commands are dry-run checks. They do not call providers, start timers,
 write memory, publish artifacts, post publicly, or change live channel behavior.
@@ -188,24 +175,12 @@ the precheck chain must show which phase failed: static files and versions,
 machine contracts, local smoke, bridge checks, or current-line vector/session
 review.
 
-`smoke:current-line` is the narrower current-line guard. It runs session
-distiller review, work-order routing, tournament, vector classification,
-retrieval ranking, and the Zilliz adapter in dry-run mode, then checks that no
-live write, embedding creation, provider call, or production authority appeared.
-
-`calibrate:current-line` is the redacted-sample shadow report. It replays the
-same current-line surfaces across default local examples, route-sensitive
-fixtures, near-threshold judge fixtures, and sanitized VPS conversation fixtures.
-It checks route coverage, repair-ticket/work-order mapping, retrieval top1
-behavior, tournament winners, and judge-escalation value without touching VPS or
-production state.
-
-It also emits a signal-layer map so reviewers can see the current signal surface
-without reading the whole codebase: source-distillation signals, Qianxuesen
-route signals, shadow perception hints, work-order pressure, retrieval-ranker
-inputs, and tournament quality signals. This map is descriptive and local only;
-it does not add a controller, writer, provider call, or route authority outside
-the existing Qianxuesen route table.
+The current-line smoke and calibration commands are narrower shadow guards. They
+cover session review, work-order routing, tournament, vector classification,
+retrieval ranking, Zilliz adapter dry-run, route coverage, repair/work-order
+mapping, perception hints, and judge-escalation value without touching VPS or
+production state. The signal-layer details live in
+[docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
 
 The GitHub Actions workflow `.github/workflows/current-line-shadow.yml` pins
 that same shadow posture for pull requests and `main`: schema validation,

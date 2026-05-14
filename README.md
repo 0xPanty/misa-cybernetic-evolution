@@ -131,16 +131,13 @@ Two rules matter most:
 
 ## Current-Line Command Map
 
-| Concept name | Actual command |
-| --- | --- |
-| Current-line smoke guard | `npm run smoke:current-line` |
-| Real-sample calibration report | `npm run calibrate:current-line` |
-| Session-distiller review | `npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json` |
-| Work-order route check | `npm run work-order:route -- --dry-run` |
-| Vector-memory classification | `npm run vector-memory:classify -- --json` |
-| Retrieval-ranker regression | `npm run vector-memory:rank -- --eval-fixtures` |
-| Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` |
-| Evolution tournament | `npm run evolution:tournament:misa` |
+README keeps only the short human entrypoints. The canonical command surface and
+CI order live in [docs/verification-matrix.md](./docs/verification-matrix.md).
+
+The two current-line commands most reviewers should reach for are:
+
+- `npm run smoke:current-line`
+- `npm run calibrate:current-line`
 
 ## Perception Log Layout
 
@@ -203,53 +200,25 @@ add critique notes, but it cannot change the route or winner.
 
 ## Validation
 
-For the normal local confidence chain:
+The canonical validation chain lives in
+[docs/verification-matrix.md](./docs/verification-matrix.md). Keep that file
+and `.github/workflows/current-line-shadow.yml` as the source of truth for the
+exact CI order.
+
+Current local review usually runs the same shadow gate:
 
 ```bash
-npm install
 npm run validate:schemas
+npm run smoke:current-line
+npm run calibrate:current-line
 npm run precheck
 npm test
 ```
 
-For the broader local learning-chain smoke:
-
-```bash
-npm run smoke:current-line
-npm run calibrate:current-line
-```
-
-The same chain is pinned in GitHub Actions as
-`.github/workflows/current-line-shadow.yml`. It runs schema validation,
-current-line smoke, current-line calibration, precheck, and tests with
-`MISA_SHADOW_MODE=true` and no secrets.
-
-The calibration report also names the current signal layers directly:
-source-distillation signals, Qianxuesen route signals, shadow perception hints,
-work-order pressure, retrieval-ranker inputs, and tournament quality signals.
-That map is descriptive only; it does not add a new controller or any write
-authority.
-
-For the expanded module-by-module version:
-
-```bash
-npm run simulate:misa
-npm run distill:misa
-npm run perception:digest
-npm run perception:layout
-npm run perception:digest -- --source-dir test/fixtures/perception/shadow-sources --ledger-file test/fixtures/perception/handled-signal-ledger.json
-npm run rollup:misa
-npm run evolution:evaluate:misa
-npm run evolution:tournament:misa
-npm run memory-layer:misa
-npm run repair-ticket:misa -- --dry-run
-npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
-npm run work-order:route -- --dry-run
-npm run vector-memory:classify -- --json
-npm run vector-memory:rank -- --eval-fixtures
-npm run zilliz:adapt -- --json
-npm run calibrate:current-line
-```
+The calibration signal-layer details live in
+[docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
+That map is descriptive only; it does not add a controller, writer, provider
+call, or route authority.
 
 For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
@@ -289,7 +258,7 @@ tracks; use the command map and validation chain above for the current surface.
 
 - [Architecture](./ARCHITECTURE.md)
 - [Control contract](./CONTROL_CONTRACT.md)
-- [Verification matrix](./docs/verification-matrix.md)
+- [Verification matrix](./docs/verification-matrix.md) - canonical command surface and current local shadow gate
 - [Source synthesis](./docs/source-synthesis.md)
 - [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
 - [Work-order routing](./docs/work-order-routing-v0.14.md)

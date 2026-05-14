@@ -12,9 +12,10 @@
 
 ## Current Local Shadow Gate
 
-The current local gate is the one CI runs. It proves the repository is
-schema-valid, current-line dry-run safe, calibrated on redacted samples, and
-still passing the full local test suite.
+The current local gate is the one CI runs. This section is the canonical command
+surface for README, architecture notes, and workflow alignment. It proves the
+repository is schema-valid, current-line dry-run safe, calibrated on redacted
+samples, and still passing the full local test suite.
 
 ```bash
 npm run validate:schemas

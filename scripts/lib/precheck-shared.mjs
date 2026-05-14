@@ -63,9 +63,16 @@ export const CORE_REQUIRED_FILES = [
   "scripts/lib/evolution-evaluator.mjs",
   "scripts/lib/evolution-tournament-contract.mjs",
   "scripts/lib/evolution-tournament-gate.mjs",
+  "scripts/lib/evolution-tournament-judge.mjs",
+  "scripts/lib/evolution-tournament-ledger.mjs",
+  "scripts/lib/evolution-tournament-quality.mjs",
+  "scripts/lib/evolution-tournament-scoring.mjs",
+  "scripts/lib/evolution-tournament-utils.mjs",
+  "scripts/lib/evolution-tournament-validation.mjs",
   "scripts/lib/memory-layer.mjs",
   "scripts/lib/repair-ticket.mjs",
   "scripts/lib/session-distiller-review.mjs",
+  "scripts/lib/signal-taxonomy.mjs",
   "scripts/lib/work-order-router.mjs",
   "scripts/lib/vector-memory-storage.mjs",
   "scripts/lib/vector-retrieval-ranker.mjs",
@@ -372,25 +379,25 @@ export function fileSetCheck(name, missing, total, missingPrefix, phase = PHASES
   });
 }
 
-export function inferPhase(name) {
-  if (/version|file set|inventory|secret/i.test(name)) return PHASES.static;
-  if (/Hermes|LangGraph|OmniAgent/i.test(name)) return PHASES.bridges;
-  if (/Vector|Zilliz|Session distiller cybernetic/i.test(name)) return PHASES.currentLine;
-  if (/schema|validate|contract|profile|damping/i.test(name)) return PHASES.contracts;
-  return PHASES.smoke;
+function assertExplicitPhase(check) {
+  const validPhases = Object.values(PHASES);
+  if (!validPhases.includes(check.phase)) {
+    throw new Error(`precheck check is missing an explicit phase: ${check.name}`);
+  }
 }
 
 export function normalizeChecks(checks) {
-  return checks.map((check) => ({
-    ...check,
-    phase: check.phase ?? inferPhase(check.name)
-  }));
+  return checks.map((check) => {
+    assertExplicitPhase(check);
+    return { ...check };
+  });
 }
 
 export function phaseSummary(checks) {
   const summary = {};
   for (const check of checks) {
-    const phase = check.phase ?? inferPhase(check.name);
+    assertExplicitPhase(check);
+    const phase = check.phase;
     summary[phase] ??= { total: 0, passed: 0, failed: 0, warnings: 0 };
     summary[phase].total += 1;
     if (check.ok) {
