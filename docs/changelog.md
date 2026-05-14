@@ -7,13 +7,36 @@ stay focused on current state, current boundary, and current validation.
 
 The package is currently `0.21.0`.
 
-The current direction is v0.21 live-adjacent review: keep the control boundary stable,
+The current direction is v0.21 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
-hits by requested kind before same-source context, and let the VPS
-session-distiller ask Qianxuesen for a read-only work-order review after each
-run.
+hits by requested kind before same-source context, let the session-distiller ask
+Qianxuesen for read-only work-order review, calibrate the current line on
+redacted samples, and pin the shadow chain in CI.
+
+The calibration report now also exposes the current signal-layer map: source
+signals, deterministic route signals, perception hints, work-order pressure,
+retrieval-ranker inputs, and tournament quality signals. This is a review
+surface only, not a new authority layer.
+
+Precheck static hygiene also stays narrow: the secret scan walks source-like
+text files and skips ignored output or dependency directories such as local run
+artifacts and installed packages, so generated shadow evidence does not become
+noise in the main gate.
+
+The tournament gate now keeps its constants and frozen output contract in a
+small dedicated module. This is a maintenance split only: scorer behavior,
+winner selection, and route authority are unchanged.
+
+Current-line calibration now includes a small redacted holdout group. It checks
+that public-memory risk can suppress unsafe workflow promotion, while a clean
+local workflow still routes to `skill`; the holdout stays medium-value and
+near-threshold instead of forcing an automatic judge call.
 
 ## Version History
+
+Rows before v0.21 are historical anchors for retained behavior. They should not
+be read as competing current tracks; the current line is the v0.21 convergence
+chain above.
 
 | Version | Added | Boundary |
 | --- | --- | --- |
@@ -37,7 +60,7 @@ run.
 | v0.19 | Vector-memory original-source lineage and retrieval hints | dry-run metadata only, no Zilliz write |
 | v0.20 | Kind-filtered retrieval plan and same-source reranker | read-side dry-run only, no embeddings or Zilliz write |
 | v0.20.1 | Kind-aware embedding text headers | dry-run payload text only, no provider call or Zilliz write |
-| v0.21 | Session-distiller cybernetic review | read-only artifact review, opens repair-work-order candidates only |
+| v0.21 | Session-distiller review, current-line smoke/calibration, shadow CI, and tournament experience ledger | read-only artifact review and local shadow evidence only |
 
 ## Historical Sample Validation
 
@@ -137,8 +160,8 @@ Regression coverage checks that:
 
 ## v0.19 Calibration and Lineage Target
 
-The next useful dataset is not another synthetic gate. It is a shadow result log
-with human labels plus replayable source-lineage fields:
+The v0.19 target was a shadow result log with human labels plus replayable
+source-lineage fields:
 
 - candidate route;
 - evidence count;
@@ -151,5 +174,7 @@ with human labels plus replayable source-lineage fields:
 - human accept/reject;
 - reason for disagreement, if any.
 
-Use that data to tune thresholds and target scoring. Do not widen production
-authority to get more data.
+v0.21 partially covers this with current-line calibration and redacted holdout
+fixtures. The remaining useful dataset is still human-labeled shadow evidence,
+not another authority layer. Use it to tune thresholds and target scoring. Do
+not widen production authority to get more data.

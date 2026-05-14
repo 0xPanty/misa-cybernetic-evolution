@@ -6,6 +6,31 @@ Misa Cybernetic Evolution Layer is a sidecar learning plane for AI agents. It
 does not require the live assistant to route model traffic through a new proxy at
 the beginning. The initial integration is observation-only.
 
+## Current Line
+
+The current package line is `0.21.0`.
+
+Versioned v0.x references later in this file are history and feature-origin
+anchors. They do not create separate current lines; the current command surface
+is the v0.21 shadow chain described here.
+
+The live system remains Misa/Hermes. This repository is the read-only
+control-learning sidecar: it turns redacted evidence and existing
+Hermes/Zilliz artifacts into local distillates, routed candidates, repair
+tickets, work orders, vector-memory dry-run metadata, retrieval-ranker checks,
+and session-distiller review findings.
+
+Plain version:
+
+```text
+evidence -> distill -> route -> candidate -> work order -> owner or primary agent
+```
+
+Candidate records and dry-run vector payloads do not equal live memory. Anything
+that writes persistent memory, writes Zilliz, changes provider routes, posts
+publicly, starts timers, or touches VPS remains outside this sidecar unless the
+human owner explicitly approves a separate rollout.
+
 ## Planes
 
 ### 1. Live Runtime
@@ -136,14 +161,20 @@ The verifier evaluates candidates through layered gates:
 The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
 
-The v0.6 repository implements the first local gate:
+The current local confidence chain is grouped by phase:
 
 ```bash
+npm run validate:schemas
 npm run simulate:misa
 npm run crystallize:misa
-npm run self-repair:misa -- --no-verify
+npm run self-repair:misa -- --validation-mode
 npm run hermes:map-distillation -- --json
-npm run validate:schemas
+npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
+npm run vector-memory:classify -- --json
+npm run vector-memory:rank -- --eval-fixtures
+npm run zilliz:adapt -- --json
+npm run smoke:current-line
+npm run calibrate:current-line
 npm run precheck
 npm test
 ```
@@ -151,7 +182,42 @@ npm test
 These commands are dry-run checks. They do not call providers, start timers,
 write memory, publish artifacts, post publicly, or change live channel behavior.
 
-v0.2 added a deterministic Misa learning-loop simulation:
+Historical version detail lives in
+[docs/changelog.md](./docs/changelog.md). The important current rule is that
+the precheck chain must show which phase failed: static files and versions,
+machine contracts, local smoke, bridge checks, or current-line vector/session
+review.
+
+`smoke:current-line` is the narrower current-line guard. It runs session
+distiller review, work-order routing, tournament, vector classification,
+retrieval ranking, and the Zilliz adapter in dry-run mode, then checks that no
+live write, embedding creation, provider call, or production authority appeared.
+
+`calibrate:current-line` is the redacted-sample shadow report. It replays the
+same current-line surfaces across default local examples, route-sensitive
+fixtures, near-threshold judge fixtures, and sanitized VPS conversation fixtures.
+It checks route coverage, repair-ticket/work-order mapping, retrieval top1
+behavior, tournament winners, and judge-escalation value without touching VPS or
+production state.
+
+It also emits a signal-layer map so reviewers can see the current signal surface
+without reading the whole codebase: source-distillation signals, Qianxuesen
+route signals, shadow perception hints, work-order pressure, retrieval-ranker
+inputs, and tournament quality signals. This map is descriptive and local only;
+it does not add a controller, writer, provider call, or route authority outside
+the existing Qianxuesen route table.
+
+The GitHub Actions workflow `.github/workflows/current-line-shadow.yml` pins
+that same shadow posture for pull requests and `main`: schema validation,
+current-line smoke, calibration, precheck, and tests. It has read-only
+repository permissions and does not reference secrets or deployment commands.
+
+The implementation follows the same split: `precheck-core.mjs` only orchestrates,
+while `precheck-static.mjs`, `precheck-contracts.mjs`, `precheck-smoke.mjs`,
+`precheck-bridges.mjs`, and `precheck-current-line.mjs` own their phase checks.
+That keeps the command surface stable while making failures easier to locate.
+
+The original v0.2 simulation remains the base deterministic loop:
 
 ```text
 fixture event -> observe -> identify -> route -> draft -> verify -> dry-run result
@@ -160,32 +226,26 @@ fixture event -> observe -> identify -> route -> draft -> verify -> dry-run resu
 The simulator is deliberately small. It proves route behavior before any live
 adapter exists.
 
-v0.4 adds an attribution rule to that same small simulator: injected artifacts
+v0.4 added an attribution rule to that same small simulator: injected artifacts
 are context only, while read or modified artifacts are evidence. This keeps a
 listed skill from being credited unless the session actually used it, and it
 keeps candidates staged, held, or rejected instead of published.
 
-v0.5 adds a read-only skill crystallization index over staged skill routes. It
+v0.5 added a read-only skill crystallization index over staged skill routes. It
 borrows GenericAgent's useful "completed work can become a reusable procedure"
 shape without importing broad runtime tools, schedulers, memory writes, or
 automatic Skill publication.
 
-v0.6 adds a bounded self-repair draft runner. It may write only generated draft
+v0.6 added a bounded self-repair draft runner. It may write only generated draft
 skills, repair plans, and run logs. It can validate a draft, but it cannot write
 Misa memory, replace Zilliz, publish Farcaster, publish Skills, touch runtime
 services, or start timers.
 
-For Misa, the current launch shape is structure reference plus local precheck.
-See
-[docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md).
-The v0.2 loop is described in
-[docs/misa-learning-loop-v0.2.md](./docs/misa-learning-loop-v0.2.md).
-The v0.4 evidence gate is described in
-[docs/misa-learning-evidence-v0.4.md](./docs/misa-learning-evidence-v0.4.md).
-The v0.5 crystallization index is described in
-[docs/skill-crystallization-v0.5.md](./docs/skill-crystallization-v0.5.md).
-The v0.6 self-repair draft runner is described in
-[docs/self-repair-v0.6.md](./docs/self-repair-v0.6.md).
+For Misa, the launch shape is still structure reference plus local precheck.
+The newer v0.19-v0.21 line adds vector-memory lineage, kind-aware retrieval
+ranking, Zilliz adapter dry-run payloads, and read-only session-distiller
+cybernetic review. Those features are confidence-chain inputs, not production
+authority.
 
 ### 8. Work Order Handoff Plane
 
@@ -255,8 +315,36 @@ or decides memory/skill/policy routes. Those actions stay outside this gate.
 Unsafe aggressive variants can appear as negative samples, but they must be
 rejected before any effect happens.
 
-The v0.17 tournament gate is described in
-[docs/evolution-tournament-gate-v0.17.md](./docs/evolution-tournament-gate-v0.17.md).
+The v0.18 tournament gate is described in
+[docs/evolution-tournament-gate-v0.18.md](./docs/evolution-tournament-gate-v0.18.md).
+
+### 8.4 Vector Memory and Retrieval Lineage
+
+Vector-memory classification is a storage plan, not a memory write. The dry-run
+records keep kind, authority, source lineage, replay keys, and retrieval hints
+so a future hit can explain where it came from and whether it may influence
+behavior.
+
+The ranker models the read path:
+
+```text
+requested kind -> same-source context -> fallback only if primary kind misses
+```
+
+This keeps a related policy record from stealing the result slot when the user
+asked for a repair work order.
+
+The Zilliz adapter prepares collection and upsert payload shape only. It does
+not create embeddings, read provider keys, write Zilliz, or promote records.
+
+### 8.5 Session-Distiller Review
+
+Session-distiller review is live-adjacent but read-only. It can inspect a
+distiller summary, Zilliz manifest rows, rollback traces, and LLM artifacts, then
+open repair work-order candidates for trace gaps or failed sessions.
+
+It must not rewrite production Zilliz rows, change session mechanics, start or
+restart services, write persistent memory, or change Misa public behavior.
 
 ### 9. Publication and Governance Plane
 
