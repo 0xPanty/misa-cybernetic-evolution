@@ -7,6 +7,8 @@ const DOCS_TO_CHECK = [
   "QUICKSTART.md",
   "ARCHITECTURE.md",
   "docs/verification-matrix.md",
+  "docs/skill-evolution-adapter-v0.22.md",
+  "docs/skill-control-intake-template.md",
   "docs/local-vector-store-v0.21.md",
   "docs/current-line-calibration-v0.21.md",
   "docs/qianxuesen-full-loop-health-v0.21.md",

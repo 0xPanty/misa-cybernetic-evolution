@@ -3,6 +3,7 @@ import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
+import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
 import { routeWorkOrders } from "./work-order-router.mjs";
@@ -83,6 +84,21 @@ function summarizeLocalVectorStore(store) {
   };
 }
 
+function summarizeSkillEvolution(supervision) {
+  return {
+    ok: supervision.ok,
+    status: supervision.summary.status,
+    evolution_candidates: supervision.summary.evolution_candidate_count,
+    replay_required: supervision.summary.replay_required_count,
+    human_review_required: supervision.summary.human_review_required,
+    llm_api_calls: supervision.safety.llm_api_calls,
+    no_write: supervision.safety.no_write,
+    production_authority: supervision.safety.production_authority,
+    controller_authority: supervision.safety.controller_authority,
+    supervisor_changes_skill: supervision.safety.supervisor_changes_skill
+  };
+}
+
 function summarizeZillizAdapter(adapter) {
   return {
     ok: adapter.ok,
@@ -111,6 +127,7 @@ function noLiveWritesOrProviderCallsCheck({
   tournament,
   vectorStorage,
   localVectorStore,
+  skillEvolution,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -125,6 +142,11 @@ function noLiveWritesOrProviderCallsCheck({
     local_store_written: localVectorStore.safety.local_vector_store_written,
     local_store_zilliz_written: localVectorStore.safety.zilliz_written,
     local_store_embedding_created: localVectorStore.safety.embedding_created,
+    skill_evolution_no_write: skillEvolution.safety.no_write,
+    skill_evolution_production_authority: skillEvolution.safety.production_authority,
+    skill_evolution_controller_authority: skillEvolution.safety.controller_authority,
+    skill_evolution_changes_skill: skillEvolution.safety.supervisor_changes_skill,
+    skill_evolution_llm_api_calls: skillEvolution.safety.llm_api_calls,
     adapter_zilliz_written: zillizAdapter.safety.zilliz_written,
     adapter_embedding_created: zillizAdapter.safety.embedding_created,
     retrieval_zilliz_written: retrievalRanker.safety.zilliz_written,
@@ -142,6 +164,11 @@ function noLiveWritesOrProviderCallsCheck({
     && details.local_store_written === false
     && details.local_store_zilliz_written === false
     && details.local_store_embedding_created === false
+    && details.skill_evolution_no_write === true
+    && details.skill_evolution_production_authority === false
+    && details.skill_evolution_controller_authority === false
+    && details.skill_evolution_changes_skill === false
+    && details.skill_evolution_llm_api_calls === 0
     && details.adapter_zilliz_written === false
     && details.adapter_embedding_created === false
     && details.retrieval_zilliz_written === false
@@ -155,6 +182,7 @@ function buildCurrentLineSmokeChecks({
   tournament,
   vectorStorage,
   localVectorStore,
+  skillEvolution,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -164,6 +192,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
     checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
     checkResult("vector-store:local dry-run", localVectorStore.ok, summarizeLocalVectorStore(localVectorStore)),
+    checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -172,6 +201,7 @@ function buildCurrentLineSmokeChecks({
       tournament,
       vectorStorage,
       localVectorStore,
+      skillEvolution,
       zillizAdapter,
       retrievalRanker
     })
@@ -215,6 +245,10 @@ export async function runCurrentLineSmoke({
     vectorMemoryStorage: vectorStorage,
     now
   });
+  const skillEvolution = await runSkillEvolutionSupervisor({
+    repoRoot,
+    now
+  });
   const retrievalRanker = evaluateVectorRetrievalScenarios();
 
   const checks = buildCurrentLineSmokeChecks({
@@ -223,6 +257,7 @@ export async function runCurrentLineSmoke({
     tournament,
     vectorStorage,
     localVectorStore,
+    skillEvolution,
     zillizAdapter,
     retrievalRanker
   });
@@ -235,6 +270,7 @@ export async function runCurrentLineSmoke({
       "vector-memory:classify",
       "vector-memory:rank",
       "vector-store:local",
+      "skill:evolution",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -258,6 +294,7 @@ export function buildCurrentLineSmokeFromArtifacts({
   tournament,
   vectorStorage,
   localVectorStore,
+  skillEvolution,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -267,6 +304,7 @@ export function buildCurrentLineSmokeFromArtifacts({
     tournament,
     vectorStorage,
     localVectorStore,
+    skillEvolution,
     zillizAdapter,
     retrievalRanker
   });

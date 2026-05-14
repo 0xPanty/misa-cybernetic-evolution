@@ -1,0 +1,82 @@
+{
+  "schema_version": "misa.behavior_event.v1",
+  "event_id": "behavior-farcaster-public-reply-001",
+  "created_at": "2026-05-14T12:00:00.000Z",
+  "skill_id": "farcaster_reply_operator",
+  "surface": "farcaster",
+  "behavior_kind": "public_reply",
+  "action": "draft_reply",
+  "intent": "Draft a public reply while using only public style and posting-policy memory.",
+  "actor": {
+    "type": "agent",
+    "autonomous": true,
+    "id": "misa"
+  },
+  "inputs": {
+    "memory_used": [
+      {
+        "memory_class": "public_style",
+        "ref": "memory:style:public-presence",
+        "reason": "Keep public reply tone consistent."
+      },
+      {
+        "memory_class": "public_policy",
+        "ref": "policy:public-posting-boundary",
+        "reason": "Avoid leaking private context into public replies."
+      }
+    ],
+    "source_refs": [
+      {
+        "kind": "cast",
+        "id": "cast:example-public-thread",
+        "note": "Redacted public-thread fixture."
+      }
+    ]
+  },
+  "effects": {
+    "public_output": true,
+    "persistent_write": false,
+    "external_call": false,
+    "durable_effect": false,
+    "local_write": false,
+    "target": "draft_buffer"
+  },
+  "risk": {
+    "level": "medium",
+    "triggers": [
+      "public_output"
+    ]
+  },
+  "authority": {
+    "requested_authority": "draft_only",
+    "gates_passed": []
+  },
+  "result": {
+    "status": "drafted",
+    "feedback_signals": [
+      "policy_clean",
+      "low_revision_needed",
+      "positive_engagement"
+    ],
+    "metrics": {
+      "manual_revision_count": 0,
+      "public_risk_score": "medium"
+    }
+  },
+  "rollback": {
+    "available": true,
+    "notes": "Draft can be discarded before publish."
+  },
+  "evolution": {
+    "candidate": {
+      "target": "reply_scoring",
+      "change_type": "weight_hint",
+      "proposed_change": "Increase weight for public-policy-clean drafts that need no manual revision.",
+      "expected_gain": "Improve reply draft ranking without changing publish authority.",
+      "evidence_refs": [
+        "behavior-farcaster-public-reply-001"
+      ],
+      "requires_replay": true
+    }
+  }
+}

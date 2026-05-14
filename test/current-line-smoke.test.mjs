@@ -23,12 +23,14 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("vector-memory:classify"), true);
   assert.equal(result.command_surface.includes("vector-memory:rank"), true);
   assert.equal(result.command_surface.includes("vector-store:local"), true);
+  assert.equal(result.command_surface.includes("skill:evolution"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
   assert.ok(checkNames.has("evolution:tournament:misa dry-run"));
   assert.ok(checkNames.has("vector-memory:classify dry-run"));
   assert.ok(checkNames.has("vector-store:local dry-run"));
+  assert.ok(checkNames.has("skill:evolution dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -109,6 +111,22 @@ function safeArtifacts() {
         local_vector_store_written: false,
         zilliz_written: false,
         embedding_created: false
+      }
+    },
+    skillEvolution: {
+      ok: true,
+      summary: {
+        status: "pass",
+        evolution_candidate_count: 1,
+        replay_required_count: 1,
+        human_review_required: false
+      },
+      safety: {
+        no_write: true,
+        production_authority: false,
+        controller_authority: false,
+        supervisor_changes_skill: false,
+        llm_api_calls: 0
       }
     },
     zillizAdapter: {

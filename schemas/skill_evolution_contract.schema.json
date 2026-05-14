@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/skill_evolution_contract.schema.json",
+  "title": "SkillEvolutionContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "skill_id",
+    "skill_name",
+    "owner_surface",
+    "source",
+    "purpose",
+    "intake_summary",
+    "control_model",
+    "authority",
+    "action_policy",
+    "memory_policy",
+    "risk_policy",
+    "routing_policy",
+    "evolution_policy",
+    "review_policy",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.skill_evolution_contract.v1"
+    },
+    "skill_id": { "type": "string", "minLength": 1 },
+    "skill_name": { "type": "string", "minLength": 1 },
+    "owner_surface": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["skill_doc", "skill_runtime", "manual_intake", "llm_intake"] },
+        "ref": { "type": "string", "minLength": 1 },
+        "extracted_by": { "type": "string" },
+        "reviewed_by": { "type": "string" }
+      }
+    },
+    "purpose": { "type": "string", "minLength": 1 },
+    "intake_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_goal", "not_goals", "inputs", "outputs", "evidence_refs"],
+      "properties": {
+        "primary_goal": { "type": "string", "minLength": 1 },
+        "not_goals": { "type": "array", "items": { "type": "string" } },
+        "inputs": { "type": "array", "items": { "type": "string" } },
+        "outputs": { "type": "array", "items": { "type": "string" } },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence_ref" }
+        }
+      }
+    },
+    "control_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "observation", "comparison", "correction", "damping"],
+      "properties": {
+        "target": { "type": "string", "minLength": 1 },
+        "observation": { "type": "string", "minLength": 1 },
+        "comparison": { "type": "string", "minLength": 1 },
+        "correction": { "type": "string", "minLength": 1 },
+        "damping": { "type": "string", "minLength": 1 }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_authority", "llm_required", "production_authority", "no_live_effect_by_default"],
+      "properties": {
+        "default_authority": {
+          "type": "string",
+          "enum": ["read_only", "draft_only", "proposal_only", "gated_write", "live_write"]
+        },
+        "llm_required": { "type": "boolean" },
+        "production_authority": { "type": "boolean", "const": false },
+        "no_live_effect_by_default": { "type": "boolean", "const": true }
+      }
+    },
+    "action_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_actions",
+        "forbidden_actions",
+        "public_output_policy",
+        "persistent_write_policy",
+        "gate_required_for"
+      ],
+      "properties": {
+        "allowed_actions": { "type": "array", "items": { "type": "string" } },
+        "forbidden_actions": { "type": "array", "items": { "type": "string" } },
+        "public_output_policy": {
+          "type": "string",
+          "enum": ["none", "draft_only", "draft_or_gated_publish", "gated_publish_allowed"]
+        },
+        "persistent_write_policy": {
+          "type": "string",
+          "enum": ["forbidden", "draft_only", "gated_only", "allowed"]
+        },
+        "gate_required_for": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "public_output",
+              "persistent_write",
+              "private_memory_used",
+              "policy_conflict",
+              "high_risk",
+              "live_write",
+              "unknown_action"
+            ]
+          }
+        }
+      }
+    },
+    "memory_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_memory_classes", "forbidden_memory_classes"],
+      "properties": {
+        "allowed_memory_classes": { "type": "array", "items": { "type": "string" } },
+        "forbidden_memory_classes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "risk_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_risk", "risk_triggers"],
+      "properties": {
+        "base_risk": { "$ref": "#/$defs/risk_level" },
+        "risk_triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["trigger", "effect"],
+            "properties": {
+              "trigger": { "type": "string" },
+              "effect": { "$ref": "#/$defs/risk_level" },
+              "gate_required": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "routing_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expected_routes", "route_owner"],
+      "properties": {
+        "expected_routes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy", "damping", "repair_ticket"] }
+        },
+        "route_owner": { "type": "string", "const": "qianxuesen" }
+      }
+    },
+    "evolution_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "optimization_targets",
+        "success_signals",
+        "allowed_evolution_space",
+        "forbidden_evolution_space",
+        "candidate_generation_rules",
+        "promotion_rules",
+        "rollback_triggers",
+        "exploration_budget"
+      ],
+      "properties": {
+        "optimization_targets": { "type": "array", "items": { "type": "string" } },
+        "success_signals": { "type": "array", "items": { "type": "string" } },
+        "allowed_evolution_space": { "type": "array", "items": { "type": "string" } },
+        "forbidden_evolution_space": { "type": "array", "items": { "type": "string" } },
+        "candidate_generation_rules": { "type": "array", "items": { "type": "string" } },
+        "promotion_rules": { "type": "array", "items": { "type": "string" } },
+        "rollback_triggers": { "type": "array", "items": { "type": "string" } },
+        "exploration_budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "max_auto_changes", "requires_replay"],
+          "properties": {
+            "mode": { "type": "string", "enum": ["shadow", "advisory", "gated"] },
+            "max_auto_changes": { "type": "integer", "minimum": 0 },
+            "requires_replay": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "review_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["human_review_required_when", "llm_judge_recommended_when"],
+      "properties": {
+        "human_review_required_when": { "type": "array", "items": { "type": "string" } },
+        "llm_judge_recommended_when": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["immutable_boundaries", "no_write", "controller_authority"],
+      "properties": {
+        "immutable_boundaries": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "no_write": { "type": "boolean", "const": true },
+        "controller_authority": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "blocking"]
+    },
+    "evidence_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "summary", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "summary": { "type": "string" },
+        "confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "needs_review": { "type": "boolean" }
+      }
+    }
+  }
+}

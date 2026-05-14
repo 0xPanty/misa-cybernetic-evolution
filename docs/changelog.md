@@ -41,6 +41,12 @@ Open-source readiness now has first-class entrypoints: `npm run doctor` for a
 read-only clone check and `npm run bootstrap:local` for initializing the ignored
 local vector store plus a bootstrap report.
 
+The first skill-evolution adapter surface is now present. It adds
+`skill:evolution`, a skill control contract schema, a behavior event schema, and
+a Farcaster reply operator example. The supervisor can block hard-boundary drift
+and surface replay-required evolution candidates, but it cannot mutate skills,
+write memory, publish content, or promote candidates without replay.
+
 ## Version History
 
 Rows before v0.21 are historical anchors for retained behavior. They should not

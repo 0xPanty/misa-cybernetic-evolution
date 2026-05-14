@@ -77,6 +77,15 @@ function componentStatus(calibration, smoke) {
       && check.zilliz_written === false
       && check.embedding_created === false
     ))),
+    skill_evolution: statusFor(smoke.checks.some((check) => (
+      check.name === "skill:evolution dry-run"
+      && check.ok
+      && check.no_write === true
+      && check.production_authority === false
+      && check.controller_authority === false
+      && check.supervisor_changes_skill === false
+      && check.llm_api_calls === 0
+    ))),
     source_distillation: statusFor(sourceSamplesOk),
     signal_extraction: statusFor(calibration.summary.observed_signal_count > 0 && sourceSamplesOk),
     qianxuesen_route_decision: statusFor(
@@ -232,6 +241,7 @@ function componentSummaries(calibration, smoke, components) {
   const tournamentLayer = layers.get("tournament_quality_signals");
   const samples = sampleSetSummaries(calibration);
   const localVectorStoreCheck = smoke.checks.find((check) => check.name === "vector-store:local dry-run");
+  const skillEvolutionCheck = smoke.checks.find((check) => check.name === "skill:evolution dry-run");
 
   return {
     current_line_smoke: {
@@ -256,6 +266,16 @@ function componentSummaries(calibration, smoke, components) {
       local_vector_store_written: localVectorStoreCheck?.local_vector_store_written ?? null,
       zilliz_written: localVectorStoreCheck?.zilliz_written ?? null,
       embedding_created: localVectorStoreCheck?.embedding_created ?? null
+    },
+    skill_evolution: {
+      status: components.skill_evolution,
+      status_label: skillEvolutionCheck?.status ?? "unknown",
+      evolution_candidates: skillEvolutionCheck?.evolution_candidates ?? 0,
+      replay_required: skillEvolutionCheck?.replay_required ?? 0,
+      human_review_required: skillEvolutionCheck?.human_review_required ?? null,
+      no_write: skillEvolutionCheck?.no_write ?? null,
+      production_authority: skillEvolutionCheck?.production_authority ?? null,
+      controller_authority: skillEvolutionCheck?.controller_authority ?? null
     },
     qianxuesen_route_decision: {
       status: components.qianxuesen_route_decision,
@@ -458,6 +478,7 @@ export function renderQianxuesenFullLoopHealthMarkdown(report) {
     `- smoke: ${report.component_summaries.current_line_smoke.checks.passed}/${report.component_summaries.current_line_smoke.checks.total} checks`,
     `- source_distillation: ${report.component_summaries.source_distillation.sources} sources, ${report.component_summaries.source_distillation.atomic_lessons} atomic lessons`,
     `- local_vector_store: backend=${report.component_summaries.local_vector_store.backend}, records=${report.component_summaries.local_vector_store.records}, dry_run=${report.component_summaries.local_vector_store.dry_run}`,
+    `- skill_evolution: candidates=${report.component_summaries.skill_evolution.evolution_candidates}, replay_required=${report.component_summaries.skill_evolution.replay_required}, no_write=${report.component_summaries.skill_evolution.no_write}`,
     `- routing: owner=${report.component_summaries.qianxuesen_route_decision.owner}, authority=${report.component_summaries.qianxuesen_route_decision.authority}`,
     `- repair_ticket: ${report.component_summaries.repair_ticket.total_tickets} tickets`,
     `- work_order: ${report.component_summaries.work_order_routing.total_work_orders} orders, auto_executable=${report.component_summaries.work_order_routing.auto_executable_count}`,

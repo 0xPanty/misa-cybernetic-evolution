@@ -1,0 +1,208 @@
+{
+  "schema_version": "misa.skill_evolution_contract.v1",
+  "skill_id": "farcaster_reply_operator",
+  "skill_name": "Farcaster Reply Operator",
+  "owner_surface": "farcaster",
+  "source": {
+    "kind": "manual_intake",
+    "ref": "docs/skill-control-intake-template.md#farcaster-reply-operator",
+    "extracted_by": "deterministic_template",
+    "reviewed_by": "qianxuesen_local_shadow"
+  },
+  "purpose": "Draft and review public Farcaster replies while preserving policy, memory, and persona boundaries.",
+  "intake_summary": {
+    "primary_goal": "Produce safe public reply drafts and review signals without direct publish authority.",
+    "not_goals": [
+      "Do not auto-publish high-risk public replies.",
+      "Do not use private memory in public output.",
+      "Do not write durable memory directly."
+    ],
+    "inputs": [
+      "cast_context",
+      "public_style_memory",
+      "public_posting_policy",
+      "recent_operator_feedback"
+    ],
+    "outputs": [
+      "reply_draft",
+      "risk_score",
+      "review_reason",
+      "evolution_candidate"
+    ],
+    "evidence_refs": [
+      {
+        "id": "farcaster-public-output",
+        "summary": "Farcaster replies are public-facing channel output and must be handled as public behavior.",
+        "confidence": "high",
+        "needs_review": false
+      },
+      {
+        "id": "draft-not-publish",
+        "summary": "The operator can draft and score replies, but publish authority stays gated.",
+        "confidence": "high",
+        "needs_review": false
+      }
+    ]
+  },
+  "control_model": {
+    "target": "Improve public reply quality without loosening policy, memory, or publish boundaries.",
+    "observation": "Observe action, memory classes, public-output flag, write flag, risk triggers, feedback signals, and proposed evolution target.",
+    "comparison": "Compare runtime behavior against allowed actions, forbidden actions, memory policy, gate requirements, and allowed evolution space.",
+    "correction": "Block or require review for boundary drift; create replay-required evolution candidates for safe quality improvements.",
+    "damping": "Do not rewrite global posting policy from a single reply outcome; repeated signals must pass replay before promotion."
+  },
+  "authority": {
+    "default_authority": "draft_only",
+    "llm_required": false,
+    "production_authority": false,
+    "no_live_effect_by_default": true
+  },
+  "action_policy": {
+    "allowed_actions": [
+      "draft_reply",
+      "score_reply",
+      "request_review",
+      "propose_prompt_variant",
+      "adjust_retrieval_hint"
+    ],
+    "forbidden_actions": [
+      "auto_publish_high_risk",
+      "use_private_memory_publicly",
+      "bypass_qianxuesen_gate",
+      "direct_persistent_memory_write"
+    ],
+    "public_output_policy": "draft_or_gated_publish",
+    "persistent_write_policy": "gated_only",
+    "gate_required_for": [
+      "public_output",
+      "persistent_write",
+      "private_memory_used",
+      "policy_conflict",
+      "high_risk",
+      "live_write"
+    ]
+  },
+  "memory_policy": {
+    "allowed_memory_classes": [
+      "public_style",
+      "public_policy",
+      "public_case",
+      "operator_quality"
+    ],
+    "forbidden_memory_classes": [
+      "private",
+      "secret",
+      "dm",
+      "owner_private"
+    ]
+  },
+  "risk_policy": {
+    "base_risk": "medium",
+    "risk_triggers": [
+      {
+        "trigger": "public_output",
+        "effect": "medium",
+        "gate_required": true
+      },
+      {
+        "trigger": "private_memory_used",
+        "effect": "blocking",
+        "gate_required": true
+      },
+      {
+        "trigger": "persistent_write",
+        "effect": "high",
+        "gate_required": true
+      },
+      {
+        "trigger": "policy_conflict",
+        "effect": "high",
+        "gate_required": true
+      }
+    ]
+  },
+  "routing_policy": {
+    "expected_routes": [
+      "policy",
+      "skill",
+      "case",
+      "damping"
+    ],
+    "route_owner": "qianxuesen"
+  },
+  "evolution_policy": {
+    "optimization_targets": [
+      "reply_quality",
+      "policy_route_precision",
+      "retrieval_kind_priority",
+      "persona_consistency",
+      "damping_for_single_failures"
+    ],
+    "success_signals": [
+      "positive_engagement",
+      "human_approved",
+      "policy_clean",
+      "low_revision_needed"
+    ],
+    "allowed_evolution_space": [
+      "reply_scoring",
+      "retrieval_weight_hint",
+      "draft_style_prompt",
+      "cooldown_damping",
+      "successful_reply_pattern"
+    ],
+    "forbidden_evolution_space": [
+      "live_publish_policy",
+      "private_memory_policy",
+      "provider_credentials",
+      "owner_persona_root",
+      "direct_memory_write"
+    ],
+    "candidate_generation_rules": [
+      "Successful public drafts may become replay-required style candidates.",
+      "Repeated policy conflicts may become policy-route precision candidates.",
+      "Single noisy failures must route to damping instead of global policy rewrite."
+    ],
+    "promotion_rules": [
+      "Replay must pass on historical public-reply samples.",
+      "Safety boundaries must not loosen.",
+      "Public risk must not increase.",
+      "Rollback or rejection path must be documented."
+    ],
+    "rollback_triggers": [
+      "higher public risk",
+      "private memory exposure",
+      "worse route precision",
+      "failed replay"
+    ],
+    "exploration_budget": {
+      "mode": "advisory",
+      "max_auto_changes": 0,
+      "requires_replay": true
+    }
+  },
+  "review_policy": {
+    "human_review_required_when": [
+      "persistent_write",
+      "high_risk",
+      "private_memory_used",
+      "policy_conflict",
+      "live_write"
+    ],
+    "llm_judge_recommended_when": [
+      "tone_or_persona_unclear",
+      "implicit_privacy_risk",
+      "complex_thread_context"
+    ]
+  },
+  "safety": {
+    "immutable_boundaries": [
+      "No private memory in public output.",
+      "No high-risk auto publish.",
+      "No direct durable memory write.",
+      "Qianxuesen owns route and promotion decisions."
+    ],
+    "no_write": true,
+    "controller_authority": false
+  }
+}

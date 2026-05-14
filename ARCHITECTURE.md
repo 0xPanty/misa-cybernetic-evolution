@@ -184,9 +184,9 @@ review.
 
 The current-line smoke and calibration commands are narrower shadow guards. They
 cover session review, work-order routing, tournament, vector classification,
-retrieval ranking, Zilliz adapter dry-run, route coverage, repair/work-order
-mapping, perception hints, and judge-escalation value without touching VPS or
-production state. The signal-layer details live in
+retrieval ranking, skill-evolution supervision, Zilliz adapter dry-run, route
+coverage, repair/work-order mapping, perception hints, and judge-escalation
+value without touching VPS or production state. The signal-layer details live in
 [docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
 
 The GitHub Actions workflow `.github/workflows/current-line-shadow.yml` pins
@@ -325,7 +325,35 @@ public distillation template locally, exposes `upsert`, `query`, `stats`, and
 LanceDB, Chroma, pgvector, or custom stores. Swapping the backend does not
 change the required `misa.local_session_distillation.v1` input shape.
 
-### 8.5 Session-Distiller Review
+### 8.5 Skill Evolution Adapter
+
+The skill evolution adapter turns arbitrary behavior layers into a uniform
+supervision surface. A behavior adapter reports what a skill tried to do:
+action, memory classes, public-output flag, durable-write flag, risk triggers,
+authority request, and feedback signals.
+
+The skill contract says what the skill is allowed to do and where it may evolve.
+That second half matters: the contract is not only a brake. It also declares
+safe optimization targets such as scoring weights, retrieval hints, prompt
+variants, cooldown rules, and reusable success patterns.
+
+Qianxuesen compares the event with the contract, then returns one of three
+useful outcomes:
+
+- pass: behavior fits the contract;
+- fail: hard boundary drift, missing gate, private memory, or forbidden action;
+- replay-required candidate: safe evolution idea that still needs historical
+  proof before promotion.
+
+The first committed adapter pair is Farcaster-specific, but the shape is not.
+Discord, email, code repair, support, and calendar agents should plug in through
+the same `behavior_event` contract.
+
+The supervisor has no write authority. It does not mutate the skill, publish
+content, write memory, call providers, change route ownership, or promote a
+candidate without replay.
+
+### 8.6 Session-Distiller Review
 
 Session-distiller review is live-adjacent but read-only. It can inspect a
 distiller summary, Zilliz manifest rows, rollback traces, and LLM artifacts, then

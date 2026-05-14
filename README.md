@@ -4,9 +4,9 @@ A control-theoretic learning sidecar for Hermes-style AI agents.
 
 Current package version: `0.21.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
-persistent vector store, adds read-only session-distiller cybernetic review, and
-keeps the control boundary stable: no live Zilliz writes, no provider
-embeddings, and no runtime changes.
+persistent vector store, adds read-only session-distiller cybernetic review,
+adds the first skill-evolution adapter surface, and keeps the control boundary
+stable: no live Zilliz writes, no provider embeddings, and no runtime changes.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
 
@@ -71,6 +71,7 @@ The safety boundary is deliberate:
 | VPS update authority | not enabled |
 | LLM route or winner authority | not enabled |
 | Local vector-store writes | explicit command only, under ignored `runs/local-vector-store/` |
+| Skill evolution changes | replay-required candidates only, no automatic skill mutation |
 
 In plain terms: this sidecar can read redacted local evidence, compress it,
 route it, draft safe local artifacts, compare candidate variants, and explain
@@ -90,6 +91,8 @@ or existing Hermes/Zilliz distillation artifact
 -> generate repair tickets for unsafe over-promotion patterns
 -> route work orders to the primary agent
 -> let the agent self-review and resolve low-risk local work when policy allows
+-> supervise behavior events against skill evolution contracts
+-> open replay-required improvement candidates inside allowed evolution space
 -> classify logs, decisions, candidate experience, policy, and work orders for vector storage
 -> optionally upsert the public distillation template into the default local vector store
 -> attach original-source refs, replay keys, and retrieval hints for future hit explanation
@@ -139,13 +142,14 @@ Two rules matter most:
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
 | Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
+| Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
 | Vector retrieval ranker | `npm run vector-memory:rank -- --eval-fixtures` | kind filter and same-source rerank dry-run, no embeddings or writes |
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -204,6 +208,23 @@ Users who already run Zilliz, Qdrant, LanceDB, Chroma, pgvector, or another
 store can replace the backend, but the adapter must accept the same
 `misa.local_session_distillation.v1` template and return the same source-lineage
 fields.
+
+## Skill Evolution Adapter
+
+`skill:evolution` is the first behavior-layer plug-in surface. A behavior layer
+reports a structured event, a skill declares its allowed evolution space, and
+Qianxuesen checks both sides.
+
+The default Farcaster example proves the intended shape:
+
+- public reply drafts may create `reply_scoring` improvement candidates;
+- candidates must pass replay before promotion;
+- private-memory, high-risk publish, and direct durable writes stay blocked;
+- the supervisor does not call LLMs, mutate skills, write memory, or change
+  route ownership.
+
+This is the "runway plus guardrail" layer: it gives skills a place to evolve
+while keeping hard boundaries machine-checkable.
 
 ## Evolution Tournament
 
@@ -305,6 +326,8 @@ tracks; use the command map and validation chain above for the current surface.
 - [Source synthesis](./docs/source-synthesis.md)
 - [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
+- [Skill evolution adapter](./docs/skill-evolution-adapter-v0.22.md)
+- [Skill control intake template](./docs/skill-control-intake-template.md)
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
 - [Local vector store](./docs/local-vector-store-v0.21.md)
 - [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)

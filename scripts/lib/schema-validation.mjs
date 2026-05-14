@@ -19,6 +19,8 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/memory_layer.schema.json", "examples/memory_layer.example.json"],
   ["schemas/repair_ticket.schema.json", "examples/repair_ticket.example.json"],
   ["schemas/work_order_routing.schema.json", "examples/work_order_routing.example.json"],
+  ["schemas/skill_evolution_contract.schema.json", "examples/skill-evolution/farcaster_reply_operator.contract.json"],
+  ["schemas/behavior_event.schema.json", "examples/behavior-events/farcaster_public_reply.event.json"],
   ["schemas/langgraph_qianxuesen_bridge.schema.json", "examples/langgraph_qianxuesen_bridge.example.json"],
   ["schemas/vector_memory_storage.schema.json", "examples/vector_memory_storage.example.json"],
   ["schemas/zilliz_vector_adapter.schema.json", "examples/zilliz_vector_adapter.example.json"],

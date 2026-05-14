@@ -28,6 +28,7 @@
     "memory-layer:misa": "node scripts/memory-layer.mjs",
     "export-skills:misa": "node scripts/export-skills.mjs",
     "repair-ticket:misa": "node scripts/repair-ticket.mjs",
+    "skill:evolution": "node scripts/skill-evolution-supervisor.mjs",
     "session-distiller:review": "node scripts/session-distiller-review.mjs",
     "work-order:route": "node scripts/work-order-router.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",

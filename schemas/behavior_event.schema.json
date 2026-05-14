@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/behavior_event.schema.json",
+  "title": "BehaviorEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "created_at",
+    "skill_id",
+    "surface",
+    "behavior_kind",
+    "action",
+    "intent",
+    "actor",
+    "inputs",
+    "effects",
+    "risk",
+    "authority",
+    "result",
+    "rollback"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.behavior_event.v1"
+    },
+    "event_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "skill_id": { "type": "string", "minLength": 1 },
+    "surface": { "type": "string", "minLength": 1 },
+    "behavior_kind": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "intent": { "type": "string", "minLength": 1 },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "autonomous"],
+      "properties": {
+        "type": { "type": "string", "enum": ["human", "agent", "automation", "system"] },
+        "autonomous": { "type": "boolean" },
+        "id": { "type": "string" }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_used", "source_refs"],
+      "properties": {
+        "memory_used": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["memory_class"],
+            "properties": {
+              "memory_class": { "type": "string" },
+              "ref": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": { "type": "string" },
+              "id": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_output",
+        "persistent_write",
+        "external_call",
+        "durable_effect",
+        "local_write"
+      ],
+      "properties": {
+        "public_output": { "type": "boolean" },
+        "persistent_write": { "type": "boolean" },
+        "external_call": { "type": "boolean" },
+        "durable_effect": { "type": "boolean" },
+        "local_write": { "type": "boolean" },
+        "target": { "type": "string" }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "triggers"],
+      "properties": {
+        "level": { "$ref": "#/$defs/risk_level" },
+        "triggers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_authority", "gates_passed"],
+      "properties": {
+        "requested_authority": {
+          "type": "string",
+          "enum": ["read_only", "draft_only", "proposal_only", "gated_write", "live_write"]
+        },
+        "gates_passed": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "feedback_signals"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "drafted", "blocked", "executed", "failed", "succeeded"]
+        },
+        "feedback_signals": { "type": "array", "items": { "type": "string" } },
+        "metrics": { "type": "object", "additionalProperties": { "type": ["number", "string", "boolean", "null"] } }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available"],
+      "properties": {
+        "available": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "evolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate"],
+      "properties": {
+        "candidate": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["target", "change_type", "proposed_change", "expected_gain", "evidence_refs", "requires_replay"],
+          "properties": {
+            "target": { "type": "string" },
+            "change_type": { "type": "string" },
+            "proposed_change": { "type": "string" },
+            "expected_gain": { "type": "string" },
+            "evidence_refs": { "type": "array", "items": { "type": "string" } },
+            "requires_replay": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "blocking"]
+    }
+  }
+}

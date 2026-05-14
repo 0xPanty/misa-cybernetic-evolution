@@ -1,6 +1,7 @@
 import path from "node:path";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
+import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
 import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
@@ -79,6 +80,21 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     name: "validate local vector store dry-run"
   }));
 
+  const skillEvolution = await runSkillEvolutionSupervisor({
+    repoRoot,
+    now: new Date("2026-05-14T00:00:00Z")
+  });
+  checks.push(currentLineCheck("Skill evolution adapter dry-run check", skillEvolution.ok, {
+    status: skillEvolution.summary.status,
+    candidates: skillEvolution.summary.evolution_candidate_count,
+    replayRequired: skillEvolution.summary.replay_required_count,
+    routeOwner: skillEvolution.routing.owner,
+    noWrite: skillEvolution.safety.no_write,
+    productionAuthority: skillEvolution.safety.production_authority,
+    controllerAuthority: skillEvolution.safety.controller_authority,
+    llmApiCalls: skillEvolution.safety.llm_api_calls
+  }));
+
   const zillizVectorAdapter = buildZillizVectorAdapterPlan({
     vectorMemoryStorage,
     now: new Date("2026-05-12T00:00:00Z")
@@ -115,6 +131,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
       sessionDistillerCyberneticReview,
       vectorMemoryStorage,
       localVectorStore,
+      skillEvolution,
       zillizVectorAdapter,
       vectorRetrievalEval
     }

@@ -11,6 +11,7 @@ import {
 import { runPrecheck } from "./precheck-core.mjs";
 import { runQianxuesenFullLoopHealth } from "./qianxuesen-full-loop-health.mjs";
 import { validateSchemas } from "./schema-validation.mjs";
+import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 
 export const DEFAULT_BOOTSTRAP_REPORT_ROOT = "runs/bootstrap-local";
 
@@ -18,6 +19,7 @@ const REQUIRED_PUBLIC_SCRIPTS = [
   "doctor",
   "bootstrap:local",
   "distill:misa",
+  "skill:evolution",
   "vector-store:local",
   "smoke:current-line",
   "health:qianxuesen",
@@ -73,6 +75,7 @@ export async function runPublicRepoDoctor({
   const missingScripts = REQUIRED_PUBLIC_SCRIPTS.filter((name) => !scripts[name]);
   const validate = await validateSchemas({ repoRoot });
   const smoke = await runCurrentLineSmoke({ repoRoot, now });
+  const skillEvolution = await runSkillEvolutionSupervisor({ repoRoot, now });
   const localStoreDryRun = await upsertDistillationToLocalVectorStore({
     repoRoot,
     sourceDir: path.join("examples", "misa-distillation"),
@@ -106,6 +109,11 @@ export async function runPublicRepoDoctor({
     }),
     checkResult("current-line smoke passes", smoke.ok, {
       checks: smoke.summary
+    }),
+    checkResult("skill evolution sample stays replay-gated", skillEvolution.ok && skillEvolution.summary.replay_required_count > 0, {
+      candidates: skillEvolution.summary.evolution_candidate_count,
+      replay_required: skillEvolution.summary.replay_required_count,
+      no_write: skillEvolution.safety.no_write
     }),
     checkResult("local vector store dry-run accepts public distillation template", localStoreDryRun.ok, {
       records: localStoreDryRun.summary.record_count,
