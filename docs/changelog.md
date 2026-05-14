@@ -5,12 +5,13 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.20.1`.
+The package is currently `0.21.0`.
 
-The current direction is v0.20 convergence: keep the control boundary stable,
+The current direction is v0.21 live-adjacent review: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
-hits by requested kind before same-source context, and keep real shadow testing
-separate from production Zilliz writes.
+hits by requested kind before same-source context, and let the VPS
+session-distiller ask Qianxuesen for a read-only work-order review after each
+run.
 
 ## Version History
 
@@ -36,6 +37,7 @@ separate from production Zilliz writes.
 | v0.19 | Vector-memory original-source lineage and retrieval hints | dry-run metadata only, no Zilliz write |
 | v0.20 | Kind-filtered retrieval plan and same-source reranker | read-side dry-run only, no embeddings or Zilliz write |
 | v0.20.1 | Kind-aware embedding text headers | dry-run payload text only, no provider call or Zilliz write |
+| v0.21 | Session-distiller cybernetic review | read-only artifact review, opens repair-work-order candidates only |
 
 ## Historical Sample Validation
 

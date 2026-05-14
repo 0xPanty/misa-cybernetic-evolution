@@ -1,0 +1,19 @@
+{
+  "artifact_type": "HermesSessionDistillationProductionPipeline",
+  "summary": {
+    "failed_count": 0,
+    "processed_count": 0,
+    "no_value_count": 0,
+    "zilliz_inserted_count": 0,
+    "journal_written_count": 0,
+    "llm_called_count": 0,
+    "skipped_already_processed_count": 1
+  },
+  "session_results": [
+    {
+      "session_id": "example-session",
+      "status": "skipped",
+      "reason": "already_processed"
+    }
+  ]
+}

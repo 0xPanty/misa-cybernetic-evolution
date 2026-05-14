@@ -114,6 +114,7 @@ Two rules matter most:
 | Memory-layer comparison | `npm run memory-layer:misa` | compares broad vs minimal L3 |
 | Local skill export | `npm run export-skills:misa` | writes draft files, does not install Skills |
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
+| Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Vector retrieval ranker | `npm run vector-memory:rank -- --eval-fixtures` | kind filter and same-source rerank dry-run, no embeddings or writes |
@@ -173,6 +174,7 @@ npm run evolution:evaluate:misa
 npm run evolution:tournament:misa
 npm run memory-layer:misa
 npm run repair-ticket:misa -- --dry-run
+npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
 npm run work-order:route -- --dry-run
 npm run vector-memory:classify -- --json
 npm run vector-memory:rank -- --eval-fixtures
