@@ -36,6 +36,9 @@ if (hasArg("json")) {
   console.log(`tournaments: ${result.summary.tournament_count}`);
   console.log(`signal_layers: ${result.summary.signal_layer_count}`);
   console.log(`observed_signals: ${result.summary.observed_signal_count}`);
+  console.log(`perception_replay_ok: ${result.summary.perception_replay_ok}`);
+  console.log(`perception_attention_queue: ${result.summary.perception_attention_queue_count}`);
+  console.log(`perception_duplicate_clusters: ${result.summary.perception_duplicate_cluster_count}`);
   console.log(`retrieval_top1_exact_recall: ${result.summary.retrieval_top1_exact_recall}`);
   console.log(`judge_recommended: ${result.summary.judge_recommended_count}`);
   console.log(`judge_near_threshold: ${result.summary.judge_near_threshold_count}`);

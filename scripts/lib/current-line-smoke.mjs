@@ -91,6 +91,69 @@ function summarizeRetrievalRanker(ranker) {
   };
 }
 
+function noLiveWritesOrProviderCallsCheck({
+  routing,
+  sessionReview,
+  tournament,
+  vectorStorage,
+  zillizAdapter,
+  retrievalRanker
+}) {
+  const details = {
+    durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
+    session_writes_persistent_memory: sessionReview.safety.writes_persistent_memory,
+    session_live_effect_allowed: hasAnyLiveEffect(sessionReview.safety.live_effects),
+    tournament_production_authority: tournament.summary.production_authority,
+    tournament_live_effect_allowed: hasAnyLiveEffect(tournament.safety.live_effects),
+    vector_zilliz_written: vectorStorage.safety.zilliz_written,
+    vector_writes_persistent_memory: vectorStorage.safety.writes_persistent_memory,
+    adapter_zilliz_written: zillizAdapter.safety.zilliz_written,
+    adapter_embedding_created: zillizAdapter.safety.embedding_created,
+    retrieval_zilliz_written: retrievalRanker.safety.zilliz_written,
+    retrieval_external_api_calls: retrievalRanker.safety.external_api_calls
+  };
+
+  return checkResult("no live writes or provider calls", (
+    details.durable_or_public_effect_allowed === false
+    && details.session_writes_persistent_memory === false
+    && details.session_live_effect_allowed === false
+    && details.tournament_production_authority === false
+    && details.tournament_live_effect_allowed === false
+    && details.vector_zilliz_written === false
+    && details.vector_writes_persistent_memory === false
+    && details.adapter_zilliz_written === false
+    && details.adapter_embedding_created === false
+    && details.retrieval_zilliz_written === false
+    && details.retrieval_external_api_calls === 0
+  ), details);
+}
+
+function buildCurrentLineSmokeChecks({
+  routing,
+  sessionReview,
+  tournament,
+  vectorStorage,
+  zillizAdapter,
+  retrievalRanker
+}) {
+  return [
+    checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
+    checkResult("session-distiller:review dry-run", sessionReview.ok, summarizeSessionReview(sessionReview)),
+    checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
+    checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
+    checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
+    checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
+    noLiveWritesOrProviderCallsCheck({
+      routing,
+      sessionReview,
+      tournament,
+      vectorStorage,
+      zillizAdapter,
+      retrievalRanker
+    })
+  ];
+}
+
 export async function runCurrentLineSmoke({
   repoRoot = process.cwd(),
   now = DEFAULT_NOW,
@@ -123,32 +186,14 @@ export async function runCurrentLineSmoke({
   });
   const retrievalRanker = evaluateVectorRetrievalScenarios();
 
-  const checks = [
-    checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
-    checkResult("session-distiller:review dry-run", sessionReview.ok, summarizeSessionReview(sessionReview)),
-    checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
-    checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
-    checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
-    checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
-    checkResult("no live writes or provider calls", (
-      routing.safety.durable_or_public_effect_allowed === false
-      && sessionReview.safety.writes_persistent_memory === false
-      && hasAnyLiveEffect(sessionReview.safety.live_effects) === false
-      && tournament.summary.production_authority === false
-      && hasAnyLiveEffect(tournament.safety.live_effects) === false
-      && vectorStorage.safety.zilliz_written === false
-      && vectorStorage.safety.writes_persistent_memory === false
-      && zillizAdapter.safety.zilliz_written === false
-      && zillizAdapter.safety.embedding_created === false
-      && retrievalRanker.safety.zilliz_written === false
-      && retrievalRanker.safety.external_api_calls === 0
-    ), {
-      live_effects_allowed: false,
-      zilliz_written: false,
-      embedding_created: false,
-      external_api_calls: 0
-    })
-  ];
+  const checks = buildCurrentLineSmokeChecks({
+    routing,
+    sessionReview,
+    tournament,
+    vectorStorage,
+    zillizAdapter,
+    retrievalRanker
+  });
 
   return {
     mode: "current-line-smoke",
@@ -182,14 +227,14 @@ export function buildCurrentLineSmokeFromArtifacts({
   zillizAdapter,
   retrievalRanker
 }) {
-  const checks = [
-    checkResult("work-order:route dry-run", workOrderRouting.ok, summarizeWorkOrderRouting(workOrderRouting)),
-    checkResult("session-distiller:review dry-run", sessionReview.ok, summarizeSessionReview(sessionReview)),
-    checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
-    checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
-    checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
-    checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker))
-  ];
+  const checks = buildCurrentLineSmokeChecks({
+    routing: workOrderRouting,
+    sessionReview,
+    tournament,
+    vectorStorage,
+    zillizAdapter,
+    retrievalRanker
+  });
 
   return {
     mode: "current-line-smoke",

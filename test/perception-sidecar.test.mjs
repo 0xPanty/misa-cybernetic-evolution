@@ -6,6 +6,28 @@ import {
   buildPerceptionDigest
 } from "../scripts/lib/perception-sidecar.mjs";
 import { distillMisaSources } from "../scripts/lib/session-distiller.mjs";
+import {
+  PERCEPTION_NOVELTY_SIGNAL_HINTS,
+  PERCEPTION_RISK_SIGNAL_HINTS,
+  PERCEPTION_ROUTE_PRIORITY,
+  PERCEPTION_SIGNAL_FAMILIES
+} from "../scripts/lib/signal-taxonomy.mjs";
+
+test("perception signal taxonomy centralizes risk, novelty, family, and priority constants", () => {
+  assert.equal(PERCEPTION_ROUTE_PRIORITY.policy > PERCEPTION_ROUTE_PRIORITY.memory, true);
+  assert.equal(PERCEPTION_RISK_SIGNAL_HINTS.length, 5);
+  assert.equal(PERCEPTION_NOVELTY_SIGNAL_HINTS.length, 4);
+  assert.equal(PERCEPTION_SIGNAL_FAMILIES.length, 10);
+  assert.ok(PERCEPTION_RISK_SIGNAL_HINTS.some(([signal, hint]) => (
+    signal === "farcaster_public_memory_risk"
+    && hint.kind === "public_boundary"
+    && hint.level === "high"
+  )));
+  assert.ok(PERCEPTION_SIGNAL_FAMILIES.some(([family, signals]) => (
+    family === "workflow"
+    && signals.includes("reusable_workflow")
+  )));
+});
 
 function source(overrides) {
   return {

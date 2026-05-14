@@ -1,7 +1,13 @@
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
+import { buildPerceptionDigest } from "./perception-sidecar.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
+import {
+  PERCEPTION_NOVELTY_SIGNAL_HINTS,
+  PERCEPTION_RISK_SIGNAL_HINTS,
+  PERCEPTION_SIGNAL_FAMILIES
+} from "./signal-taxonomy.mjs";
 import {
   buildVectorRetrievalStrategy,
   rankVectorMemoryHits
@@ -15,6 +21,10 @@ import {
 } from "./session-distiller.mjs";
 
 const DEFAULT_NOW = new Date("2026-05-14T00:00:00Z");
+const DEFAULT_PERCEPTION_REPLAY = Object.freeze({
+  source_dir: "test/fixtures/perception/shadow-sources",
+  ledger_file: "test/fixtures/perception/handled-signal-ledger.json"
+});
 
 export const DEFAULT_CALIBRATION_SAMPLE_SETS = [
   {
@@ -230,7 +240,7 @@ function buildRouteSignalMap(routeCounts) {
   }));
 }
 
-function buildSignalLayerMap(sampleResults, summary) {
+function buildSignalLayerMap(sampleResults, summary, perceptionReplay) {
   const retrievalStrategy = buildVectorRetrievalStrategy();
   const routeCounts = summary.route_counts ?? aggregateRouteCounts(sampleResults);
   const signalCounts = summary.signal_counts ?? aggregateSignalCounts(sampleResults);
@@ -267,6 +277,18 @@ function buildSignalLayerMap(sampleResults, summary) {
         "expected_review_value_hints",
         "trace_continuity_hints"
       ],
+      taxonomy: {
+        risk_signal_count: PERCEPTION_RISK_SIGNAL_HINTS.length,
+        novelty_signal_count: PERCEPTION_NOVELTY_SIGNAL_HINTS.length,
+        signal_family_count: PERCEPTION_SIGNAL_FAMILIES.length
+      },
+      replay: perceptionReplay ? {
+        ok: perceptionReplay.ok,
+        source_count: perceptionReplay.summary.source_count,
+        attention_queue_count: perceptionReplay.summary.attention_queue_count,
+        duplicate_cluster_count: perceptionReplay.summary.duplicate_cluster_count,
+        top_attention_source_id: perceptionReplay.top_attention_source_id
+      } : null,
       blocked_outputs: ["route_change", "winner_change", "persistent_memory_write", "zilliz_write"],
       production_authority: false
     },
@@ -324,6 +346,146 @@ function buildSignalLayerMap(sampleResults, summary) {
       production_authority: false
     }
   ];
+}
+
+function mapBy(values, selector) {
+  return new Map(values.map((value) => [selector(value), value]));
+}
+
+function duplicateClusterHas(cluster, sourceIds) {
+  return sourceIds.every((sourceId) => cluster.source_ids.includes(sourceId));
+}
+
+async function runPerceptionShadowReplay({ repoRoot, now }) {
+  const digest = await buildPerceptionDigest({
+    repoRoot,
+    sourceDir: DEFAULT_PERCEPTION_REPLAY.source_dir,
+    ledgerFile: DEFAULT_PERCEPTION_REPLAY.ledger_file,
+    now
+  });
+  const attentionBySource = mapBy(digest.attention_queue, (item) => item.source_id);
+  const fingerprintById = mapBy(digest.signal_fingerprints, (fingerprint) => fingerprint.fingerprint_id);
+  const publicRisk = fingerprintById.get("signal:policy:farcaster_audit:public_memory_risk");
+  const replayFailure = fingerprintById.get("signal:damping:failure_log:candidate_replay_failed");
+  const styleMemory = fingerprintById.get("signal:memory:chat_window:user_preference");
+  const workflow = fingerprintById.get("signal:skill:chat_window:workflow");
+  const publicRiskAttention = attentionBySource.get("shadow-public-memory-risk-001");
+  const noiseAttention = attentionBySource.get("shadow-smalltalk-noise-007");
+
+  const checks = [
+    checkResult("perception replay stays shadow-only", (
+      digest.mode === "shadow-perception-digest"
+      && digest.shadow_only === true
+      && digest.downstream_contract.role === "sensor_prioritizer_only"
+    ), {
+      mode: digest.mode,
+      shadow_only: digest.shadow_only,
+      role: digest.downstream_contract.role
+    }),
+    checkResult("perception replay keeps Qianxuesen route authority", (
+      digest.downstream_contract.route_authority === "qianxuesen"
+      && digest.downstream_contract.controller_authority === false
+      && digest.safety.changes_route === false
+      && digest.safety.changes_winner === false
+    ), {
+      route_authority: digest.downstream_contract.route_authority,
+      controller_authority: digest.downstream_contract.controller_authority,
+      changes_route: digest.safety.changes_route,
+      changes_winner: digest.safety.changes_winner
+    }),
+    checkResult("perception replay keeps writes and provider calls off", (
+      digest.safety.production_authority === false
+      && digest.safety.writes_persistent_memory === false
+      && digest.safety.writes_zilliz === false
+      && digest.safety.creates_embeddings === false
+      && digest.safety.publication_allowed === false
+      && digest.safety.llm_api_calls === 0
+      && digest.safety.external_api_calls === 0
+    ), {
+      production_authority: digest.safety.production_authority,
+      writes_persistent_memory: digest.safety.writes_persistent_memory,
+      writes_zilliz: digest.safety.writes_zilliz,
+      creates_embeddings: digest.safety.creates_embeddings,
+      publication_allowed: digest.safety.publication_allowed,
+      llm_api_calls: digest.safety.llm_api_calls,
+      external_api_calls: digest.safety.external_api_calls
+    }),
+    checkResult("perception replay prioritizes public risk above noise", (
+      publicRiskAttention?.priority > noiseAttention?.priority
+      && digest.attention_queue[0]?.priority >= publicRiskAttention?.priority
+    ), {
+      top_attention_source_id: digest.attention_queue[0]?.source_id ?? null,
+      top_attention_priority: digest.attention_queue[0]?.priority ?? null,
+      public_risk_priority: publicRiskAttention?.priority ?? null,
+      noise_priority: noiseAttention?.priority ?? null
+    }),
+    checkResult("perception replay suppresses repeats and detects recurrence", (
+      publicRisk?.ledger_status === "recurring_after_fix"
+      && replayFailure?.ledger_status === "damping_repeated_to_case"
+      && styleMemory?.ledger_status === "already_processed"
+      && workflow?.ledger_status === "seen_with_new_evidence"
+    ), {
+      public_memory_risk: publicRisk?.ledger_status ?? null,
+      candidate_replay_failed: replayFailure?.ledger_status ?? null,
+      stable_style_memory: styleMemory?.ledger_status ?? null,
+      repeatable_workflow: workflow?.ledger_status ?? null
+    }),
+    checkResult("perception replay clusters duplicate workflow evidence", (
+      digest.duplicate_clusters.some((cluster) => duplicateClusterHas(cluster, [
+        "shadow-repeatable-validation-workflow-a-004",
+        "shadow-repeatable-validation-workflow-b-005"
+      ]))
+    ), {
+      duplicate_cluster_count: digest.summary.duplicate_cluster_count
+    }),
+    checkResult("perception replay proposes ledger updates without writing", (
+      digest.ledger_update_proposals.length === digest.signal_fingerprints.length
+      && digest.ledger_update_proposals.every((proposal) => (
+        proposal.no_write === true
+        && proposal.authority === "proposal_only"
+      ))
+    ), {
+      signal_fingerprint_count: digest.summary.signal_fingerprint_count,
+      ledger_update_proposal_count: digest.summary.ledger_update_proposal_count
+    })
+  ];
+
+  return {
+    mode: "perception-shadow-replay",
+    ok: checks.every((check) => check.ok),
+    source_dir: DEFAULT_PERCEPTION_REPLAY.source_dir,
+    ledger_file: DEFAULT_PERCEPTION_REPLAY.ledger_file,
+    top_attention_source_id: digest.attention_queue[0]?.source_id ?? null,
+    ledger_statuses: {
+      public_memory_risk: publicRisk?.ledger_status ?? null,
+      candidate_replay_failed: replayFailure?.ledger_status ?? null,
+      stable_style_memory: styleMemory?.ledger_status ?? null,
+      repeatable_workflow: workflow?.ledger_status ?? null
+    },
+    summary: {
+      source_count: digest.summary.source_count,
+      attention_queue_count: digest.summary.attention_queue_count,
+      risk_hint_count: digest.summary.risk_hint_count,
+      duplicate_cluster_count: digest.summary.duplicate_cluster_count,
+      signal_fingerprint_count: digest.summary.signal_fingerprint_count,
+      ledger_update_proposal_count: digest.summary.ledger_update_proposal_count,
+      recurring_after_fix_count: digest.summary.recurring_after_fix_count,
+      already_processed_count: digest.summary.already_processed_count,
+      damping_repeated_to_case_count: digest.summary.damping_repeated_to_case_count
+    },
+    safety: {
+      production_authority: digest.safety.production_authority,
+      writes_persistent_memory: digest.safety.writes_persistent_memory,
+      writes_zilliz: digest.safety.writes_zilliz,
+      creates_embeddings: digest.safety.creates_embeddings,
+      publication_allowed: digest.safety.publication_allowed,
+      changes_route: digest.safety.changes_route,
+      changes_winner: digest.safety.changes_winner,
+      llm_api_calls: digest.safety.llm_api_calls,
+      external_api_calls: digest.safety.external_api_calls
+    },
+    checks
+  };
 }
 
 async function calibrateSampleSet({ repoRoot, sampleSet, now }) {
@@ -528,7 +690,7 @@ function buildSummary(sampleResults) {
   const retrievalTotal = sampleResults.length;
   return {
     sample_set_count: sampleResults.length,
-    source_count: sumBy(sampleResults, (sample) => sample.source.source_count),
+  source_count: sumBy(sampleResults, (sample) => sample.source.source_count),
     atomic_lesson_count: sumBy(sampleResults, (sample) => sample.source.atomic_lesson_count),
     work_order_count: sumBy(sampleResults, (sample) => sample.work_order.work_order_count),
     repair_ticket_count: sumBy(sampleResults, (sample) => sample.repair_ticket.ticket_count),
@@ -567,6 +729,10 @@ export async function runCurrentLineCalibration({
       now: resolvedNow
     }));
   }
+  const perceptionReplay = await runPerceptionShadowReplay({
+    repoRoot,
+    now: resolvedNow
+  });
 
   const sampleChecks = sampleResults.flatMap((sample) => (
     sample.checks.map((check) => ({
@@ -574,16 +740,32 @@ export async function runCurrentLineCalibration({
       ...check
     }))
   ));
+  const perceptionChecks = perceptionReplay.checks.map((check) => ({
+    sample_set_id: "perception_shadow_replay",
+    ...check
+  }));
   const summary = buildSummary(sampleResults);
-  const signalLayers = buildSignalLayerMap(sampleResults, summary);
+  const signalLayers = buildSignalLayerMap(sampleResults, summary, perceptionReplay);
   summary.signal_layer_count = signalLayers.length;
   summary.observed_signal_count = Object.keys(summary.signal_counts).length;
+  summary.perception_replay_count = 1;
+  summary.perception_replay_ok = perceptionReplay.ok;
+  summary.perception_attention_queue_count = perceptionReplay.summary.attention_queue_count;
+  summary.perception_duplicate_cluster_count = perceptionReplay.summary.duplicate_cluster_count;
+  summary.perception_recurring_after_fix_count = perceptionReplay.summary.recurring_after_fix_count;
+  summary.perception_already_processed_count = perceptionReplay.summary.already_processed_count;
+  summary.perception_damping_repeated_to_case_count = perceptionReplay.summary.damping_repeated_to_case_count;
   const overallChecks = [
     checkResult("all sample sets passed", sampleResults.every((sample) => sample.ok), {
       failed_sample_sets: sampleResults.filter((sample) => !sample.ok).map((sample) => sample.sample_set_id)
     }),
     checkResult("all retrieval probes exact-match top1", summary.retrieval_top1_exact_recall === 1, {
       retrieval_top1_exact_recall: summary.retrieval_top1_exact_recall
+    }),
+    checkResult("perception shadow replay passed", perceptionReplay.ok, {
+      top_attention_source_id: perceptionReplay.top_attention_source_id,
+      duplicate_cluster_count: perceptionReplay.summary.duplicate_cluster_count,
+      recurring_after_fix_count: perceptionReplay.summary.recurring_after_fix_count
     }),
     checkResult("shadow mode kept all live effects off", (
       summary.live_effect_allowed === false
@@ -602,7 +784,7 @@ export async function runCurrentLineCalibration({
       llm_api_calls: summary.llm_api_calls
     })
   ];
-  const checks = [...sampleChecks, ...overallChecks];
+  const checks = [...sampleChecks, ...perceptionChecks, ...overallChecks];
 
   return {
     schema_version: "misa.current_line_calibration.v1",
@@ -611,12 +793,13 @@ export async function runCurrentLineCalibration({
     created_at: resolvedNow.toISOString(),
     summary,
     signal_layers: signalLayers,
+    perception_shadow_replay: perceptionReplay,
     sample_sets: sampleResults,
     checks,
     notes: [
       "Calibration is local shadow-mode only; it reads redacted fixtures and produces a report.",
       "It does not write persistent memory, write Zilliz, create embeddings, call providers, publish, or touch VPS.",
-      "The calibration checks route coverage, repair-ticket/work-order routing, retrieval top1 behavior, tournament winners, and judge-escalation value."
+      "The calibration checks route coverage, repair-ticket/work-order routing, retrieval top1 behavior, tournament winners, judge-escalation value, and perception shadow replay."
     ]
   };
 }

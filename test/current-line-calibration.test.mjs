@@ -18,6 +18,13 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(result.summary.tournament_count, 49);
   assert.equal(result.summary.signal_layer_count, 6);
   assert.equal(result.summary.observed_signal_count, 9);
+  assert.equal(result.summary.perception_replay_count, 1);
+  assert.equal(result.summary.perception_replay_ok, true);
+  assert.equal(result.summary.perception_attention_queue_count, 10);
+  assert.equal(result.summary.perception_duplicate_cluster_count, 1);
+  assert.equal(result.summary.perception_recurring_after_fix_count, 1);
+  assert.equal(result.summary.perception_already_processed_count, 1);
+  assert.equal(result.summary.perception_damping_repeated_to_case_count, 1);
   assert.equal(result.summary.retrieval_probe_count, 5);
   assert.equal(result.summary.retrieval_top1_exact_recall, 1);
   assert.deepEqual(result.summary.route_counts, {
@@ -61,6 +68,24 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
     result.signal_layers.find((layer) => layer.layer_id === "shadow_perception_signals").authority,
     "hint_only"
   );
+  assert.deepEqual(
+    result.signal_layers.find((layer) => layer.layer_id === "shadow_perception_signals").taxonomy,
+    {
+      risk_signal_count: 5,
+      novelty_signal_count: 4,
+      signal_family_count: 10
+    }
+  );
+  assert.deepEqual(
+    result.signal_layers.find((layer) => layer.layer_id === "shadow_perception_signals").replay,
+    {
+      ok: true,
+      source_count: 10,
+      attention_queue_count: 10,
+      duplicate_cluster_count: 1,
+      top_attention_source_id: "shadow-candidate-replay-failed-002"
+    }
+  );
   assert.equal(
     result.signal_layers.find((layer) => layer.layer_id === "retrieval_ranker_signals").ranking_inputs.includes("lexical_intent_match"),
     true
@@ -100,4 +125,24 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(byId.get("redacted_holdout_samples").tournament.judge_escalation.recommended, false);
   assert.equal(byId.get("redacted_holdout_samples").tournament.judge_escalation.near_threshold, true);
   assert.equal(byId.get("redacted_holdout_samples").tournament.judge_escalation.llm_review_value, "medium");
+
+  assert.equal(result.perception_shadow_replay.ok, true);
+  assert.equal(result.perception_shadow_replay.top_attention_source_id, "shadow-candidate-replay-failed-002");
+  assert.deepEqual(result.perception_shadow_replay.ledger_statuses, {
+    public_memory_risk: "recurring_after_fix",
+    candidate_replay_failed: "damping_repeated_to_case",
+    stable_style_memory: "already_processed",
+    repeatable_workflow: "seen_with_new_evidence"
+  });
+  assert.equal(result.perception_shadow_replay.safety.production_authority, false);
+  assert.equal(result.perception_shadow_replay.safety.writes_persistent_memory, false);
+  assert.equal(result.perception_shadow_replay.safety.writes_zilliz, false);
+  assert.equal(result.perception_shadow_replay.safety.changes_route, false);
+  assert.equal(result.perception_shadow_replay.safety.changes_winner, false);
+  assert.equal(result.perception_shadow_replay.safety.llm_api_calls, 0);
+  assert.equal(result.perception_shadow_replay.safety.external_api_calls, 0);
+  assert.equal(
+    result.checks.some((check) => check.name === "perception shadow replay passed" && check.ok),
+    true
+  );
 });

@@ -1,32 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
-
-const ROUTE_PRIORITY = {
-  policy: 95,
-  damping: 82,
-  case: 76,
-  skill: 68,
-  memory: 54,
-  ignore: 20
-};
+import {
+  PERCEPTION_NOVELTY_SIGNAL_HINTS,
+  PERCEPTION_RISK_SIGNAL_HINTS,
+  PERCEPTION_ROUTE_PRIORITY,
+  PERCEPTION_SIGNAL_FAMILIES
+} from "./signal-taxonomy.mjs";
 
 const LEDGER_STATUSES = new Set(["open", "handled", "resolved", "damping_only", "ignored"]);
 
-const RISK_SIGNALS = new Map([
-  ["farcaster_public_memory_risk", ["public_boundary", "high", "public memory risk needs policy attention before any downstream learning"]],
-  ["public_posting_boundary", ["public_boundary", "high", "public channel behavior must stay behind approval"]],
-  ["explicit_user_boundary", ["authority_boundary", "medium", "explicit user boundary should be preserved before routing"]],
-  ["candidate_replay_failed", ["replay_failure", "medium", "failed replay should become damping or repair evidence before promotion"]],
-  ["repeated_failure_pattern", ["reliability_failure", "medium", "repeated failure pattern should be reviewed before runtime changes"]]
-]);
-
-const NOVELTY_SIGNALS = new Map([
-  ["reusable_workflow", ["workflow_candidate", "possible repeatable workflow worth downstream skill evaluation"]],
-  ["stable_project_fact", ["project_fact_candidate", "stable project fact may help memory routing after validation"]],
-  ["stable_user_preference", ["user_preference_candidate", "stable user preference may help memory routing after validation"]],
-  ["farcaster_reply_success", ["public_reply_pattern", "successful public reply pattern is useful only with public-boundary checks"]]
-]);
+const RISK_SIGNALS = new Map(PERCEPTION_RISK_SIGNAL_HINTS);
+const NOVELTY_SIGNALS = new Map(PERCEPTION_NOVELTY_SIGNAL_HINTS);
 
 const BLOCKED_EFFECTS = [
   "persistent_memory_write",
@@ -38,19 +23,6 @@ const BLOCKED_EFFECTS = [
   "winner_change",
   "route_change",
   "service_start"
-];
-
-const SIGNAL_FAMILIES = [
-  ["public_memory_risk", ["farcaster_public_memory_risk"]],
-  ["public_boundary", ["public_posting_boundary"]],
-  ["authority_boundary", ["explicit_user_boundary"]],
-  ["candidate_replay_failed", ["candidate_replay_failed"]],
-  ["overreaction_damping", ["avoid_overreaction", "single_failure"]],
-  ["repeated_failure", ["repeated_failure_pattern"]],
-  ["workflow", ["reusable_workflow"]],
-  ["user_preference", ["stable_user_preference"]],
-  ["project_fact", ["stable_project_fact"]],
-  ["public_reply_pattern", ["farcaster_reply_success"]]
 ];
 
 function uniqueStrings(values) {
@@ -72,11 +44,11 @@ function countBy(values, selector) {
 
 function strongestRoute(routeCounts) {
   return Object.keys(routeCounts)
-    .sort((a, b) => (ROUTE_PRIORITY[b] ?? 0) - (ROUTE_PRIORITY[a] ?? 0) || a.localeCompare(b))[0] ?? "ignore";
+    .sort((a, b) => (PERCEPTION_ROUTE_PRIORITY[b] ?? 0) - (PERCEPTION_ROUTE_PRIORITY[a] ?? 0) || a.localeCompare(b))[0] ?? "ignore";
 }
 
 function signalFamilyFor(signals) {
-  for (const [family, familySignals] of SIGNAL_FAMILIES) {
+  for (const [family, familySignals] of PERCEPTION_SIGNAL_FAMILIES) {
     if (familySignals.some((signal) => signals.includes(signal))) {
       return family;
     }
@@ -131,7 +103,7 @@ function hasPolicyPressure(signals) {
 }
 
 function priorityFor(events, signals) {
-  const routeScore = Math.max(0, ...events.map((event) => ROUTE_PRIORITY[event.expected_route] ?? 30));
+  const routeScore = Math.max(0, ...events.map((event) => PERCEPTION_ROUTE_PRIORITY[event.expected_route] ?? 30));
   const signalBoost = signals.reduce((score, signal) => {
     if (signal === "farcaster_public_memory_risk" || signal === "public_posting_boundary") return score + 10;
     if (signal === "explicit_user_boundary" || signal === "candidate_replay_failed") return score + 8;
@@ -275,7 +247,7 @@ function buildRiskHints(sourceId, signals, refs, events) {
   const hints = [];
   for (const signal of signals) {
     if (!RISK_SIGNALS.has(signal)) continue;
-    const [kind, level, reason] = RISK_SIGNALS.get(signal);
+    const { kind, level, reason } = RISK_SIGNALS.get(signal);
     hints.push({
       hint_id: sourceKey(sourceId, `risk-${signal}`),
       source_id: sourceId,
@@ -307,7 +279,7 @@ function buildNoveltyHints(sourceId, signals, refs, routeCounts) {
   for (const signal of signals) {
     if (!NOVELTY_SIGNALS.has(signal)) continue;
     if (signal === "reusable_workflow" && hasPolicyPressure(signals)) continue;
-    const [kind, reason] = NOVELTY_SIGNALS.get(signal);
+    const { kind, reason } = NOVELTY_SIGNALS.get(signal);
     hints.push({
       hint_id: sourceKey(sourceId, `novelty-${kind}`),
       source_id: sourceId,
