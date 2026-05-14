@@ -18,6 +18,7 @@ repository is schema-valid, current-line dry-run safe, calibrated on redacted
 samples, and still passing the full local test suite.
 
 ```bash
+npm run doctor
 npm run validate:schemas
 npm run smoke:current-line
 npm run calibrate:current-line
@@ -45,6 +46,7 @@ steps.
 For the expanded local module chain, use:
 
 ```bash
+npm run bootstrap:local
 npm run simulate:misa
 npm run distill:misa
 npm run perception:digest
@@ -53,6 +55,7 @@ npm run self-repair:misa -- --validation-mode
 npm run hermes:map-distillation -- --json
 npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
 npm run vector-memory:classify -- --json
+npm run vector-store:local -- --mode upsert --dry-run
 npm run vector-memory:rank -- --eval-fixtures
 npm run zilliz:adapt -- --json
 ```
@@ -63,8 +66,10 @@ For Misa specifically, L0 also checks the launch profile:
 - [../examples/misa_readonly_integration.example.json](../examples/misa_readonly_integration.example.json)
 
 Passing this means the local sidecar is coherent as a dry-run/shadow-ready
-control-learning layer. It does not turn the repo into a background runtime
-service, memory writer, Zilliz writer, public publisher, or VPS updater.
+control-learning layer. The local vector store can persist ignored runtime
+records when explicitly asked, but the gate does not turn the repo into a
+background runtime service, production memory writer, Zilliz writer, public
+publisher, or VPS updater.
 
 Historical simulator pieces are documented in:
 
@@ -92,6 +97,7 @@ The current-line additions are documented in:
 
 - [evolution-tournament-gate-v0.18.md](./evolution-tournament-gate-v0.18.md)
 - [vector-memory-storage-v0.19.md](./vector-memory-storage-v0.19.md)
+- [local-vector-store-v0.21.md](./local-vector-store-v0.21.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)
 - [current-line-calibration-v0.21.md](./current-line-calibration-v0.21.md)
 

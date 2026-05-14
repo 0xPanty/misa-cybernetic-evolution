@@ -1,4 +1,5 @@
 import path from "node:path";
+import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
@@ -56,6 +57,28 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     name: "validate vector memory storage classification"
   }));
 
+  const localVectorStore = await upsertDistillationToLocalVectorStore({
+    repoRoot,
+    sourceDir: path.join("examples", "misa-distillation"),
+    requireTemplateCoverage: true,
+    dryRun: true,
+    now: new Date("2026-05-14T00:00:00Z")
+  });
+  checks.push(currentLineCheck("Local vector store adapter dry-run check", localVectorStore.ok, {
+    backend: localVectorStore.backend,
+    records: localVectorStore.summary.record_count,
+    uniqueSources: localVectorStore.summary.unique_source_count,
+    localVectorStoreWritten: localVectorStore.safety.local_vector_store_written,
+    zillizWritten: localVectorStore.safety.zilliz_written,
+    embeddingCreated: localVectorStore.safety.embedding_created
+  }));
+  checks.push(await currentLineValidation({
+    repoRoot,
+    schemaRel: "schemas/local_vector_store.schema.json",
+    data: localVectorStore,
+    name: "validate local vector store dry-run"
+  }));
+
   const zillizVectorAdapter = buildZillizVectorAdapterPlan({
     vectorMemoryStorage,
     now: new Date("2026-05-12T00:00:00Z")
@@ -91,6 +114,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     artifacts: {
       sessionDistillerCyberneticReview,
       vectorMemoryStorage,
+      localVectorStore,
       zillizVectorAdapter,
       vectorRetrievalEval
     }

@@ -37,7 +37,8 @@ const SCHEMA_DIRECTORY_PAIRS = [
 const SCHEMA_ONLY_FILES = [
   "schemas/session_distillation_review.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
-  "schemas/omniagent_footprint_bridge.schema.json"
+  "schemas/omniagent_footprint_bridge.schema.json",
+  "schemas/local_vector_store.schema.json"
 ];
 
 async function readJson(filePath) {

@@ -70,6 +70,13 @@ function componentStatus(calibration, smoke) {
 
   return {
     current_line_smoke: statusFor(smoke.ok),
+    local_vector_store: statusFor(smoke.checks.some((check) => (
+      check.name === "vector-store:local dry-run"
+      && check.ok
+      && check.local_vector_store_written === false
+      && check.zilliz_written === false
+      && check.embedding_created === false
+    ))),
     source_distillation: statusFor(sourceSamplesOk),
     signal_extraction: statusFor(calibration.summary.observed_signal_count > 0 && sourceSamplesOk),
     qianxuesen_route_decision: statusFor(
@@ -224,6 +231,7 @@ function componentSummaries(calibration, smoke, components) {
   const retrievalLayer = layers.get("retrieval_ranker_signals");
   const tournamentLayer = layers.get("tournament_quality_signals");
   const samples = sampleSetSummaries(calibration);
+  const localVectorStoreCheck = smoke.checks.find((check) => check.name === "vector-store:local dry-run");
 
   return {
     current_line_smoke: {
@@ -238,6 +246,16 @@ function componentSummaries(calibration, smoke, components) {
       atomic_lessons: calibration.summary.atomic_lesson_count,
       observed_signals: calibration.summary.observed_signal_count,
       signal_counts: calibration.summary.signal_counts
+    },
+    local_vector_store: {
+      status: components.local_vector_store,
+      backend: localVectorStoreCheck?.backend ?? "unknown",
+      records: localVectorStoreCheck?.records ?? 0,
+      unique_sources: localVectorStoreCheck?.unique_sources ?? 0,
+      dry_run: localVectorStoreCheck?.dry_run ?? true,
+      local_vector_store_written: localVectorStoreCheck?.local_vector_store_written ?? null,
+      zilliz_written: localVectorStoreCheck?.zilliz_written ?? null,
+      embedding_created: localVectorStoreCheck?.embedding_created ?? null
     },
     qianxuesen_route_decision: {
       status: components.qianxuesen_route_decision,
@@ -439,6 +457,7 @@ export function renderQianxuesenFullLoopHealthMarkdown(report) {
     "",
     `- smoke: ${report.component_summaries.current_line_smoke.checks.passed}/${report.component_summaries.current_line_smoke.checks.total} checks`,
     `- source_distillation: ${report.component_summaries.source_distillation.sources} sources, ${report.component_summaries.source_distillation.atomic_lessons} atomic lessons`,
+    `- local_vector_store: backend=${report.component_summaries.local_vector_store.backend}, records=${report.component_summaries.local_vector_store.records}, dry_run=${report.component_summaries.local_vector_store.dry_run}`,
     `- routing: owner=${report.component_summaries.qianxuesen_route_decision.owner}, authority=${report.component_summaries.qianxuesen_route_decision.authority}`,
     `- repair_ticket: ${report.component_summaries.repair_ticket.total_tickets} tickets`,
     `- work_order: ${report.component_summaries.work_order_routing.total_work_orders} orders, auto_executable=${report.component_summaries.work_order_routing.auto_executable_count}`,

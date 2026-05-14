@@ -14,11 +14,17 @@ Versioned v0.x references later in this file are history and feature-origin
 anchors. They do not create separate current lines; the current command surface
 is the v0.21 shadow chain described here.
 
+For public users, the clone-time path is:
+
+```text
+npm ci -> npm run doctor -> npm run bootstrap:local
+```
+
 The live system remains Misa/Hermes. This repository is the read-only
 control-learning sidecar: it turns redacted evidence and existing
 Hermes/Zilliz artifacts into local distillates, routed candidates, repair
-tickets, work orders, vector-memory dry-run metadata, retrieval-ranker checks,
-and session-distiller review findings.
+tickets, work orders, vector-memory dry-run metadata, a default local vector
+store, retrieval-ranker checks, and session-distiller review findings.
 
 Plain version:
 
@@ -26,10 +32,11 @@ Plain version:
 evidence -> distill -> route -> candidate -> work order -> owner or primary agent
 ```
 
-Candidate records and dry-run vector payloads do not equal live memory. Anything
-that writes persistent memory, writes Zilliz, changes provider routes, posts
-publicly, starts timers, or touches VPS remains outside this sidecar unless the
-human owner explicitly approves a separate rollout.
+Candidate records and vector-store records do not equal live memory. The default
+local store may write ignored runtime files under `runs/local-vector-store/`,
+but anything that writes production memory, writes Zilliz, changes provider
+routes, posts publicly, starts timers, or touches VPS remains outside this
+sidecar unless the human owner explicitly approves a separate rollout.
 
 ## Planes
 
@@ -311,6 +318,12 @@ asked for a repair work order.
 
 The Zilliz adapter prepares collection and upsert payload shape only. It does
 not create embeddings, read provider keys, write Zilliz, or promote records.
+
+The local vector store is the default public-repo backend. It persists the
+public distillation template locally, exposes `upsert`, `query`, `stats`, and
+`rollback`, and keeps the adapter contract swappable for Zilliz, Qdrant,
+LanceDB, Chroma, pgvector, or custom stores. Swapping the backend does not
+change the required `misa.local_session_distillation.v1` input shape.
 
 ### 8.5 Session-Distiller Review
 

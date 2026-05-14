@@ -3,9 +3,10 @@
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
 Current package version: `0.21.0`. The current line keeps source-lineage and
-retrieval trace metadata for vector-memory dry runs, adds read-only
-session-distiller cybernetic review, and keeps the control boundary stable: no
-live Zilliz writes, no embeddings, and no runtime changes.
+retrieval trace metadata for vector-memory dry runs, adds a default local
+persistent vector store, adds read-only session-distiller cybernetic review, and
+keeps the control boundary stable: no live Zilliz writes, no provider
+embeddings, and no runtime changes.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
 
@@ -29,6 +30,19 @@ It is useful as:
 - primary-agent work-order handoff format.
 
 It is not a production autonomous brain.
+
+## Quickstart
+
+```bash
+git clone https://github.com/0xPanty/misa-cybernetic-evolution.git
+cd misa-cybernetic-evolution
+npm ci
+npm run doctor
+npm run bootstrap:local
+```
+
+The full clone-to-local-store path is documented in
+[QUICKSTART.md](./QUICKSTART.md).
 
 ## System Shape
 
@@ -56,6 +70,7 @@ The safety boundary is deliberate:
 | Background timers or services | not enabled |
 | VPS update authority | not enabled |
 | LLM route or winner authority | not enabled |
+| Local vector-store writes | explicit command only, under ignored `runs/local-vector-store/` |
 
 In plain terms: this sidecar can read redacted local evidence, compress it,
 route it, draft safe local artifacts, compare candidate variants, and explain
@@ -76,6 +91,7 @@ or existing Hermes/Zilliz distillation artifact
 -> route work orders to the primary agent
 -> let the agent self-review and resolve low-risk local work when policy allows
 -> classify logs, decisions, candidate experience, policy, and work orders for vector storage
+-> optionally upsert the public distillation template into the default local vector store
 -> attach original-source refs, replay keys, and retrieval hints for future hit explanation
 -> produce a shadow perception digest that prioritizes sources without route authority
 -> keep raw logs, redacted sources, perception digests, handoffs, and archives separated
@@ -105,6 +121,8 @@ Two rules matter most:
 
 | Capability | Command | Boundary |
 | --- | --- | --- |
+| Public repo doctor | `npm run doctor` | clone-time readiness check; read-only |
+| Local bootstrap | `npm run bootstrap:local` | initializes ignored local vector store and local report only |
 | Learning-loop simulation | `npm run simulate:misa` | local fixtures only |
 | Local session distillation | `npm run distill:misa` | no Zilliz, no embedding provider, no external API |
 | Shadow perception digest | `npm run perception:digest -- --json` | sensor/prioritizer only; optional `--ledger-file` emits action recommendations and no-write ledger update proposals |
@@ -122,11 +140,12 @@ Two rules matter most:
 | Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
+| Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
 | Vector retrieval ranker | `npm run vector-memory:rank -- --eval-fixtures` | kind filter and same-source rerank dry-run, no embeddings or writes |
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, vector/ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -174,6 +193,17 @@ bucket instead of becoming their own workflow.
 Perception output names such as `action_recommendations`, `attention_queue`, and
 `ledger_update_proposals` are review surfaces, not execution commands. They must
 stay `hint_only` or `proposal_only`, and ledger proposals must stay `no_write`.
+
+## Local Vector Store
+
+`vector-store:local` is the default public-repo vector backend. It gives users
+who do not run Zilliz a persistent local store with `upsert`, `query`, `stats`,
+and `rollback` surfaces.
+
+Users who already run Zilliz, Qdrant, LanceDB, Chroma, pgvector, or another
+store can replace the backend, but the adapter must accept the same
+`misa.local_session_distillation.v1` template and return the same source-lineage
+fields.
 
 ## Evolution Tournament
 
@@ -276,6 +306,7 @@ tracks; use the command map and validation chain above for the current surface.
 - [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
+- [Local vector store](./docs/local-vector-store-v0.21.md)
 - [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)
 - [Retrieval lineage](./docs/retrieval-lineage-v0.19.md)
 - [Vector retrieval ranker](./docs/vector-retrieval-ranker-v0.20.md)

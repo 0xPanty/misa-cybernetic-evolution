@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/local_vector_store.schema.json",
+  "title": "LocalVectorStore",
+  "oneOf": [
+    { "$ref": "#/$defs/upsert_result" },
+    { "$ref": "#/$defs/query_result" },
+    { "$ref": "#/$defs/stats_result" },
+    { "$ref": "#/$defs/rollback_result" }
+  ],
+  "$defs": {
+    "common_safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "zilliz_written",
+        "embedding_created",
+        "external_api_calls",
+        "provider_credentials_read"
+      ],
+      "properties": {
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "provider_credentials_read": { "type": "boolean", "const": false }
+      }
+    },
+    "adapter_contract": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "default_backend",
+        "required_distillation_schema",
+        "required_operations",
+        "required_record_fields",
+        "swappable_backends"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.vector_store_adapter_contract.v1" },
+        "default_backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "required_distillation_schema": { "type": "string", "const": "misa.local_session_distillation.v1" },
+        "required_operations": {
+          "type": "array",
+          "contains": { "type": "string", "const": "upsert_distillation" }
+        },
+        "required_record_fields": {
+          "type": "array",
+          "contains": { "type": "string", "const": "metadata.retrieval_trace" }
+        },
+        "swappable_backends": {
+          "type": "array",
+          "contains": { "type": "string", "const": "zilliz" }
+        }
+      }
+    },
+    "vector_record": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "record_id",
+        "batch_id",
+        "backend",
+        "collection",
+        "kind",
+        "route",
+        "text",
+        "vector",
+        "metadata"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.local_vector_store_record.v1" },
+        "record_id": { "type": "string" },
+        "batch_id": { "type": "string" },
+        "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "collection": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "audit_log",
+            "agent_experience_candidate",
+            "persona_memory_candidate",
+            "policy_boundary"
+          ]
+        },
+        "route": {
+          "type": "string",
+          "enum": ["case", "damping", "memory", "policy", "skill"]
+        },
+        "text": { "type": "string", "minLength": 1 },
+        "vector": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["backend", "embedding_created", "external_api_calls", "weights", "norm"],
+          "properties": {
+            "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+            "embedding_created": { "type": "boolean", "const": false },
+            "external_api_calls": { "type": "integer", "const": 0 },
+            "weights": { "type": "object" },
+            "norm": { "type": "number", "minimum": 0 }
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "distillation_schema_version",
+            "distillation_template_required",
+            "source_id",
+            "source_kind",
+            "distillate_id",
+            "learning_event_id",
+            "original_source_id",
+            "original_chunk_hash",
+            "retrieval_trace",
+            "can_influence_behavior"
+          ],
+          "properties": {
+            "distillation_schema_version": { "type": "string", "const": "misa.local_session_distillation.v1" },
+            "distillation_template_required": { "type": "boolean", "const": true },
+            "source_id": { "type": "string" },
+            "source_kind": { "type": "string" },
+            "distillate_id": { "type": "string" },
+            "learning_event_id": { "type": "string" },
+            "original_source_id": { "type": "string" },
+            "original_chunk_hash": { "type": "string" },
+            "can_influence_behavior": { "type": "boolean", "const": false },
+            "retrieval_trace": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["trace_version", "replayable", "replay_keys", "source_hops"],
+              "properties": {
+                "trace_version": { "type": "string", "const": "misa.retrieval_trace.v1" },
+                "replayable": { "type": "boolean", "const": true },
+                "replay_keys": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string" }
+                },
+                "source_hops": {
+                  "type": "array",
+                  "minItems": 4,
+                  "items": { "type": "object" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "upsert_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "mode",
+        "ok",
+        "backend",
+        "adapter_contract",
+        "summary",
+        "checks",
+        "records",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.local_vector_store_upsert.v1" },
+        "mode": { "type": "string", "const": "local-vector-store-upsert" },
+        "ok": { "type": "boolean" },
+        "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "adapter_contract": { "$ref": "#/$defs/adapter_contract" },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "distillate_count",
+            "learning_event_count",
+            "record_count",
+            "unique_source_count"
+          ],
+          "properties": {
+            "distillate_count": { "type": "integer", "minimum": 0 },
+            "learning_event_count": { "type": "integer", "minimum": 0 },
+            "record_count": { "type": "integer", "minimum": 0 },
+            "unique_source_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ok"],
+            "properties": {
+              "name": { "type": "string" },
+              "ok": { "type": "boolean" }
+            }
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/vector_record" }
+        },
+        "safety": { "$ref": "#/$defs/common_safety" }
+      }
+    },
+    "query_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "mode", "ok", "backend", "summary", "hits", "safety"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.local_vector_store_query.v1" },
+        "mode": { "type": "string", "const": "local-vector-store-query" },
+        "ok": { "type": "boolean" },
+        "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "summary": { "type": "object" },
+        "hits": { "type": "array" },
+        "safety": { "$ref": "#/$defs/common_safety" }
+      }
+    },
+    "stats_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "mode", "ok", "backend", "summary", "safety"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.local_vector_store_stats.v1" },
+        "mode": { "type": "string", "const": "local-vector-store-stats" },
+        "ok": { "type": "boolean" },
+        "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "summary": { "type": "object" },
+        "safety": { "$ref": "#/$defs/common_safety" }
+      }
+    },
+    "rollback_result": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "mode", "ok", "backend", "summary", "safety"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.local_vector_store_rollback.v1" },
+        "mode": { "type": "string", "const": "local-vector-store-rollback" },
+        "ok": { "type": "boolean" },
+        "backend": { "type": "string", "const": "local-jsonl-token-vector-v1" },
+        "summary": { "type": "object" },
+        "safety": { "$ref": "#/$defs/common_safety" }
+      }
+    }
+  }
+}

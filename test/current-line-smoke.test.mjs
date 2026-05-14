@@ -22,11 +22,13 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("evolution:tournament:misa"), true);
   assert.equal(result.command_surface.includes("vector-memory:classify"), true);
   assert.equal(result.command_surface.includes("vector-memory:rank"), true);
+  assert.equal(result.command_surface.includes("vector-store:local"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
   assert.ok(checkNames.has("evolution:tournament:misa dry-run"));
   assert.ok(checkNames.has("vector-memory:classify dry-run"));
+  assert.ok(checkNames.has("vector-store:local dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -93,6 +95,20 @@ function safeArtifacts() {
       safety: {
         zilliz_written: false,
         writes_persistent_memory: false
+      }
+    },
+    localVectorStore: {
+      ok: true,
+      backend: "local-jsonl-token-vector-v1",
+      dry_run: true,
+      summary: {
+        record_count: 1,
+        unique_source_count: 1
+      },
+      safety: {
+        local_vector_store_written: false,
+        zilliz_written: false,
+        embedding_created: false
       }
     },
     zillizAdapter: {

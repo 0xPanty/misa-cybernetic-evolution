@@ -41,7 +41,7 @@ test("qianxuesen full-loop health writes latest plus timestamped history", async
   assert.equal(report.safety.changes_winner, false);
   assert.equal(report.safety.controller_authority_leaked, false);
   assert.equal(report.coverage.route_coverage.includes("policy"), true);
-  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 7);
+  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 8);
   assert.equal(report.component_summaries.source_distillation.sources, 18);
   assert.equal(report.component_summaries.qianxuesen_route_decision.owner, "qianxuesen");
   assert.equal(report.component_summaries.perception.authority, "hint_only");

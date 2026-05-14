@@ -1,6 +1,7 @@
 import path from "node:path";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
+import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
@@ -69,6 +70,19 @@ function summarizeVectorStorage(storage) {
   };
 }
 
+function summarizeLocalVectorStore(store) {
+  return {
+    ok: store.ok,
+    backend: store.backend,
+    records: store.summary.record_count,
+    unique_sources: store.summary.unique_source_count,
+    dry_run: store.dry_run,
+    local_vector_store_written: store.safety.local_vector_store_written,
+    zilliz_written: store.safety.zilliz_written,
+    embedding_created: store.safety.embedding_created
+  };
+}
+
 function summarizeZillizAdapter(adapter) {
   return {
     ok: adapter.ok,
@@ -96,6 +110,7 @@ function noLiveWritesOrProviderCallsCheck({
   sessionReview,
   tournament,
   vectorStorage,
+  localVectorStore,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -107,6 +122,9 @@ function noLiveWritesOrProviderCallsCheck({
     tournament_live_effect_allowed: hasAnyLiveEffect(tournament.safety.live_effects),
     vector_zilliz_written: vectorStorage.safety.zilliz_written,
     vector_writes_persistent_memory: vectorStorage.safety.writes_persistent_memory,
+    local_store_written: localVectorStore.safety.local_vector_store_written,
+    local_store_zilliz_written: localVectorStore.safety.zilliz_written,
+    local_store_embedding_created: localVectorStore.safety.embedding_created,
     adapter_zilliz_written: zillizAdapter.safety.zilliz_written,
     adapter_embedding_created: zillizAdapter.safety.embedding_created,
     retrieval_zilliz_written: retrievalRanker.safety.zilliz_written,
@@ -121,6 +139,9 @@ function noLiveWritesOrProviderCallsCheck({
     && details.tournament_live_effect_allowed === false
     && details.vector_zilliz_written === false
     && details.vector_writes_persistent_memory === false
+    && details.local_store_written === false
+    && details.local_store_zilliz_written === false
+    && details.local_store_embedding_created === false
     && details.adapter_zilliz_written === false
     && details.adapter_embedding_created === false
     && details.retrieval_zilliz_written === false
@@ -133,6 +154,7 @@ function buildCurrentLineSmokeChecks({
   sessionReview,
   tournament,
   vectorStorage,
+  localVectorStore,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -141,6 +163,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("session-distiller:review dry-run", sessionReview.ok, summarizeSessionReview(sessionReview)),
     checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
     checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
+    checkResult("vector-store:local dry-run", localVectorStore.ok, summarizeLocalVectorStore(localVectorStore)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -148,6 +171,7 @@ function buildCurrentLineSmokeChecks({
       sessionReview,
       tournament,
       vectorStorage,
+      localVectorStore,
       zillizAdapter,
       retrievalRanker
     })
@@ -180,6 +204,13 @@ export async function runCurrentLineSmoke({
     langGraphBridge,
     now
   });
+  const localVectorStore = await upsertDistillationToLocalVectorStore({
+    repoRoot,
+    sourceDir: path.join("examples", "misa-distillation"),
+    requireTemplateCoverage: true,
+    dryRun: true,
+    now
+  });
   const zillizAdapter = buildZillizVectorAdapterPlan({
     vectorMemoryStorage: vectorStorage,
     now
@@ -191,6 +222,7 @@ export async function runCurrentLineSmoke({
     sessionReview,
     tournament,
     vectorStorage,
+    localVectorStore,
     zillizAdapter,
     retrievalRanker
   });
@@ -202,6 +234,7 @@ export async function runCurrentLineSmoke({
       "session-distiller:review",
       "vector-memory:classify",
       "vector-memory:rank",
+      "vector-store:local",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -224,6 +257,7 @@ export function buildCurrentLineSmokeFromArtifacts({
   sessionReview,
   tournament,
   vectorStorage,
+  localVectorStore,
   zillizAdapter,
   retrievalRanker
 }) {
@@ -232,6 +266,7 @@ export function buildCurrentLineSmokeFromArtifacts({
     sessionReview,
     tournament,
     vectorStorage,
+    localVectorStore,
     zillizAdapter,
     retrievalRanker
   });

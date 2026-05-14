@@ -9,6 +9,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "doctor": "node scripts/public-repo-doctor.mjs",
+    "bootstrap:local": "node scripts/bootstrap-local.mjs",
     "validate:schemas": "node scripts/validate-schemas.mjs",
     "simulate:misa": "node scripts/simulate-learning.mjs",
     "crystallize:misa": "node scripts/crystallize-skills.mjs",
@@ -30,6 +32,7 @@
     "work-order:route": "node scripts/work-order-router.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",
+    "vector-store:local": "node scripts/local-vector-store.mjs",
     "zilliz:adapt": "node scripts/zilliz-vector-adapter.mjs",
     "langgraph:bridge": "node scripts/langgraph-qianxuesen-bridge.mjs",
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",

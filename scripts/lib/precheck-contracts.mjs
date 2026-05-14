@@ -15,6 +15,7 @@ const BRIDGE_SCHEMA_RELS = new Set([
 ]);
 
 const CURRENT_LINE_SCHEMA_RELS = new Set([
+  "schemas/local_vector_store.schema.json",
   "schemas/vector_memory_storage.schema.json",
   "schemas/zilliz_vector_adapter.schema.json"
 ]);

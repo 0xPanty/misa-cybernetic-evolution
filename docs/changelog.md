@@ -32,6 +32,15 @@ that public-memory risk can suppress unsafe workflow promotion, while a clean
 local workflow still routes to `skill`; the holdout stays medium-value and
 near-threshold instead of forcing an automatic judge call.
 
+The public repo now has a default local persistent vector store. It stores the
+public `misa.local_session_distillation.v1` template under ignored run files,
+exposes upsert/query/stats/rollback, and keeps the backend swappable for Zilliz,
+Qdrant, LanceDB, Chroma, pgvector, or a custom adapter.
+
+Open-source readiness now has first-class entrypoints: `npm run doctor` for a
+read-only clone check and `npm run bootstrap:local` for initializing the ignored
+local vector store plus a bootstrap report.
+
 ## Version History
 
 Rows before v0.21 are historical anchors for retained behavior. They should not
