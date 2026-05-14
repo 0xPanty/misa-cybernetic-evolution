@@ -20,7 +20,7 @@ const STOP_WORDS = new Set([
   "the", "then", "this", "to", "with", "without", "should", "must", "not"
 ]);
 
-const SIGNAL_RULES = [
+export const SIGNAL_RULES = [
   ["candidate_replay_failed", /\b(replay failed|validation failed|回放失败|验证失败)\b/iu],
   ["avoid_overreaction", /\b(overreact|overreaction|too complicated|过度反应|太复杂|别搞这么麻烦|不要搞这么麻烦)\b/iu],
   ["single_failure", /\b(single|once|transient|单次|偶发)\b/iu],
@@ -35,9 +35,9 @@ const SIGNAL_RULES = [
   ["stable_project_fact", /\b(local|zilliz|vector|repo|vps|github|window|distill|本地|向量|窗口|蒸馏|仓库)\b/iu]
 ];
 
-const LESSON_ROUTE_ORDER = ["policy", "damping", "skill", "case", "memory"];
+export const LESSON_ROUTE_ORDER = ["policy", "damping", "skill", "case", "memory"];
 
-const LESSON_ROUTE_SIGNALS = {
+export const LESSON_ROUTE_SIGNALS = {
   policy: ["explicit_user_boundary", "public_posting_boundary", "farcaster_public_memory_risk"],
   damping: ["candidate_replay_failed", "avoid_overreaction", "single_failure"],
   skill: ["reusable_workflow"],
@@ -45,7 +45,7 @@ const LESSON_ROUTE_SIGNALS = {
   memory: ["stable_user_preference", "stable_project_fact"]
 };
 
-const LESSON_ALLOWED_SIGNALS = {
+export const LESSON_ALLOWED_SIGNALS = {
   policy: [
     "explicit_user_boundary",
     "public_posting_boundary",
@@ -59,7 +59,7 @@ const LESSON_ALLOWED_SIGNALS = {
   memory: ["stable_user_preference", "stable_project_fact"]
 };
 
-const LESSON_FALLBACK_SIGNAL = {
+export const LESSON_FALLBACK_SIGNAL = {
   policy: "explicit_user_boundary",
   damping: "single_failure",
   skill: "reusable_workflow",

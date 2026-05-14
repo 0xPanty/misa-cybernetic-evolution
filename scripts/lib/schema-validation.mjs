@@ -22,6 +22,9 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/langgraph_qianxuesen_bridge.schema.json", "examples/langgraph_qianxuesen_bridge.example.json"],
   ["schemas/vector_memory_storage.schema.json", "examples/vector_memory_storage.example.json"],
   ["schemas/zilliz_vector_adapter.schema.json", "examples/zilliz_vector_adapter.example.json"],
+  ["schemas/perception_digest.schema.json", "examples/perception_digest.example.json"],
+  ["schemas/perception_log_layout.schema.json", "examples/perception_log_layout.example.json"],
+  ["schemas/signal_ledger.schema.json", "examples/signal_ledger.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];
@@ -67,7 +70,9 @@ export async function validateSchemas({ repoRoot = process.cwd() } = {}) {
     ajv.compile(schema);
     checks.push({
       name: `compile ${schemaRel}`,
-      ok: true
+      ok: true,
+      checkKind: "schema_compile",
+      schemaRel
     });
   }
 
@@ -79,7 +84,10 @@ export async function validateSchemas({ repoRoot = process.cwd() } = {}) {
     checks.push({
       name: `validate ${exampleRel}`,
       ok,
-      errors: ok ? [] : validate.errors
+      errors: ok ? [] : validate.errors,
+      checkKind: "schema_example_validation",
+      schemaRel,
+      dataRel: exampleRel
     });
   }
 
@@ -100,7 +108,10 @@ export async function validateSchemas({ repoRoot = process.cwd() } = {}) {
       checks.push({
         name: `validate ${fixtureRel}`,
         ok,
-        errors: ok ? [] : validate.errors
+        errors: ok ? [] : validate.errors,
+        checkKind: "schema_directory_validation",
+        schemaRel,
+        dataRel: fixtureRel
       });
     }
   }
@@ -115,7 +126,8 @@ export async function validateJsonData({
   repoRoot = process.cwd(),
   schemaRel,
   data,
-  name = "data"
+  name = "data",
+  phase
 } = {}) {
   const ajv = createAjv();
   for (const dependencyRel of [
@@ -138,6 +150,9 @@ export async function validateJsonData({
   return {
     name,
     ok,
-    errors: ok ? [] : validate.errors
+    errors: ok ? [] : validate.errors,
+    checkKind: "json_data_validation",
+    schemaRel,
+    ...(phase ? { phase } : {})
   };
 }

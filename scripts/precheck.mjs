@@ -8,10 +8,16 @@ if (jsonMode) {
 } else {
   console.log("misa-cybernetic-evolution precheck");
   console.log(`mode: ${result.mode}`);
+  if (result.phase_summary) {
+    const phases = Object.entries(result.phase_summary)
+      .map(([phase, summary]) => `${phase} ${summary.passed}/${summary.total}`)
+      .join(", ");
+    console.log(`phases: ${phases}`);
+  }
 
   for (const check of result.checks) {
     const label = check.ok ? "PASS" : "FAIL";
-    console.log(`${label} ${check.name}`);
+    console.log(`${label} [${check.phase}] ${check.name}`);
 
     if (check.warnings?.length) {
       for (const warning of check.warnings) {

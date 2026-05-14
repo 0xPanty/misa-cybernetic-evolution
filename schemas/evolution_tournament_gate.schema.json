@@ -16,6 +16,7 @@
     "tournaments",
     "winner_queue",
     "rejected_variant_ledger",
+    "experience_ledger",
     "control_boundary",
     "safety",
     "quality_assessment",
@@ -107,6 +108,7 @@
         "variant_count",
         "winner_count",
         "rejected_variant_count",
+        "experience_ledger_count",
         "route_counts",
         "production_authority"
       ],
@@ -115,6 +117,7 @@
         "variant_count": { "type": "integer", "minimum": 0 },
         "winner_count": { "type": "integer", "minimum": 0 },
         "rejected_variant_count": { "type": "integer", "minimum": 0 },
+        "experience_ledger_count": { "type": "integer", "minimum": 0 },
         "route_counts": {
           "type": "object",
           "additionalProperties": { "type": "integer", "minimum": 0 }
@@ -150,6 +153,10 @@
           "retained_as": { "type": "string", "minLength": 1 }
         }
       }
+    },
+    "experience_ledger": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/experience_ledger_entry" }
     },
     "control_boundary": {
       "type": "object",
@@ -253,6 +260,62 @@
         "publication_allowed": { "type": "boolean", "const": false },
         "production_authority": { "type": "boolean", "const": false },
         "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "experience_ledger_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_id",
+        "source",
+        "candidate_id",
+        "source_event_id",
+        "route_target",
+        "status",
+        "retained_as",
+        "lesson",
+        "score",
+        "evidence_count",
+        "risk_level",
+        "tournament_id",
+        "variant_id",
+        "strategy",
+        "blocked_requests",
+        "violations",
+        "production_authority",
+        "publication_allowed"
+      ],
+      "properties": {
+        "ledger_id": { "type": "string", "minLength": 1 },
+        "source": {
+          "type": "string",
+          "enum": ["candidate_preflight", "source_backed_preflight", "tournament_variant"]
+        },
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "source_event_id": { "type": "string", "minLength": 1 },
+        "route_target": {
+          "type": "string",
+          "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+        },
+        "status": { "type": "string", "minLength": 1 },
+        "retained_as": { "type": "string", "minLength": 1 },
+        "lesson": { "type": "string", "minLength": 1 },
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "evidence_count": { "type": ["integer", "null"], "minimum": 0 },
+        "risk_level": { "type": ["string", "null"] },
+        "tournament_id": { "type": ["string", "null"] },
+        "variant_id": { "type": ["string", "null"] },
+        "strategy": { "type": ["string", "null"] },
+        "blocked_requests": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "violations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false }
       }
     },
     "tournament": {

@@ -1,0 +1,46 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-public-memory-risk-001",
+  "source_kind": "farcaster_audit",
+  "channel": "farcaster",
+  "created_at": "2026-05-14T01:00:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted real-ish public reply audit with no private text.",
+  "summary": "A public reply draft was useful but tried to mention private project memory.",
+  "setpoint": "keep public replies behind local policy checks and approval",
+  "evidence_count": 4,
+  "outcome": "partial",
+  "risk_level": "high",
+  "source_refs": [
+    "shadow:farcaster:reply:001"
+  ],
+  "signals": [
+    "public_posting_boundary",
+    "farcaster_public_memory_risk",
+    "explicit_user_boundary"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "farcaster:audit:redacted"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "audit",
+      "ref": "shadow:farcaster:reply:001",
+      "text": "A candidate public Farcaster reply looked useful but mentioned private project memory. Block public memory risk before posting."
+    },
+    {
+      "speaker": "operator",
+      "ref": "shadow:farcaster:reply:002",
+      "text": "Do not learn a public posting shortcut from this without approval."
+    }
+  ]
+}

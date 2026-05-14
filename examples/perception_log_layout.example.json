@@ -1,0 +1,232 @@
+{
+  "schema_version": "misa.perception_log_layout.v1",
+  "layout_id": "perception-log-layout-v1",
+  "mode": "shadow-perception-log-layout",
+  "generated_at": "2026-05-14T07:52:30.729Z",
+  "root_dir": "runs/perception-runtime",
+  "shadow_only": true,
+  "directories": [
+    {
+      "key": "raw_logs",
+      "rel_path": "runtime/raw",
+      "layer": "runtime_logs",
+      "purpose": "store original runtime logs before redaction",
+      "readable_by_perception": false,
+      "allowed_contents": [
+        "raw_runtime_log",
+        "raw_tool_trace",
+        "raw_channel_event"
+      ],
+      "blocked_contents": [
+        "learning_input",
+        "qianxuesen_handoff",
+        "public_artifact"
+      ],
+      "handoff_target": "none",
+      "path": "runs/perception-runtime/runtime/raw",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "redacted_sources",
+      "rel_path": "runtime/redacted-sources",
+      "layer": "runtime_logs",
+      "purpose": "store redacted logs and local_distillation_source shaped inputs for perception",
+      "readable_by_perception": true,
+      "allowed_contents": [
+        "redacted_runtime_log",
+        "redacted_tool_trace",
+        "redacted_channel_event",
+        "local_distillation_source"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "secret",
+        "direct_memory_write"
+      ],
+      "handoff_target": "none",
+      "path": "runs/perception-runtime/runtime/redacted-sources",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "digests",
+      "rel_path": "perception/digests",
+      "layer": "perception",
+      "purpose": "store shadow perception digest outputs and duplicate-cluster reports",
+      "readable_by_perception": true,
+      "allowed_contents": [
+        "perception_digest",
+        "duplicate_cluster_report"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "secret",
+        "production_decision"
+      ],
+      "handoff_target": "none",
+      "path": "runs/perception-runtime/perception/digests",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "signal_ledger",
+      "rel_path": "perception/signal-ledger",
+      "layer": "perception",
+      "purpose": "store signal fingerprints and handled status for repeat detection",
+      "readable_by_perception": true,
+      "allowed_contents": [
+        "signal_ledger",
+        "ledger_update_proposal"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "automatic_memory_write"
+      ],
+      "handoff_target": "none",
+      "path": "runs/perception-runtime/perception/signal-ledger",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "attention_queue",
+      "rel_path": "perception/attention",
+      "layer": "perception",
+      "purpose": "store prioritized hint-only items and action recommendations for downstream review",
+      "readable_by_perception": true,
+      "allowed_contents": [
+        "attention_queue",
+        "action_recommendation"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "route_override",
+        "winner_override"
+      ],
+      "handoff_target": "qianxuesen",
+      "path": "runs/perception-runtime/perception/attention",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "handoffs",
+      "rel_path": "handoff",
+      "layer": "handoff",
+      "purpose": "store selected redacted refs, Qianxuesen summaries, repair tickets, and work orders",
+      "readable_by_perception": false,
+      "allowed_contents": [
+        "redacted_source_ref",
+        "attention_summary",
+        "perception_digest_ref",
+        "repair_ticket",
+        "work_order"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "secret",
+        "automatic_route_change",
+        "automatic_execution",
+        "durable_execution_without_approval"
+      ],
+      "handoff_target": "mixed",
+      "path": "runs/perception-runtime/handoff",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    },
+    {
+      "key": "archive",
+      "rel_path": "archive",
+      "layer": "archive",
+      "purpose": "store noise, suppressed repeats, and rejected candidates with reasons",
+      "readable_by_perception": true,
+      "allowed_contents": [
+        "noise_record",
+        "suppression_reason",
+        "suppressed_signal_record",
+        "seen_count_update",
+        "rejected_candidate",
+        "rejection_reason"
+      ],
+      "blocked_contents": [
+        "raw_runtime_log",
+        "secret",
+        "automatic_memory_write",
+        "production_decision"
+      ],
+      "handoff_target": "none",
+      "path": "runs/perception-runtime/archive",
+      "create_on_init": true,
+      "authority": "layout_contract_only"
+    }
+  ],
+  "flow_edges": [
+    {
+      "from": "raw_logs",
+      "to": "redacted_sources",
+      "gate": "redaction_required",
+      "authority": "layout_contract_only"
+    },
+    {
+      "from": "redacted_sources",
+      "to": "digests",
+      "gate": "perception_digest_shadow_only",
+      "authority": "layout_contract_only"
+    },
+    {
+      "from": "digests",
+      "to": "signal_ledger",
+      "gate": "no_write_ledger_update_proposals_only",
+      "authority": "layout_contract_only"
+    },
+    {
+      "from": "digests",
+      "to": "attention_queue",
+      "gate": "prioritize_before_qianxuesen",
+      "authority": "layout_contract_only"
+    },
+    {
+      "from": "attention_queue",
+      "to": "handoffs",
+      "gate": "selected_redacted_refs_or_handoff_candidates_only",
+      "authority": "layout_contract_only"
+    },
+    {
+      "from": "attention_queue",
+      "to": "archive",
+      "gate": "noise_suppressed_or_rejected_only",
+      "authority": "layout_contract_only"
+    }
+  ],
+  "rules": {
+    "raw_logs_are_not_learning_material": true,
+    "redaction_required_before_perception": true,
+    "redacted_sources_are_perception_input": true,
+    "perception_digest_is_hint_only": true,
+    "signal_ledger_updates_are_proposals_only": true,
+    "qianxuesen_keeps_route_authority": true,
+    "production_authority": false
+  },
+  "summary": {
+    "directory_count": 7,
+    "flow_edge_count": 6,
+    "perception_readable_count": 5,
+    "handoff_directory_count": 1,
+    "archive_directory_count": 1,
+    "llm_api_calls": 0,
+    "external_api_calls": 0,
+    "production_authority": false
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "writes_zilliz": false,
+    "creates_embeddings": false,
+    "installs_skills": false,
+    "publication_allowed": false,
+    "changes_route": false,
+    "changes_winner": false,
+    "starts_services": false,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  }
+}

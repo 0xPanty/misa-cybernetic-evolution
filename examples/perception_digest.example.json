@@ -1,0 +1,253 @@
+{
+  "schema_version": "misa.perception_digest.v1",
+  "digest_id": "perception-2026-05-14T00-00-00-000Z",
+  "mode": "shadow-perception-digest",
+  "generated_at": "2026-05-14T00:00:00.000Z",
+  "shadow_only": true,
+  "source_refs": [
+    {
+      "source_id": "farcaster-reply-audit-007",
+      "source_kind": "farcaster_audit",
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "observed_signals": [
+        "public_posting_boundary",
+        "farcaster_public_memory_risk",
+        "farcaster_reply_success",
+        "explicit_user_boundary",
+        "single_failure"
+      ],
+      "route_pressure": {
+        "policy": 1
+      },
+      "signal_fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "ledger_status": "new_signal",
+      "suggested_priority": 100,
+      "authority": "hint_only"
+    }
+  ],
+  "risk_hints": [
+    {
+      "hint_id": "farcaster-reply-audit-007-risk-public_boundary",
+      "source_id": "farcaster-reply-audit-007",
+      "kind": "public_boundary",
+      "level": "high",
+      "reason": "public memory risk needs policy attention before any downstream learning",
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "authority": "hint_only"
+    }
+  ],
+  "novelty_hints": [
+    {
+      "hint_id": "farcaster-reply-audit-007-novelty-public_reply_pattern",
+      "source_id": "farcaster-reply-audit-007",
+      "kind": "public_reply_pattern",
+      "reason": "successful public reply pattern is useful only with public-boundary checks",
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "authority": "hint_only"
+    }
+  ],
+  "duplicate_clusters": [],
+  "signal_fingerprints": [
+    {
+      "fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "source_ids": [
+        "farcaster-reply-audit-007"
+      ],
+      "source_kind": "farcaster_audit",
+      "route": "policy",
+      "signal_family": "public_memory_risk",
+      "observed_signals": [
+        "public_posting_boundary",
+        "farcaster_public_memory_risk",
+        "farcaster_reply_success",
+        "explicit_user_boundary",
+        "single_failure"
+      ],
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "base_priority": 100,
+      "priority": 100,
+      "ledger_status": "new_signal",
+      "handled_status": "not_seen",
+      "handled_result": "none",
+      "seen_count": 1,
+      "new_evidence_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "priority_adjustment": 0,
+      "recommended_action": "send_to_qianxuesen",
+      "status_reason": "new fingerprint with no prior ledger entry",
+      "authority": "hint_only"
+    }
+  ],
+  "action_recommendations": [
+    {
+      "recommendation_id": "recommendation-signal:policy:farcaster_audit:public_memory_risk",
+      "fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "ledger_status": "new_signal",
+      "priority": 100,
+      "recommended_action": "send_to_qianxuesen",
+      "handoff_mode": "full_source",
+      "source_ids": [
+        "farcaster-reply-audit-007"
+      ],
+      "evidence_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "downstream_targets": [
+        "distill:misa",
+        "memory-layer:misa",
+        "evolution:tournament:misa"
+      ],
+      "rationale": "new fingerprint with no prior ledger entry",
+      "authority": "hint_only"
+    }
+  ],
+  "ledger_update_proposals": [
+    {
+      "proposal_id": "ledger-update-signal:policy:farcaster_audit:public_memory_risk",
+      "operation": "insert",
+      "fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "reason": "new_signal",
+      "set": {
+        "last_seen": "2026-05-14T00:00:00.000Z",
+        "seen_count": 1,
+        "handled_status": "open"
+      },
+      "append": {
+        "evidence_refs": [
+          "farcaster:audit:reply:001",
+          "farcaster:audit:reply:002"
+        ]
+      },
+      "no_write": true,
+      "authority": "proposal_only",
+      "rationale": "ledger update is proposed so the next shadow pass can suppress repeats or detect recurrence"
+    }
+  ],
+  "attention_queue": [
+    {
+      "item_id": "farcaster-reply-audit-007-attention",
+      "source_id": "farcaster-reply-audit-007",
+      "signal_fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "ledger_status": "new_signal",
+      "recommended_action": "send_to_qianxuesen",
+      "priority": 100,
+      "reasons": [
+        "public-boundary signal needs early attention",
+        "explicit user boundary should be preserved"
+      ],
+      "suggested_downstream": [
+        "distill:misa",
+        "memory-layer:misa",
+        "evolution:tournament:misa"
+      ],
+      "authority": "hint_only"
+    }
+  ],
+  "expected_review_value_hints": [
+    {
+      "hint_id": "farcaster-reply-audit-007-review-value",
+      "source_id": "farcaster-reply-audit-007",
+      "level": "high",
+      "expected_value": "strong downstream review value because a public or authority boundary is present",
+      "call_policy": "optional_downstream_review",
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "authority": "hint_only"
+    }
+  ],
+  "trace_continuity_hints": [
+    {
+      "hint_id": "farcaster-reply-audit-007-trace-continuity",
+      "source_id": "farcaster-reply-audit-007",
+      "preserve_fields": [
+        "source_id",
+        "source_refs",
+        "segment_ids",
+        "parent_distillate_id",
+        "artifact_evidence",
+        "expected_route"
+      ],
+      "source_refs": [
+        "farcaster:audit:reply:001",
+        "farcaster:audit:reply:002"
+      ],
+      "reason": "downstream Qianxuesen routing and tournament checks need replayable source lineage",
+      "authority": "hint_only"
+    }
+  ],
+  "downstream_contract": {
+    "role": "sensor_prioritizer_only",
+    "route_authority": "qianxuesen",
+    "controller_authority": false,
+    "allowed_effects": [
+      "produce_local_digest"
+    ],
+    "blocked_effects": [
+      "persistent_memory_write",
+      "zilliz_write",
+      "embedding_creation",
+      "skill_installation",
+      "public_publish",
+      "provider_route_change",
+      "winner_change",
+      "route_change",
+      "service_start"
+    ]
+  },
+  "summary": {
+    "source_count": 1,
+    "learning_event_count": 1,
+    "attention_queue_count": 1,
+    "risk_hint_count": 1,
+    "novelty_hint_count": 1,
+    "duplicate_cluster_count": 0,
+    "signal_fingerprint_count": 1,
+    "action_recommendation_count": 1,
+    "ledger_update_proposal_count": 1,
+    "recurring_after_fix_count": 0,
+    "already_processed_count": 0,
+    "damping_repeated_to_case_count": 0,
+    "high_review_value_count": 1,
+    "llm_api_calls": 0,
+    "external_api_calls": 0,
+    "production_authority": false
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "writes_zilliz": false,
+    "creates_embeddings": false,
+    "installs_skills": false,
+    "publication_allowed": false,
+    "changes_route": false,
+    "changes_winner": false,
+    "starts_services": false,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "checks": [
+    {
+      "name": "shadow_only",
+      "ok": true,
+      "reason": "perception produces hints only"
+    }
+  ],
+  "violations": []
+}

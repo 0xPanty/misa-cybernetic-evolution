@@ -1,0 +1,41 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "holdout-clean-workflow-skill-04",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T03:03:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted local workflow holdout with no public channel or secret content.",
+  "summary": "A clean repeatable local validation workflow should remain eligible for skill routing.",
+  "setpoint": "allow clean local workflow evidence to become a draft skill candidate",
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "low",
+  "source_refs": ["holdout:clean-workflow-skill"],
+  "signals": [
+    "reusable_workflow",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["holdout:clean-workflow-skill"],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "codex",
+      "ref": "holdout:skill:workflow",
+      "text": "Reusable workflow: inspect current local files, run validate schemas, run precheck, run tests, then summarize exact evidence."
+    },
+    {
+      "speaker": "codex",
+      "ref": "holdout:skill:fact",
+      "text": "The local repo validation flow should keep source refs and command evidence together."
+    }
+  ]
+}

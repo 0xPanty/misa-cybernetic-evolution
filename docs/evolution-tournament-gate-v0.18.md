@@ -1,5 +1,9 @@
 # Evolution Tournament Gate v0.18
 
+This is a versioned feature-origin document. The tournament gate still feeds the
+v0.21 current line, but current validation should run the v0.21 smoke,
+calibration, precheck, and test chain.
+
 v0.18 keeps the v0.17 tournament gate, but hardens the decision quality around
 two problems found in real-sample calibration:
 
@@ -11,6 +15,15 @@ two problems found in real-sample calibration:
 The result is still local and draft-only. It does not publish Skills, write
 memory, update prompts, change routes, evolve code, call VPS, or touch live
 channels.
+
+The stable output contract now lives in
+`scripts/lib/evolution-tournament-contract.mjs`. It freezes the report shape,
+score-field names, and authority boundary for review. It does not freeze the
+scoring formula or give the tournament any new power.
+
+The tournament now also emits `experience_ledger`. This is not a memory write.
+It is a local shadow ledger for source-backed preflight entries, safe
+non-winning variants, and rejected unsafe variants.
 
 ## Route Strategy Fit
 
@@ -131,6 +144,7 @@ npm --silent run evolution:tournament:misa -- --json
 ## Expected Results
 
 - every winner remains `local_draft_report_only`;
+- `experience_ledger` is populated with local comparison evidence;
 - `publication_allowed=false`;
 - `production_authority=false`;
 - `llm_route_decision_allowed=false`;

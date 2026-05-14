@@ -274,6 +274,7 @@ export function buildVectorRetrievalStrategy({ topK = DEFAULT_TOP_K } = {}) {
       "same_source_context_match",
       "authority_weight",
       "trace_path_continuity",
+      "lexical_intent_match",
       "surface_guard"
     ],
     hard_rules: [

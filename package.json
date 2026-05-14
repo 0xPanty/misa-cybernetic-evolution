@@ -14,6 +14,8 @@
     "crystallize:misa": "node scripts/crystallize-skills.mjs",
     "self-repair:misa": "node scripts/self-repair.mjs",
     "distill:misa": "node scripts/distill-misa.mjs",
+    "perception:digest": "node scripts/perception-digest.mjs",
+    "perception:layout": "node scripts/perception-log-layout.mjs",
     "hermes:map-distillation": "node scripts/hermes-distillation-mapper.mjs",
     "density:misa": "node scripts/genericagent-density.mjs",
     "adaptive:misa": "node scripts/adaptive-candidates.mjs",
@@ -31,6 +33,9 @@
     "zilliz:adapt": "node scripts/zilliz-vector-adapter.mjs",
     "langgraph:bridge": "node scripts/langgraph-qianxuesen-bridge.mjs",
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",
+    "smoke:current-line": "node scripts/current-line-smoke.mjs",
+    "calibrate:current-line": "node scripts/current-line-calibration.mjs",
+    "health:qianxuesen": "node scripts/qianxuesen-full-loop-health.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test"
   },

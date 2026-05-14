@@ -38,6 +38,7 @@ if (asJson) {
   console.log(`variants: ${result.summary.variant_count}`);
   console.log(`winners: ${result.summary.winner_count}`);
   console.log(`rejected_variants: ${result.summary.rejected_variant_count}`);
+  console.log(`experience_ledger: ${result.summary.experience_ledger_count}`);
   console.log(`production_authority: ${result.summary.production_authority}`);
   console.log(`quality_score: ${result.quality_assessment.overall_quality_score}`);
   console.log(`judge_escalation: ${result.judge_escalation.recommended ? "recommended" : "not_recommended"} (score ${result.judge_escalation.score})`);

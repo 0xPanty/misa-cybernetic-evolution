@@ -270,6 +270,14 @@ function buildLayers({ sources, distillation, traces }) {
       atomic_lesson_count: distillation.lesson_splitter.atomic_lesson_count,
       compound_source_count: distillation.lesson_splitter.compound_source_count,
       lesson_route_counts: distillation.lesson_splitter.route_counts,
+      extracted_signal_counts: countBy(
+        distillation.distillates.flatMap((item) => item.extracted_signals ?? []),
+        (signal) => signal
+      ),
+      learning_event_signal_counts: countBy(
+        distillation.learning_events.flatMap((event) => event.signals ?? []),
+        (signal) => signal
+      ),
       distillate_token_estimate: distillateTokenEstimate,
       compression_ratio: compressionRatio,
       local_vector_index_used: distillation.summary.local_vector_index_used,
@@ -278,6 +286,10 @@ function buildLayers({ sources, distillation, traces }) {
     l2_candidates: {
       candidate_count: traces.length,
       route_counts: countBy(traces, routeForTrace),
+      route_signal_counts: countBy(
+        traces.flatMap((trace) => trace.observe.signals ?? []),
+        (signal) => signal
+      ),
       candidate_states: countBy(traces, (trace) => trace.candidate_review.state),
       mixed_route_pressure: buildMixedRoutePressure(traces)
     }

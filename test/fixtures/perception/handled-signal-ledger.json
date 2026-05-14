@@ -1,0 +1,56 @@
+{
+  "schema_version": "misa.signal_ledger.v1",
+  "entries": [
+    {
+      "fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "handled_status": "resolved",
+      "handled_result": "policy_boundary_recorded",
+      "first_seen": "2026-05-13T00:00:00.000Z",
+      "last_seen": "2026-05-13T00:00:00.000Z",
+      "seen_count": 1,
+      "handled_at": "2026-05-13T00:05:00.000Z",
+      "evidence_refs": [
+        "shadow:farcaster:reply:previous"
+      ],
+      "notes": "Public-memory policy exists; a new source ref should become recurrence evidence."
+    },
+    {
+      "fingerprint_id": "signal:damping:failure_log:candidate_replay_failed",
+      "handled_status": "damping_only",
+      "handled_result": "held_after_single_failure",
+      "first_seen": "2026-05-13T01:00:00.000Z",
+      "last_seen": "2026-05-13T01:10:00.000Z",
+      "seen_count": 2,
+      "evidence_refs": [
+        "shadow:replay:failed:old-001",
+        "shadow:replay:failed:old-002"
+      ],
+      "notes": "A third replay failure should stop being pure damping."
+    },
+    {
+      "fingerprint_id": "signal:memory:chat_window:user_preference",
+      "handled_status": "handled",
+      "handled_result": "memory_candidate_recorded",
+      "first_seen": "2026-05-13T02:00:00.000Z",
+      "last_seen": "2026-05-13T02:00:00.000Z",
+      "seen_count": 2,
+      "handled_at": "2026-05-13T02:05:00.000Z",
+      "evidence_refs": [
+        "shadow:style:memory:006"
+      ],
+      "notes": "Same preference evidence should be suppressed instead of fed again."
+    },
+    {
+      "fingerprint_id": "signal:skill:chat_window:workflow",
+      "handled_status": "open",
+      "handled_result": "workflow_candidate_under_review",
+      "first_seen": "2026-05-13T03:00:00.000Z",
+      "last_seen": "2026-05-13T03:00:00.000Z",
+      "seen_count": 1,
+      "evidence_refs": [
+        "shadow:workflow:validation:old"
+      ],
+      "notes": "New workflow refs should merge as delta evidence instead of opening a duplicate skill review."
+    }
+  ]
+}
