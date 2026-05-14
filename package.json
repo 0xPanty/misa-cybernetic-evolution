@@ -35,6 +35,7 @@
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",
     "smoke:current-line": "node scripts/current-line-smoke.mjs",
     "calibrate:current-line": "node scripts/current-line-calibration.mjs",
+    "health:qianxuesen": "node scripts/qianxuesen-full-loop-health.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test"
   },

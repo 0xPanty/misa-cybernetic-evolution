@@ -7,6 +7,7 @@ const DOCS_TO_CHECK = [
   "ARCHITECTURE.md",
   "docs/verification-matrix.md",
   "docs/current-line-calibration-v0.21.md",
+  "docs/qianxuesen-full-loop-health-v0.21.md",
   "docs/evolution-tournament-gate-v0.18.md",
   ".github/workflows/current-line-shadow.yml"
 ];
@@ -15,6 +16,7 @@ const REQUIRED_CURRENT_LINE_COMMANDS = [
   "validate:schemas",
   "smoke:current-line",
   "calibrate:current-line",
+  "health:qianxuesen",
   "precheck"
 ];
 

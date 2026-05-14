@@ -284,3 +284,39 @@ test("signal ledger marks handled repeats, recurrence, and damping escalation", 
   assert.equal(digest.safety.llm_api_calls, 0);
   assert.equal(digest.safety.external_api_calls, 0);
 });
+
+test("perception action-like outputs stay non-executable hints and proposals", async () => {
+  const digest = await buildPerceptionDigest({
+    sourceDir: path.join("test", "fixtures", "perception", "shadow-sources"),
+    ledgerFile: path.join("test", "fixtures", "perception", "handled-signal-ledger.json"),
+    now: new Date("2026-05-14T02:20:00Z")
+  });
+
+  assert.equal(digest.downstream_contract.role, "sensor_prioritizer_only");
+  assert.equal(digest.downstream_contract.controller_authority, false);
+  assert.deepEqual(digest.downstream_contract.allowed_effects, ["produce_local_digest"]);
+  assert.ok(digest.downstream_contract.blocked_effects.includes("persistent_memory_write"));
+  assert.ok(digest.downstream_contract.blocked_effects.includes("zilliz_write"));
+  assert.ok(digest.downstream_contract.blocked_effects.includes("public_publish"));
+  assert.ok(digest.downstream_contract.blocked_effects.includes("route_change"));
+  assert.equal(digest.safety.changes_route, false);
+  assert.equal(digest.safety.changes_winner, false);
+  assert.equal(digest.safety.writes_persistent_memory, false);
+  assert.equal(digest.safety.writes_zilliz, false);
+  assert.equal(digest.safety.publication_allowed, false);
+
+  assert.equal(digest.action_recommendations.length > 0, true);
+  assert.equal(digest.action_recommendations.every((item) => item.authority === "hint_only"), true);
+  assert.equal(digest.action_recommendations.every((item) => !("execute" in item)), true);
+  assert.equal(digest.action_recommendations.every((item) => !("write" in item)), true);
+
+  assert.equal(digest.attention_queue.length > 0, true);
+  assert.equal(digest.attention_queue.every((item) => item.authority === "hint_only"), true);
+  assert.equal(digest.attention_queue.every((item) => Array.isArray(item.suggested_downstream)), true);
+
+  assert.equal(digest.ledger_update_proposals.length > 0, true);
+  assert.equal(digest.ledger_update_proposals.every((proposal) => proposal.authority === "proposal_only"), true);
+  assert.equal(digest.ledger_update_proposals.every((proposal) => proposal.no_write === true), true);
+  assert.equal(digest.ledger_update_proposals.every((proposal) => !("write_allowed" in proposal)), true);
+  assert.equal(digest.ledger_update_proposals.every((proposal) => !("auto_apply" in proposal)), true);
+});

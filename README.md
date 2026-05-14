@@ -128,6 +128,7 @@ Two rules matter most:
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
 | Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, vector/ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
+| Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
 ## Current-Line Command Map
 
@@ -138,6 +139,14 @@ The two current-line commands most reviewers should reach for are:
 
 - `npm run smoke:current-line`
 - `npm run calibrate:current-line`
+
+For a quick run-level verdict plus artifact pointers, use:
+
+- `npm run health:qianxuesen`
+
+It writes a small ignored manifest under `runs/qianxuesen-full-loop/` with
+`latest.json`, `latest.md`, and timestamped history. It does not copy full logs
+or add runtime authority.
 
 ## Perception Log Layout
 
@@ -161,6 +170,10 @@ feed perception; perception outputs hints, duplicate-cluster reports, and
 no-write ledger proposals; only selected attention items move toward handoff.
 Noise, already-handled repeats, and rejected candidates stay in one archive
 bucket instead of becoming their own workflow.
+
+Perception output names such as `action_recommendations`, `attention_queue`, and
+`ledger_update_proposals` are review surfaces, not execution commands. They must
+stay `hint_only` or `proposal_only`, and ledger proposals must stay `no_write`.
 
 ## Evolution Tournament
 

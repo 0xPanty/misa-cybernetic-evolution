@@ -64,12 +64,23 @@ function fingerprintKey(route, sourceKind, family) {
   return `signal:${route}:${sourceKind}:${family}`.replace(/[^A-Za-z0-9_.:-]+/g, "-");
 }
 
-function distillateForSource(distillation, sourceId) {
-  return distillation.distillates.find((distillate) => distillate.source_id === sourceId);
-}
+function indexDistillationBySource(distillation) {
+  const distillateBySource = new Map();
+  const eventsBySource = new Map();
 
-function eventsForSource(distillation, sourceId) {
-  return distillation.learning_events.filter((event) => event.source_id === sourceId);
+  for (const distillate of distillation.distillates) {
+    if (!distillateBySource.has(distillate.source_id)) {
+      distillateBySource.set(distillate.source_id, distillate);
+    }
+  }
+
+  for (const event of distillation.learning_events) {
+    const events = eventsBySource.get(event.source_id) ?? [];
+    events.push(event);
+    eventsBySource.set(event.source_id, events);
+  }
+
+  return { distillateBySource, eventsBySource };
 }
 
 function signalsFor(distillate, events) {
@@ -558,6 +569,7 @@ export async function buildPerceptionDigest({
     ...distillationResult.distillates.map((distillate) => distillate.source_id),
     ...distillationResult.learning_events.map((event) => event.source_id)
   ]).sort();
+  const { distillateBySource, eventsBySource } = indexDistillationBySource(distillationResult);
   const sourceRefs = [];
   const riskHints = [];
   const noveltyHints = [];
@@ -567,8 +579,8 @@ export async function buildPerceptionDigest({
   const sourceRecords = [];
 
   for (const sourceId of sourceIds) {
-    const distillate = distillateForSource(distillationResult, sourceId);
-    const events = eventsForSource(distillationResult, sourceId);
+    const distillate = distillateBySource.get(sourceId);
+    const events = eventsBySource.get(sourceId) ?? [];
     const signals = signalsFor(distillate, events);
     const refs = sourceRefsFor(distillate, events);
     const routeCounts = countBy(events, (event) => event.expected_route);

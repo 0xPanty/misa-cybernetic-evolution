@@ -21,6 +21,7 @@ samples, and still passing the full local test suite.
 npm run validate:schemas
 npm run smoke:current-line
 npm run calibrate:current-line
+npm run health:qianxuesen
 npm run precheck
 npm test
 ```
@@ -28,6 +29,11 @@ npm test
 This proves L0 repository consistency, L1 read-only replay, and L2 shadow-mode
 no-live-effect behavior over the committed fixture set. It does not prove canary
 safety or production readiness.
+
+`health:qianxuesen` adds a small ignored run manifest under
+`runs/qianxuesen-full-loop/`. It keeps `latest.json` / `latest.md` for quick
+inspection and timestamped history for later review. It indexes component
+artifacts instead of embedding full logs.
 
 The GitHub Actions version is:
 

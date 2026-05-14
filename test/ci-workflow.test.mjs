@@ -17,6 +17,7 @@ test("current-line GitHub Actions workflow stays shadow-only", async () => {
     "npm run validate:schemas",
     "npm run smoke:current-line",
     "npm run calibrate:current-line",
+    "npm run health:qianxuesen",
     "npm run precheck",
     "npm test"
   ]) {
