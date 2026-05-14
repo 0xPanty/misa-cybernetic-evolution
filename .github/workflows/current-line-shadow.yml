@@ -1,0 +1,49 @@
+name: Current Line Shadow
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  current-line-shadow:
+    name: Current-line dry-run and shadow checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      MISA_SHADOW_MODE: "true"
+      MISA_NO_LIVE_EFFECTS: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate schemas
+        run: npm run validate:schemas
+
+      - name: Current-line smoke
+        run: npm run smoke:current-line
+
+      - name: Current-line calibration
+        run: npm run calibrate:current-line
+
+      - name: Dry-run precheck
+        run: npm run precheck
+
+      - name: Test
+        run: npm test

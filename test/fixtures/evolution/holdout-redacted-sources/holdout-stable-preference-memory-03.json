@@ -1,0 +1,46 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "holdout-stable-preference-memory-03",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T03:02:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted local preference holdout with no raw private content.",
+  "summary": "The user reinforced concise Chinese-first recovery and clear local/GitHub/VPS separation.",
+  "setpoint": "preserve stable user preference and project-state facts as memory candidates only",
+  "evidence_count": 3,
+  "outcome": "success",
+  "risk_level": "low",
+  "source_refs": ["holdout:stable-preference-memory"],
+  "signals": [
+    "stable_user_preference",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["holdout:stable-preference-memory"],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "huan",
+      "ref": "holdout:memory:preference",
+      "text": "I want concise Chinese-first answers, conclusion first, and no heavy design unless it really helps."
+    },
+    {
+      "speaker": "huan",
+      "ref": "holdout:memory:project-state",
+      "text": "Separate local repo state, GitHub state, VPS state, and current window changes when reporting."
+    },
+    {
+      "speaker": "codex",
+      "ref": "holdout:memory:distill",
+      "text": "This stable local repo and distill preference can become a memory candidate with source refs."
+    }
+  ]
+}

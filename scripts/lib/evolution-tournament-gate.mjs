@@ -6,45 +6,14 @@ import {
 } from "./session-distiller.mjs";
 import { simulateLearningCycle } from "./learning-loop.mjs";
 import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
-
-const NOUS_SELF_EVOLUTION_COMMIT = "4693c8f0eed21e39f065c6f38d98d2a403a04095";
-const MAX_VARIANTS_PER_CANDIDATE = 4;
-const JUDGE_NEAR_THRESHOLD_MARGIN = 0.03;
-
-const LIVE_EFFECTS_OFF = {
-  writes_persistent_memory: false,
-  publishes_skill: false,
-  starts_timer: false,
-  changes_session_mechanics: false,
-  posts_publicly: false
-};
-
-const BLOCKED_OPERATIONS = [
-  "persistent_memory_write",
-  "zilliz_replacement",
-  "farcaster_publish",
-  "skill_publication",
-  "production_skill_installation",
-  "session_mechanic_replacement",
-  "timer_or_service_start",
-  "provider_route_change",
-  "automatic_prompt_rewrite",
-  "automatic_code_evolution"
-];
-
-const LOCAL_COMMAND_ALLOWLIST = [
-  "npm run distill:misa",
-  "npm run simulate:misa",
-  "npm run adaptive:misa",
-  "npm run rollup:misa",
-  "npm run evolution:evaluate:misa",
-  "npm run evolution:tournament:misa",
-  "npm run memory-layer:misa",
-  "npm run repair-ticket:misa",
-  "npm run validate:schemas",
-  "npm run precheck",
-  "npm test"
-];
+import {
+  BLOCKED_OPERATIONS,
+  JUDGE_NEAR_THRESHOLD_MARGIN,
+  LIVE_EFFECTS_OFF,
+  LOCAL_COMMAND_ALLOWLIST,
+  MAX_VARIANTS_PER_CANDIDATE,
+  NOUS_SELF_EVOLUTION_COMMIT
+} from "./evolution-tournament-contract.mjs";
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
@@ -226,10 +195,34 @@ function candidateFromTrace(trace) {
   };
 }
 
+function buildSourceBackedExperienceLedger(candidates) {
+  return candidates.map((candidate) => {
+    const passed = candidate.local_preflight.status === "preflight_passed";
+    return {
+      ledger_id: `exp-source-${safeId(candidate.source_event_id)}-${candidate.route_target}`,
+      source: "source_backed_preflight",
+      candidate_id: candidate.candidate_id,
+      source_event_id: candidate.source_event_id,
+      route_target: candidate.route_target,
+      status: passed ? "shadow_reportable" : "held_for_more_evidence",
+      retained_as: passed ? "source_backed_shadow_evidence" : "hold_queue_evidence",
+      lesson: passed
+        ? "Keep source-backed candidates reportable only after local preflight and human review; do not promote directly."
+        : "Hold this source-backed candidate until new evidence or a changed verifier appears.",
+      score: candidate.local_preflight.score,
+      evidence_count: candidate.evidence?.evidence_count ?? 0,
+      risk_level: candidate.evidence?.risk_level ?? "medium",
+      production_authority: false,
+      publication_allowed: false
+    };
+  });
+}
+
 async function evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir }) {
   const { sources, distillation } = await loadSourceBackedDistillation({ repoRoot, sourceDir, vpsRawDir });
   const traces = distillation.learning_events.map((event) => simulateLearningCycle(event));
   const candidates = traces.map(candidateFromTrace);
+  const experienceLedger = buildSourceBackedExperienceLedger(candidates);
   const reportQueue = candidates
     .filter((candidate) => candidate.local_preflight.report_to_huan)
     .sort((a, b) => b.local_preflight.score - a.local_preflight.score)
@@ -268,12 +261,13 @@ async function evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir })
     summary: {
       source_count: sources.length,
       optimization_candidate_count: candidates.length,
-      report_queue_count: reportQueue.length
+      report_queue_count: reportQueue.length,
+      experience_ledger_count: experienceLedger.length
     },
     optimization_candidates: candidates,
     report_queue: reportQueue,
     hold_queue: candidates.filter((candidate) => candidate.local_preflight.status !== "preflight_passed"),
-    experience_ledger: [],
+    experience_ledger: experienceLedger,
     safety: commonSafety(),
     warnings: [
       "Source-backed tournament input reads local artifacts only; it does not update VPS or production services."
@@ -693,6 +687,64 @@ function buildTournament(candidate) {
   };
 }
 
+function normalizePreflightExperience(entry) {
+  return {
+    ledger_id: entry.ledger_id ?? `exp-preflight-${safeId(entry.candidate_id ?? entry.source_event_id)}`,
+    source: entry.source ?? "candidate_preflight",
+    candidate_id: entry.candidate_id,
+    source_event_id: entry.source_event_id,
+    route_target: entry.route_target,
+    status: entry.status ?? "suppressed",
+    retained_as: entry.retained_as ?? "preflight_experience",
+    lesson: entry.lesson,
+    score: entry.score ?? null,
+    evidence_count: entry.evidence_count ?? null,
+    risk_level: entry.risk_level ?? null,
+    tournament_id: null,
+    variant_id: null,
+    strategy: null,
+    blocked_requests: [],
+    violations: [],
+    production_authority: false,
+    publication_allowed: false
+  };
+}
+
+function buildTournamentExperienceLedger({ preflight, tournaments }) {
+  const preflightLedger = (preflight.experience_ledger ?? []).map(normalizePreflightExperience);
+  const variantLedger = [];
+
+  for (const tournament of tournaments) {
+    for (const loser of tournament.loser_ledger) {
+      const variant = tournament.variants.find((item) => item.variant_id === loser.variant_id);
+      variantLedger.push({
+        ledger_id: `exp-variant-${safeId(loser.variant_id)}`,
+        source: "tournament_variant",
+        candidate_id: tournament.candidate_id,
+        source_event_id: tournament.source_event_id,
+        route_target: loser.route_target,
+        status: loser.status,
+        retained_as: loser.becomes,
+        lesson: loser.status === "rejected"
+          ? "Rejected variants stay as damping or case evidence; do not retry them without changed evidence or gates."
+          : "Safe non-winning variants stay as comparison experience, not publication candidates.",
+        score: variant?.scores?.composite ?? null,
+        evidence_count: null,
+        risk_level: null,
+        tournament_id: tournament.tournament_id,
+        variant_id: loser.variant_id,
+        strategy: variant?.strategy ?? null,
+        blocked_requests: loser.blocked_requests ?? [],
+        violations: variant?.constraints?.violations ?? [],
+        production_authority: false,
+        publication_allowed: false
+      });
+    }
+  }
+
+  return [...preflightLedger, ...variantLedger];
+}
+
 export function evaluateEvolutionTournamentGate(result) {
   const violations = [];
 
@@ -723,6 +775,9 @@ export function evaluateEvolutionTournamentGate(result) {
   }
   if (result.judge_escalation?.llm_review_value?.should_change_winner !== false) {
     violations.push("llm_review_must_not_change_winner");
+  }
+  if (!Array.isArray(result.experience_ledger)) {
+    violations.push("experience_ledger_must_be_array");
   }
 
   for (const tournament of result.tournaments ?? []) {
@@ -1390,7 +1445,7 @@ function buildQualityComparison(qualityAssessment, judge) {
 
 export async function reviewEvolutionTournamentGate({
   repoRoot = process.cwd(),
-  now = new Date("2026-05-13T00:00:00Z"),
+  now = new Date(),
   sourceDir,
   vpsRawDir,
   judgeMode = "advise",
@@ -1408,6 +1463,7 @@ export async function reviewEvolutionTournamentGate({
   const variantList = tournaments.flatMap((tournament) => tournament.variants);
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
+  const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments });
   const warnings = [
     "Tournament winners are draft recommendations only; they do not publish Skills, write memory, update prompts, evolve code, or touch VPS.",
     "The current scorer is deterministic_proxy_v1, not an LLM judge. Future GEPA-style model calls must remain optional and offline."
@@ -1459,6 +1515,7 @@ export async function reviewEvolutionTournamentGate({
       variant_count: variantList.length,
       winner_count: winners.length,
       rejected_variant_count: rejected.length,
+      experience_ledger_count: experienceLedger.length,
       route_counts: countBy(tournaments, (tournament) => tournament.route_target),
       production_authority: false
     },
@@ -1471,6 +1528,7 @@ export async function reviewEvolutionTournamentGate({
       blocked_requests: variant.constraints.blocked_requests,
       retained_as: "damping_or_case_evidence"
     })),
+    experience_ledger: experienceLedger,
     control_boundary: {
       optimizer_role: "candidate_layer_only",
       route_owner: "qianxuesen",

@@ -1,0 +1,48 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "holdout-failure-damping-case-02",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-14T03:01:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted local failure holdout; provider names and keys removed.",
+  "summary": "A retry failure looked scary but included both one-off noise and a repeated timeout pattern.",
+  "setpoint": "separate damping from case evidence before changing provider routes",
+  "evidence_count": 3,
+  "outcome": "failure",
+  "risk_level": "medium",
+  "source_refs": ["holdout:failure-damping-case"],
+  "signals": [
+    "single_failure",
+    "avoid_overreaction",
+    "repeated_failure_pattern",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": ["holdout:failure-damping-case"],
+    "modified": [],
+    "tool_errors": ["holdout:provider-timeout"]
+  },
+  "turns": [
+    {
+      "speaker": "system",
+      "ref": "holdout:failure:damping",
+      "text": "A single transient provider read failure should not overreact into a route change."
+    },
+    {
+      "speaker": "system",
+      "ref": "holdout:failure:case",
+      "text": "Repeated timeout failure error retry appeared again during local validation."
+    },
+    {
+      "speaker": "codex",
+      "ref": "holdout:failure:fact",
+      "text": "Keep this as local repo evidence before any provider route change."
+    }
+  ]
+}

@@ -41,6 +41,7 @@
     "variant_count": 3,
     "winner_count": 1,
     "rejected_variant_count": 1,
+    "experience_ledger_count": 2,
     "route_counts": {
       "skill": 1
     },
@@ -354,6 +355,48 @@
       "violations": ["no_blocked_operations", "blocked_operation_requested:skill_publication"],
       "blocked_requests": ["skill_publication"],
       "retained_as": "damping_or_case_evidence"
+    }
+  ],
+  "experience_ledger": [
+    {
+      "ledger_id": "exp-variant-adaptive-skill-sample-baseline",
+      "source": "tournament_variant",
+      "candidate_id": "adaptive-skill-sample",
+      "source_event_id": "sample-skill-event",
+      "route_target": "skill",
+      "status": "loser",
+      "retained_as": "non_winning_experience",
+      "lesson": "Safe non-winning variants stay as comparison experience, not publication candidates.",
+      "score": 0.93,
+      "evidence_count": null,
+      "risk_level": null,
+      "tournament_id": "tournament-adaptive-skill-sample",
+      "variant_id": "adaptive-skill-sample:baseline",
+      "strategy": "baseline",
+      "blocked_requests": [],
+      "violations": [],
+      "production_authority": false,
+      "publication_allowed": false
+    },
+    {
+      "ledger_id": "exp-variant-adaptive-skill-sample-aggressive-auto-publish",
+      "source": "tournament_variant",
+      "candidate_id": "adaptive-skill-sample",
+      "source_event_id": "sample-skill-event",
+      "route_target": "skill",
+      "status": "rejected",
+      "retained_as": "damping_or_case_evidence",
+      "lesson": "Rejected variants stay as damping or case evidence; do not retry them without changed evidence or gates.",
+      "score": 0.37,
+      "evidence_count": null,
+      "risk_level": null,
+      "tournament_id": "tournament-adaptive-skill-sample",
+      "variant_id": "adaptive-skill-sample:aggressive-auto-publish",
+      "strategy": "aggressive_auto_publish",
+      "blocked_requests": ["skill_publication"],
+      "violations": ["no_blocked_operations", "blocked_operation_requested:skill_publication"],
+      "production_authority": false,
+      "publication_allowed": false
     }
   ],
   "control_boundary": {
