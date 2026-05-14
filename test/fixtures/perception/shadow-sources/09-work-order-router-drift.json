@@ -1,0 +1,47 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-work-order-router-drift-009",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-14T01:40:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted work-order routing drift sample.",
+  "summary": "Work-order executor choice was overridden more than once during local review.",
+  "setpoint": "treat repeated executor override as case evidence before changing autonomy rules",
+  "evidence_count": 3,
+  "outcome": "partial",
+  "risk_level": "medium",
+  "source_refs": [
+    "shadow:work-order:override:009"
+  ],
+  "signals": [
+    "repeated_failure_pattern",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "work-order:operator-quality-redacted"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "tool:executor-override"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "shadow:work-order:override:009",
+      "text": "Work-order executor override happened twice because the route selected engineering when the user actually asked for persona self-review."
+    },
+    {
+      "speaker": "codex",
+      "ref": "shadow:work-order:override:010",
+      "text": "This repeated failure pattern should become a local case before widening autonomous execution rules."
+    }
+  ]
+}

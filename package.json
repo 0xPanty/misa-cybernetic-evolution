@@ -14,6 +14,8 @@
     "crystallize:misa": "node scripts/crystallize-skills.mjs",
     "self-repair:misa": "node scripts/self-repair.mjs",
     "distill:misa": "node scripts/distill-misa.mjs",
+    "perception:digest": "node scripts/perception-digest.mjs",
+    "perception:layout": "node scripts/perception-log-layout.mjs",
     "hermes:map-distillation": "node scripts/hermes-distillation-mapper.mjs",
     "density:misa": "node scripts/genericagent-density.mjs",
     "adaptive:misa": "node scripts/adaptive-candidates.mjs",

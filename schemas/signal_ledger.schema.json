@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/signal_ledger.schema.json",
+  "title": "SignalLedger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "entries"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.signal_ledger.v1" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fingerprint_id",
+          "handled_status",
+          "handled_result",
+          "first_seen",
+          "last_seen",
+          "seen_count",
+          "evidence_refs"
+        ],
+        "properties": {
+          "fingerprint_id": { "type": "string", "minLength": 1 },
+          "handled_status": {
+            "type": "string",
+            "enum": ["open", "handled", "resolved", "damping_only", "ignored"]
+          },
+          "handled_result": { "type": "string", "minLength": 1 },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time" },
+          "seen_count": { "type": "integer", "minimum": 0 },
+          "handled_at": { "type": "string", "format": "date-time" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

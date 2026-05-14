@@ -1,0 +1,31 @@
+{
+  "schema_version": "misa.signal_ledger.v1",
+  "entries": [
+    {
+      "fingerprint_id": "signal:policy:farcaster_audit:public_memory_risk",
+      "handled_status": "resolved",
+      "handled_result": "policy_boundary_recorded",
+      "first_seen": "2026-05-13T00:00:00.000Z",
+      "last_seen": "2026-05-13T00:00:00.000Z",
+      "seen_count": 1,
+      "handled_at": "2026-05-13T00:05:00.000Z",
+      "evidence_refs": [
+        "shadow:farcaster:reply:previous"
+      ],
+      "notes": "Used to demonstrate recurring_after_fix when the same signal appears with new evidence."
+    },
+    {
+      "fingerprint_id": "signal:memory:chat_window:user_preference",
+      "handled_status": "handled",
+      "handled_result": "memory_candidate_recorded",
+      "first_seen": "2026-05-13T01:00:00.000Z",
+      "last_seen": "2026-05-13T01:00:00.000Z",
+      "seen_count": 2,
+      "handled_at": "2026-05-13T01:05:00.000Z",
+      "evidence_refs": [
+        "shadow:style:memory:006"
+      ],
+      "notes": "Same evidence should be treated as already_processed."
+    }
+  ]
+}

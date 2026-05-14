@@ -1,0 +1,466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/perception_digest.schema.json",
+  "title": "PerceptionDigest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "digest_id",
+    "mode",
+    "generated_at",
+    "shadow_only",
+    "source_refs",
+    "risk_hints",
+    "novelty_hints",
+    "duplicate_clusters",
+    "signal_fingerprints",
+    "action_recommendations",
+    "ledger_update_proposals",
+    "attention_queue",
+    "expected_review_value_hints",
+    "trace_continuity_hints",
+    "downstream_contract",
+    "summary",
+    "safety",
+    "checks",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.perception_digest.v1" },
+    "digest_id": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "const": "shadow-perception-digest" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "shadow_only": { "type": "boolean", "const": true },
+    "source_refs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source_ref" }
+    },
+    "risk_hints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hint" }
+    },
+    "novelty_hints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/hint" }
+    },
+    "duplicate_clusters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/duplicate_cluster" }
+    },
+    "signal_fingerprints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/signal_fingerprint" }
+    },
+    "action_recommendations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action_recommendation" }
+    },
+    "ledger_update_proposals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ledger_update_proposal" }
+    },
+    "attention_queue": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/attention_item" }
+    },
+    "expected_review_value_hints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/review_hint" }
+    },
+    "trace_continuity_hints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/trace_hint" }
+    },
+    "downstream_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "route_authority", "controller_authority", "allowed_effects", "blocked_effects"],
+      "properties": {
+        "role": { "type": "string", "const": "sensor_prioritizer_only" },
+        "route_authority": { "type": "string", "const": "qianxuesen" },
+        "controller_authority": { "type": "boolean", "const": false },
+        "allowed_effects": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "blocked_effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_count",
+        "learning_event_count",
+        "attention_queue_count",
+        "risk_hint_count",
+        "novelty_hint_count",
+        "duplicate_cluster_count",
+        "signal_fingerprint_count",
+        "action_recommendation_count",
+        "ledger_update_proposal_count",
+        "recurring_after_fix_count",
+        "already_processed_count",
+        "damping_repeated_to_case_count",
+        "high_review_value_count",
+        "llm_api_calls",
+        "external_api_calls",
+        "production_authority"
+      ],
+      "properties": {
+        "source_count": { "type": "integer", "minimum": 0 },
+        "learning_event_count": { "type": "integer", "minimum": 0 },
+        "attention_queue_count": { "type": "integer", "minimum": 0 },
+        "risk_hint_count": { "type": "integer", "minimum": 0 },
+        "novelty_hint_count": { "type": "integer", "minimum": 0 },
+        "duplicate_cluster_count": { "type": "integer", "minimum": 0 },
+        "signal_fingerprint_count": { "type": "integer", "minimum": 0 },
+        "action_recommendation_count": { "type": "integer", "minimum": 0 },
+        "ledger_update_proposal_count": { "type": "integer", "minimum": 0 },
+        "recurring_after_fix_count": { "type": "integer", "minimum": 0 },
+        "already_processed_count": { "type": "integer", "minimum": 0 },
+        "damping_repeated_to_case_count": { "type": "integer", "minimum": 0 },
+        "high_review_value_count": { "type": "integer", "minimum": 0 },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "writes_persistent_memory",
+        "writes_zilliz",
+        "creates_embeddings",
+        "installs_skills",
+        "publication_allowed",
+        "changes_route",
+        "changes_winner",
+        "starts_services",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "writes_zilliz": { "type": "boolean", "const": false },
+        "creates_embeddings": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner": { "type": "boolean", "const": false },
+        "starts_services": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_kind",
+        "source_refs",
+        "observed_signals",
+        "route_pressure",
+        "suggested_priority",
+        "authority"
+      ],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "source_kind": { "type": "string", "minLength": 1 },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "observed_signals": { "$ref": "#/$defs/string_array" },
+        "route_pressure": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "signal_fingerprint_id": { "type": "string", "minLength": 1 },
+        "ledger_status": { "type": "string", "minLength": 1 },
+        "suggested_priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "hint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hint_id", "source_id", "kind", "reason", "source_refs", "authority"],
+      "properties": {
+        "hint_id": { "type": "string", "minLength": 1 },
+        "source_id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "duplicate_cluster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cluster_id", "source_ids", "similarity", "reason", "authority"],
+      "properties": {
+        "cluster_id": { "type": "string", "minLength": 1 },
+        "source_ids": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "similarity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "signal_fingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fingerprint_id",
+        "source_ids",
+        "source_kind",
+        "route",
+        "signal_family",
+        "observed_signals",
+        "source_refs",
+        "base_priority",
+        "priority",
+        "ledger_status",
+        "handled_status",
+        "handled_result",
+        "seen_count",
+        "new_evidence_refs",
+        "priority_adjustment",
+        "recommended_action",
+        "status_reason",
+        "authority"
+      ],
+      "properties": {
+        "fingerprint_id": { "type": "string", "minLength": 1 },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "source_kind": { "type": "string", "minLength": 1 },
+        "route": { "type": "string", "enum": ["memory", "skill", "case", "policy", "damping", "ignore"] },
+        "signal_family": { "type": "string", "minLength": 1 },
+        "observed_signals": { "$ref": "#/$defs/string_array" },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "base_priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "ledger_status": {
+          "type": "string",
+          "enum": [
+            "new_signal",
+            "seen_open",
+            "seen_with_new_evidence",
+            "already_processed",
+            "recurring_after_fix",
+            "damping_repeated_to_case"
+          ]
+        },
+        "handled_status": { "type": "string", "minLength": 1 },
+        "handled_result": { "type": "string", "minLength": 1 },
+        "seen_count": { "type": "integer", "minimum": 0 },
+        "new_evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "priority_adjustment": { "type": "integer", "minimum": -100, "maximum": 100 },
+        "recommended_action": { "type": "string", "minLength": 1 },
+        "status_reason": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "action_recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_id",
+        "fingerprint_id",
+        "ledger_status",
+        "priority",
+        "recommended_action",
+        "handoff_mode",
+        "source_ids",
+        "evidence_refs",
+        "downstream_targets",
+        "rationale",
+        "authority"
+      ],
+      "properties": {
+        "recommendation_id": { "type": "string", "minLength": 1 },
+        "fingerprint_id": { "type": "string", "minLength": 1 },
+        "ledger_status": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "recommended_action": { "type": "string", "minLength": 1 },
+        "handoff_mode": {
+          "type": "string",
+          "enum": ["full_source", "delta_only", "merge_only", "suppress"]
+        },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "downstream_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "rationale": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "ledger_update_proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "operation",
+        "fingerprint_id",
+        "reason",
+        "set",
+        "append",
+        "no_write",
+        "authority",
+        "rationale"
+      ],
+      "properties": {
+        "proposal_id": { "type": "string", "minLength": 1 },
+        "operation": { "type": "string", "enum": ["insert", "update"] },
+        "fingerprint_id": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "set": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["last_seen", "seen_count", "handled_status"],
+          "properties": {
+            "last_seen": { "type": "string", "format": "date-time" },
+            "seen_count": { "type": "integer", "minimum": 0 },
+            "handled_status": { "type": "string", "minLength": 1 }
+          }
+        },
+        "append": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidence_refs"],
+          "properties": {
+            "evidence_refs": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          }
+        },
+        "no_write": { "type": "boolean", "const": true },
+        "authority": { "type": "string", "const": "proposal_only" },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attention_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_id",
+        "source_id",
+        "signal_fingerprint_id",
+        "ledger_status",
+        "recommended_action",
+        "priority",
+        "reasons",
+        "suggested_downstream",
+        "authority"
+      ],
+      "properties": {
+        "item_id": { "type": "string", "minLength": 1 },
+        "source_id": { "type": "string", "minLength": 1 },
+        "signal_fingerprint_id": { "type": "string", "minLength": 1 },
+        "ledger_status": { "type": "string", "minLength": 1 },
+        "recommended_action": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "reasons": { "$ref": "#/$defs/string_array" },
+        "suggested_downstream": { "$ref": "#/$defs/string_array" },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "review_hint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hint_id",
+        "source_id",
+        "level",
+        "expected_value",
+        "call_policy",
+        "source_refs",
+        "authority"
+      ],
+      "properties": {
+        "hint_id": { "type": "string", "minLength": 1 },
+        "source_id": { "type": "string", "minLength": 1 },
+        "level": { "type": "string", "enum": ["low", "medium", "high"] },
+        "expected_value": { "type": "string", "minLength": 1 },
+        "call_policy": { "type": "string", "enum": ["hint_only", "optional_downstream_review"] },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "trace_hint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hint_id", "source_id", "preserve_fields", "source_refs", "reason", "authority"],
+      "properties": {
+        "hint_id": { "type": "string", "minLength": 1 },
+        "source_id": { "type": "string", "minLength": 1 },
+        "preserve_fields": { "$ref": "#/$defs/string_array" },
+        "source_refs": { "$ref": "#/$defs/string_array" },
+        "reason": { "type": "string", "minLength": 1 },
+        "authority": { "type": "string", "const": "hint_only" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "ok", "reason"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "ok": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

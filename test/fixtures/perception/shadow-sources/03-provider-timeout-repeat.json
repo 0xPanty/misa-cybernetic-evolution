@@ -1,0 +1,47 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-provider-timeout-repeat-003",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-14T01:10:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted provider timeout log with no provider secrets.",
+  "summary": "Provider timeout happened repeatedly and recovered after retry.",
+  "setpoint": "make a case candidate before changing provider routes",
+  "evidence_count": 3,
+  "outcome": "partial",
+  "risk_level": "medium",
+  "source_refs": [
+    "shadow:provider-timeout:003"
+  ],
+  "signals": [
+    "repeated_failure_pattern",
+    "stable_project_fact"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "logs:provider-timeout:redacted"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "tool:provider-timeout"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "system",
+      "ref": "shadow:provider-timeout:003",
+      "text": "Provider read timeout failed twice during local validation. Retry recovered, and direct provider route change was not approved."
+    },
+    {
+      "speaker": "operator",
+      "ref": "shadow:provider-timeout:004",
+      "text": "Treat this repeated failure error retry pattern as a local case first."
+    }
+  ]
+}

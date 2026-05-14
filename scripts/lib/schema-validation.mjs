@@ -22,6 +22,9 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/langgraph_qianxuesen_bridge.schema.json", "examples/langgraph_qianxuesen_bridge.example.json"],
   ["schemas/vector_memory_storage.schema.json", "examples/vector_memory_storage.example.json"],
   ["schemas/zilliz_vector_adapter.schema.json", "examples/zilliz_vector_adapter.example.json"],
+  ["schemas/perception_digest.schema.json", "examples/perception_digest.example.json"],
+  ["schemas/perception_log_layout.schema.json", "examples/perception_log_layout.example.json"],
+  ["schemas/signal_ledger.schema.json", "examples/signal_ledger.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
   ["schemas/integration_profile.schema.json", "examples/misa_readonly_integration.example.json"]
 ];

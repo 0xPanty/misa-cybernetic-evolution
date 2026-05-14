@@ -1,0 +1,46 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-public-memory-risk-discord-010",
+  "source_kind": "chat_window",
+  "channel": "discord",
+  "created_at": "2026-05-14T01:45:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted Discord public-memory risk sample.",
+  "summary": "A Discord-facing draft tried to reuse private project memory in a public channel.",
+  "setpoint": "treat cross-channel public-memory risk as policy evidence only",
+  "evidence_count": 4,
+  "outcome": "partial",
+  "risk_level": "high",
+  "source_refs": [
+    "shadow:discord:public-memory:010"
+  ],
+  "signals": [
+    "public_posting_boundary",
+    "farcaster_public_memory_risk",
+    "explicit_user_boundary"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "discord:audit:redacted"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "audit",
+      "ref": "shadow:discord:public-memory:010",
+      "text": "A public channel draft mentioned private memory from the project. Do not post or reuse this without approval."
+    },
+    {
+      "speaker": "codex",
+      "ref": "shadow:discord:public-memory:011",
+      "text": "Keep this as policy evidence and do not turn it into an automatic reply workflow."
+    }
+  ]
+}

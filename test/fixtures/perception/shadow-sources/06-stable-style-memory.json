@@ -1,0 +1,39 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-stable-style-memory-006",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T01:25:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted stable preference note.",
+  "summary": "The user prefers concise, evidence-first Chinese summaries.",
+  "setpoint": "preserve as a low-risk memory candidate after normal checks",
+  "evidence_count": 2,
+  "outcome": "success",
+  "risk_level": "low",
+  "source_refs": [
+    "shadow:style:memory:006"
+  ],
+  "signals": [
+    "stable_user_preference"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "notes:style-redacted"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "shadow:style:memory:006",
+      "text": "User prefers concise evidence-first summaries and wants plain Chinese explanations."
+    }
+  ]
+}

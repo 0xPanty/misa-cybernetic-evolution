@@ -1,0 +1,28 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-background-note-noise-008",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T01:35:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Background note with no actionable signal.",
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "noise:background-note"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "shadow:noise:background:008",
+      "text": "Archive label copied. Nothing else changed in this note."
+    }
+  ]
+}

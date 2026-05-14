@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import { distillLocalMisaSources } from "./lib/session-distiller.mjs";
+import {
+  attachPerceptionDigestToDistillation,
+  readPerceptionDigest
+} from "./lib/perception-sidecar.mjs";
 import { writeJsonOutFile } from "./lib/cli-output.mjs";
 
 function readArg(name) {
@@ -14,10 +18,17 @@ function readArg(name) {
 
 const asJson = process.argv.includes("--json");
 const sourceDir = readArg("source-dir");
-const result = await distillLocalMisaSources({
+const perceptionFile = readArg("perception-file");
+const distillation = await distillLocalMisaSources({
   sourceDir,
   requireTemplateCoverage: !sourceDir
 });
+const result = perceptionFile
+  ? attachPerceptionDigestToDistillation(
+      distillation,
+      await readPerceptionDigest(perceptionFile)
+    )
+  : distillation;
 await writeJsonOutFile(result, readArg("out-file"));
 
 if (asJson) {
@@ -37,6 +48,11 @@ if (asJson) {
   console.log(`llm_api_calls: ${result.summary.llm_api_calls}`);
   console.log(`external_api_calls: ${result.summary.external_api_calls}`);
   console.log(`raw_window_default: ${result.summary.raw_window_default}`);
+  if (result.perception_digest) {
+    console.log(`perception_digest: ${result.perception_digest.digest_id}`);
+    console.log(`perception_shadow_only: ${result.perception_digest.shadow_only}`);
+    console.log(`perception_attention_items: ${result.perception_digest.attention_queue_count}`);
+  }
 
   if (result.distillates.length > 0) {
     console.log("distillates:");

@@ -1,0 +1,43 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "shadow-candidate-replay-failed-002",
+  "source_kind": "failure_log",
+  "channel": "local",
+  "created_at": "2026-05-14T01:05:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted replay failure with command details removed.",
+  "summary": "A candidate replay failed once and should be held instead of promoted.",
+  "setpoint": "hold failed candidate replay as damping evidence before promotion",
+  "evidence_count": 2,
+  "outcome": "failure",
+  "risk_level": "medium",
+  "source_refs": [
+    "shadow:replay:failed:002"
+  ],
+  "signals": [
+    "candidate_replay_failed",
+    "single_failure",
+    "avoid_overreaction"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "runs:redacted-replay-summary"
+    ],
+    "modified": [],
+    "tool_errors": [
+      "tool:replay-failed"
+    ]
+  },
+  "turns": [
+    {
+      "speaker": "system",
+      "ref": "shadow:replay:failed:002",
+      "text": "Candidate replay failed during local validation. This was a single transient failure; avoid overreaction and hold it as damping evidence."
+    }
+  ]
+}
