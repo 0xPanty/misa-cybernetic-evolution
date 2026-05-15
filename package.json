@@ -37,6 +37,7 @@
     "vector-store:local": "node scripts/local-vector-store.mjs",
     "zilliz:adapt": "node scripts/zilliz-vector-adapter.mjs",
     "langgraph:bridge": "node scripts/langgraph-qianxuesen-bridge.mjs",
+    "hermes:adapt-runtime": "node scripts/hermes-runtime-adapter.mjs",
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",
     "smoke:current-line": "node scripts/current-line-smoke.mjs",
     "calibrate:current-line": "node scripts/current-line-calibration.mjs",

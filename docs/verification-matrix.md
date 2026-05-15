@@ -55,6 +55,7 @@ npm run curiosity:signals -- --source-dir test/fixtures/perception/curiosity-rea
 npm run crystallize:misa
 npm run self-repair:misa -- --validation-mode
 npm run hermes:map-distillation -- --json
+npm run hermes:adapt-runtime -- --json
 npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
 npm run skill:evolution -- --json
 npm run vector-memory:classify -- --json
@@ -102,6 +103,7 @@ The current-line additions are documented in:
 - [vector-memory-storage-v0.19.md](./vector-memory-storage-v0.19.md)
 - [local-vector-store-v0.21.md](./local-vector-store-v0.21.md)
 - [skill-evolution-adapter-v0.22.md](./skill-evolution-adapter-v0.22.md)
+- [hermes-runtime-adapter-v0.22.md](./hermes-runtime-adapter-v0.22.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)
 - [current-line-calibration-v0.21.md](./current-line-calibration-v0.21.md)
 

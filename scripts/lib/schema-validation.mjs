@@ -37,6 +37,7 @@ const SCHEMA_DIRECTORY_PAIRS = [
 ];
 
 const SCHEMA_ONLY_FILES = [
+  "schemas/agent_runtime_adapter.schema.json",
   "schemas/session_distillation_review.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
   "schemas/omniagent_footprint_bridge.schema.json",

@@ -86,6 +86,15 @@ function componentStatus(calibration, smoke) {
       && check.supervisor_changes_skill === false
       && check.llm_api_calls === 0
     ))),
+    hermes_runtime_adapter: statusFor(smoke.checks.some((check) => (
+      check.name === "hermes:adapt-runtime dry-run"
+      && check.ok
+      && check.writes_skills === false
+      && check.writes_persistent_memory === false
+      && check.blocks_runtime === false
+      && check.llm_api_calls === 0
+      && check.external_api_calls === 0
+    ))),
     source_distillation: statusFor(sourceSamplesOk),
     signal_extraction: statusFor(calibration.summary.observed_signal_count > 0 && sourceSamplesOk),
     qianxuesen_route_decision: statusFor(
@@ -253,6 +262,7 @@ function componentSummaries(calibration, smoke, components) {
   const samples = sampleSetSummaries(calibration);
   const localVectorStoreCheck = smoke.checks.find((check) => check.name === "vector-store:local dry-run");
   const skillEvolutionCheck = smoke.checks.find((check) => check.name === "skill:evolution dry-run");
+  const hermesRuntimeAdapterCheck = smoke.checks.find((check) => check.name === "hermes:adapt-runtime dry-run");
   const curiosityLayer = layers.get("curiosity_llm_value_gate");
   const curiosityCheck = smoke.checks.find((check) => check.name === "curiosity:signals dry-run");
 
@@ -289,6 +299,16 @@ function componentSummaries(calibration, smoke, components) {
       no_write: skillEvolutionCheck?.no_write ?? null,
       production_authority: skillEvolutionCheck?.production_authority ?? null,
       controller_authority: skillEvolutionCheck?.controller_authority ?? null
+    },
+    hermes_runtime_adapter: {
+      status: components.hermes_runtime_adapter,
+      events: hermesRuntimeAdapterCheck?.events ?? 0,
+      research_digests: hermesRuntimeAdapterCheck?.research_digests ?? 0,
+      evolution_candidates: hermesRuntimeAdapterCheck?.evolution_candidates ?? 0,
+      replay_required: hermesRuntimeAdapterCheck?.replay_required ?? 0,
+      writes_skills: hermesRuntimeAdapterCheck?.writes_skills ?? null,
+      writes_persistent_memory: hermesRuntimeAdapterCheck?.writes_persistent_memory ?? null,
+      blocks_runtime: hermesRuntimeAdapterCheck?.blocks_runtime ?? null
     },
     qianxuesen_route_decision: {
       status: components.qianxuesen_route_decision,
@@ -505,6 +525,7 @@ export function renderQianxuesenFullLoopHealthMarkdown(report) {
     `- source_distillation: ${report.component_summaries.source_distillation.sources} sources, ${report.component_summaries.source_distillation.atomic_lessons} atomic lessons`,
     `- local_vector_store: backend=${report.component_summaries.local_vector_store.backend}, records=${report.component_summaries.local_vector_store.records}, dry_run=${report.component_summaries.local_vector_store.dry_run}`,
     `- skill_evolution: candidates=${report.component_summaries.skill_evolution.evolution_candidates}, replay_required=${report.component_summaries.skill_evolution.replay_required}, no_write=${report.component_summaries.skill_evolution.no_write}`,
+    `- hermes_runtime_adapter: events=${report.component_summaries.hermes_runtime_adapter.events}, digests=${report.component_summaries.hermes_runtime_adapter.research_digests}, candidates=${report.component_summaries.hermes_runtime_adapter.evolution_candidates}`,
     `- routing: owner=${report.component_summaries.qianxuesen_route_decision.owner}, authority=${report.component_summaries.qianxuesen_route_decision.authority}`,
     `- repair_ticket: ${report.component_summaries.repair_ticket.total_tickets} tickets`,
     `- work_order: ${report.component_summaries.work_order_routing.total_work_orders} orders, auto_executable=${report.component_summaries.work_order_routing.auto_executable_count}`,

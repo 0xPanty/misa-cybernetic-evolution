@@ -8,6 +8,7 @@ import { validateSchemas } from "./schema-validation.mjs";
 import { PHASES, checkResult, readJson } from "./precheck-shared.mjs";
 
 const BRIDGE_SCHEMA_RELS = new Set([
+  "schemas/agent_runtime_adapter.schema.json",
   "schemas/hermes-distillation-mapping.schema.json",
   "schemas/hermes_distillation_mapping.schema.json",
   "schemas/langgraph_qianxuesen_bridge.schema.json",

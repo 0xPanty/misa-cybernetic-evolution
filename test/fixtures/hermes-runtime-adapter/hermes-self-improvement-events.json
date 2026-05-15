@@ -1,0 +1,115 @@
+{
+  "fixture_id": "hermes-self-improvement-events",
+  "source": {
+    "runtime": "hermes-agent",
+    "runtime_commit": "4695d2716f60da89152bdc9dfa7d96e54ea7c22e",
+    "source_url": "https://github.com/NousResearch/hermes-agent"
+  },
+  "events": [
+    {
+      "event_id": "hermes-pretool-skill-patch-001",
+      "hook": "pre_tool_call",
+      "timestamp": "2026-05-15T00:00:00Z",
+      "session_id": "s-hermes-adapter",
+      "tool_name": "skill_manage",
+      "args": {
+        "action": "patch",
+        "name": "farcaster-reply",
+        "old_string": "Respond with generic Farcaster context.",
+        "new_string": "Check Farcaster protocol drift and public memory boundary before replying."
+      },
+      "context": {
+        "write_origin": "background_review",
+        "platform": "cli",
+        "topic": "Farcaster public reply operator skill",
+        "terms": ["Farcaster", "skill_manage", "Hermes"],
+        "conversation_signals": [
+          "user_correction",
+          "external_framework_change",
+          "knowledge_gap",
+          "repeated_terminology"
+        ],
+        "evidence_refs": [
+          "hermes-source-tools-skill-manager-tool-py",
+          "hermes-source-agent-curator-py"
+        ]
+      }
+    },
+    {
+      "event_id": "hermes-pretool-memory-add-002",
+      "hook": "pre_tool_call",
+      "timestamp": "2026-05-15T00:01:00Z",
+      "session_id": "s-hermes-adapter",
+      "tool_name": "memory",
+      "args": {
+        "action": "add",
+        "target": "memory",
+        "content": "Farcaster public replies must never include private owner memory."
+      },
+      "context": {
+        "platform": "cli",
+        "topic": "public reply memory boundary",
+        "terms": ["Farcaster", "memory"],
+        "conversation_signals": [
+          "public_posting_boundary",
+          "explicit_user_boundary",
+          "farcaster_public_memory_risk"
+        ],
+        "evidence_refs": [
+          "hermes-source-tools-memory-tool-py"
+        ]
+      }
+    },
+    {
+      "event_id": "hermes-posttool-session-search-003",
+      "hook": "post_tool_call",
+      "timestamp": "2026-05-15T00:02:00Z",
+      "session_id": "s-hermes-adapter",
+      "tool_name": "session_search",
+      "args": {
+        "query": "Farcaster protocol changes OR public reply boundary",
+        "limit": 3
+      },
+      "result": {
+        "success": true,
+        "sessions_searched": 3
+      },
+      "context": {
+        "platform": "cli",
+        "topic": "cross-session research for Farcaster reply behavior",
+        "terms": ["Farcaster", "session_search", "Curiosity Engine"],
+        "conversation_signals": [
+          "research_needed",
+          "knowledge_gap",
+          "external_information_channel"
+        ],
+        "evidence_refs": [
+          "hermes-source-tools-session-search-tool-py"
+        ]
+      }
+    },
+    {
+      "event_id": "hermes-curator-archive-004",
+      "hook": "post_llm_call",
+      "timestamp": "2026-05-15T00:03:00Z",
+      "session_id": "s-hermes-adapter",
+      "tool_name": null,
+      "context": {
+        "platform": "curator",
+        "curator_action": "archive",
+        "skill_name": "old-farcaster-reply",
+        "absorbed_into": "farcaster-reply-operator",
+        "topic": "Hermes background skill curator lifecycle",
+        "terms": ["Hermes", "curator"],
+        "conversation_signals": [
+          "repeated_failure_pattern",
+          "skill_self_modification"
+        ],
+        "evidence_refs": [
+          "hermes-source-agent-curator-py",
+          "hermes-source-run-agent-py"
+        ]
+      }
+    }
+  ]
+}

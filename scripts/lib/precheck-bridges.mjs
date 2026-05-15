@@ -2,6 +2,7 @@ import path from "node:path";
 import {
   evaluateHermesMappingFixtures
 } from "./hermes-distillation-mapper.mjs";
+import { runHermesRuntimeAdapter } from "./hermes-runtime-adapter.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { reviewOmniAgentFootprintBridge } from "./omniagent-footprint-bridge.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
@@ -44,6 +45,28 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
       name: `validate Hermes mapping ${mapping.source.source_id}`
     }));
   }
+
+  const hermesRuntimeAdapter = await runHermesRuntimeAdapter({
+    repoRoot,
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  checks.push(bridgeCheck("Hermes runtime adapter contract check", hermesRuntimeAdapter.ok, {
+    events: hermesRuntimeAdapter.summary.event_count,
+    researchDigests: hermesRuntimeAdapter.summary.research_digest_count,
+    evolutionCandidates: hermesRuntimeAdapter.summary.evolution_candidate_count,
+    replayRequired: hermesRuntimeAdapter.summary.replay_required_count,
+    writesSkills: hermesRuntimeAdapter.safety.writes_skills,
+    writesPersistentMemory: hermesRuntimeAdapter.safety.writes_persistent_memory,
+    llmApiCalls: hermesRuntimeAdapter.safety.llm_api_calls,
+    externalApiCalls: hermesRuntimeAdapter.safety.external_api_calls,
+    violations: hermesRuntimeAdapter.violations
+  }));
+  checks.push(await bridgeValidation({
+    repoRoot,
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: hermesRuntimeAdapter,
+    name: "validate Hermes runtime adapter review"
+  }));
 
   const langGraphBridge = await reviewLangGraphQianxuesenBridge({
     repoRoot,
@@ -96,6 +119,7 @@ export async function runBridgePrecheck({ repoRoot, repairTickets, workOrderRout
     checks,
     artifacts: {
       hermesMapping,
+      hermesRuntimeAdapter,
       langGraphBridge
     }
   };

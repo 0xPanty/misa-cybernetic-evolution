@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/agent_runtime_adapter.schema.json",
+  "title": "AgentRuntimeAdapter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "adapter",
+    "universal_contract",
+    "hook_mapping",
+    "normalized_events",
+    "research_digests",
+    "evolution_candidates",
+    "plugin_contract",
+    "summary",
+    "safety",
+    "checks",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "misa.agent_runtime_adapter.v1"
+    },
+    "mode": {
+      "type": "string",
+      "const": "hermes-runtime-adapter"
+    },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_id", "runtime", "runtime_commit", "source_url", "entry_strategy", "default_mode"],
+      "properties": {
+        "adapter_id": { "type": "string" },
+        "runtime": { "type": "string" },
+        "runtime_commit": { "type": "string" },
+        "source_url": { "type": "string" },
+        "entry_strategy": { "type": "string" },
+        "default_mode": { "type": "string", "const": "observe_only" }
+      }
+    },
+    "universal_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_role",
+        "control_owner",
+        "framework_role",
+        "route_vocab",
+        "accepts_external_information",
+        "candidate_pool_policy",
+        "direct_write_policy",
+        "runtime_specific_code_required"
+      ],
+      "properties": {
+        "adapter_role": { "type": "string", "const": "runtime_event_normalizer" },
+        "control_owner": { "type": "string", "const": "qianxuesen" },
+        "framework_role": { "type": "string", "const": "carrier_runtime" },
+        "route_vocab": {
+          "type": "array",
+          "minItems": 6,
+          "items": { "type": "string" },
+          "allOf": [
+            { "contains": { "const": "memory" } },
+            { "contains": { "const": "skill" } },
+            { "contains": { "const": "case" } },
+            { "contains": { "const": "policy" } },
+            { "contains": { "const": "damping" } },
+            { "contains": { "const": "ignore" } }
+          ]
+        },
+        "accepts_external_information": { "type": "boolean", "const": true },
+        "candidate_pool_policy": { "type": "string", "const": "research_digest_or_evolution_candidate_only" },
+        "direct_write_policy": { "type": "string", "const": "forbidden_by_default" },
+        "runtime_specific_code_required": { "type": "boolean", "const": true }
+      }
+    },
+    "hook_mapping": {
+      "type": "array",
+      "minItems": 5,
+      "items": { "$ref": "#/$defs/hook_mapping" }
+    },
+    "normalized_events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/normalized_event" }
+    },
+    "research_digests": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/research_digest" }
+    },
+    "evolution_candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evolution_candidate" }
+    },
+    "plugin_contract": { "$ref": "#/$defs/plugin_contract" },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_count",
+        "normalized_event_count",
+        "research_digest_count",
+        "evolution_candidate_count",
+        "replay_required_count",
+        "tournament_required_count",
+        "skill_manage_event_count",
+        "memory_write_event_count",
+        "external_information_event_count",
+        "default_mode",
+        "verifier"
+      ],
+      "properties": {
+        "event_count": { "type": "integer", "minimum": 0 },
+        "normalized_event_count": { "type": "integer", "minimum": 0 },
+        "research_digest_count": { "type": "integer", "minimum": 0 },
+        "evolution_candidate_count": { "type": "integer", "minimum": 0 },
+        "replay_required_count": { "type": "integer", "minimum": 0 },
+        "tournament_required_count": { "type": "integer", "minimum": 0 },
+        "skill_manage_event_count": { "type": "integer", "minimum": 0 },
+        "memory_write_event_count": { "type": "integer", "minimum": 0 },
+        "external_information_event_count": { "type": "integer", "minimum": 0 },
+        "default_mode": { "type": "string", "const": "observe_only" },
+        "verifier": { "type": "string", "enum": ["passed", "failed"] }
+      }
+    },
+    "safety": { "$ref": "#/$defs/safety" },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "hook_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hook",
+        "hermes_surface",
+        "qianxuesen_stage",
+        "qianxuesen_event_type",
+        "can_block_runtime",
+        "default_blocks_runtime"
+      ],
+      "properties": {
+        "hook": { "type": "string" },
+        "hermes_surface": { "type": "string" },
+        "qianxuesen_stage": { "type": "string" },
+        "qianxuesen_event_type": { "type": "string" },
+        "can_block_runtime": { "type": "boolean" },
+        "default_blocks_runtime": { "type": "boolean", "const": false }
+      }
+    },
+    "normalized_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "normalized_event_id",
+        "source_event_id",
+        "runtime_hook",
+        "runtime_surface",
+        "tool_name",
+        "runtime_action",
+        "qianxuesen_event_type",
+        "route_target",
+        "observed_signals",
+        "observed_terms",
+        "evidence_refs",
+        "source_payload_fingerprint",
+        "effect_boundary",
+        "control_decision"
+      ],
+      "properties": {
+        "normalized_event_id": { "type": "string" },
+        "source_event_id": { "type": "string" },
+        "runtime_hook": { "type": "string" },
+        "runtime_surface": { "type": "string" },
+        "tool_name": { "type": ["string", "null"] },
+        "runtime_action": { "type": ["string", "null"] },
+        "qianxuesen_event_type": { "type": "string" },
+        "route_target": {
+          "type": "string",
+          "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+        },
+        "observed_signals": { "$ref": "#/$defs/string_array" },
+        "observed_terms": { "$ref": "#/$defs/string_array" },
+        "evidence_refs": { "$ref": "#/$defs/string_array" },
+        "source_payload_fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "effect_boundary": { "$ref": "#/$defs/effect_boundary" },
+        "control_decision": { "$ref": "#/$defs/control_decision" }
+      }
+    },
+    "effect_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "persistent_memory_write_requested",
+        "skill_write_requested",
+        "public_or_durable_effect_requested",
+        "external_information_channel",
+        "direct_qianxuesen_write_allowed"
+      ],
+      "properties": {
+        "persistent_memory_write_requested": { "type": "boolean" },
+        "skill_write_requested": { "type": "boolean" },
+        "public_or_durable_effect_requested": { "type": "boolean" },
+        "external_information_channel": { "type": "boolean" },
+        "direct_qianxuesen_write_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "control_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reason", "replay_required", "tournament_required", "can_promote_now"],
+      "properties": {
+        "decision": { "type": "string" },
+        "reason": { "type": "string" },
+        "replay_required": { "type": "boolean" },
+        "tournament_required": { "type": "boolean" },
+        "can_promote_now": { "type": "boolean", "const": false }
+      }
+    },
+    "research_digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "digest_id",
+        "source_event_ids",
+        "topic",
+        "channel",
+        "observed_terms",
+        "knowledge_gap_signals",
+        "summary",
+        "evolution_pressure",
+        "candidate_policy"
+      ],
+      "properties": {
+        "digest_id": { "type": "string" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "topic": { "type": "string" },
+        "channel": { "type": "string" },
+        "observed_terms": { "$ref": "#/$defs/string_array" },
+        "knowledge_gap_signals": { "$ref": "#/$defs/string_array" },
+        "summary": { "type": "string" },
+        "evolution_pressure": { "type": "string" },
+        "candidate_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "candidate_pool",
+            "direct_memory_write",
+            "direct_skill_write",
+            "replay_or_tournament_required_before_promotion"
+          ],
+          "properties": {
+            "candidate_pool": { "type": "string", "const": "research_digest" },
+            "direct_memory_write": { "type": "boolean", "const": false },
+            "direct_skill_write": { "type": "boolean", "const": false },
+            "replay_or_tournament_required_before_promotion": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "evolution_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "source_event_ids",
+        "candidate_type",
+        "target_surface",
+        "pressure_signals",
+        "evidence_refs",
+        "proposed_change",
+        "expected_gain",
+        "status",
+        "replay_required",
+        "tournament_required",
+        "can_promote_now",
+        "promotion_gate"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "candidate_type": { "type": "string" },
+        "target_surface": {
+          "type": "string",
+          "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
+        },
+        "pressure_signals": { "$ref": "#/$defs/string_array" },
+        "evidence_refs": { "$ref": "#/$defs/string_array" },
+        "proposed_change": { "type": "string" },
+        "expected_gain": { "type": "string" },
+        "status": { "type": "string", "const": "replay_required" },
+        "replay_required": { "type": "boolean", "const": true },
+        "tournament_required": { "type": "boolean", "const": true },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "promotion_gate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required_rules", "reason"],
+          "properties": {
+            "required_rules": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "reason": { "type": "string" }
+          }
+        }
+      }
+    },
+    "plugin_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plugin_id",
+        "install_shape",
+        "default_mode",
+        "attach_points",
+        "event_output",
+        "no_direct_authority",
+        "adapter_boundary"
+      ],
+      "properties": {
+        "plugin_id": { "type": "string" },
+        "install_shape": { "type": "string" },
+        "default_mode": { "type": "string", "const": "observe_only" },
+        "attach_points": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["hook", "purpose", "can_block_runtime", "default_action"],
+            "properties": {
+              "hook": { "type": "string" },
+              "purpose": { "type": "string" },
+              "can_block_runtime": { "type": "boolean" },
+              "default_action": { "type": "string", "const": "observe" }
+            }
+          }
+        },
+        "event_output": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "env_var", "default_path", "contains_raw_private_content"],
+          "properties": {
+            "format": { "type": "string", "const": "ndjson" },
+            "env_var": { "type": "string" },
+            "default_path": { "type": "string" },
+            "contains_raw_private_content": { "type": "boolean", "const": false }
+          }
+        },
+        "no_direct_authority": { "$ref": "#/$defs/string_array" },
+        "adapter_boundary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "universal_contract_stays_qianxuesen_owned",
+            "framework_specific_code_required",
+            "framework_specific_code_is_thin",
+            "runtime_install_required_before_live_capture"
+          ],
+          "properties": {
+            "universal_contract_stays_qianxuesen_owned": { "type": "boolean", "const": true },
+            "framework_specific_code_required": { "type": "boolean", "const": true },
+            "framework_specific_code_is_thin": { "type": "boolean", "const": true },
+            "runtime_install_required_before_live_capture": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "writes_persistent_memory",
+        "writes_skills",
+        "changes_route",
+        "changes_winner",
+        "blocks_runtime",
+        "publication_allowed",
+        "starts_services",
+        "raw_private_content_persisted",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "writes_skills": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner": { "type": "boolean", "const": false },
+        "blocks_runtime": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "starts_services": { "type": "boolean", "const": false },
+        "raw_private_content_persisted": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": ["name", "ok"],
+      "properties": {
+        "name": { "type": "string" },
+        "ok": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

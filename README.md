@@ -5,7 +5,8 @@ A control-theoretic learning sidecar for Hermes-style AI agents.
 Current package version: `0.21.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
-adds the first skill-evolution adapter surface, and keeps the control boundary
+adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
+contract, and keeps the control boundary
 stable: no live Zilliz writes, no provider embeddings, and no runtime changes.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
@@ -72,6 +73,7 @@ The safety boundary is deliberate:
 | LLM route or winner authority | not enabled |
 | Local vector-store writes | explicit command only, under ignored `runs/local-vector-store/` |
 | Skill evolution changes | replay-required candidates only, no automatic skill mutation |
+| Hermes runtime adapter | observe-only hook normalization; no runtime block, memory write, or skill write |
 
 In plain terms: this sidecar can read redacted local evidence, compress it,
 route it, draft safe local artifacts, compare candidate variants, and explain
@@ -98,6 +100,7 @@ or existing Hermes/Zilliz distillation artifact
 -> attach original-source refs, replay keys, and retrieval hints for future hit explanation
 -> produce a shadow perception digest that prioritizes sources without route authority
 -> score which existing signals are worth LLM or GEPA-style variant generation
+-> normalize Hermes runtime hook traces into research digests and replay candidates
 -> keep raw logs, redacted sources, perception digests, handoffs, and archives separated
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant
@@ -133,6 +136,7 @@ Two rules matter most:
 | Perception log layout | `npm run perception:layout` | local directory contract only; `--init` creates separated dry-run folders under the chosen root |
 | Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
 | Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
+| Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests and replay candidates |
 | Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
 | Adaptive candidate gate | `npm run adaptive:misa` | local candidate widening only |
 | Signal intake contract | `npm run intake:misa` | cadence contract, no scheduler startup |
@@ -151,7 +155,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, Hermes runtime adapter, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -254,6 +258,21 @@ The default Farcaster example proves the intended shape:
 
 This is the "runway plus guardrail" layer: it gives skills a place to evolve
 while keeping hard boundaries machine-checkable.
+
+## Hermes Runtime Adapter
+
+`hermes:adapt-runtime` is the first concrete framework plug shape. It does not
+try to make Qianxuesen a Hermes-only feature. It maps Hermes hook evidence into
+the universal adapter contract:
+
+- `skill_manage` changes become replay-required skill candidates;
+- `memory` writes become memory or policy pressure, not durable memory;
+- `session_search` and external-research traces become research digests;
+- curator/background review output becomes candidate pressure;
+- every candidate still has to enter replay and tournament before promotion.
+
+Plain rule: Hermes can be the carrier runtime, but Qianxuesen still owns the
+learning decision. The default adapter is observe-only and call-free.
 
 ## Evolution Tournament
 

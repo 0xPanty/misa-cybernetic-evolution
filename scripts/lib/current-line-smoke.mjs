@@ -1,6 +1,7 @@
 import path from "node:path";
 import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
+import { runHermesRuntimeAdapter } from "./hermes-runtime-adapter.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { buildPerceptionDigest } from "./perception-sidecar.mjs";
@@ -136,6 +137,21 @@ function summarizeCuriosityGate(curiosityGate) {
   };
 }
 
+function summarizeHermesRuntimeAdapter(adapter) {
+  return {
+    ok: adapter.ok,
+    events: adapter.summary.event_count,
+    research_digests: adapter.summary.research_digest_count,
+    evolution_candidates: adapter.summary.evolution_candidate_count,
+    replay_required: adapter.summary.replay_required_count,
+    writes_skills: adapter.safety.writes_skills,
+    writes_persistent_memory: adapter.safety.writes_persistent_memory,
+    blocks_runtime: adapter.safety.blocks_runtime,
+    llm_api_calls: adapter.safety.llm_api_calls,
+    external_api_calls: adapter.safety.external_api_calls
+  };
+}
+
 function noLiveWritesOrProviderCallsCheck({
   routing,
   sessionReview,
@@ -145,7 +161,8 @@ function noLiveWritesOrProviderCallsCheck({
   skillEvolution,
   zillizAdapter,
   retrievalRanker,
-  curiosityGate
+  curiosityGate,
+  hermesRuntimeAdapter
 }) {
   const details = {
     durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
@@ -170,7 +187,12 @@ function noLiveWritesOrProviderCallsCheck({
     curiosity_writes_persistent_memory: curiosityGate.safety.writes_persistent_memory,
     curiosity_changes_route: curiosityGate.safety.changes_route,
     curiosity_changes_winner: curiosityGate.safety.changes_winner,
-    curiosity_llm_api_calls: curiosityGate.safety.llm_api_calls
+    curiosity_llm_api_calls: curiosityGate.safety.llm_api_calls,
+    hermes_adapter_writes_persistent_memory: hermesRuntimeAdapter.safety.writes_persistent_memory,
+    hermes_adapter_writes_skills: hermesRuntimeAdapter.safety.writes_skills,
+    hermes_adapter_blocks_runtime: hermesRuntimeAdapter.safety.blocks_runtime,
+    hermes_adapter_llm_api_calls: hermesRuntimeAdapter.safety.llm_api_calls,
+    hermes_adapter_external_api_calls: hermesRuntimeAdapter.safety.external_api_calls
   };
 
   return checkResult("no live writes or provider calls", (
@@ -197,6 +219,11 @@ function noLiveWritesOrProviderCallsCheck({
     && details.curiosity_changes_route === false
     && details.curiosity_changes_winner === false
     && details.curiosity_llm_api_calls === 0
+    && details.hermes_adapter_writes_persistent_memory === false
+    && details.hermes_adapter_writes_skills === false
+    && details.hermes_adapter_blocks_runtime === false
+    && details.hermes_adapter_llm_api_calls === 0
+    && details.hermes_adapter_external_api_calls === 0
   ), details);
 }
 
@@ -209,7 +236,8 @@ function buildCurrentLineSmokeChecks({
   skillEvolution,
   zillizAdapter,
   retrievalRanker,
-  curiosityGate
+  curiosityGate,
+  hermesRuntimeAdapter
 }) {
   return [
     checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
@@ -219,6 +247,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("vector-store:local dry-run", localVectorStore.ok, summarizeLocalVectorStore(localVectorStore)),
     checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
     checkResult("curiosity:signals dry-run", curiosityGate.ok, summarizeCuriosityGate(curiosityGate)),
+    checkResult("hermes:adapt-runtime dry-run", hermesRuntimeAdapter.ok, summarizeHermesRuntimeAdapter(hermesRuntimeAdapter)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -230,7 +259,8 @@ function buildCurrentLineSmokeChecks({
       skillEvolution,
       zillizAdapter,
       retrievalRanker,
-      curiosityGate
+      curiosityGate,
+      hermesRuntimeAdapter
     })
   ];
 }
@@ -298,6 +328,10 @@ export async function runCurrentLineSmoke({
       "shadow-background-note-noise-008"
     ]
   });
+  const hermesRuntimeAdapter = await runHermesRuntimeAdapter({
+    repoRoot,
+    now
+  });
 
   const checks = buildCurrentLineSmokeChecks({
     routing,
@@ -308,7 +342,8 @@ export async function runCurrentLineSmoke({
     skillEvolution,
     zillizAdapter,
     retrievalRanker,
-    curiosityGate
+    curiosityGate,
+    hermesRuntimeAdapter
   });
 
   return {
@@ -321,6 +356,7 @@ export async function runCurrentLineSmoke({
       "vector-store:local",
       "skill:evolution",
       "curiosity:signals",
+      "hermes:adapt-runtime",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -347,7 +383,8 @@ export function buildCurrentLineSmokeFromArtifacts({
   skillEvolution,
   zillizAdapter,
   retrievalRanker,
-  curiosityGate
+  curiosityGate,
+  hermesRuntimeAdapter
 }) {
   const checks = buildCurrentLineSmokeChecks({
     routing: workOrderRouting,
@@ -358,7 +395,8 @@ export function buildCurrentLineSmokeFromArtifacts({
     skillEvolution,
     zillizAdapter,
     retrievalRanker,
-    curiosityGate
+    curiosityGate,
+    hermesRuntimeAdapter
   });
 
   return {

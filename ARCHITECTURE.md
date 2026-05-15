@@ -24,7 +24,8 @@ The live system remains Misa/Hermes. This repository is the read-only
 control-learning sidecar: it turns redacted evidence and existing
 Hermes/Zilliz artifacts into local distillates, routed candidates, repair
 tickets, work orders, vector-memory dry-run metadata, a default local vector
-store, retrieval-ranker checks, and session-distiller review findings.
+store, retrieval-ranker checks, session-distiller review findings, and
+observe-only runtime adapter reports.
 
 Plain version:
 
@@ -123,6 +124,18 @@ Default runtime assertions are fixed at:
 - public send: false
 - autonomous execution: false
 
+### 4.2 Runtime Adapter Bridge
+
+Runtime adapters are thin plugs, not new learning controllers. Hermes is the
+first concrete one: the adapter observes Hermes plugin hooks, `skill_manage`,
+`memory`, `session_search`, and curator/background-review traces, then turns
+them into Qianxuesen research digests or replay-required evolution candidates.
+
+The universal rule stays the same for other frameworks: the framework carries
+runtime events, while Qianxuesen owns route, replay, tournament, and promotion.
+Each framework still needs a small adapter because hooks and tool names differ.
+The shared contract keeps those adapters replaceable.
+
 ### 5. Routing Plane
 
 The router decides the artifact class:
@@ -184,9 +197,10 @@ review.
 
 The current-line smoke and calibration commands are narrower shadow guards. They
 cover session review, work-order routing, tournament, vector classification,
-retrieval ranking, skill-evolution supervision, Zilliz adapter dry-run, route
-coverage, repair/work-order mapping, perception hints, and judge-escalation
-value without touching VPS or production state. The signal-layer details live in
+retrieval ranking, skill-evolution supervision, Hermes runtime adapter
+normalization, Zilliz adapter dry-run, route coverage, repair/work-order
+mapping, perception hints, and judge-escalation value without touching VPS or
+production state. The signal-layer details live in
 [docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
 
 The GitHub Actions workflow `.github/workflows/current-line-shadow.yml` pins

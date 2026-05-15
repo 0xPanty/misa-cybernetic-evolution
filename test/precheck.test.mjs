@@ -27,7 +27,7 @@ test("repository dry-run precheck passes", async () => {
   assert.ok(result.phase_summary["current-line"].total > 0);
   assertPhaseCounts(result.phase_summary, "static", 4);
   assertPhaseCounts(result.phase_summary, "contracts", 88);
-  assertPhaseCounts(result.phase_summary, "bridges", 18);
+  assertPhaseCounts(result.phase_summary, "bridges", 21);
   assertPhaseCounts(result.phase_summary, "current-line", 21);
   assertPhaseCounts(result.phase_summary, "smoke", 12);
   assert.equal(result.checks.every((check) => Object.values(PHASES).includes(check.phase)), true);
