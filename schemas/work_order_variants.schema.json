@@ -11,6 +11,7 @@
     "created_at",
     "seed",
     "mutation_policy",
+    "model_role_policy",
     "source_routing_summary",
     "summary",
     "work_order_results",
@@ -45,17 +46,20 @@
             "default_call_policy",
             "intervention_rule",
             "allowed_role",
+            "mutation_crossover_policy",
             "route_or_winner_authority"
           ],
           "properties": {
             "default_call_policy": { "type": "string", "const": "do_not_call" },
             "intervention_rule": { "type": "string" },
             "allowed_role": { "type": "string", "const": "critique_only" },
+            "mutation_crossover_policy": { "$ref": "#/$defs/mutation_crossover_policy" },
             "route_or_winner_authority": { "type": "boolean", "const": false }
           }
         }
       }
     },
+    "model_role_policy": { "$ref": "#/$defs/model_role_separation" },
     "source_routing_summary": { "type": "object", "additionalProperties": true },
     "summary": {
       "type": "object",
@@ -66,6 +70,7 @@
         "winner_count",
         "rejected_variant_count",
         "llm_critique_recommended_count",
+        "llm_mutation_crossover_review_worthy_count",
         "llm_api_calls",
         "external_api_calls",
         "by_winner_strategy"
@@ -76,6 +81,7 @@
         "winner_count": { "type": "integer", "minimum": 0 },
         "rejected_variant_count": { "type": "integer", "minimum": 0 },
         "llm_critique_recommended_count": { "type": "integer", "minimum": 0 },
+        "llm_mutation_crossover_review_worthy_count": { "type": "integer", "minimum": 0 },
         "llm_api_calls": { "type": "integer", "const": 0 },
         "external_api_calls": { "type": "integer", "const": 0 },
         "by_winner_strategy": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
@@ -128,6 +134,86 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "mutation_crossover_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "default_call_policy",
+        "activation_rule",
+        "allowed_role_if_enabled",
+        "route_or_winner_authority",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean", "const": false },
+        "default_call_policy": { "type": "string", "const": "do_not_call" },
+        "activation_rule": { "type": "string" },
+        "allowed_role_if_enabled": { "type": "string", "const": "candidate_suggester_only" },
+        "route_or_winner_authority": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "model_role_separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "deterministic_controller",
+        "evolution_model",
+        "task_model"
+      ],
+      "properties": {
+        "policy": { "type": "string", "const": "deterministic_controller_owns_route_score_and_selection" },
+        "deterministic_controller": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["owns_route", "owns_scoring", "owns_selection", "owns_safety_gate"],
+          "properties": {
+            "owns_route": { "type": "boolean", "const": true },
+            "owns_scoring": { "type": "boolean", "const": true },
+            "owns_selection": { "type": "boolean", "const": true },
+            "owns_safety_gate": { "type": "boolean", "const": true }
+          }
+        },
+        "evolution_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "default_call_policy",
+            "can_execute",
+            "can_change_route",
+            "can_change_winner",
+            "can_write_memory"
+          ],
+          "properties": {
+            "role": { "type": "string", "const": "optional_candidate_critic_or_mutation_crossover_suggester" },
+            "default_call_policy": { "type": "string", "const": "do_not_call" },
+            "can_execute": { "type": "boolean", "const": false },
+            "can_change_route": { "type": "boolean", "const": false },
+            "can_change_winner": { "type": "boolean", "const": false },
+            "can_write_memory": { "type": "boolean", "const": false }
+          }
+        },
+        "task_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "called_by_variant_layer",
+            "can_self_select_candidate",
+            "can_bypass_acceptance_or_forbidden_scope"
+          ],
+          "properties": {
+            "role": { "type": "string", "const": "approved_work_order_executor_after_handoff" },
+            "called_by_variant_layer": { "type": "boolean", "const": false },
+            "can_self_select_candidate": { "type": "boolean", "const": false },
+            "can_bypass_acceptance_or_forbidden_scope": { "type": "boolean", "const": false }
+          }
+        }
+      }
+    },
     "work_order_result": {
       "type": "object",
       "additionalProperties": false,
@@ -142,7 +228,9 @@
         "variants",
         "winner",
         "loser_ledger",
-        "llm_review_gate"
+        "llm_review_gate",
+        "llm_mutation_crossover_gate",
+        "model_role_separation"
       ],
       "properties": {
         "work_order_id": { "type": "string" },
@@ -194,7 +282,9 @@
             }
           }
         },
-        "llm_review_gate": { "$ref": "#/$defs/llm_review_gate" }
+        "llm_review_gate": { "$ref": "#/$defs/llm_review_gate" },
+        "llm_mutation_crossover_gate": { "$ref": "#/$defs/llm_mutation_crossover_gate" },
+        "model_role_separation": { "$ref": "#/$defs/model_role_separation" }
       }
     },
     "variant": {
@@ -334,6 +424,42 @@
         "should_change_winner": { "type": "boolean", "const": false },
         "allowed_outputs": { "$ref": "#/$defs/string_array" },
         "forbidden_outputs": { "$ref": "#/$defs/string_array" },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "llm_mutation_crossover_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "candidate_value",
+        "level",
+        "call_policy",
+        "activation_required",
+        "reason",
+        "trigger_signals",
+        "allowed_outputs_if_enabled",
+        "forbidden_outputs",
+        "mutation_candidate_allowed",
+        "crossover_candidate_allowed",
+        "should_change_winner",
+        "route_or_winner_authority",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean", "const": false },
+        "candidate_value": { "type": "string", "enum": ["none", "diagnostic_only", "review_worthy"] },
+        "level": { "type": "string", "enum": ["none", "medium", "high"] },
+        "call_policy": { "type": "string", "const": "do_not_call" },
+        "activation_required": { "type": "string", "const": "explicit_manual_enable_after_holdout_lift" },
+        "reason": { "type": "string" },
+        "trigger_signals": { "$ref": "#/$defs/string_array" },
+        "allowed_outputs_if_enabled": { "$ref": "#/$defs/string_array" },
+        "forbidden_outputs": { "$ref": "#/$defs/string_array" },
+        "mutation_candidate_allowed": { "type": "boolean", "const": false },
+        "crossover_candidate_allowed": { "type": "boolean", "const": false },
+        "should_change_winner": { "type": "boolean", "const": false },
+        "route_or_winner_authority": { "type": "boolean", "const": false },
         "llm_api_calls": { "type": "integer", "const": 0 }
       }
     }

@@ -92,5 +92,9 @@ With the follow-up selection/update and diversity guard enabled by default:
   low-risk samples use 3
 - average lift and held-out `test` lift stay unchanged at `+0.168` and
   `+0.176`
+- LLM mutation/crossover stays disabled with `enabled_count=0`
+- 70 high-risk boundary comparisons are marked review-worthy for future
+  stronger-model critique, with `llm_api_calls=0`
+- model-role separation is clean for all 140 comparisons
 - `llm_api_calls=0`
 - `external_api_calls=0`

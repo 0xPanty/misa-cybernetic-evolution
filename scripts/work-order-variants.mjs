@@ -62,9 +62,10 @@ if (hasArg("json")) {
   console.log(`work_orders=${result.summary.work_order_count}`);
   console.log(`variants=${result.summary.variant_count}`);
   console.log(`llm_critique_recommended=${result.summary.llm_critique_recommended_count}`);
+  console.log(`llm_mutation_crossover_review_worthy=${result.summary.llm_mutation_crossover_review_worthy_count}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
   for (const item of result.work_order_results) {
-    console.log(`- ${item.work_order_id} winner=${item.winner.strategy} llm_review=${item.llm_review_gate.level}`);
+    console.log(`- ${item.work_order_id} winner=${item.winner.strategy} llm_review=${item.llm_review_gate.level} llm_mutation_crossover=${item.llm_mutation_crossover_gate.level}`);
   }
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);

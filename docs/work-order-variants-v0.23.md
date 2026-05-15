@@ -45,6 +45,52 @@ Allowed LLM outputs are critique notes, risk notes, clarity improvements,
 verification gaps, or overdesign warnings. Forbidden outputs include execution,
 publication, memory writes, skill installs, and replay bypass.
 
+## LLM Mutation/Crossover Gate
+
+LLM mutation and crossover are now formalized, but disabled by default. The
+variant layer can say a high-value case is review-worthy, but it still does not
+generate model candidates.
+
+Allowed outputs if explicitly enabled later are limited to:
+
+- mutation suggestion;
+- crossover suggestion;
+- verification gap;
+- overdesign warning.
+
+Forbidden outputs stay hard-blocked:
+
+- execute work orders;
+- change route;
+- change winner without deterministic rescore;
+- publish;
+- write memory;
+- install skills;
+- skip holdout.
+
+The current default is:
+
+```text
+enabled=false
+call_policy=do_not_call
+mutation_candidate_allowed=false
+crossover_candidate_allowed=false
+route_or_winner_authority=false
+llm_api_calls=0
+```
+
+## Model Role Separation
+
+The work-order layer now states the split explicitly:
+
+- deterministic controller owns route, scoring, selection, and safety gates;
+- evolution model, if enabled later, can only critique or suggest candidates;
+- task model is not called by this layer and cannot self-select candidates;
+- execution still belongs to the normal approved handoff path.
+
+This keeps the Qianxuesen control loop in charge. A stronger model can become a
+sensor or proposal source later, not the controller.
+
 ## Command
 
 ```bash

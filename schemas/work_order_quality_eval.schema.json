@@ -78,6 +78,8 @@
         "by_risk",
         "by_split",
         "llm_critique_recommended_count",
+        "llm_mutation_crossover",
+        "model_role_separation",
         "llm_api_calls",
         "external_api_calls",
         "qianxuesen_signal_fit",
@@ -109,6 +111,8 @@
         "by_risk": { "$ref": "#/$defs/count_map" },
         "by_split": { "$ref": "#/$defs/count_map" },
         "llm_critique_recommended_count": { "type": "integer", "minimum": 0 },
+        "llm_mutation_crossover": { "$ref": "#/$defs/llm_mutation_crossover_summary" },
+        "model_role_separation": { "$ref": "#/$defs/model_role_separation_summary" },
         "llm_api_calls": { "type": "integer", "const": 0 },
         "external_api_calls": { "type": "integer", "const": 0 },
         "qianxuesen_signal_fit": {
@@ -314,6 +318,48 @@
         "retained_strategy_counts": { "$ref": "#/$defs/count_map" }
       }
     },
+    "llm_mutation_crossover_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled_count",
+        "review_worthy_count",
+        "diagnostic_only_count",
+        "mutation_candidate_allowed_count",
+        "crossover_candidate_allowed_count",
+        "route_or_winner_authority_count",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "enabled_count": { "type": "integer", "const": 0 },
+        "review_worthy_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_only_count": { "type": "integer", "minimum": 0 },
+        "mutation_candidate_allowed_count": { "type": "integer", "const": 0 },
+        "crossover_candidate_allowed_count": { "type": "integer", "const": 0 },
+        "route_or_winner_authority_count": { "type": "integer", "const": 0 },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "model_role_separation_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "clean_split_count",
+        "evolution_model_call_count",
+        "evolution_model_winner_authority_count",
+        "task_model_called_count",
+        "task_model_self_select_count"
+      ],
+      "properties": {
+        "policy": { "type": "string", "const": "deterministic_controller_owns_route_score_and_selection" },
+        "clean_split_count": { "type": "integer", "minimum": 0 },
+        "evolution_model_call_count": { "type": "integer", "const": 0 },
+        "evolution_model_winner_authority_count": { "type": "integer", "const": 0 },
+        "task_model_called_count": { "type": "integer", "const": 0 },
+        "task_model_self_select_count": { "type": "integer", "const": 0 }
+      }
+    },
     "recommendation": {
       "type": "object",
       "additionalProperties": false,
@@ -405,6 +451,52 @@
         "reason": { "type": "string" }
       }
     },
+    "llm_mutation_crossover_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "candidate_value",
+        "level",
+        "call_policy",
+        "mutation_candidate_allowed",
+        "crossover_candidate_allowed",
+        "should_change_winner",
+        "route_or_winner_authority",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean", "const": false },
+        "candidate_value": { "type": "string", "enum": ["none", "diagnostic_only", "review_worthy"] },
+        "level": { "type": "string", "enum": ["none", "medium", "high"] },
+        "call_policy": { "type": "string", "const": "do_not_call" },
+        "mutation_candidate_allowed": { "type": "boolean", "const": false },
+        "crossover_candidate_allowed": { "type": "boolean", "const": false },
+        "should_change_winner": { "type": "boolean", "const": false },
+        "route_or_winner_authority": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "model_role_separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "deterministic_controller_owns_selection",
+        "evolution_model_call_policy",
+        "evolution_model_can_change_winner",
+        "task_model_called_by_eval",
+        "task_model_can_self_select_candidate"
+      ],
+      "properties": {
+        "policy": { "type": "string", "const": "deterministic_controller_owns_route_score_and_selection" },
+        "deterministic_controller_owns_selection": { "type": "boolean", "const": true },
+        "evolution_model_call_policy": { "type": "string", "const": "do_not_call" },
+        "evolution_model_can_change_winner": { "type": "boolean", "const": false },
+        "task_model_called_by_eval": { "type": "boolean", "const": false },
+        "task_model_can_self_select_candidate": { "type": "boolean", "const": false }
+      }
+    },
     "comparison": {
       "type": "object",
       "additionalProperties": false,
@@ -426,6 +518,8 @@
         "selection_update",
         "diversity_guard",
         "llm_review_gate",
+        "llm_mutation_crossover_gate",
+        "model_role_separation",
         "qianxuesen_signals"
       ],
       "properties": {
@@ -456,6 +550,8 @@
             "recommended": { "type": "boolean" }
           }
         },
+        "llm_mutation_crossover_gate": { "$ref": "#/$defs/llm_mutation_crossover_gate" },
+        "model_role_separation": { "$ref": "#/$defs/model_role_separation" },
         "qianxuesen_signals": {
           "type": "object",
           "additionalProperties": false,

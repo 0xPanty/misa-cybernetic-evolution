@@ -115,6 +115,16 @@ The evaluator is local and dry-run by design:
 `llm_review_gate` can recommend a critique, but this evaluator only records the
 recommendation. It does not spend tokens.
 
+LLM mutation/crossover is also a zero-call gate. The evaluator can count cases
+where a stronger model might be useful later, but it cannot generate candidates,
+change winners, change routes, execute, or write memory.
+
+The model-role split is explicit:
+
+- deterministic controller owns route, score, selection, and safety;
+- evolution model is optional candidate critique/suggestion only;
+- task model is not called by this evaluator.
+
 ## Current Local Result Shape
 
 On the committed local fixture corpus, the useful result is not only that the
@@ -150,3 +160,16 @@ The final default keeps the fourth row. It does not lift the numeric score above
 v0.25, but it keeps the same quality and safety numbers while preventing the
 medium-risk winner set from collapsing into one strategy and avoiding 100
 unneeded candidate slots.
+
+The LLM mutation/crossover and model-role split follow-up keeps the same
+numbers:
+
+- `llm_mutation_crossover.enabled_count=0`
+- `llm_mutation_crossover.review_worthy_count=70`
+- `llm_mutation_crossover.llm_api_calls=0`
+- `model_role_separation.clean_split_count=140`
+- `task_model_called_count=0`
+
+The review-worthy cases are high-risk boundary cases. That is intentional:
+future stronger-model value should concentrate around boundary critique, not
+routine low-risk edits.

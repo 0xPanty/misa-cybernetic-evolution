@@ -54,9 +54,12 @@ test("work-order variants generate deterministic seeded choices without executio
   assert.equal(first.summary.work_order_count, routing.work_orders.length);
   assert.equal(first.summary.variant_count, routing.work_orders.length * 5);
   assert.equal(first.summary.llm_api_calls, 0);
+  assert.equal(first.summary.llm_mutation_crossover_review_worthy_count >= 0, true);
   assert.equal(first.safety.executes_work_orders, false);
   assert.equal(first.safety.writes_persistent_memory, false);
   assert.equal(first.safety.installs_skills, false);
+  assert.equal(first.model_role_policy.evolution_model.default_call_policy, "do_not_call");
+  assert.equal(first.model_role_policy.task_model.called_by_variant_layer, false);
 
   const orderResult = first.work_order_results[0];
   assert.equal(orderResult.variants.length, 5);
@@ -65,6 +68,12 @@ test("work-order variants generate deterministic seeded choices without executio
   assert.equal(orderResult.variants.every((variant) => variant.constraints.no_llm_call), true);
   assert.equal(orderResult.variants.every((variant) => variant.safety.calls_llm === false), true);
   assert.ok(orderResult.llm_review_gate.trigger_signals.some((signal) => signal.startsWith("value:")));
+  assert.equal(orderResult.llm_mutation_crossover_gate.enabled, false);
+  assert.equal(orderResult.llm_mutation_crossover_gate.call_policy, "do_not_call");
+  assert.equal(orderResult.llm_mutation_crossover_gate.mutation_candidate_allowed, false);
+  assert.equal(orderResult.llm_mutation_crossover_gate.crossover_candidate_allowed, false);
+  assert.equal(orderResult.llm_mutation_crossover_gate.route_or_winner_authority, false);
+  assert.equal(orderResult.model_role_separation.deterministic_controller.owns_selection, true);
 });
 
 test("work-order variants validate against schema and gate LLM critique by value signals", async () => {
@@ -82,10 +91,18 @@ test("work-order variants validate against schema and gate LLM critique by value
   assert.equal(result.summary.llm_api_calls, 0);
   assert.equal(result.summary.external_api_calls, 0);
   assert.equal(result.mutation_policy.llm_policy.route_or_winner_authority, false);
+  assert.equal(result.mutation_policy.llm_policy.mutation_crossover_policy.enabled, false);
+  assert.equal(result.mutation_policy.llm_policy.mutation_crossover_policy.llm_api_calls, 0);
+  assert.equal(result.model_role_policy.deterministic_controller.owns_route, true);
+  assert.equal(result.model_role_policy.evolution_model.can_change_winner, false);
+  assert.equal(result.model_role_policy.task_model.called_by_variant_layer, false);
   for (const orderResult of result.work_order_results) {
     assert.equal(orderResult.llm_review_gate.should_change_winner, false);
     assert.equal(orderResult.llm_review_gate.llm_api_calls, 0);
     assert.ok(["do_not_call", "call_when_auto_enabled"].includes(orderResult.llm_review_gate.call_policy));
+    assert.equal(orderResult.llm_mutation_crossover_gate.should_change_winner, false);
+    assert.equal(orderResult.llm_mutation_crossover_gate.llm_api_calls, 0);
+    assert.equal(orderResult.model_role_separation.evolution_model.can_execute, false);
   }
 });
 
@@ -110,6 +127,8 @@ test("work-order variants preserve required strategies under smaller budgets", a
     assert.ok(orderResult.variants.some((variant) => variant.strategy === "boundary_tightening"));
     assert.equal(orderResult.variants.every((variant) => variant.constraints.no_direct_execution), true);
     assert.equal(orderResult.variants.every((variant) => variant.safety.calls_llm === false), true);
+    assert.equal(orderResult.llm_mutation_crossover_gate.llm_api_calls, 0);
+    assert.equal(orderResult.model_role_separation.task_model.can_self_select_candidate, false);
   }
 });
 
@@ -159,6 +178,8 @@ test("work-order variant CLI writes clean JSON handoff artifacts", async () => {
     assert.equal(result.ok, true);
     assert.equal(result.seed, "cli-test-seed");
     assert.equal(result.summary.llm_api_calls, 0);
+    assert.equal(result.summary.llm_mutation_crossover_review_worthy_count >= 0, true);
+    assert.equal(result.model_role_policy.evolution_model.default_call_policy, "do_not_call");
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

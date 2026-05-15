@@ -359,6 +359,83 @@ function buildLlmReviewGate(order, variants, winner) {
   };
 }
 
+function buildLlmMutationCrossoverGate(order, variants, winner, llmReviewGate) {
+  const sorted = [...variants].sort((a, b) => b.scores.composite - a.scores.composite);
+  const runnerUp = sorted.find((variant) => variant.variant_id !== winner.variant_id);
+  const margin = runnerUp ? winner.scores.composite - runnerUp.scores.composite : 1;
+  const strategyCount = new Set(variants.map((variant) => variant.strategy)).size;
+  const highValueButUncertain = llmReviewGate.recommended && margin <= 0.1;
+  const candidateValue = highValueButUncertain && order.risk_level !== "low"
+    ? "review_worthy"
+    : llmReviewGate.level === "medium"
+      ? "diagnostic_only"
+      : "none";
+
+  return {
+    enabled: false,
+    candidate_value: candidateValue,
+    level: candidateValue === "review_worthy" ? "high" : candidateValue === "diagnostic_only" ? "medium" : "none",
+    call_policy: "do_not_call",
+    activation_required: "explicit_manual_enable_after_holdout_lift",
+    reason: candidateValue === "review_worthy"
+      ? "A stronger model could critique mutation or crossover ideas, but the deterministic controller keeps winner authority."
+      : "Deterministic candidates are enough for this work order; LLM mutation/crossover would add cost before proven value.",
+    trigger_signals: [
+      `risk:${order.risk_level}`,
+      `strategy_count:${strategyCount}`,
+      `winner_margin:${round(margin)}`,
+      `review_gate:${llmReviewGate.level}`,
+      `winner_strategy:${winner.strategy}`
+    ],
+    allowed_outputs_if_enabled: [
+      "mutation_suggestion",
+      "crossover_suggestion",
+      "verification_gap",
+      "overdesign_warning"
+    ],
+    forbidden_outputs: [
+      "execute_work_order",
+      "change_route",
+      "change_winner_without_deterministic_rescore",
+      "publish_change",
+      "write_memory",
+      "install_skill",
+      "skip_holdout"
+    ],
+    mutation_candidate_allowed: false,
+    crossover_candidate_allowed: false,
+    should_change_winner: false,
+    route_or_winner_authority: false,
+    llm_api_calls: 0
+  };
+}
+
+function buildModelRoleSeparation() {
+  return {
+    policy: "deterministic_controller_owns_route_score_and_selection",
+    deterministic_controller: {
+      owns_route: true,
+      owns_scoring: true,
+      owns_selection: true,
+      owns_safety_gate: true
+    },
+    evolution_model: {
+      role: "optional_candidate_critic_or_mutation_crossover_suggester",
+      default_call_policy: "do_not_call",
+      can_execute: false,
+      can_change_route: false,
+      can_change_winner: false,
+      can_write_memory: false
+    },
+    task_model: {
+      role: "approved_work_order_executor_after_handoff",
+      called_by_variant_layer: false,
+      can_self_select_candidate: false,
+      can_bypass_acceptance_or_forbidden_scope: false
+    }
+  };
+}
+
 function variantLedger(variants, winner) {
   return variants
     .filter((variant) => variant.variant_id !== winner.variant_id)
@@ -382,6 +459,7 @@ function buildOrderResult(order, { seed, populationSize, requiredStrategies }) {
   const variants = selected.sort((a, b) => b.scores.composite - a.scores.composite || a.variant_id.localeCompare(b.variant_id));
   const winner = chooseWinner(variants);
   const llmReviewGate = buildLlmReviewGate(order, variants, winner);
+  const llmMutationCrossoverGate = buildLlmMutationCrossoverGate(order, variants, winner, llmReviewGate);
 
   return {
     work_order_id: order.work_order_id,
@@ -402,7 +480,9 @@ function buildOrderResult(order, { seed, populationSize, requiredStrategies }) {
       rationale: winner.summary
     },
     loser_ledger: variantLedger(variants, winner),
-    llm_review_gate: llmReviewGate
+    llm_review_gate: llmReviewGate,
+    llm_mutation_crossover_gate: llmMutationCrossoverGate,
+    model_role_separation: buildModelRoleSeparation()
   };
 }
 
@@ -422,6 +502,7 @@ function buildSummary(results) {
     winner_count: results.length,
     rejected_variant_count: variants.filter((variant) => !variant.constraints.hard_gate_passed).length,
     llm_critique_recommended_count: results.filter((result) => result.llm_review_gate.recommended).length,
+    llm_mutation_crossover_review_worthy_count: results.filter((result) => result.llm_mutation_crossover_gate.candidate_value === "review_worthy").length,
     llm_api_calls: 0,
     external_api_calls: 0,
     by_winner_strategy: countBy(results, (result) => result.winner.strategy)
@@ -458,9 +539,18 @@ export function buildWorkOrderVariants({
         default_call_policy: "do_not_call",
         intervention_rule: "recommend critique only when deterministic value, uncertainty, and close-margin signals justify token cost",
         allowed_role: "critique_only",
+        mutation_crossover_policy: {
+          enabled: false,
+          default_call_policy: "do_not_call",
+          activation_rule: "requires explicit manual enablement and side-by-side holdout lift before any LLM mutation or crossover candidate is generated",
+          allowed_role_if_enabled: "candidate_suggester_only",
+          route_or_winner_authority: false,
+          llm_api_calls: 0
+        },
         route_or_winner_authority: false
       }
     },
+    model_role_policy: buildModelRoleSeparation(),
     source_routing_summary: workOrderRouting?.summary ?? {
       work_order_count: 0
     },
@@ -480,7 +570,8 @@ export function buildWorkOrderVariants({
     warnings: [
       "Work-order variants are local draft choices, not execution permission.",
       "Seeded randomness expands the candidate search space while keeping tests reproducible.",
-      "LLM critique is only recommended by value signals; this command does not call a model."
+      "LLM critique is only recommended by value signals; this command does not call a model.",
+      "LLM mutation and crossover are formal gates only; they are disabled by default and have no route, winner, or execution authority."
     ]
   };
 }
@@ -513,6 +604,7 @@ function renderMarkdown(result) {
     `- work_order_count: ${result.summary.work_order_count}`,
     `- variant_count: ${result.summary.variant_count}`,
     `- llm_critique_recommended_count: ${result.summary.llm_critique_recommended_count}`,
+    `- llm_mutation_crossover_review_worthy_count: ${result.summary.llm_mutation_crossover_review_worthy_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
     "",
     "## Safety",
@@ -534,6 +626,7 @@ function renderMarkdown(result) {
       `- winner: ${item.winner.variant_id}`,
       `- winner_strategy: ${item.winner.strategy}`,
       `- llm_review: ${item.llm_review_gate.level}`,
+      `- llm_mutation_crossover: ${item.llm_mutation_crossover_gate.level}`,
       "",
       item.winner.rationale,
       ""

@@ -580,6 +580,25 @@ function compareScores({
       llm_api_calls: orderResult.llm_review_gate.llm_api_calls,
       recommended: orderResult.llm_review_gate.recommended
     },
+    llm_mutation_crossover_gate: {
+      enabled: orderResult.llm_mutation_crossover_gate.enabled,
+      candidate_value: orderResult.llm_mutation_crossover_gate.candidate_value,
+      level: orderResult.llm_mutation_crossover_gate.level,
+      call_policy: orderResult.llm_mutation_crossover_gate.call_policy,
+      mutation_candidate_allowed: orderResult.llm_mutation_crossover_gate.mutation_candidate_allowed,
+      crossover_candidate_allowed: orderResult.llm_mutation_crossover_gate.crossover_candidate_allowed,
+      should_change_winner: orderResult.llm_mutation_crossover_gate.should_change_winner,
+      route_or_winner_authority: orderResult.llm_mutation_crossover_gate.route_or_winner_authority,
+      llm_api_calls: orderResult.llm_mutation_crossover_gate.llm_api_calls
+    },
+    model_role_separation: {
+      policy: orderResult.model_role_separation.policy,
+      deterministic_controller_owns_selection: orderResult.model_role_separation.deterministic_controller.owns_selection,
+      evolution_model_call_policy: orderResult.model_role_separation.evolution_model.default_call_policy,
+      evolution_model_can_change_winner: orderResult.model_role_separation.evolution_model.can_change_winner,
+      task_model_called_by_eval: orderResult.model_role_separation.task_model.called_by_variant_layer,
+      task_model_can_self_select_candidate: orderResult.model_role_separation.task_model.can_self_select_candidate
+    },
     qianxuesen_signals: {
       high_risk_boundary_fit: ["critical", "high"].includes(order.risk_level)
         && winner.strategy === "boundary_tightening",
@@ -835,6 +854,8 @@ function summarizeComparisons(comparisons, corpus) {
   const budgetRows = comparisons.map((item) => item.budget_control);
   const selectionRows = comparisons.map((item) => item.selection_update);
   const diversityRows = comparisons.map((item) => item.diversity_guard);
+  const llmMutationRows = comparisons.map((item) => item.llm_mutation_crossover_gate);
+  const modelRoleRows = comparisons.map((item) => item.model_role_separation);
   const uniqueWorkOrderIds = new Set(comparisons.map((item) => item.work_order_id));
   const uniqueShapes = new Set(comparisons.map(sampleShapeKey));
   const highRisk = comparisons.filter((item) => ["critical", "high"].includes(item.risk_level));
@@ -913,7 +934,34 @@ function summarizeComparisons(comparisons, corpus) {
     by_risk: byRisk,
     by_split: bySplit,
     llm_critique_recommended_count: comparisons.filter((item) => item.llm_review_gate.recommended).length,
-    llm_api_calls: comparisons.reduce((sum, item) => sum + item.llm_review_gate.llm_api_calls, 0),
+    llm_mutation_crossover: {
+      enabled_count: llmMutationRows.filter((item) => item.enabled).length,
+      review_worthy_count: llmMutationRows.filter((item) => item.candidate_value === "review_worthy").length,
+      diagnostic_only_count: llmMutationRows.filter((item) => item.candidate_value === "diagnostic_only").length,
+      mutation_candidate_allowed_count: llmMutationRows.filter((item) => item.mutation_candidate_allowed).length,
+      crossover_candidate_allowed_count: llmMutationRows.filter((item) => item.crossover_candidate_allowed).length,
+      route_or_winner_authority_count: llmMutationRows.filter((item) => item.route_or_winner_authority).length,
+      llm_api_calls: llmMutationRows.reduce((sum, item) => sum + item.llm_api_calls, 0)
+    },
+    model_role_separation: {
+      policy: modelRoleRows[0]?.policy ?? "deterministic_controller_owns_route_score_and_selection",
+      clean_split_count: modelRoleRows.filter((item) => (
+        item.deterministic_controller_owns_selection
+          && item.evolution_model_call_policy === "do_not_call"
+          && !item.evolution_model_can_change_winner
+          && !item.task_model_called_by_eval
+          && !item.task_model_can_self_select_candidate
+      )).length,
+      evolution_model_call_count: modelRoleRows.filter((item) => item.evolution_model_call_policy !== "do_not_call").length,
+      evolution_model_winner_authority_count: modelRoleRows.filter((item) => item.evolution_model_can_change_winner).length,
+      task_model_called_count: modelRoleRows.filter((item) => item.task_model_called_by_eval).length,
+      task_model_self_select_count: modelRoleRows.filter((item) => item.task_model_can_self_select_candidate).length
+    },
+    llm_api_calls: comparisons.reduce((sum, item) => (
+      sum
+        + item.llm_review_gate.llm_api_calls
+        + item.llm_mutation_crossover_gate.llm_api_calls
+    ), 0),
     external_api_calls: 0,
     qianxuesen_signal_fit: {
       high_risk_count: highRisk.length,
@@ -1013,6 +1061,22 @@ function buildRecommendations(summary) {
       priority: "medium",
       reason: "Medium-risk work orders benefit from replay or compact handoff, but this should be enforced by data rather than taste.",
       qianxuesen_fit: "Favor replay-required candidates when risk is medium and source evidence is enough."
+    });
+  }
+  if (summary.model_role_separation.clean_split_count === summary.comparison_count) {
+    recs.push({
+      recommendation_id: "keep_evolution_task_model_split",
+      priority: "high",
+      reason: "The deterministic controller owns route, scoring, selection, and safety while task execution stays outside this evaluator.",
+      qianxuesen_fit: "This keeps evolution as a controlled proposal loop instead of letting a task executor rewrite the control boundary."
+    });
+  }
+  if (summary.llm_mutation_crossover.enabled_count === 0 && summary.llm_mutation_crossover.llm_api_calls === 0) {
+    recs.push({
+      recommendation_id: "keep_llm_mutation_crossover_zero_call",
+      priority: "medium",
+      reason: "Mutation and crossover are now explicit gates, but disabled until holdout data proves they are worth enabling.",
+      qianxuesen_fit: "A stronger model may suggest candidates later, but it cannot own route, winner, memory, or execution authority."
     });
   }
   if (summary.llm_critique_recommended_count > 0 && summary.llm_api_calls === 0) {
@@ -1133,6 +1197,8 @@ export async function runWorkOrderQualityEvaluation({
         "new selected winners must beat the incumbent before replacement",
         "medium-risk near ties should preserve strategy diversity without lowering quality",
         "candidate budget follows risk instead of spending full population on every low-risk work order",
+        "LLM mutation and crossover stay zero-call gates until holdout data proves value",
+        "evolution model suggestions and task model execution stay separated by deterministic route, score, selection, and safety gates",
         "LLM critique remains value-gated and zero-call by default"
       ],
       dev_test_policy: {
@@ -1158,7 +1224,8 @@ export async function runWorkOrderQualityEvaluation({
     warnings: [
       "This evaluates final work-order quality signals; it does not execute any work order.",
       "Local issue/PR fixtures prove the adapter shape and dev/test split, but full benchmark-scale data is still needed before claiming broad quality lift.",
-      "LLM critique recommendations are advisory and zero-call in this evaluation."
+      "LLM critique recommendations are advisory and zero-call in this evaluation.",
+      "LLM mutation/crossover is formalized as a disabled gate only; the evaluator does not generate model candidates."
     ]
   };
 }
@@ -1187,6 +1254,9 @@ function renderMarkdown(result) {
     `- positive_lift_rate: ${result.summary.positive_lift_rate}`,
     `- safety_regression_count: ${result.summary.safety_regression_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
+    `- llm_mutation_crossover_review_worthy_count: ${result.summary.llm_mutation_crossover.review_worthy_count}`,
+    `- llm_mutation_crossover_enabled_count: ${result.summary.llm_mutation_crossover.enabled_count}`,
+    `- model_role_clean_split_count: ${result.summary.model_role_separation.clean_split_count}`,
     `- selection_policy: ${result.summary.selection_update.policy}`,
     `- replacement_allowed_count: ${result.summary.selection_update.replacement_allowed_count}`,
     `- incumbent_retained_count: ${result.summary.selection_update.incumbent_retained_count}`,

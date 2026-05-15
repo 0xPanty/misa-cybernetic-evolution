@@ -60,6 +60,14 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.summary.positive_lift_rate, 1);
   assert.equal(result.summary.regression_count, 0);
   assert.equal(result.summary.safety_regression_count, 0);
+  assert.equal(result.summary.llm_mutation_crossover.enabled_count, 0);
+  assert.equal(result.summary.llm_mutation_crossover.mutation_candidate_allowed_count, 0);
+  assert.equal(result.summary.llm_mutation_crossover.crossover_candidate_allowed_count, 0);
+  assert.equal(result.summary.llm_mutation_crossover.route_or_winner_authority_count, 0);
+  assert.equal(result.summary.llm_mutation_crossover.llm_api_calls, 0);
+  assert.equal(result.summary.model_role_separation.clean_split_count, result.summary.comparison_count);
+  assert.equal(result.summary.model_role_separation.evolution_model_call_count, 0);
+  assert.equal(result.summary.model_role_separation.task_model_called_count, 0);
   assert.equal(result.summary.selection_update.policy, "quality_replacement");
   assert.equal(result.summary.selection_update.incumbent_retained_count, 0);
   assert.equal(result.summary.selection_update.replacement_allowed_count, result.summary.comparison_count);
@@ -79,10 +87,15 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.safety.installs_skills, false);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
+  assert.equal(result.comparisons.every((item) => item.llm_mutation_crossover_gate.call_policy === "do_not_call"), true);
+  assert.equal(result.comparisons.every((item) => item.model_role_separation.deterministic_controller_owns_selection), true);
+  assert.equal(result.comparisons.every((item) => item.model_role_separation.task_model_called_by_eval === false), true);
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "expand_external_issue_pr_samples"));
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_dev_test_split_in_gate"));
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_quality_replacement_rule"));
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_diversity_guard_for_medium_risk"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_evolution_task_model_split"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_llm_mutation_crossover_zero_call"));
 });
 
 test("work-order quality replacement and diversity compare side by side without lowering holdout quality", async () => {
@@ -132,6 +145,8 @@ test("work-order quality replacement and diversity compare side by side without 
   assert.equal(budgeted.summary.positive_lift_rate, 1);
   assert.equal(budgeted.summary.safety_regression_count, 0);
   assert.equal(budgeted.summary.llm_api_calls, 0);
+  assert.equal(budgeted.summary.llm_mutation_crossover.enabled_count, 0);
+  assert.equal(budgeted.summary.model_role_separation.clean_split_count, budgeted.summary.comparison_count);
 });
 
 test("work-order quality evaluation validates against schema", async () => {
@@ -196,6 +211,8 @@ test("work-order quality CLI writes clean JSON handoff artifacts", async () => {
     assert.equal(result.sample_summary.external_issue_pr_sample_count, 6);
     assert.equal(result.summary.budget_control.policy, "risk_adaptive");
     assert.equal(result.summary.budget_control.saved_variant_count_against_fixed5, 30);
+    assert.equal(result.summary.llm_mutation_crossover.enabled_count, 0);
+    assert.equal(result.summary.model_role_separation.task_model_called_count, 0);
     assert.equal(result.summary.dev_test.holdout_passed, true);
     assert.equal(result.summary.llm_api_calls, 0);
   } finally {
