@@ -28,9 +28,10 @@ population, medium-risk work keeps replay/compact/evidence coverage, and
 low-risk work spends fewer candidate slots without losing the held-out quality
 lift.
 LLM mutation/crossover and Evolution/Task model separation are now represented
-as explicit zero-call gates: stronger-model suggestions can be counted as future
-review value, but route, score, selection, safety, and execution stay outside
-LLM authority.
+as explicit zero-call gates: review-worthy boundary signals go straight into
+the current primary agent's inline review context, while any external or
+stronger-model mutation/crossover still requires explicit enablement. Route,
+score, selection, safety, and execution stay outside LLM authority.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,

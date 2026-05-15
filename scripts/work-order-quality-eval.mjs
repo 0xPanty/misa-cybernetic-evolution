@@ -85,6 +85,8 @@ if (hasArg("json")) {
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
   console.log(`llm_mutation_crossover_enabled=${result.summary.llm_mutation_crossover.enabled_count}`);
   console.log(`llm_mutation_crossover_review_worthy=${result.summary.llm_mutation_crossover.review_worthy_count}`);
+  console.log(`primary_agent_inline_review=${result.summary.llm_mutation_crossover.primary_agent_inline_review_count}`);
+  console.log(`separate_llm_call_required=${result.summary.llm_mutation_crossover.separate_llm_call_required_count}`);
   console.log(`model_role_clean_split=${result.summary.model_role_separation.clean_split_count}`);
   console.log(`selection_policy=${result.summary.selection_update.policy}`);
   console.log(`incumbent_retained=${result.summary.selection_update.incumbent_retained_count}`);

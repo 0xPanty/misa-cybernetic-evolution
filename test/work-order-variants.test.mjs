@@ -55,6 +55,8 @@ test("work-order variants generate deterministic seeded choices without executio
   assert.equal(first.summary.variant_count, routing.work_orders.length * 5);
   assert.equal(first.summary.llm_api_calls, 0);
   assert.equal(first.summary.llm_mutation_crossover_review_worthy_count >= 0, true);
+  assert.equal(first.summary.primary_agent_inline_review_count, first.summary.llm_mutation_crossover_review_worthy_count);
+  assert.equal(first.summary.separate_llm_call_required_count, 0);
   assert.equal(first.safety.executes_work_orders, false);
   assert.equal(first.safety.writes_persistent_memory, false);
   assert.equal(first.safety.installs_skills, false);
@@ -69,10 +71,16 @@ test("work-order variants generate deterministic seeded choices without executio
   assert.equal(orderResult.variants.every((variant) => variant.safety.calls_llm === false), true);
   assert.ok(orderResult.llm_review_gate.trigger_signals.some((signal) => signal.startsWith("value:")));
   assert.equal(orderResult.llm_mutation_crossover_gate.enabled, false);
-  assert.equal(orderResult.llm_mutation_crossover_gate.call_policy, "do_not_call");
+  assert.equal(orderResult.llm_mutation_crossover_gate.call_policy, "primary_agent_inline_review");
+  assert.equal(orderResult.llm_mutation_crossover_gate.intervention_mode, "primary_agent_inline_review");
+  assert.equal(orderResult.llm_mutation_crossover_gate.activation_required, "included_in_current_primary_agent_context");
+  assert.equal(orderResult.llm_mutation_crossover_gate.separate_llm_call_required, false);
+  assert.equal(orderResult.llm_mutation_crossover_gate.primary_agent_review_required, true);
+  assert.equal(orderResult.llm_mutation_crossover_gate.external_model_call_policy, "requires_explicit_enable");
   assert.equal(orderResult.llm_mutation_crossover_gate.mutation_candidate_allowed, false);
   assert.equal(orderResult.llm_mutation_crossover_gate.crossover_candidate_allowed, false);
   assert.equal(orderResult.llm_mutation_crossover_gate.route_or_winner_authority, false);
+  assert.equal(orderResult.llm_mutation_crossover_gate.llm_api_calls, 0);
   assert.equal(orderResult.model_role_separation.deterministic_controller.owns_selection, true);
 });
 
@@ -90,6 +98,8 @@ test("work-order variants validate against schema and gate LLM critique by value
   assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
   assert.equal(result.summary.llm_api_calls, 0);
   assert.equal(result.summary.external_api_calls, 0);
+  assert.equal(result.summary.primary_agent_inline_review_count, result.summary.llm_mutation_crossover_review_worthy_count);
+  assert.equal(result.summary.separate_llm_call_required_count, 0);
   assert.equal(result.mutation_policy.llm_policy.route_or_winner_authority, false);
   assert.equal(result.mutation_policy.llm_policy.mutation_crossover_policy.enabled, false);
   assert.equal(result.mutation_policy.llm_policy.mutation_crossover_policy.llm_api_calls, 0);
@@ -102,6 +112,10 @@ test("work-order variants validate against schema and gate LLM critique by value
     assert.ok(["do_not_call", "call_when_auto_enabled"].includes(orderResult.llm_review_gate.call_policy));
     assert.equal(orderResult.llm_mutation_crossover_gate.should_change_winner, false);
     assert.equal(orderResult.llm_mutation_crossover_gate.llm_api_calls, 0);
+    assert.ok(["do_not_call", "primary_agent_inline_review"].includes(orderResult.llm_mutation_crossover_gate.call_policy));
+    assert.ok(["none", "primary_agent_diagnostic_note", "primary_agent_inline_review"].includes(orderResult.llm_mutation_crossover_gate.intervention_mode));
+    assert.equal(orderResult.llm_mutation_crossover_gate.separate_llm_call_required, false);
+    assert.equal(orderResult.llm_mutation_crossover_gate.external_model_call_policy, "requires_explicit_enable");
     assert.equal(orderResult.model_role_separation.evolution_model.can_execute, false);
   }
 });
@@ -179,6 +193,8 @@ test("work-order variant CLI writes clean JSON handoff artifacts", async () => {
     assert.equal(result.seed, "cli-test-seed");
     assert.equal(result.summary.llm_api_calls, 0);
     assert.equal(result.summary.llm_mutation_crossover_review_worthy_count >= 0, true);
+    assert.equal(result.summary.primary_agent_inline_review_count, result.summary.llm_mutation_crossover_review_worthy_count);
+    assert.equal(result.summary.separate_llm_call_required_count, 0);
     assert.equal(result.model_role_policy.evolution_model.default_call_policy, "do_not_call");
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

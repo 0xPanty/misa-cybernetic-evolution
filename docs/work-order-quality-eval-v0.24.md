@@ -119,6 +119,11 @@ LLM mutation/crossover is also a zero-call gate. The evaluator can count cases
 where a stronger model might be useful later, but it cannot generate candidates,
 change winners, change routes, execute, or write memory.
 
+For review-worthy boundary cases, the signal is now routed into the current
+primary agent's inline review context. That does not require a second LLM call.
+External or stronger-model mutation/crossover still stays behind explicit
+enablement and holdout evidence.
+
 The model-role split is explicit:
 
 - deterministic controller owns route, score, selection, and safety;
@@ -166,10 +171,13 @@ numbers:
 
 - `llm_mutation_crossover.enabled_count=0`
 - `llm_mutation_crossover.review_worthy_count=70`
+- `llm_mutation_crossover.primary_agent_inline_review_count=70`
+- `llm_mutation_crossover.separate_llm_call_required_count=0`
 - `llm_mutation_crossover.llm_api_calls=0`
 - `model_role_separation.clean_split_count=140`
 - `task_model_called_count=0`
 
 The review-worthy cases are high-risk boundary cases. That is intentional:
+the current primary agent should look at those boundary signals inline, while
 future stronger-model value should concentrate around boundary critique, not
 routine low-risk edits.

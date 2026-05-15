@@ -49,7 +49,7 @@ publication, memory writes, skill installs, and replay bypass.
 
 LLM mutation and crossover are now formalized, but disabled by default. The
 variant layer can say a high-value case is review-worthy, but it still does not
-generate model candidates.
+generate model candidates or make a separate model call.
 
 Allowed outputs if explicitly enabled later are limited to:
 
@@ -72,12 +72,19 @@ The current default is:
 
 ```text
 enabled=false
-call_policy=do_not_call
+call_policy=primary_agent_inline_review for review-worthy cases, otherwise do_not_call
+separate_llm_call_required=false
+external_model_call_policy=requires_explicit_enable
 mutation_candidate_allowed=false
 crossover_candidate_allowed=false
 route_or_winner_authority=false
 llm_api_calls=0
 ```
+
+In plain terms: if the already-running primary agent sees a review-worthy
+boundary signal, it reviews that signal inline. The system does not first ask
+permission and then spend another LLM call. External or stronger-model mutation
+still requires an explicit enable step after holdout evidence.
 
 ## Model Role Separation
 

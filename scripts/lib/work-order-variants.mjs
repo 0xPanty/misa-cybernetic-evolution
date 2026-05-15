@@ -375,10 +375,20 @@ function buildLlmMutationCrossoverGate(order, variants, winner, llmReviewGate) {
     enabled: false,
     candidate_value: candidateValue,
     level: candidateValue === "review_worthy" ? "high" : candidateValue === "diagnostic_only" ? "medium" : "none",
-    call_policy: "do_not_call",
-    activation_required: "explicit_manual_enable_after_holdout_lift",
+    intervention_mode: candidateValue === "review_worthy"
+      ? "primary_agent_inline_review"
+      : candidateValue === "diagnostic_only"
+        ? "primary_agent_diagnostic_note"
+        : "none",
+    call_policy: candidateValue === "review_worthy" ? "primary_agent_inline_review" : "do_not_call",
+    activation_required: candidateValue === "review_worthy"
+      ? "included_in_current_primary_agent_context"
+      : "explicit_manual_enable_after_holdout_lift",
+    separate_llm_call_required: false,
+    primary_agent_review_required: candidateValue === "review_worthy",
+    external_model_call_policy: "requires_explicit_enable",
     reason: candidateValue === "review_worthy"
-      ? "A stronger model could critique mutation or crossover ideas, but the deterministic controller keeps winner authority."
+      ? "The current primary agent should review this boundary case inline; no separate model call is required and deterministic scoring keeps winner authority."
       : "Deterministic candidates are enough for this work order; LLM mutation/crossover would add cost before proven value.",
     trigger_signals: [
       `risk:${order.risk_level}`,
@@ -503,6 +513,8 @@ function buildSummary(results) {
     rejected_variant_count: variants.filter((variant) => !variant.constraints.hard_gate_passed).length,
     llm_critique_recommended_count: results.filter((result) => result.llm_review_gate.recommended).length,
     llm_mutation_crossover_review_worthy_count: results.filter((result) => result.llm_mutation_crossover_gate.candidate_value === "review_worthy").length,
+    primary_agent_inline_review_count: results.filter((result) => result.llm_mutation_crossover_gate.intervention_mode === "primary_agent_inline_review").length,
+    separate_llm_call_required_count: results.filter((result) => result.llm_mutation_crossover_gate.separate_llm_call_required).length,
     llm_api_calls: 0,
     external_api_calls: 0,
     by_winner_strategy: countBy(results, (result) => result.winner.strategy)
@@ -605,6 +617,8 @@ function renderMarkdown(result) {
     `- variant_count: ${result.summary.variant_count}`,
     `- llm_critique_recommended_count: ${result.summary.llm_critique_recommended_count}`,
     `- llm_mutation_crossover_review_worthy_count: ${result.summary.llm_mutation_crossover_review_worthy_count}`,
+    `- primary_agent_inline_review_count: ${result.summary.primary_agent_inline_review_count}`,
+    `- separate_llm_call_required_count: ${result.summary.separate_llm_call_required_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
     "",
     "## Safety",

@@ -65,6 +65,9 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.summary.llm_mutation_crossover.crossover_candidate_allowed_count, 0);
   assert.equal(result.summary.llm_mutation_crossover.route_or_winner_authority_count, 0);
   assert.equal(result.summary.llm_mutation_crossover.llm_api_calls, 0);
+  assert.equal(result.summary.llm_mutation_crossover.primary_agent_inline_review_count, result.summary.llm_mutation_crossover.review_worthy_count);
+  assert.equal(result.summary.llm_mutation_crossover.primary_agent_review_required_count, result.summary.llm_mutation_crossover.review_worthy_count);
+  assert.equal(result.summary.llm_mutation_crossover.separate_llm_call_required_count, 0);
   assert.equal(result.summary.model_role_separation.clean_split_count, result.summary.comparison_count);
   assert.equal(result.summary.model_role_separation.evolution_model_call_count, 0);
   assert.equal(result.summary.model_role_separation.task_model_called_count, 0);
@@ -87,7 +90,9 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.safety.installs_skills, false);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
-  assert.equal(result.comparisons.every((item) => item.llm_mutation_crossover_gate.call_policy === "do_not_call"), true);
+  assert.equal(result.comparisons.every((item) => ["do_not_call", "primary_agent_inline_review"].includes(item.llm_mutation_crossover_gate.call_policy)), true);
+  assert.equal(result.comparisons.every((item) => item.llm_mutation_crossover_gate.separate_llm_call_required === false), true);
+  assert.equal(result.comparisons.every((item) => item.llm_mutation_crossover_gate.external_model_call_policy === "requires_explicit_enable"), true);
   assert.equal(result.comparisons.every((item) => item.model_role_separation.deterministic_controller_owns_selection), true);
   assert.equal(result.comparisons.every((item) => item.model_role_separation.task_model_called_by_eval === false), true);
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "expand_external_issue_pr_samples"));
@@ -146,6 +151,8 @@ test("work-order quality replacement and diversity compare side by side without 
   assert.equal(budgeted.summary.safety_regression_count, 0);
   assert.equal(budgeted.summary.llm_api_calls, 0);
   assert.equal(budgeted.summary.llm_mutation_crossover.enabled_count, 0);
+  assert.equal(budgeted.summary.llm_mutation_crossover.separate_llm_call_required_count, 0);
+  assert.equal(budgeted.summary.llm_mutation_crossover.primary_agent_inline_review_count, budgeted.summary.llm_mutation_crossover.review_worthy_count);
   assert.equal(budgeted.summary.model_role_separation.clean_split_count, budgeted.summary.comparison_count);
 });
 
