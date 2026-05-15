@@ -228,3 +228,231 @@ It did prove that the downloaded external trajectories are large and rich enough
 to support the next strong test: an adoption-ledger adapter with side-by-side
 work-order quality scoring.
 
+## Layer Plan
+
+There are five layers in this validation track.
+
+Layer 1 is data inventory and signal scouting. It is complete.
+
+Purpose:
+
+```text
+Check what data exists, how large it is, whether it has adoption/rejection/
+failure/resolved/safety signals, and how noisy the raw formats are.
+```
+
+Result:
+
+```text
+The data is useful and large enough, but noisy. It must not flow directly into
+learning or work-order scoring.
+```
+
+Layer 2 is external trajectory adaptation. This is the immediate next step.
+
+Purpose:
+
+```text
+Take one external sample at a time, normalize it into project-native records,
+and record what the current baseline gets right or wrong. Do not change logic
+during this run.
+```
+
+The adapter should output:
+
+```text
+work_order_sample
+adoption_ledger_sample
+rejection_reason_sample
+safety_boundary_sample
+resolved_proxy_sample
+```
+
+Layer 3 is parameter calibration.
+
+Purpose:
+
+```text
+After Layer 2 accumulates enough records, tune weights and thresholds based on
+repeated evidence, not single samples.
+```
+
+Likely calibration targets:
+
+```text
+commit_survival weight
+resolved weight
+session_success weight
+correction/rejection/takeover negative weights
+safety regression penalty
+overdesign penalty
+source refs / acceptance / forbidden scope / stop condition weights
+LLM intervention threshold
+```
+
+Layer 4 is side-by-side rerun.
+
+Purpose:
+
+```text
+Run the same adapted sample set with the old baseline and the calibrated version.
+Keep only changes that improve quality or safety without adding waste.
+```
+
+Required comparison fields:
+
+```text
+avg_delta
+holdout_delta
+safety_regressions
+positive_lift_rate
+adoption_proxy_accuracy
+rejection_reason_accuracy
+overdesign_reduction
+llm_api_calls
+external_api_calls
+```
+
+Layer 5 is real LLM intervention validation.
+
+Purpose:
+
+```text
+Only after the adapter and deterministic calibration are stable, compare
+zero-call baseline vs controlled LLM suggestions.
+```
+
+LLM intervention is only positive if:
+
+```text
+the suggestion is adopted or usefully rejected;
+deterministic rescore improves or protects safety;
+no safety regression appears;
+the adoption ledger shows less waste than the baseline.
+```
+
+## Layer 1 Quant Summary
+
+Downloaded data has already been inventoried and scanned locally.
+
+```text
+ATBench: 1,500 safety samples
+ATBench-Codex: 500 Codex safety rollout samples
+AgentRx GitHub fallback: 18 trajectory files / 10 annotated failures
+SWE-rebench OpenHands: 67,074 coding replay trajectories
+SWE-chat: 5,851 sessions / 5,850 transcripts
+```
+
+SWE-chat full download status:
+
+```text
+transcripts downloaded: 5,850 / 5,850
+missing files: 0
+size mismatch: 0
+```
+
+Layer 1 offline eval output:
+
+```text
+runs/external-trajectory-eval/latest/external-trajectory-eval.json
+runs/external-trajectory-eval/latest/external-trajectory-eval.md
+```
+
+Layer 1 parsed coverage:
+
+```text
+safety_boundary_cases: 2,000
+codex_rollout_cases: 500
+failure_root_cause_cases: 10
+real_collaboration_sessions: 5,851
+real_transcript_events: 3,128,933
+coding_replay_trajectories: 67,074
+resolved_proxy_count: 32,161
+commit_survival_proxy_count: 5,392
+```
+
+SWE-chat useful proxy signals:
+
+```text
+commit survival exists but is weak by itself
+session success exists
+prompt correction exists
+failure report exists
+rejection exists
+takeover exists
+tool-call/action/research counts exist
+```
+
+SWE-chat format noise:
+
+```text
+JSONL transcript files: 5,167
+whole-file JSON transcript files: 683
+malformed/noisy lines still exist
+non-object events exist
+```
+
+This is the main reason Layer 2 must be an adapter/normalizer before any
+project-level scoring.
+
+## Layer 2 Baseline Rule
+
+The next run should fix the current repo version as baseline.
+
+Do:
+
+```text
+run one external sample;
+normalize it;
+record work-order/adoption/safety/rejection fields;
+do not change logic;
+run the next sample;
+repeat until the selected batch is done;
+then analyze the accumulated issue clusters.
+```
+
+Do not:
+
+```text
+fix one sample immediately;
+change weights mid-run;
+let one odd sample drive a mechanism;
+turn on real LLM calls;
+connect live perception;
+write raw external data into git.
+```
+
+The point is to avoid overfitting. Same version, same rules, many samples, then
+one grouped calibration.
+
+## Next Window Recovery Phrase
+
+Use this exact recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution，先读 docs/external-trajectory-eval-handoff-v0.26.md。
+当前最新本地 commit 应为 c3363ab Add external trajectory eval handoff，先用 git status/log 确认。
+SWE-chat / SWE-rebench / ATBench / ATBench-Codex / AgentRx 已完成 Layer 1 离线统计。
+下一步直接做 Layer 2：external trajectory adapter + adoption ledger。
+固定当前版本当 baseline，一条样本一条记录，只累计问题，不边跑边改。
+仍然 shadow-only：不接全量感知、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据。
+跑完一批后再统一做参数校正和 side-by-side。
+```
+
+## Interview-Level Positioning
+
+If all five layers land and the LLM intervention test proves positive, this repo
+can be framed as:
+
+```text
+a control-theoretic learning and evaluation layer for autonomous coding agents
+```
+
+Its strongest claim is not "it calls LLMs". Its strongest claim is:
+
+```text
+agent improvement is treated as a measurable control loop:
+observe, normalize, generate candidates, score, reject or adopt, hold out,
+rescore, and only then preserve experience.
+```
+
