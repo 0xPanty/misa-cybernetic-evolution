@@ -2,9 +2,23 @@ manifest_version: 1
 name: qianxuesen-runtime-adapter
 version: 0.1.0
 description: Observe-only Hermes hook adapter that emits Qianxuesen runtime events.
+entrypoint: __init__.py
+runtime: python
+mode: observe_only
 provides_hooks:
   - pre_tool_call
   - post_tool_call
   - pre_llm_call
   - post_llm_call
   - on_session_end
+default_action: observe
+event_log:
+  format: ndjson
+  env_var: QIANXUESEN_HERMES_EVENT_LOG
+  default_path: ~/.hermes/qianxuesen-runtime-events.ndjson
+safety:
+  blocks_runtime: false
+  writes_hermes_memory: false
+  writes_hermes_skills: false
+  calls_llm: false
+  calls_external_api: false

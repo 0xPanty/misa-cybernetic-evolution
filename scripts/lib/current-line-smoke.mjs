@@ -2,6 +2,7 @@ import path from "node:path";
 import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { runHermesRuntimeAdapter } from "./hermes-runtime-adapter.mjs";
+import { runHermesRuntimePluginDoctor } from "./hermes-runtime-plugin.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { buildPerceptionDigest } from "./perception-sidecar.mjs";
@@ -152,6 +153,19 @@ function summarizeHermesRuntimeAdapter(adapter) {
   };
 }
 
+function summarizeHermesRuntimePluginDoctor(doctor) {
+  return {
+    ok: doctor.ok,
+    checks: doctor.summary,
+    writes_plugin_files: doctor.safety.writes_plugin_files,
+    writes_skills: doctor.safety.writes_skills,
+    writes_persistent_memory: doctor.safety.writes_persistent_memory,
+    blocks_runtime: doctor.safety.blocks_runtime,
+    llm_api_calls: doctor.safety.llm_api_calls,
+    external_api_calls: doctor.safety.external_api_calls
+  };
+}
+
 function noLiveWritesOrProviderCallsCheck({
   routing,
   sessionReview,
@@ -162,7 +176,8 @@ function noLiveWritesOrProviderCallsCheck({
   zillizAdapter,
   retrievalRanker,
   curiosityGate,
-  hermesRuntimeAdapter
+  hermesRuntimeAdapter,
+  hermesRuntimePluginDoctor
 }) {
   const details = {
     durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
@@ -192,7 +207,13 @@ function noLiveWritesOrProviderCallsCheck({
     hermes_adapter_writes_skills: hermesRuntimeAdapter.safety.writes_skills,
     hermes_adapter_blocks_runtime: hermesRuntimeAdapter.safety.blocks_runtime,
     hermes_adapter_llm_api_calls: hermesRuntimeAdapter.safety.llm_api_calls,
-    hermes_adapter_external_api_calls: hermesRuntimeAdapter.safety.external_api_calls
+    hermes_adapter_external_api_calls: hermesRuntimeAdapter.safety.external_api_calls,
+    hermes_plugin_writes_plugin_files: hermesRuntimePluginDoctor.safety.writes_plugin_files,
+    hermes_plugin_writes_persistent_memory: hermesRuntimePluginDoctor.safety.writes_persistent_memory,
+    hermes_plugin_writes_skills: hermesRuntimePluginDoctor.safety.writes_skills,
+    hermes_plugin_blocks_runtime: hermesRuntimePluginDoctor.safety.blocks_runtime,
+    hermes_plugin_llm_api_calls: hermesRuntimePluginDoctor.safety.llm_api_calls,
+    hermes_plugin_external_api_calls: hermesRuntimePluginDoctor.safety.external_api_calls
   };
 
   return checkResult("no live writes or provider calls", (
@@ -224,6 +245,12 @@ function noLiveWritesOrProviderCallsCheck({
     && details.hermes_adapter_blocks_runtime === false
     && details.hermes_adapter_llm_api_calls === 0
     && details.hermes_adapter_external_api_calls === 0
+    && details.hermes_plugin_writes_plugin_files === false
+    && details.hermes_plugin_writes_persistent_memory === false
+    && details.hermes_plugin_writes_skills === false
+    && details.hermes_plugin_blocks_runtime === false
+    && details.hermes_plugin_llm_api_calls === 0
+    && details.hermes_plugin_external_api_calls === 0
   ), details);
 }
 
@@ -237,7 +264,8 @@ function buildCurrentLineSmokeChecks({
   zillizAdapter,
   retrievalRanker,
   curiosityGate,
-  hermesRuntimeAdapter
+  hermesRuntimeAdapter,
+  hermesRuntimePluginDoctor
 }) {
   return [
     checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
@@ -248,6 +276,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
     checkResult("curiosity:signals dry-run", curiosityGate.ok, summarizeCuriosityGate(curiosityGate)),
     checkResult("hermes:adapt-runtime dry-run", hermesRuntimeAdapter.ok, summarizeHermesRuntimeAdapter(hermesRuntimeAdapter)),
+    checkResult("hermes:plugin:doctor dry-run", hermesRuntimePluginDoctor.ok, summarizeHermesRuntimePluginDoctor(hermesRuntimePluginDoctor)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -260,7 +289,8 @@ function buildCurrentLineSmokeChecks({
       zillizAdapter,
       retrievalRanker,
       curiosityGate,
-      hermesRuntimeAdapter
+      hermesRuntimeAdapter,
+      hermesRuntimePluginDoctor
     })
   ];
 }
@@ -332,6 +362,12 @@ export async function runCurrentLineSmoke({
     repoRoot,
     now
   });
+  const hermesRuntimePluginDoctor = await runHermesRuntimePluginDoctor({
+    repoRoot,
+    pluginDir: path.join("examples", "hermes-runtime-plugin"),
+    eventLogFile: path.join("examples", "hermes-runtime-plugin", "sample-events.ndjson"),
+    now
+  });
 
   const checks = buildCurrentLineSmokeChecks({
     routing,
@@ -343,7 +379,8 @@ export async function runCurrentLineSmoke({
     zillizAdapter,
     retrievalRanker,
     curiosityGate,
-    hermesRuntimeAdapter
+    hermesRuntimeAdapter,
+    hermesRuntimePluginDoctor
   });
 
   return {
@@ -357,6 +394,7 @@ export async function runCurrentLineSmoke({
       "skill:evolution",
       "curiosity:signals",
       "hermes:adapt-runtime",
+      "hermes:plugin:doctor",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -384,7 +422,8 @@ export function buildCurrentLineSmokeFromArtifacts({
   zillizAdapter,
   retrievalRanker,
   curiosityGate,
-  hermesRuntimeAdapter
+  hermesRuntimeAdapter,
+  hermesRuntimePluginDoctor
 }) {
   const checks = buildCurrentLineSmokeChecks({
     routing: workOrderRouting,
@@ -396,7 +435,8 @@ export function buildCurrentLineSmokeFromArtifacts({
     zillizAdapter,
     retrievalRanker,
     curiosityGate,
-    hermesRuntimeAdapter
+    hermesRuntimeAdapter,
+    hermesRuntimePluginDoctor
   });
 
   return {

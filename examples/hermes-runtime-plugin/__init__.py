@@ -11,7 +11,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 HOOKS = (
@@ -49,6 +49,40 @@ def _safe_args(args: Any) -> dict[str, Any]:
     }
 
 
+def _safe_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return sorted(str(item) for item in value if item is not None)
+
+
+def _safe_context(context: Any) -> dict[str, Any]:
+    if not isinstance(context, dict):
+        return {}
+    return {
+        "platform": context.get("platform") if isinstance(context.get("platform"), str) else None,
+        "curator_action": context.get("curator_action") if isinstance(context.get("curator_action"), str) else None,
+        "skill_name": context.get("skill_name") if isinstance(context.get("skill_name"), str) else None,
+        "terms": _safe_list(context.get("terms")),
+        "signals": _safe_list(context.get("signals")),
+        "conversation_signals": _safe_list(context.get("conversation_signals")),
+        "evidence_refs": _safe_list(context.get("evidence_refs")),
+        "fingerprint": _stable_hash(context),
+    }
+
+
+def _safe_result(result: Any) -> Optional[dict[str, Any]]:
+    if result is None:
+        return None
+    if not isinstance(result, dict):
+        return {"status": None, "success": None, "fingerprint": _stable_hash(result)}
+    return {
+        "status": result.get("status") if isinstance(result.get("status"), str) else None,
+        "success": result.get("success") if isinstance(result.get("success"), bool) else None,
+        "keys": sorted(str(key) for key in result.keys()),
+        "fingerprint": _stable_hash(result),
+    }
+
+
 def _event(hook: str, payload: dict[str, Any]) -> dict[str, Any]:
     tool_name = payload.get("tool_name")
     args = _safe_args(payload.get("args"))
@@ -62,6 +96,9 @@ def _event(hook: str, payload: dict[str, Any]) -> dict[str, Any]:
         "tool_call_id": payload.get("tool_call_id"),
         "tool_name": tool_name,
         "args": args,
+        "context": _safe_context(payload.get("context")),
+        "result": _safe_result(payload.get("result")),
+        "source_refs": ["qianxuesen-hermes-runtime-plugin"],
         "observed_only": True,
         "contains_raw_private_content": False,
         "qianxuesen_default_mode": "observe_only",

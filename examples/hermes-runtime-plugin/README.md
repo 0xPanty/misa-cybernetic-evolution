@@ -13,3 +13,36 @@ or to `QIANXUESEN_HERMES_EVENT_LOG` when that environment variable is set.
 It deliberately does not block tools, write memory, mutate skills, call models,
 or call external APIs. The generated event stream should be replayed through the
 local `hermes:adapt-runtime` contract before any candidate is considered.
+
+## Local Install
+
+```bash
+npm run hermes:plugin:install
+npm run hermes:plugin:doctor
+```
+
+By default, install copies this folder to:
+
+```text
+~/.hermes/plugins/qianxuesen-runtime-adapter/
+```
+
+For a custom Hermes plugin folder:
+
+```bash
+npm run hermes:plugin:install -- --plugin-dir /path/to/hermes/plugins/qianxuesen-runtime-adapter
+npm run hermes:plugin:doctor -- --plugin-dir /path/to/hermes/plugins/qianxuesen-runtime-adapter
+```
+
+## Replay Captured Events
+
+After Hermes emits hooks, replay the local event log:
+
+```bash
+npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json
+```
+
+The adapter turns research/search traces into `research_digests` and turns
+skill, memory, curator, or failure pressure into replay-required
+`evolution_candidates`. It still does not write memory, install skills, block
+runtime tools, call LLMs, or touch external APIs.

@@ -1,6 +1,6 @@
 {
   "name": "misa-cybernetic-evolution",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "A control-theoretic learning plane for Hermes-style AI agents.",
   "type": "module",
   "license": "Apache-2.0",
@@ -38,6 +38,8 @@
     "zilliz:adapt": "node scripts/zilliz-vector-adapter.mjs",
     "langgraph:bridge": "node scripts/langgraph-qianxuesen-bridge.mjs",
     "hermes:adapt-runtime": "node scripts/hermes-runtime-adapter.mjs",
+    "hermes:plugin:install": "node scripts/hermes-runtime-plugin-install.mjs",
+    "hermes:plugin:doctor": "node scripts/hermes-runtime-plugin-doctor.mjs",
     "omniagent:footprint": "node scripts/omniagent-footprint-bridge.mjs",
     "smoke:current-line": "node scripts/current-line-smoke.mjs",
     "calibrate:current-line": "node scripts/current-line-calibration.mjs",

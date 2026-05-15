@@ -8,6 +8,7 @@ import {
   queryLocalVectorStore,
   upsertDistillationToLocalVectorStore
 } from "./local-vector-store.mjs";
+import { runHermesRuntimePluginDoctor } from "./hermes-runtime-plugin.mjs";
 import { runPrecheck } from "./precheck-core.mjs";
 import { runQianxuesenFullLoopHealth } from "./qianxuesen-full-loop-health.mjs";
 import { validateSchemas } from "./schema-validation.mjs";
@@ -21,6 +22,9 @@ const REQUIRED_PUBLIC_SCRIPTS = [
   "distill:misa",
   "skill:evolution",
   "vector-store:local",
+  "hermes:adapt-runtime",
+  "hermes:plugin:install",
+  "hermes:plugin:doctor",
   "smoke:current-line",
   "health:qianxuesen",
   "precheck",
@@ -75,6 +79,12 @@ export async function runPublicRepoDoctor({
   const missingScripts = REQUIRED_PUBLIC_SCRIPTS.filter((name) => !scripts[name]);
   const validate = await validateSchemas({ repoRoot });
   const smoke = await runCurrentLineSmoke({ repoRoot, now });
+  const hermesPluginDoctor = await runHermesRuntimePluginDoctor({
+    repoRoot,
+    pluginDir: path.join("examples", "hermes-runtime-plugin"),
+    eventLogFile: path.join("examples", "hermes-runtime-plugin", "sample-events.ndjson"),
+    now
+  });
   const skillEvolution = await runSkillEvolutionSupervisor({ repoRoot, now });
   const localStoreDryRun = await upsertDistillationToLocalVectorStore({
     repoRoot,
@@ -109,6 +119,13 @@ export async function runPublicRepoDoctor({
     }),
     checkResult("current-line smoke passes", smoke.ok, {
       checks: smoke.summary
+    }),
+    checkResult("Hermes runtime plugin sample is checkable", hermesPluginDoctor.ok, {
+      checks: hermesPluginDoctor.summary,
+      writes_persistent_memory: hermesPluginDoctor.safety.writes_persistent_memory,
+      writes_skills: hermesPluginDoctor.safety.writes_skills,
+      llm_api_calls: hermesPluginDoctor.safety.llm_api_calls,
+      external_api_calls: hermesPluginDoctor.safety.external_api_calls
     }),
     checkResult("skill evolution sample stays replay-gated", skillEvolution.ok && skillEvolution.summary.replay_required_count > 0, {
       candidates: skillEvolution.summary.evolution_candidate_count,

@@ -1,11 +1,13 @@
 # Hermes Runtime Adapter v0.22
 
 `hermes:adapt-runtime` is the first concrete runtime plug for the universal
-Qianxuesen adapter contract.
+Qianxuesen adapter contract. The matching sample plugin lives at
+`examples/hermes-runtime-plugin`.
 
-It is observe-only by default. It does not install into Hermes, start services,
-write Hermes memory, mutate Hermes skills, block runtime tools, call LLMs, or
-call external APIs.
+It is observe-only by default. The adapter does not start services, write Hermes
+memory, mutate Hermes skills, block runtime tools, call LLMs, or call external
+APIs. The install command only copies the local plugin files into a Hermes
+plugin folder.
 
 ## Plain Shape
 
@@ -17,6 +19,29 @@ Hermes hook/tool trace
 ```
 
 Hermes stays the carrier runtime. Qianxuesen stays the learning controller.
+
+## Plugin Install And Doctor
+
+```bash
+npm run hermes:plugin:install
+npm run hermes:plugin:doctor
+```
+
+Default install target:
+
+```text
+~/.hermes/plugins/qianxuesen-runtime-adapter/
+```
+
+Default event log:
+
+```text
+~/.hermes/qianxuesen-runtime-events.ndjson
+```
+
+Use `--plugin-dir` or `--event-log` when Hermes uses a different local path.
+`hermes:plugin:doctor` validates the plugin shape and, when an event log exists,
+replays that NDJSON through `hermes:adapt-runtime`.
 
 ## Mapped Hermes Surfaces
 
@@ -55,6 +80,8 @@ events directly rewrite Qianxuesen memory, skills, policy, or route state.
 
 ```bash
 npm run hermes:adapt-runtime -- --json
+npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json
+npm run hermes:plugin:doctor
 npm run validate:schemas
 npm run smoke:current-line
 npm run precheck

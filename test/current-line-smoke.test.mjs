@@ -26,6 +26,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("skill:evolution"), true);
   assert.equal(result.command_surface.includes("curiosity:signals"), true);
   assert.equal(result.command_surface.includes("hermes:adapt-runtime"), true);
+  assert.equal(result.command_surface.includes("hermes:plugin:doctor"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
@@ -35,6 +36,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("skill:evolution dry-run"));
   assert.ok(checkNames.has("curiosity:signals dry-run"));
   assert.ok(checkNames.has("hermes:adapt-runtime dry-run"));
+  assert.ok(checkNames.has("hermes:plugin:doctor dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -183,6 +185,26 @@ function safeArtifacts() {
         replay_required_count: 4
       },
       safety: {
+        writes_persistent_memory: false,
+        writes_skills: false,
+        blocks_runtime: false,
+        llm_api_calls: 0,
+        external_api_calls: 0
+      }
+    },
+    hermesRuntimePluginDoctor: {
+      ok: true,
+      summary: {
+        total: 10,
+        passed: 10,
+        failed: 0,
+        event_log_present: false,
+        adapter_events: 0,
+        adapter_research_digests: 0,
+        adapter_evolution_candidates: 0
+      },
+      safety: {
+        writes_plugin_files: false,
         writes_persistent_memory: false,
         writes_skills: false,
         blocks_runtime: false,

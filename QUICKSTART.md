@@ -48,6 +48,7 @@ runs/bootstrap-local/latest.json
 ```bash
 npm run vector-store:local -- --mode stats
 npm run vector-store:local -- --mode query --query "public posting policy" --route policy
+npm run hermes:plugin:doctor
 npm run skill:evolution
 npm run curiosity:signals
 npm run health:qianxuesen
@@ -59,6 +60,27 @@ For the heavier curiosity sample check, run:
 
 ```bash
 npm run curiosity:signals -- --source-dir test/fixtures/perception/curiosity-realistic-sources
+```
+
+## Optional Hermes Plugin
+
+To install the observe-only Hermes plugin sample locally:
+
+```bash
+npm run hermes:plugin:install
+npm run hermes:plugin:doctor
+```
+
+It writes local NDJSON events only:
+
+```text
+~/.hermes/qianxuesen-runtime-events.ndjson
+```
+
+Replay those captured events through the adapter:
+
+```bash
+npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json
 ```
 
 ## What This Does Not Do

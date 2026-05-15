@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.21.0`. The current line keeps source-lineage and
+Current package version: `0.22.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
@@ -137,6 +137,8 @@ Two rules matter most:
 | Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
 | Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
 | Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests and replay candidates |
+| Hermes plugin install | `npm run hermes:plugin:install` | copies the observe-only plugin sample into a local Hermes plugin folder |
+| Hermes plugin doctor | `npm run hermes:plugin:doctor` | checks plugin files and replays local NDJSON events when present |
 | Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
 | Adaptive candidate gate | `npm run adaptive:misa` | local candidate widening only |
 | Signal intake contract | `npm run intake:misa` | cadence contract, no scheduler startup |
@@ -155,7 +157,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, Hermes runtime adapter, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, Hermes runtime adapter/plugin, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -274,6 +276,17 @@ the universal adapter contract:
 Plain rule: Hermes can be the carrier runtime, but Qianxuesen still owns the
 learning decision. The default adapter is observe-only and call-free.
 
+The installable sample lives in `examples/hermes-runtime-plugin`:
+
+```bash
+npm run hermes:plugin:install
+npm run hermes:plugin:doctor
+npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json
+```
+
+The plugin only writes a local NDJSON event log. It does not block Hermes tools,
+write Hermes memory, change skills, call models, or call external APIs.
+
 ## Evolution Tournament
 
 The tournament is an inner optimizer, not the learning controller.
@@ -336,9 +349,9 @@ For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
 `--out-file <path>` so the file contains only JSON.
 
-## v0.21 Direction
+## v0.22 Direction
 
-Do not add another governance layer by default. The useful v0.21 work is:
+Do not add another governance layer by default. The useful v0.22 work is:
 
 1. keep the current route labels and tournament variants stable;
 2. keep vector-memory records traceable back to opaque original-source refs;
@@ -351,7 +364,9 @@ Do not add another governance layer by default. The useful v0.21 work is:
    redacted samples with `npm run calibrate:current-line`;
 8. keep the signal-layer map visible in calibration output instead of spreading
    it across chat-only explanations;
-9. reduce maintenance noise in precheck, README, and tests.
+9. reduce maintenance noise in precheck, README, and tests;
+10. close the Hermes adapter loop with an installable observe-only plugin and
+    local NDJSON replay.
 
 The scarce thing now is not more abstraction. It is calibration evidence and
 replayable source lineage.
@@ -365,7 +380,7 @@ and only widen authority when the user explicitly asks for it.
 Current-state docs:
 
 Versioned document names such as v0.18 and v0.20 are historical anchors for
-features that still feed the v0.21 line. They are not separate current release
+features that still feed the v0.22 line. They are not separate current release
 tracks; use the command map and validation chain above for the current surface.
 
 - [Architecture](./ARCHITECTURE.md)

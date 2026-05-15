@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import {
   buildHermesRuntimeAdapterReport,
@@ -53,6 +56,57 @@ test("Hermes runtime adapter output validates against the universal adapter sche
   });
 
   assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+});
+
+test("Hermes runtime adapter can read observe-only plugin NDJSON event logs", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-hermes-runtime-events-"));
+  const eventLog = path.join(tempRoot, "events.ndjson");
+  const events = [
+    {
+      event_id: "plugin-pretool-skill-patch-001",
+      hook: "pre_tool_call",
+      tool_name: "skill_manage",
+      args: {
+        action: "patch",
+        name: "farcaster-reply",
+        fingerprint: "abc"
+      },
+      context: {
+        conversation_signals: ["knowledge_gap", "user_correction"],
+        terms: ["Hermes", "Farcaster"]
+      }
+    },
+    {
+      event_id: "plugin-posttool-session-search-002",
+      hook: "post_tool_call",
+      tool_name: "session_search",
+      args: {
+        query: "Farcaster protocol changes"
+      },
+      result: {
+        success: true
+      },
+      context: {
+        conversation_signals: ["research_needed"],
+        terms: ["session_search"]
+      }
+    }
+  ];
+  await fs.writeFile(eventLog, `${events.map((event) => JSON.stringify(event)).join("\n")}\n`, "utf8");
+
+  const result = await runHermesRuntimeAdapter({
+    eventLogFile: eventLog,
+    runtimeCommit: "test-runtime",
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.adapter.runtime_commit, "test-runtime");
+  assert.equal(result.summary.event_count, 2);
+  assert.equal(result.summary.evolution_candidate_count, 2);
+  assert.equal(result.summary.research_digest_count, 2);
+  assert.equal(result.safety.writes_skills, false);
+  assert.equal(result.safety.llm_api_calls, 0);
 });
 
 test("empty Hermes event capture stays observe-only", () => {

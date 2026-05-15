@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 export const DEFAULT_HERMES_RUNTIME_EVENTS = "test/fixtures/hermes-runtime-adapter/hermes-self-improvement-events.json";
+export const DEFAULT_HERMES_RUNTIME_PLUGIN_EVENT_LOG = "~/.hermes/qianxuesen-runtime-events.ndjson";
 
 const REQUIRED_HERMES_HOOKS = [
   "pre_tool_call",
@@ -113,12 +115,40 @@ function asIsoDate(value) {
     : date.toISOString();
 }
 
+function expandHome(relOrAbs) {
+  if (relOrAbs === "~") return os.homedir();
+  if (relOrAbs?.startsWith("~/") || relOrAbs?.startsWith("~\\")) {
+    return path.join(os.homedir(), relOrAbs.slice(2));
+  }
+  return relOrAbs;
+}
+
 function resolvePath(repoRoot, relOrAbs) {
-  return path.isAbsolute(relOrAbs) ? relOrAbs : path.join(repoRoot, relOrAbs);
+  const expanded = expandHome(relOrAbs);
+  return path.isAbsolute(expanded) ? expanded : path.join(repoRoot, expanded);
 }
 
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
+}
+
+function parseNdjson(raw, filePath) {
+  return raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .map((line, index) => ({ line, index: index + 1 }))
+    .filter(({ line }) => line.length > 0)
+    .map(({ line, index }) => {
+      try {
+        return JSON.parse(line);
+      } catch (error) {
+        throw new Error(`Invalid Hermes runtime NDJSON at ${filePath}:${index}: ${error.message}`);
+      }
+    });
+}
+
+export async function readHermesRuntimeEventLog(filePath) {
+  return parseNdjson(await fs.readFile(filePath, "utf8"), filePath);
 }
 
 function collectText(value) {
@@ -705,9 +735,24 @@ export function buildHermesRuntimeAdapterReport({
 export async function runHermesRuntimeAdapter({
   repoRoot = process.cwd(),
   fixtureFile = DEFAULT_HERMES_RUNTIME_EVENTS,
+  eventLogFile,
+  runtime = "hermes-agent",
+  runtimeCommit = "unknown",
+  sourceUrl = "local-hermes-plugin-event-log",
   now = new Date("2026-05-15T00:00:00Z")
 } = {}) {
-  const fixture = await readJson(resolvePath(repoRoot, fixtureFile));
+  const fixture = eventLogFile
+    ? {
+        fixture_id: `hermes-runtime-event-log-${stableSlug(path.basename(eventLogFile))}`,
+        source: {
+          runtime,
+          runtime_commit: runtimeCommit,
+          source_url: sourceUrl
+        },
+        events: await readHermesRuntimeEventLog(resolvePath(repoRoot, eventLogFile))
+      }
+    : await readJson(resolvePath(repoRoot, fixtureFile));
+
   return buildHermesRuntimeAdapterReport({
     fixture,
     now

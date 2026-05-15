@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.21.0`.
+The package is currently `0.22.0`.
 
 The current direction is v0.21 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -46,6 +46,13 @@ The first skill-evolution adapter surface is now present. It adds
 a Farcaster reply operator example. The supervisor can block hard-boundary drift
 and surface replay-required evolution candidates, but it cannot mutate skills,
 write memory, publish content, or promote candidates without replay.
+
+The Hermes runtime adapter line is now present. It adds
+`hermes:adapt-runtime`, `hermes:plugin:install`, and
+`hermes:plugin:doctor`. The adapter can read fixture JSON or observe-only plugin
+NDJSON logs, normalize Hermes hook traces, and surface research digests plus
+replay-required candidates without blocking Hermes, writing memory, mutating
+skills, or calling providers.
 
 ## Version History
 

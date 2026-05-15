@@ -19,6 +19,10 @@ function hasArg(name) {
 const nowArg = readArg("now");
 const result = await runHermesRuntimeAdapter({
   fixtureFile: readArg("fixture-file"),
+  eventLogFile: readArg("event-log"),
+  runtime: readArg("runtime"),
+  runtimeCommit: readArg("runtime-commit"),
+  sourceUrl: readArg("source-url"),
   now: nowArg ? new Date(nowArg) : undefined
 });
 

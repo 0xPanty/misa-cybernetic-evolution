@@ -8,11 +8,11 @@ the beginning. The initial integration is observation-only.
 
 ## Current Line
 
-The current package line is `0.21.0`.
+The current package line is `0.22.0`.
 
 Versioned v0.x references later in this file are history and feature-origin
 anchors. They do not create separate current lines; the current command surface
-is the v0.21 shadow chain described here.
+is the v0.22 shadow chain described here.
 
 For public users, the clone-time path is:
 
@@ -25,7 +25,7 @@ control-learning sidecar: it turns redacted evidence and existing
 Hermes/Zilliz artifacts into local distillates, routed candidates, repair
 tickets, work orders, vector-memory dry-run metadata, a default local vector
 store, retrieval-ranker checks, session-distiller review findings, and
-observe-only runtime adapter reports.
+observe-only Hermes runtime plugin/adapter reports.
 
 Plain version:
 
@@ -130,6 +130,8 @@ Runtime adapters are thin plugs, not new learning controllers. Hermes is the
 first concrete one: the adapter observes Hermes plugin hooks, `skill_manage`,
 `memory`, `session_search`, and curator/background-review traces, then turns
 them into Qianxuesen research digests or replay-required evolution candidates.
+The installable sample under `examples/hermes-runtime-plugin` only writes local
+NDJSON and can be checked with `npm run hermes:plugin:doctor`.
 
 The universal rule stays the same for other frameworks: the framework carries
 runtime events, while Qianxuesen owns route, replay, tournament, and promotion.
@@ -238,10 +240,10 @@ Misa memory, replace Zilliz, publish Farcaster, publish Skills, touch runtime
 services, or start timers.
 
 For Misa, the launch shape is still structure reference plus local precheck.
-The newer v0.19-v0.21 line adds vector-memory lineage, kind-aware retrieval
-ranking, Zilliz adapter dry-run payloads, and read-only session-distiller
-cybernetic review. Those features are confidence-chain inputs, not production
-authority.
+The newer v0.19-v0.22 line adds vector-memory lineage, kind-aware retrieval
+ranking, Zilliz adapter dry-run payloads, read-only session-distiller
+cybernetic review, and the observe-only Hermes runtime plugin/adapter. Those
+features are confidence-chain inputs, not production authority.
 
 ### 8. Work Order Handoff Plane
 
