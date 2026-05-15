@@ -7,11 +7,12 @@ stay focused on current state, current boundary, and current validation.
 
 The package is currently `0.22.0`.
 
-The current direction is v0.21 convergence: keep the control boundary stable,
+The current direction is v0.22 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
 hits by requested kind before same-source context, let the session-distiller ask
 Qianxuesen for read-only work-order review, calibrate the current line on
-redacted samples, and pin the shadow chain in CI.
+redacted samples, pin the shadow chain in CI, and close the Hermes plugin
+adapter loop with local NDJSON replay.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -56,8 +57,8 @@ skills, or calling providers.
 
 ## Version History
 
-Rows before v0.21 are historical anchors for retained behavior. They should not
-be read as competing current tracks; the current line is the v0.21 convergence
+Rows before v0.22 are historical anchors for retained behavior. They should not
+be read as competing current tracks; the current line is the v0.22 convergence
 chain above.
 
 | Version | Added | Boundary |
@@ -83,6 +84,7 @@ chain above.
 | v0.20 | Kind-filtered retrieval plan and same-source reranker | read-side dry-run only, no embeddings or Zilliz write |
 | v0.20.1 | Kind-aware embedding text headers | dry-run payload text only, no provider call or Zilliz write |
 | v0.21 | Session-distiller review, current-line smoke/calibration, shadow CI, and tournament experience ledger | read-only artifact review and local shadow evidence only |
+| v0.22 | Hermes runtime plugin install/doctor plus NDJSON adapter replay | observe-only local event capture, no memory write, skill write, block, LLM, or external API |
 
 ## Historical Sample Validation
 
