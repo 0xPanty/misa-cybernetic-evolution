@@ -11,6 +11,7 @@ const DOCS_TO_CHECK = [
   "docs/skill-control-intake-template.md",
   "docs/work-order-variants-v0.23.md",
   "docs/work-order-quality-eval-v0.24.md",
+  "docs/work-order-external-samples-v0.25.md",
   "docs/local-vector-store-v0.21.md",
   "docs/current-line-calibration-v0.21.md",
   "docs/qianxuesen-full-loop-health-v0.21.md",

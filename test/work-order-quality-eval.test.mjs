@@ -32,8 +32,23 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
 
   assert.equal(result.mode, "work-order-quality-eval");
   assert.equal(result.ok, true);
-  assert.equal(result.summary.comparison_count, 24);
+  assert.equal(result.sample_summary.source_set_count, 14);
+  assert.equal(result.sample_summary.work_order_count, 14);
+  assert.equal(result.sample_summary.external_issue_pr_sample_count, 6);
+  assert.equal(result.sample_summary.dev_sample_count, 3);
+  assert.equal(result.sample_summary.test_sample_count, 3);
+  assert.deepEqual(result.sample_summary.split_counts, {
+    local_regression: 8,
+    dev: 3,
+    test: 3
+  });
+  assert.equal(result.summary.comparison_count, 42);
   assert.equal(result.summary.variant_count, result.summary.comparison_count * 5);
+  assert.equal(result.summary.by_split.local_regression, 24);
+  assert.equal(result.summary.by_split.dev, 9);
+  assert.equal(result.summary.by_split.test, 9);
+  assert.equal(result.summary.dev_test.test.comparison_count, 9);
+  assert.equal(result.summary.dev_test.holdout_passed, true);
   assert.equal(result.summary.positive_lift_rate, 1);
   assert.equal(result.summary.regression_count, 0);
   assert.equal(result.summary.safety_regression_count, 0);
@@ -49,7 +64,8 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.safety.installs_skills, false);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
-  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "add_external_issue_pr_samples"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "expand_external_issue_pr_samples"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_dev_test_split_in_gate"));
 });
 
 test("work-order quality evaluation validates against schema", async () => {
@@ -111,6 +127,8 @@ test("work-order quality CLI writes clean JSON handoff artifacts", async () => {
     assert.equal(result.mode, "work-order-quality-eval");
     assert.equal(result.ok, true);
     assert.equal(result.seeds.length, 3);
+    assert.equal(result.sample_summary.external_issue_pr_sample_count, 6);
+    assert.equal(result.summary.dev_test.holdout_passed, true);
     assert.equal(result.summary.llm_api_calls, 0);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });

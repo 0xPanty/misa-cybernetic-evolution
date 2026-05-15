@@ -9,6 +9,7 @@ The command compares:
 - the baseline `work-order:route` packet
 - the winning `work-order:variants` packet
 - the same source set across multiple deterministic seeds
+- the local regression split plus issue/PR-shaped `dev` and `test` samples
 
 ## Command
 
@@ -21,6 +22,10 @@ For a smaller deterministic sample:
 ```bash
 npm run work-order:evaluate -- --json --dry-run --seeds qa-01,qa-02,qa-03
 ```
+
+By default, v0.25 also loads local issue/PR-shaped samples from
+`examples/work-order-quality/external-issue-pr/`. See
+[work-order-external-samples-v0.25.md](./work-order-external-samples-v0.25.md).
 
 ## Quality Dimensions
 
@@ -74,8 +79,14 @@ command passes. The important signals are:
 - high-risk work orders shift toward boundary tightening
 - medium-risk work orders shift toward replay or compact handoff
 - low-risk work orders stay conservative
-- sample diversity is still limited, so external issue/PR samples are the next
-  necessary evidence source
+- external issue/PR-shaped samples are split into `dev` and `test`
+- held-out `test` lift must pass before we claim the work-order scheme improved
 
-That last point matters. Local fixtures are good regression samples, but they do
+That last point matters. Local fixtures are good regression samples, and the
+new issue/PR-shaped fixtures prove the adapter plus holdout gate. They still do
 not prove broad real-world quality by themselves.
+
+With the default 10 seeds, the current v0.25 corpus runs 140 comparisons across
+700 variants. The old regression-only corpus runs 80 comparisons. The average
+lift changes from `+0.165` to `+0.168`, and the held-out `test` split shows
+`+0.176` with no safety regression, LLM call, or external API call.

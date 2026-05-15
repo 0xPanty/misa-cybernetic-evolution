@@ -1,0 +1,55 @@
+{
+  "schema_version": "misa.external_work_order_sample.v1",
+  "sample_id": "test-queue-replay-timeout",
+  "split": "test",
+  "source": {
+    "dataset": "local_issue_pr_adapter_fixture",
+    "repository": "example/queue-runner",
+    "issue_id": "ISSUE-219",
+    "pull_request_id": "PR-253",
+    "commit_hint": "redacted-queue-timeout",
+    "license_note": "synthetic fixture shaped after public issue/PR benchmarks"
+  },
+  "task": {
+    "title": "Queue retry timeout loses original job id",
+    "problem_statement": "A retry timeout creates a new job id and breaks audit lineage. The work order should force replay evidence so the candidate proves the original id is preserved.",
+    "category": "engineering_repair",
+    "severity": "P2",
+    "risk_level": "medium",
+    "reproduction_commands": [
+      "npm test -- queue/retry-timeout-lineage.test.js"
+    ],
+    "acceptance_criteria": [
+      "retry timeout preserves original job id",
+      "audit lineage includes original and retry attempts",
+      "baseline lineage regression is reproducible",
+      "candidate replay passes"
+    ],
+    "editable_scope": [
+      "src/queue/retry-timeout.js",
+      "test/queue/retry-timeout-lineage.test.js"
+    ],
+    "forbidden_scope": [
+      "production queue",
+      "external queue provider",
+      "deployment scripts",
+      "persistent memory"
+    ],
+    "source_refs": [
+      { "kind": "issue", "id": "ISSUE-219", "note": "lost job id report" },
+      { "kind": "pull_request", "id": "PR-253", "note": "lineage repair draft" },
+      { "kind": "test", "id": "queue/retry-timeout-lineage.test.js" }
+    ]
+  },
+  "labels": {
+    "expected_route": "engineering_repair",
+    "expected_strategy_family": "replay_or_compact",
+    "expected_quality_signal": "holdout medium-risk lineage issue should require replay proof"
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_external_api": false
+  }
+}

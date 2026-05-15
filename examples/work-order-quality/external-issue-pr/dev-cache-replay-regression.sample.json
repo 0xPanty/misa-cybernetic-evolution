@@ -1,0 +1,55 @@
+{
+  "schema_version": "misa.external_work_order_sample.v1",
+  "sample_id": "dev-cache-replay-regression",
+  "split": "dev",
+  "source": {
+    "dataset": "local_issue_pr_adapter_fixture",
+    "repository": "example/cache-worker",
+    "issue_id": "ISSUE-118",
+    "pull_request_id": "PR-155",
+    "commit_hint": "redacted-cache-replay",
+    "license_note": "synthetic fixture shaped after public issue/PR benchmarks"
+  },
+  "task": {
+    "title": "Cache invalidation misses namespace after retry",
+    "problem_statement": "A retry path invalidates the default namespace instead of the source namespace. The work order should preserve reproduction evidence and force a replay comparison before claiming the repair is better.",
+    "category": "engineering_repair",
+    "severity": "P2",
+    "risk_level": "medium",
+    "reproduction_commands": [
+      "npm test -- cache/invalidation.retry.test.js"
+    ],
+    "acceptance_criteria": [
+      "retry invalidates the original namespace",
+      "default namespace behavior remains unchanged",
+      "baseline retry test fails before the fix",
+      "candidate retry test passes after the fix"
+    ],
+    "editable_scope": [
+      "src/cache/invalidation.js",
+      "test/cache/invalidation.retry.test.js"
+    ],
+    "forbidden_scope": [
+      "production cache cluster",
+      "external cache provider",
+      "persistent memory",
+      "deployment scripts"
+    ],
+    "source_refs": [
+      { "kind": "issue", "id": "ISSUE-118", "note": "namespace miss report" },
+      { "kind": "pull_request", "id": "PR-155", "note": "retry fix draft" },
+      { "kind": "test", "id": "cache/invalidation.retry.test.js" }
+    ]
+  },
+  "labels": {
+    "expected_route": "engineering_repair",
+    "expected_strategy_family": "replay_or_compact",
+    "expected_quality_signal": "medium-risk behavior needs baseline-vs-candidate replay"
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_external_api": false
+  }
+}

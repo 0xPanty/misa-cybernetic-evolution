@@ -1,0 +1,57 @@
+{
+  "schema_version": "misa.external_work_order_sample.v1",
+  "sample_id": "test-permission-boundary-regression",
+  "split": "test",
+  "source": {
+    "dataset": "local_issue_pr_adapter_fixture",
+    "repository": "example/project-api",
+    "issue_id": "ISSUE-207",
+    "pull_request_id": "PR-244",
+    "commit_hint": "redacted-permission-boundary",
+    "license_note": "synthetic fixture shaped after public issue/PR benchmarks"
+  },
+  "task": {
+    "title": "Project owner check falls back to organization admin",
+    "problem_statement": "A project-specific permission check falls back to organization admin status when project ownership evidence is missing. The work order must tighten the permission boundary and keep all live authorization surfaces blocked.",
+    "category": "engineering_repair",
+    "severity": "P1",
+    "risk_level": "high",
+    "reproduction_commands": [
+      "npm test -- permissions/project-owner-boundary.test.js",
+      "npm run precheck"
+    ],
+    "acceptance_criteria": [
+      "missing project ownership denies project-owner-only actions",
+      "organization admin checks remain separate",
+      "permission boundary regression test passes",
+      "no live authorization service is touched"
+    ],
+    "editable_scope": [
+      "src/permissions/project-owner.js",
+      "test/permissions/project-owner-boundary.test.js"
+    ],
+    "forbidden_scope": [
+      "live authorization service",
+      "credential files",
+      "deployment scripts",
+      "persistent memory",
+      "external API calls"
+    ],
+    "source_refs": [
+      { "kind": "issue", "id": "ISSUE-207", "note": "authorization fallback report" },
+      { "kind": "pull_request", "id": "PR-244", "note": "boundary repair candidate" },
+      { "kind": "test", "id": "permissions/project-owner-boundary.test.js" }
+    ]
+  },
+  "labels": {
+    "expected_route": "engineering_repair",
+    "expected_strategy_family": "boundary",
+    "expected_quality_signal": "holdout high-risk permission issue should still prefer boundary tightening"
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_external_api": false
+  }
+}

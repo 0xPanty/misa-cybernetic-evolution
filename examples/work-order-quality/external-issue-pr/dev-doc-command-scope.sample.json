@@ -1,0 +1,53 @@
+{
+  "schema_version": "misa.external_work_order_sample.v1",
+  "sample_id": "dev-doc-command-scope",
+  "split": "dev",
+  "source": {
+    "dataset": "local_issue_pr_adapter_fixture",
+    "repository": "example/docs-site",
+    "issue_id": "ISSUE-126",
+    "pull_request_id": "PR-160",
+    "commit_hint": "redacted-doc-command",
+    "license_note": "synthetic fixture shaped after public issue/PR benchmarks"
+  },
+  "task": {
+    "title": "Quickstart names a stale validation command",
+    "problem_statement": "The quickstart references an older validation command. The work order should stay small and avoid turning a documentation fix into a broader refactor.",
+    "category": "engineering_repair",
+    "severity": "P3",
+    "risk_level": "low",
+    "reproduction_commands": [
+      "npm test -- docs-command-surface.test.mjs"
+    ],
+    "acceptance_criteria": [
+      "quickstart uses an existing package script",
+      "docs command surface test passes",
+      "no unrelated docs are rewritten"
+    ],
+    "editable_scope": [
+      "QUICKSTART.md",
+      "test/docs-command-surface.test.mjs"
+    ],
+    "forbidden_scope": [
+      "runtime code",
+      "package dependency changes",
+      "production docs deployment",
+      "persistent memory"
+    ],
+    "source_refs": [
+      { "kind": "issue", "id": "ISSUE-126", "note": "stale command report" },
+      { "kind": "test", "id": "docs-command-surface.test.mjs" }
+    ]
+  },
+  "labels": {
+    "expected_route": "engineering_repair",
+    "expected_strategy_family": "conservative",
+    "expected_quality_signal": "low-risk docs work should stay narrow"
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_external_api": false
+  }
+}

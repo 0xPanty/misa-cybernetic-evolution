@@ -33,7 +33,8 @@ export const SCHEMA_EXAMPLE_PAIRS = [
 
 const SCHEMA_DIRECTORY_PAIRS = [
   ["schemas/misa_learning_fixture.schema.json", "examples/misa-learning", ".fixture.json"],
-  ["schemas/local_distillation_source.schema.json", "examples/misa-distillation", ".json"]
+  ["schemas/local_distillation_source.schema.json", "examples/misa-distillation", ".json"],
+  ["schemas/external_work_order_sample.schema.json", "examples/work-order-quality/external-issue-pr", ".sample.json"]
 ];
 
 const SCHEMA_ONLY_FILES = [
@@ -43,7 +44,8 @@ const SCHEMA_ONLY_FILES = [
   "schemas/omniagent_footprint_bridge.schema.json",
   "schemas/local_vector_store.schema.json",
   "schemas/work_order_variants.schema.json",
-  "schemas/work_order_quality_eval.schema.json"
+  "schemas/work_order_quality_eval.schema.json",
+  "schemas/external_work_order_sample.schema.json"
 ];
 
 async function readJson(filePath) {

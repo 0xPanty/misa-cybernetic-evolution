@@ -5,9 +5,9 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.24.0`.
+The package is currently `0.25.0`.
 
-The current direction is v0.24 convergence: keep the control boundary stable,
+The current direction is v0.25 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
 hits by requested kind before same-source context, let the session-distiller ask
 Qianxuesen for read-only work-order review, calibrate the current line on
@@ -16,7 +16,8 @@ adapter loop with local NDJSON replay. Work-order output now has a seeded local
 variant generator so the system can compare several draft task shapes before
 handoff. The work-order quality evaluator now checks whether the final selected
 work-order packet improves Qianxuesen control-loop quality rather than merely
-passing the command path.
+passing the command path, and it now carries local issue/PR-shaped dev/test
+samples so future tuning has a holdout guard.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -68,12 +69,13 @@ change route/winner authority.
 The work-order quality evaluation line is now present. It adds
 `work-order:evaluate`, a baseline-vs-winner scorer for final work-order packets.
 It tracks source trace, replayability, boundary safety, handoff clarity,
-control-loop fit, Qianxuesen fit, sample diversity, and zero-call safety.
+control-loop fit, Qianxuesen fit, sample diversity, dev/test holdout lift, and
+zero-call safety.
 
 ## Version History
 
-Rows before v0.24 are historical anchors for retained behavior. They should not
-be read as competing current tracks; the current line is the v0.24 convergence
+Rows before v0.25 are historical anchors for retained behavior. They should not
+be read as competing current tracks; the current line is the v0.25 convergence
 chain above.
 
 | Version | Added | Boundary |
@@ -102,6 +104,7 @@ chain above.
 | v0.22 | Hermes runtime plugin install/doctor plus NDJSON adapter replay | observe-only local event capture, no memory write, skill write, block, LLM, or external API |
 | v0.23 | Seeded work-order variants and value-gated LLM critique recommendation | local draft search only, no model call or execution |
 | v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
+| v0.25 | Issue/PR-shaped external work-order samples plus dev/test holdout | local fixture adapter only, no external fetch or execution |
 
 ## Historical Sample Validation
 

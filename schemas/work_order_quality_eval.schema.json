@@ -31,6 +31,10 @@
         "work_order_count",
         "unique_work_order_id_count",
         "unique_work_order_shape_count",
+        "split_counts",
+        "external_issue_pr_sample_count",
+        "dev_sample_count",
+        "test_sample_count",
         "sample_quality"
       ],
       "properties": {
@@ -38,6 +42,10 @@
         "work_order_count": { "type": "integer", "minimum": 0 },
         "unique_work_order_id_count": { "type": "integer", "minimum": 0 },
         "unique_work_order_shape_count": { "type": "integer", "minimum": 0 },
+        "split_counts": { "$ref": "#/$defs/count_map" },
+        "external_issue_pr_sample_count": { "type": "integer", "minimum": 0 },
+        "dev_sample_count": { "type": "integer", "minimum": 0 },
+        "test_sample_count": { "type": "integer", "minimum": 0 },
         "sample_quality": { "type": "string" }
       }
     },
@@ -65,10 +73,12 @@
         "strategy_entropy",
         "by_category",
         "by_risk",
+        "by_split",
         "llm_critique_recommended_count",
         "llm_api_calls",
         "external_api_calls",
-        "qianxuesen_signal_fit"
+        "qianxuesen_signal_fit",
+        "dev_test"
       ],
       "properties": {
         "source_set_count": { "type": "integer", "minimum": 0 },
@@ -91,6 +101,7 @@
         "strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
         "by_category": { "$ref": "#/$defs/count_map" },
         "by_risk": { "$ref": "#/$defs/count_map" },
+        "by_split": { "$ref": "#/$defs/count_map" },
         "llm_critique_recommended_count": { "type": "integer", "minimum": 0 },
         "llm_api_calls": { "type": "integer", "const": 0 },
         "external_api_calls": { "type": "integer", "const": 0 },
@@ -119,6 +130,17 @@
             "source_trace_preserved_count": { "type": "integer", "minimum": 0 },
             "no_direct_execution_count": { "type": "integer", "minimum": 0 }
           }
+        },
+        "dev_test": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dev", "test", "overfit_gap", "holdout_passed"],
+          "properties": {
+            "dev": { "$ref": "#/$defs/split_stats" },
+            "test": { "$ref": "#/$defs/split_stats" },
+            "overfit_gap": { "type": "number" },
+            "holdout_passed": { "type": "boolean" }
+          }
         }
       }
     },
@@ -128,11 +150,23 @@
       "required": [
         "interpretation",
         "required_positive_direction",
+        "dev_test_policy",
         "next_adaptation_candidates"
       ],
       "properties": {
         "interpretation": { "type": "string" },
         "required_positive_direction": { "$ref": "#/$defs/string_array" },
+        "dev_test_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dev_split", "test_split", "overfit_gap", "holdout_passed"],
+          "properties": {
+            "dev_split": { "type": "string" },
+            "test_split": { "type": "string" },
+            "overfit_gap": { "type": "number" },
+            "holdout_passed": { "type": "boolean" }
+          }
+        },
         "next_adaptation_candidates": {
           "type": "array",
           "items": { "$ref": "#/$defs/recommendation" }
@@ -190,6 +224,28 @@
       "type": "object",
       "additionalProperties": { "type": "integer", "minimum": 0 }
     },
+    "split_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_count",
+        "avg_baseline_score",
+        "avg_winner_score",
+        "avg_delta",
+        "positive_lift_rate",
+        "regression_count",
+        "safety_regression_count"
+      ],
+      "properties": {
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "avg_baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_winner_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "positive_lift_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 }
+      }
+    },
     "recommendation": {
       "type": "object",
       "additionalProperties": false,
@@ -207,6 +263,7 @@
       "required": [
         "source_label",
         "source_kind",
+        "split",
         "seed",
         "work_order_id",
         "category",
@@ -223,6 +280,7 @@
       "properties": {
         "source_label": { "type": "string" },
         "source_kind": { "type": "string" },
+        "split": { "type": "string", "enum": ["local_regression", "dev", "test"] },
         "seed": { "type": "string" },
         "work_order_id": { "type": "string" },
         "category": { "type": "string" },

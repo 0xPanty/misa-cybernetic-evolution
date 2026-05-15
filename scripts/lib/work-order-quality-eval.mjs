@@ -6,6 +6,7 @@ import { buildWorkOrderRouting } from "./work-order-router.mjs";
 import { buildWorkOrderVariants } from "./work-order-variants.mjs";
 
 const DEFAULT_NOW = new Date("2026-05-15T00:00:00Z");
+export const DEFAULT_EXTERNAL_SAMPLE_DIR = path.join("examples", "work-order-quality", "external-issue-pr");
 
 export const DEFAULT_WORK_ORDER_EVAL_SEEDS = Object.freeze([
   "quality-01",
@@ -102,6 +103,14 @@ function countBy(values, selector = (value) => value) {
   }, {});
 }
 
+function stableSlug(value) {
+  return String(value || "sample")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase()
+    .slice(0, 120) || "sample";
+}
+
 function entropy(counts) {
   const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
   if (!total) return 0;
@@ -128,6 +137,11 @@ function objectHasValues(value) {
 function sourceArgsForSampleSet(sampleSet) {
   if (sampleSet.vps_raw_dir) return { vpsRawDir: sampleSet.vps_raw_dir };
   return { sourceDir: sampleSet.source_dir };
+}
+
+async function readJson(filePath) {
+  const raw = await fs.readFile(filePath, "utf8");
+  return JSON.parse(raw);
 }
 
 function operationSafety(candidate) {
@@ -304,6 +318,7 @@ export function scoreVariantWinner(order, orderResult) {
 function compareScores({
   sourceLabel,
   sourceKind,
+  split,
   seed,
   order,
   orderResult
@@ -321,6 +336,7 @@ function compareScores({
   return {
     source_label: sourceLabel,
     source_kind: sourceKind,
+    split,
     seed,
     work_order_id: order.work_order_id,
     category: order.category,
@@ -351,10 +367,139 @@ function compareScores({
   };
 }
 
+function externalSampleTaskGate(sample) {
+  const highRisk = ["critical", "high"].includes(sample.task.risk_level);
+  return {
+    complex_enough: sample.task.severity !== "P3" || sample.task.reproduction_commands.length > 1,
+    valuable_enough: true,
+    doable_enough: sample.task.reproduction_commands.length > 0
+      && sample.task.acceptance_criteria.length > 0
+      && sample.task.editable_scope.length > 0,
+    error_discovery_cost: highRisk ? "high" : "medium",
+    verdict: highRisk ? "human_owner_review_before_delegate" : "ask_user_then_delegate",
+    reasons: [
+      "External issue/PR-style sample preserves source evidence before optimization.",
+      "Reproduction commands and acceptance criteria are explicit.",
+      highRisk ? "High-risk sample must stabilize boundaries before execution." : "Sample stays replay-gated and local."
+    ]
+  };
+}
+
+function externalSampleToWorkOrder(sample) {
+  const taskGate = externalSampleTaskGate(sample);
+  const executor = sample.task.category === "operator_quality"
+    ? {
+      executor_type: "persona_operator_agent",
+      label: "Persona or operator agent",
+      reason: "The external sample concerns operator behavior quality."
+    }
+    : {
+      executor_type: "specialized_engineering_agent",
+      label: "Specialized engineering agent",
+      reason: "The external issue/PR sample has code, test, or documentation repair scope."
+    };
+
+  return {
+    work_order_id: `wo-external-${stableSlug(sample.sample_id)}`,
+    title: sample.task.title,
+    category: sample.task.category,
+    severity: sample.task.severity,
+    risk_level: sample.task.risk_level,
+    status: "pending_agent_review",
+    source: {
+      source_type: "external_issue_pr_sample",
+      source_id: sample.sample_id,
+      source_kind: sample.source.dataset,
+      repository: sample.source.repository,
+      issue_id: sample.source.issue_id,
+      split: sample.split
+    },
+    summary: sample.task.problem_statement,
+    source_refs: [
+      {
+        kind: "external_sample",
+        id: sample.sample_id,
+        note: sample.labels.expected_quality_signal ?? ""
+      },
+      ...sample.task.source_refs
+    ],
+    delivery: {
+      receiver_type: "primary_agent",
+      receiver_label: "Primary agent",
+      delivery_policy: "deliver_to_agent_for_review",
+      reason: "The primary agent reviews the external issue/PR-style work order before any execution."
+    },
+    suggested_executor: executor,
+    task_gate: taskGate,
+    traceability: {
+      evidence: {
+        dataset: sample.source.dataset,
+        repository: sample.source.repository,
+        issue_id: sample.source.issue_id,
+        pull_request_id: sample.source.pull_request_id ?? null,
+        split: sample.split,
+        expected_strategy_family: sample.labels.expected_strategy_family
+      },
+      reproduction_commands: sample.task.reproduction_commands,
+      acceptance_criteria: sample.task.acceptance_criteria,
+      editable_scope: sample.task.editable_scope,
+      forbidden_scope: sample.task.forbidden_scope,
+      audit_required: true,
+      rollback_required: ["P0", "P1"].includes(sample.task.severity),
+      source_refs_required: true
+    },
+    execution_policy: {
+      requires_user_confirmation: sample.task.risk_level !== "low",
+      auto_execute_allowed: false,
+      self_evolution_allowed: sample.task.severity !== "P0",
+      agent_self_review_allowed: true,
+      agent_may_self_resolve: false,
+      owner_report_required: sample.task.risk_level !== "low",
+      durable_or_public_effect_allowed: false,
+      experience_capture_mode: "candidate_log_only",
+      default_next_step: sample.task.risk_level === "low"
+        ? "agent_self_review_then_report_owner"
+        : "ask_user_to_choose_executor"
+    },
+    escalation: {
+      allowed: sample.task.risk_level !== "low",
+      recommended_when: "Escalate if the repair crosses the declared forbidden scope or the replay result is unstable.",
+      stronger_model_slots: ["stronger_model", executor.executor_type],
+      user_can_decline_execution: true
+    },
+    user_prompt: [
+      `External issue/PR sample: ${sample.task.title}.`,
+      `Summary: ${sample.task.problem_statement}`,
+      `Suggested executor: ${executor.label}.`,
+      `Risk level: ${sample.task.risk_level}.`,
+      "Keep this as local evaluation evidence; do not execute without approval."
+    ].join(" ")
+  };
+}
+
+export async function loadExternalIssuePrSamples({
+  repoRoot = process.cwd(),
+  sampleDir = DEFAULT_EXTERNAL_SAMPLE_DIR
+} = {}) {
+  const root = path.isAbsolute(sampleDir) ? sampleDir : path.join(repoRoot, sampleDir);
+  const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => []);
+  const samples = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".sample.json")) {
+      continue;
+    }
+    samples.push(await readJson(path.join(root, entry.name)));
+  }
+  return samples.sort((a, b) => a.sample_id.localeCompare(b.sample_id));
+}
+
 async function buildDefaultCorpus({
   repoRoot = process.cwd(),
   sampleSets = DEFAULT_CALIBRATION_SAMPLE_SETS,
   operatorReports = DEFAULT_OPERATOR_QUALITY_REPORTS,
+  externalSamples,
+  externalSampleDir = DEFAULT_EXTERNAL_SAMPLE_DIR,
+  includeExternalSamples = true,
   now = DEFAULT_NOW
 } = {}) {
   const corpus = [];
@@ -368,6 +513,7 @@ async function buildDefaultCorpus({
     corpus.push({
       source_label: sampleSet.sample_set_id,
       source_kind: "repair_ticket_sample_set",
+      split: "local_regression",
       routing: buildWorkOrderRouting({
         repairTicketReview,
         now
@@ -379,10 +525,63 @@ async function buildDefaultCorpus({
     corpus.push({
       source_label: item.label,
       source_kind: "operator_quality_report",
+      split: "local_regression",
       routing: buildWorkOrderRouting({
         operationalReports: [item.report],
         now
       })
+    });
+  }
+
+  const issuePrSamples = includeExternalSamples
+    ? externalSamples ?? await loadExternalIssuePrSamples({ repoRoot, sampleDir: externalSampleDir })
+    : [];
+  for (const sample of issuePrSamples) {
+    const order = externalSampleToWorkOrder(sample);
+    corpus.push({
+      source_label: sample.sample_id,
+      source_kind: "external_issue_pr_sample",
+      split: sample.split,
+      labels: sample.labels,
+      routing: {
+        schema_version: "misa.work_order_routing.v1",
+        mode: "work-order-routing",
+        ok: true,
+        created_at: asIsoDate(now),
+        receiver_slots: {},
+        routing_policy: {
+          mode: "external_issue_pr_eval",
+          auto_execute_allowed: false,
+          max_auto_severity: "P3",
+          auto_execute_categories: [],
+          primary_agent_report_first: true,
+          stronger_model_policy: "recommend_when_high_risk_or_complex",
+          durable_or_public_effect_policy: "human_owner_required"
+        },
+        summary: {
+          work_order_count: 1,
+          by_category: { [order.category]: 1 },
+          by_suggested_executor: { [order.suggested_executor.executor_type]: 1 },
+          requires_user_confirmation_count: order.execution_policy.requires_user_confirmation ? 1 : 0,
+          auto_executable_count: 0,
+          agent_self_review_count: 1,
+          owner_report_required_count: order.execution_policy.owner_report_required ? 1 : 0,
+          escalation_available_count: order.escalation.allowed ? 1 : 0,
+          stronger_model_recommended_count: order.risk_level === "low" ? 0 : 1
+        },
+        work_orders: [order],
+        safety: {
+          auto_execute_allowed: false,
+          durable_or_public_effect_allowed: false,
+          primary_agent_must_report_first: true,
+          agent_self_review_default: true,
+          user_may_escalate_to_stronger_model: true,
+          traceability_required: true
+        },
+        warnings: [
+          "External issue/PR samples are evaluation fixtures, not execution approval."
+        ]
+      }
     });
   }
 
@@ -405,11 +604,30 @@ function summarizeComparisons(comparisons, corpus) {
   const byStrategy = countBy(comparisons, (item) => item.winner.strategy);
   const byCategory = countBy(comparisons, (item) => item.category);
   const byRisk = countBy(comparisons, (item) => item.risk_level);
+  const bySplit = countBy(comparisons, (item) => item.split);
   const uniqueWorkOrderIds = new Set(comparisons.map((item) => item.work_order_id));
   const uniqueShapes = new Set(comparisons.map(sampleShapeKey));
   const highRisk = comparisons.filter((item) => ["critical", "high"].includes(item.risk_level));
   const mediumRisk = comparisons.filter((item) => item.risk_level === "medium");
   const lowRisk = comparisons.filter((item) => item.risk_level === "low");
+
+  const splitStats = (split) => {
+    const rows = comparisons.filter((item) => item.split === split);
+    return {
+      comparison_count: rows.length,
+      avg_baseline_score: round(avg(rows.map((item) => item.baseline.dimensions.total))),
+      avg_winner_score: round(avg(rows.map((item) => item.winner.dimensions.total))),
+      avg_delta: round(avg(rows.map((item) => item.delta))),
+      positive_lift_rate: round(avg(rows.map((item) => boolScore(item.positive_lift)))),
+      regression_count: rows.filter((item) => item.delta < 0).length,
+      safety_regression_count: rows.filter((item) => item.safety_regression).length
+    };
+  };
+  const dev = splitStats("dev");
+  const test = splitStats("test");
+  const overfitGap = dev.comparison_count && test.comparison_count
+    ? round(dev.avg_delta - test.avg_delta)
+    : 0;
 
   return {
     source_set_count: corpus.length,
@@ -432,6 +650,7 @@ function summarizeComparisons(comparisons, corpus) {
     strategy_entropy: entropy(byStrategy),
     by_category: byCategory,
     by_risk: byRisk,
+    by_split: bySplit,
     llm_critique_recommended_count: comparisons.filter((item) => item.llm_review_gate.recommended).length,
     llm_api_calls: comparisons.reduce((sum, item) => sum + item.llm_review_gate.llm_api_calls, 0),
     external_api_calls: 0,
@@ -445,6 +664,15 @@ function summarizeComparisons(comparisons, corpus) {
       route_preserved_count: comparisons.filter((item) => item.qianxuesen_signals.route_preserved).length,
       source_trace_preserved_count: comparisons.filter((item) => item.qianxuesen_signals.source_trace_preserved).length,
       no_direct_execution_count: comparisons.filter((item) => item.qianxuesen_signals.no_direct_execution).length
+    },
+    dev_test: {
+      dev,
+      test,
+      overfit_gap: overfitGap,
+      holdout_passed: test.comparison_count > 0
+        && test.safety_regression_count === 0
+        && test.regression_count === 0
+        && test.positive_lift_rate >= 0.95
     }
   };
 }
@@ -454,12 +682,28 @@ function buildRecommendations(summary) {
   const highRiskFit = summary.qianxuesen_signal_fit.high_risk_count
     ? summary.qianxuesen_signal_fit.high_risk_boundary_fit_count / summary.qianxuesen_signal_fit.high_risk_count
     : 1;
-  if (summary.unique_work_order_shape_count < summary.work_order_count) {
+  if (summary.unique_work_order_shape_count < summary.work_order_count && summary.dev_test.test.comparison_count === 0) {
     recs.push({
       recommendation_id: "add_external_issue_pr_samples",
       priority: "high",
       reason: "Local sample sets exercise the chain, but several source sets collapse into the same work-order shape.",
       qianxuesen_fit: "Add issue/PR style benchmark adapters so the control loop is judged on final work-order quality, not only local replay shape."
+    });
+  }
+  if (summary.unique_work_order_shape_count < summary.work_order_count && summary.dev_test.test.comparison_count > 0) {
+    recs.push({
+      recommendation_id: "expand_external_issue_pr_samples",
+      priority: "medium",
+      reason: "The adapter and holdout split are working, but a few local regression sources still share the same work-order shape.",
+      qianxuesen_fit: "Scale the issue/PR-style corpus before claiming broad benchmark quality."
+    });
+  }
+  if (summary.dev_test.test.comparison_count > 0 && summary.dev_test.holdout_passed) {
+    recs.push({
+      recommendation_id: "keep_dev_test_split_in_gate",
+      priority: "high",
+      reason: "The held-out issue/PR-style samples improved without safety regression.",
+      qianxuesen_fit: "Keep dev/test split as the guard before adding replacement, mutation, or crossover."
     });
   }
   if (summary.avg_delta > 0 && summary.safety_regression_count === 0) {
@@ -510,6 +754,9 @@ export async function runWorkOrderQualityEvaluation({
   seeds = DEFAULT_WORK_ORDER_EVAL_SEEDS,
   sampleSets = DEFAULT_CALIBRATION_SAMPLE_SETS,
   operatorReports = DEFAULT_OPERATOR_QUALITY_REPORTS,
+  externalSamples,
+  externalSampleDir = DEFAULT_EXTERNAL_SAMPLE_DIR,
+  includeExternalSamples = true,
   now = DEFAULT_NOW
 } = {}) {
   const seedList = Array.isArray(seeds) && seeds.length ? seeds : DEFAULT_WORK_ORDER_EVAL_SEEDS;
@@ -517,6 +764,9 @@ export async function runWorkOrderQualityEvaluation({
     repoRoot,
     sampleSets,
     operatorReports,
+    externalSamples,
+    externalSampleDir,
+    includeExternalSamples,
     now
   });
   const comparisons = [];
@@ -539,6 +789,7 @@ export async function runWorkOrderQualityEvaluation({
         comparisons.push(compareScores({
           sourceLabel: item.source_label,
           sourceKind: item.source_kind,
+          split: item.split,
           seed,
           order,
           orderResult: variantRun.work_order_results[0]
@@ -553,7 +804,10 @@ export async function runWorkOrderQualityEvaluation({
   return {
     schema_version: "misa.work_order_quality_eval.v1",
     mode: "work-order-quality-eval",
-    ok: summary.safety_regression_count === 0 && summary.regression_count === 0 && summary.positive_lift_rate >= 0.95,
+    ok: summary.safety_regression_count === 0
+      && summary.regression_count === 0
+      && summary.positive_lift_rate >= 0.95
+      && summary.dev_test.holdout_passed,
     created_at: asIsoDate(now),
     seeds: seedList,
     sample_summary: {
@@ -561,9 +815,15 @@ export async function runWorkOrderQualityEvaluation({
       work_order_count: summary.work_order_count,
       unique_work_order_id_count: summary.unique_work_order_id_count,
       unique_work_order_shape_count: summary.unique_work_order_shape_count,
+      split_counts: countBy(corpus, (item) => item.split),
+      external_issue_pr_sample_count: corpus.filter((item) => item.source_kind === "external_issue_pr_sample").length,
+      dev_sample_count: corpus.filter((item) => item.split === "dev").length,
+      test_sample_count: corpus.filter((item) => item.split === "test").length,
       sample_quality: summary.unique_work_order_shape_count >= summary.work_order_count
         ? "diverse_enough_for_local_gate"
-        : "useful_but_needs_external_issue_pr_samples"
+        : corpus.some((item) => item.source_kind === "external_issue_pr_sample")
+          ? "mixed_with_external_issue_pr_samples_but_still_needs_benchmark_scale"
+          : "useful_but_needs_external_issue_pr_samples"
     },
     summary,
     qianxuesen_adaptation: {
@@ -575,6 +835,12 @@ export async function runWorkOrderQualityEvaluation({
         "handoff is easier for an agent to execute or report",
         "LLM critique remains value-gated and zero-call by default"
       ],
+      dev_test_policy: {
+        dev_split: "use dev samples for strategy-weight tuning and replacement-rule experiments",
+        test_split: "use test samples only for holdout quality checks",
+        overfit_gap: summary.dev_test.overfit_gap,
+        holdout_passed: summary.dev_test.holdout_passed
+      },
       next_adaptation_candidates: recommendations
     },
     comparisons,
@@ -591,7 +857,7 @@ export async function runWorkOrderQualityEvaluation({
     },
     warnings: [
       "This evaluates final work-order quality signals; it does not execute any work order.",
-      "Local source sets are useful for regression, but external issue/PR samples are needed before claiming broad quality lift.",
+      "Local issue/PR fixtures prove the adapter shape and dev/test split, but full benchmark-scale data is still needed before claiming broad quality lift.",
       "LLM critique recommendations are advisory and zero-call in this evaluation."
     ]
   };
@@ -605,11 +871,16 @@ function renderMarkdown(result) {
     `- created_at: ${result.created_at}`,
     `- source_set_count: ${result.summary.source_set_count}`,
     `- work_order_count: ${result.summary.work_order_count}`,
+    `- external_issue_pr_samples: ${result.sample_summary.external_issue_pr_sample_count}`,
+    `- dev_samples: ${result.sample_summary.dev_sample_count}`,
+    `- test_samples: ${result.sample_summary.test_sample_count}`,
     `- comparison_count: ${result.summary.comparison_count}`,
     `- variant_count: ${result.summary.variant_count}`,
     `- avg_baseline_score: ${result.summary.avg_baseline_score}`,
     `- avg_winner_score: ${result.summary.avg_winner_score}`,
     `- avg_delta: ${result.summary.avg_delta}`,
+    `- test_avg_delta: ${result.summary.dev_test.test.avg_delta}`,
+    `- holdout_passed: ${result.summary.dev_test.holdout_passed}`,
     `- positive_lift_rate: ${result.summary.positive_lift_rate}`,
     `- safety_regression_count: ${result.summary.safety_regression_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,

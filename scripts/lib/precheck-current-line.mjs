@@ -87,9 +87,13 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
   });
   checks.push(currentLineCheck("Work-order quality evaluation check", workOrderQualityEval.ok, {
     comparisons: workOrderQualityEval.summary.comparison_count,
+    externalIssuePrSamples: workOrderQualityEval.sample_summary.external_issue_pr_sample_count,
+    devSamples: workOrderQualityEval.sample_summary.dev_sample_count,
+    testSamples: workOrderQualityEval.sample_summary.test_sample_count,
     avgBaselineScore: workOrderQualityEval.summary.avg_baseline_score,
     avgWinnerScore: workOrderQualityEval.summary.avg_winner_score,
     avgDelta: workOrderQualityEval.summary.avg_delta,
+    holdoutPassed: workOrderQualityEval.summary.dev_test.holdout_passed,
     positiveLiftRate: workOrderQualityEval.summary.positive_lift_rate,
     safetyRegressions: workOrderQualityEval.summary.safety_regression_count,
     llmApiCalls: workOrderQualityEval.safety.llm_api_calls

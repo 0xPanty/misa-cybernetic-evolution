@@ -29,9 +29,12 @@ const nowArg = readArg("now");
 const now = nowArg ? new Date(nowArg) : new Date();
 const seeds = parseSeeds(readArg("seeds") ?? readArg("seed"));
 const dryRun = hasArg("dry-run") || hasArg("no-write");
+const includeExternalSamples = !hasArg("no-external-samples");
 
 let result = await runWorkOrderQualityEvaluation({
   seeds,
+  includeExternalSamples,
+  externalSampleDir: readArg("external-sample-dir"),
   now
 });
 
@@ -51,8 +54,13 @@ if (hasArg("json")) {
   console.log(`work-order-quality ok=${result.ok}`);
   console.log(`sources=${result.summary.source_set_count}`);
   console.log(`work_orders=${result.summary.work_order_count}`);
+  console.log(`external_issue_pr_samples=${result.sample_summary.external_issue_pr_sample_count}`);
+  console.log(`dev_samples=${result.sample_summary.dev_sample_count}`);
+  console.log(`test_samples=${result.sample_summary.test_sample_count}`);
   console.log(`comparisons=${result.summary.comparison_count}`);
   console.log(`avg_delta=${result.summary.avg_delta}`);
+  console.log(`test_avg_delta=${result.summary.dev_test.test.avg_delta}`);
+  console.log(`holdout_passed=${result.summary.dev_test.holdout_passed}`);
   console.log(`positive_lift_rate=${result.summary.positive_lift_rate}`);
   console.log(`safety_regressions=${result.summary.safety_regression_count}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);

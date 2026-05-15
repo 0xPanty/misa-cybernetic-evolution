@@ -2,11 +2,12 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.24.0`. The current line keeps source-lineage and
+Current package version: `0.25.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
 contract, adds seeded work-order variants, adds work-order quality evaluation,
+adds issue/PR-shaped dev/test work-order samples,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 
@@ -390,9 +391,9 @@ For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
 `--out-file <path>` so the file contains only JSON.
 
-## v0.24 Direction
+## v0.25 Direction
 
-Do not add another governance layer by default. The useful v0.24 work is:
+Do not add another governance layer by default. The useful v0.25 work is:
 
 1. keep the current route labels and tournament variants stable;
 2. keep vector-memory records traceable back to opaque original-source refs;
@@ -411,7 +412,9 @@ Do not add another governance layer by default. The useful v0.24 work is:
 11. make work-order output smarter through seeded variants and value-gated LLM
     critique recommendations;
 12. measure final work-order quality against Qianxuesen control-loop metrics
-    instead of treating command success as enough.
+    instead of treating command success as enough;
+13. add local issue/PR-shaped dev/test samples so quality changes must pass a
+    held-out work-order check, not only the original regression set.
 
 The scarce thing now is not more abstraction. It is calibration evidence and
 replayable source lineage.
@@ -425,7 +428,7 @@ and only widen authority when the user explicitly asks for it.
 Current-state docs:
 
 Versioned document names such as v0.18 and v0.20 are historical anchors for
-features that still feed the v0.24 line. They are not separate current release
+features that still feed the v0.25 line. They are not separate current release
 tracks; use the command map and validation chain above for the current surface.
 
 - [Architecture](./ARCHITECTURE.md)
@@ -436,6 +439,7 @@ tracks; use the command map and validation chain above for the current surface.
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
 - [Work-order variants](./docs/work-order-variants-v0.23.md)
 - [Work-order quality evaluation](./docs/work-order-quality-eval-v0.24.md)
+- [Work-order external samples](./docs/work-order-external-samples-v0.25.md)
 - [Skill evolution adapter](./docs/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/skill-control-intake-template.md)
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)

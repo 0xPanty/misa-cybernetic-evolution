@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/external_work_order_sample.schema.json",
+  "title": "ExternalWorkOrderSample",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "sample_id",
+    "split",
+    "source",
+    "task",
+    "labels",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.external_work_order_sample.v1" },
+    "sample_id": { "type": "string" },
+    "split": { "type": "string", "enum": ["dev", "test"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataset", "repository", "issue_id"],
+      "properties": {
+        "dataset": { "type": "string" },
+        "repository": { "type": "string" },
+        "issue_id": { "type": "string" },
+        "pull_request_id": { "type": "string" },
+        "commit_hint": { "type": "string" },
+        "license_note": { "type": "string" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "problem_statement",
+        "category",
+        "severity",
+        "risk_level",
+        "reproduction_commands",
+        "acceptance_criteria",
+        "editable_scope",
+        "forbidden_scope",
+        "source_refs"
+      ],
+      "properties": {
+        "title": { "type": "string" },
+        "problem_statement": { "type": "string" },
+        "category": { "type": "string", "enum": ["engineering_repair", "operator_quality"] },
+        "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+        "risk_level": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "reproduction_commands": { "$ref": "#/$defs/string_array" },
+        "acceptance_criteria": { "$ref": "#/$defs/string_array" },
+        "editable_scope": { "$ref": "#/$defs/string_array" },
+        "forbidden_scope": { "$ref": "#/$defs/string_array" },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "id"],
+            "properties": {
+              "kind": { "type": "string" },
+              "id": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expected_route", "expected_strategy_family"],
+      "properties": {
+        "expected_route": { "type": "string" },
+        "expected_strategy_family": {
+          "type": "string",
+          "enum": ["boundary", "replay_or_compact", "conservative"]
+        },
+        "expected_quality_signal": { "type": "string" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "writes_persistent_memory",
+        "installs_skills",
+        "calls_external_api"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

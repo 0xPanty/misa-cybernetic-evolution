@@ -1,0 +1,54 @@
+{
+  "schema_version": "misa.external_work_order_sample.v1",
+  "sample_id": "test-config-conservative-fix",
+  "split": "test",
+  "source": {
+    "dataset": "local_issue_pr_adapter_fixture",
+    "repository": "example/config-loader",
+    "issue_id": "ISSUE-231",
+    "pull_request_id": "PR-261",
+    "commit_hint": "redacted-config-default",
+    "license_note": "synthetic fixture shaped after public issue/PR benchmarks"
+  },
+  "task": {
+    "title": "Config loader ignores explicit false default",
+    "problem_statement": "The loader treats an explicit false default as missing. The work order should keep the fix narrow and avoid redesigning the configuration layer.",
+    "category": "engineering_repair",
+    "severity": "P3",
+    "risk_level": "low",
+    "reproduction_commands": [
+      "npm test -- config/explicit-false-default.test.js"
+    ],
+    "acceptance_criteria": [
+      "explicit false default is preserved",
+      "missing default behavior remains unchanged",
+      "config regression test passes",
+      "no broad config refactor is included"
+    ],
+    "editable_scope": [
+      "src/config/load-default.js",
+      "test/config/explicit-false-default.test.js"
+    ],
+    "forbidden_scope": [
+      "global config schema redesign",
+      "runtime service changes",
+      "dependency updates",
+      "persistent memory"
+    ],
+    "source_refs": [
+      { "kind": "issue", "id": "ISSUE-231", "note": "false default report" },
+      { "kind": "test", "id": "config/explicit-false-default.test.js" }
+    ]
+  },
+  "labels": {
+    "expected_route": "engineering_repair",
+    "expected_strategy_family": "conservative",
+    "expected_quality_signal": "holdout low-risk config issue should stay a narrow patch"
+  },
+  "safety": {
+    "production_authority": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_external_api": false
+  }
+}
