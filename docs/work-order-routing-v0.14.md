@@ -9,6 +9,7 @@ The generic pattern is:
 evidence
 -> ticket or quality report
 -> work order
+-> optional seeded work-order variants
 -> primary agent self-reviews first
 -> low-risk items may self-resolve within scope
 -> broader items report upward or escalate
@@ -136,6 +137,17 @@ Choose an output directory:
 ```bash
 npm run work-order:route -- --out-dir runs/work-orders/manual-check
 ```
+
+Generate seeded local work-order variants:
+
+```bash
+npm run work-order:variants -- --json --dry-run
+npm run work-order:variants -- --work-order-file runs/work-orders/manual-check/work-orders.json --json --dry-run
+```
+
+This is a draft-quality step only. It can recommend an LLM critique when the
+value and uncertainty signals justify the token cost, but it does not call a
+model, execute work, write memory, install skills, or change route authority.
 
 Run in report-only mode:
 

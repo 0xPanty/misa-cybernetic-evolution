@@ -19,6 +19,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.summary.live_effect_allowed, false);
   assert.equal(result.command_surface.includes("session-distiller:review"), true);
   assert.equal(result.command_surface.includes("work-order:route"), true);
+  assert.equal(result.command_surface.includes("work-order:variants"), true);
   assert.equal(result.command_surface.includes("evolution:tournament:misa"), true);
   assert.equal(result.command_surface.includes("vector-memory:classify"), true);
   assert.equal(result.command_surface.includes("vector-memory:rank"), true);
@@ -30,6 +31,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
+  assert.ok(checkNames.has("work-order:variants dry-run"));
   assert.ok(checkNames.has("evolution:tournament:misa dry-run"));
   assert.ok(checkNames.has("vector-memory:classify dry-run"));
   assert.ok(checkNames.has("vector-store:local dry-run"));
@@ -103,6 +105,25 @@ function safeArtifacts() {
       safety: {
         zilliz_written: false,
         writes_persistent_memory: false
+      }
+    },
+    workOrderVariants: {
+      ok: true,
+      summary: {
+        work_order_count: 1,
+        variant_count: 5,
+        winner_count: 1,
+        rejected_variant_count: 0,
+        llm_critique_recommended_count: 0,
+        llm_api_calls: 0,
+        external_api_calls: 0
+      },
+      safety: {
+        executes_work_orders: false,
+        writes_persistent_memory: false,
+        installs_skills: false,
+        llm_api_calls: 0,
+        external_api_calls: 0
       }
     },
     localVectorStore: {

@@ -4,6 +4,7 @@ import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
+import { buildWorkOrderVariants } from "./work-order-variants.mjs";
 import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
 import { PHASES, checkResult } from "./precheck-shared.mjs";
@@ -56,6 +57,26 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     schemaRel: "schemas/vector_memory_storage.schema.json",
     data: vectorMemoryStorage,
     name: "validate vector memory storage classification"
+  }));
+
+  const workOrderVariants = buildWorkOrderVariants({
+    workOrderRouting,
+    seed: "precheck-current-line",
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  checks.push(currentLineCheck("Work-order variant generator dry-run check", workOrderVariants.ok, {
+    workOrders: workOrderVariants.summary.work_order_count,
+    variants: workOrderVariants.summary.variant_count,
+    winners: workOrderVariants.summary.winner_count,
+    llmCritiqueRecommended: workOrderVariants.summary.llm_critique_recommended_count,
+    llmApiCalls: workOrderVariants.safety.llm_api_calls,
+    executesWorkOrders: workOrderVariants.safety.executes_work_orders
+  }));
+  checks.push(await currentLineValidation({
+    repoRoot,
+    schemaRel: "schemas/work_order_variants.schema.json",
+    data: workOrderVariants,
+    name: "validate work-order variants dry-run"
   }));
 
   const localVectorStore = await upsertDistillationToLocalVectorStore({
@@ -130,6 +151,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     artifacts: {
       sessionDistillerCyberneticReview,
       vectorMemoryStorage,
+      workOrderVariants,
       localVectorStore,
       skillEvolution,
       zillizVectorAdapter,

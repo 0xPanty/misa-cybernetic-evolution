@@ -2,11 +2,11 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.22.0`. The current line keeps source-lineage and
+Current package version: `0.23.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
-contract, and keeps the control boundary
+contract, adds seeded work-order variants, and keeps the control boundary
 stable: no live Zilliz writes, no provider embeddings, and no runtime changes.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
@@ -150,6 +150,7 @@ Two rules matter most:
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
 | Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
+| Work-order variants | `npm run work-order:variants -- --json --dry-run` | seeded local candidate work orders; LLM critique is value-gated and zero-call by default |
 | Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
@@ -157,7 +158,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, Hermes runtime adapter/plugin, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, tournament, skill evolution, curiosity signals, Hermes runtime adapter/plugin, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -313,6 +314,28 @@ keeps source-backed preflight notes, non-winning safe variants, and rejected
 unsafe variants for later comparison; it does not write memory or publish
 anything.
 
+## Work-Order Variants
+
+`work-order:variants` adds the EvoPrompt-inspired part that fits this repo: a
+small seeded search over possible work-order shapes. It does not create a new
+controller.
+
+```text
+work-order:route
+-> seeded work-order variants
+-> deterministic scoring
+-> optional LLM critique recommendation only when value signals justify it
+-> one draft winner, losers retained as experience
+```
+
+Default behavior is zero-call and local-only:
+
+- seeded randomness is reproducible;
+- the command does not execute work orders;
+- LLM critique is only recommended, never called by default;
+- route, winner authority, memory writes, skill installs, public output, and
+  production effects stay blocked.
+
 v0.18 adds two decision-quality checks:
 
 - `strategy_fit`, so the winner must fit the route/source pressure;
@@ -349,9 +372,9 @@ For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
 `--out-file <path>` so the file contains only JSON.
 
-## v0.22 Direction
+## v0.23 Direction
 
-Do not add another governance layer by default. The useful v0.22 work is:
+Do not add another governance layer by default. The useful v0.23 work is:
 
 1. keep the current route labels and tournament variants stable;
 2. keep vector-memory records traceable back to opaque original-source refs;
@@ -366,7 +389,9 @@ Do not add another governance layer by default. The useful v0.22 work is:
    it across chat-only explanations;
 9. reduce maintenance noise in precheck, README, and tests;
 10. close the Hermes adapter loop with an installable observe-only plugin and
-    local NDJSON replay.
+    local NDJSON replay;
+11. make work-order output smarter through seeded variants and value-gated LLM
+    critique recommendations.
 
 The scarce thing now is not more abstraction. It is calibration evidence and
 replayable source lineage.
@@ -380,7 +405,7 @@ and only widen authority when the user explicitly asks for it.
 Current-state docs:
 
 Versioned document names such as v0.18 and v0.20 are historical anchors for
-features that still feed the v0.22 line. They are not separate current release
+features that still feed the v0.23 line. They are not separate current release
 tracks; use the command map and validation chain above for the current surface.
 
 - [Architecture](./ARCHITECTURE.md)
@@ -389,6 +414,7 @@ tracks; use the command map and validation chain above for the current surface.
 - [Source synthesis](./docs/source-synthesis.md)
 - [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
 - [Work-order routing](./docs/work-order-routing-v0.14.md)
+- [Work-order variants](./docs/work-order-variants-v0.23.md)
 - [Skill evolution adapter](./docs/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/skill-control-intake-template.md)
 - [Vector memory storage](./docs/vector-memory-storage-v0.19.md)

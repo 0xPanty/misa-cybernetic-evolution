@@ -48,6 +48,7 @@ runs/bootstrap-local/latest.json
 ```bash
 npm run vector-store:local -- --mode stats
 npm run vector-store:local -- --mode query --query "public posting policy" --route policy
+npm run work-order:variants -- --json --dry-run
 npm run hermes:plugin:doctor
 npm run skill:evolution
 npm run curiosity:signals

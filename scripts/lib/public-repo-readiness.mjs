@@ -9,6 +9,7 @@ import {
   upsertDistillationToLocalVectorStore
 } from "./local-vector-store.mjs";
 import { runHermesRuntimePluginDoctor } from "./hermes-runtime-plugin.mjs";
+import { runWorkOrderVariants } from "./work-order-variants.mjs";
 import { runPrecheck } from "./precheck-core.mjs";
 import { runQianxuesenFullLoopHealth } from "./qianxuesen-full-loop-health.mjs";
 import { validateSchemas } from "./schema-validation.mjs";
@@ -25,6 +26,7 @@ const REQUIRED_PUBLIC_SCRIPTS = [
   "hermes:adapt-runtime",
   "hermes:plugin:install",
   "hermes:plugin:doctor",
+  "work-order:variants",
   "smoke:current-line",
   "health:qianxuesen",
   "precheck",
@@ -79,6 +81,11 @@ export async function runPublicRepoDoctor({
   const missingScripts = REQUIRED_PUBLIC_SCRIPTS.filter((name) => !scripts[name]);
   const validate = await validateSchemas({ repoRoot });
   const smoke = await runCurrentLineSmoke({ repoRoot, now });
+  const workOrderVariants = await runWorkOrderVariants({
+    repoRoot,
+    seed: "public-repo-doctor",
+    now
+  });
   const hermesPluginDoctor = await runHermesRuntimePluginDoctor({
     repoRoot,
     pluginDir: path.join("examples", "hermes-runtime-plugin"),
@@ -119,6 +126,13 @@ export async function runPublicRepoDoctor({
     }),
     checkResult("current-line smoke passes", smoke.ok, {
       checks: smoke.summary
+    }),
+    checkResult("work-order variants stay local and zero-call", workOrderVariants.ok, {
+      workOrders: workOrderVariants.summary.work_order_count,
+      variants: workOrderVariants.summary.variant_count,
+      llmCritiqueRecommended: workOrderVariants.summary.llm_critique_recommended_count,
+      executesWorkOrders: workOrderVariants.safety.executes_work_orders,
+      llmApiCalls: workOrderVariants.safety.llm_api_calls
     }),
     checkResult("Hermes runtime plugin sample is checkable", hermesPluginDoctor.ok, {
       checks: hermesPluginDoctor.summary,
