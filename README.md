@@ -97,6 +97,7 @@ or existing Hermes/Zilliz distillation artifact
 -> optionally upsert the public distillation template into the default local vector store
 -> attach original-source refs, replay keys, and retrieval hints for future hit explanation
 -> produce a shadow perception digest that prioritizes sources without route authority
+-> score which existing signals are worth LLM or GEPA-style variant generation
 -> keep raw logs, redacted sources, perception digests, handoffs, and archives separated
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant
@@ -130,6 +131,7 @@ Two rules matter most:
 | Local session distillation | `npm run distill:misa` | no Zilliz, no embedding provider, no external API |
 | Shadow perception digest | `npm run perception:digest -- --json` | sensor/prioritizer only; optional `--ledger-file` emits action recommendations and no-write ledger update proposals |
 | Perception log layout | `npm run perception:layout` | local directory contract only; `--init` creates separated dry-run folders under the chosen root |
+| Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
 | Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
 | Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
 | Adaptive candidate gate | `npm run adaptive:misa` | local candidate widening only |
@@ -149,7 +151,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, tournament, skill evolution, curiosity signals, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -197,6 +199,33 @@ bucket instead of becoming their own workflow.
 Perception output names such as `action_recommendations`, `attention_queue`, and
 `ledger_update_proposals` are review surfaces, not execution commands. They must
 stay `hint_only` or `proposal_only`, and ledger proposals must stay `no_write`.
+
+## Curiosity Signal Gate
+
+`curiosity:signals` decides which existing signals are worth deeper LLM or
+GEPA-style variant generation. It does not create a second candidate pool.
+
+Plain rule:
+
+```text
+all signals stay in the existing candidate flow
+ordinary signals stay deterministic
+high-value signals may ask an LLM to draft variants later
+Qianxuesen still owns route, replay, tournament, and promotion
+```
+
+The gate looks at perception priority, route pressure, ledger recurrence,
+public-boundary risk, replay failures, repeated failures, duplicate workflow
+evidence, external framework/protocol drift, competitor pressure, user
+corrections, knowledge gaps, repeated terminology, and review-value hints. Its
+output is advisory only:
+`llm_variant_generation_recommended`, `deterministic_review_optional`,
+`ordinary_candidate_flow`, or suppression for handled/noisy items.
+
+The important distinction is simple: a one-off buzzword stays cheap and
+deterministic; an external change plus a knowledge gap can become a research
+digest or LLM-generated variant candidate, but it still has to pass replay and
+tournament before anything durable changes.
 
 ## Local Vector Store
 

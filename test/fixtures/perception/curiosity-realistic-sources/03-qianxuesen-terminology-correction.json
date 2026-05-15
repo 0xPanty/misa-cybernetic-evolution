@@ -1,0 +1,41 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "curiosity-user-correction-qianxuesen-003",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T05:10:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted real-style terminology correction sample.",
+  "summary": "The user corrected a repeated conceptual mistake around Qianxuesen and control-theory routing.",
+  "setpoint": "treat repeated conceptual corrections as research and case evidence before changing memory or skill rules",
+  "evidence_count": 3,
+  "outcome": "partial",
+  "risk_level": "medium",
+  "source_refs": [
+    "curiosity:qianxuesen:terminology:003"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "docs:misa-learning-loop-v0.2"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "curiosity:qianxuesen:terminology:003",
+      "text": "Correction from user: this is not just memory management; it is Qianxuesen control-theory routing and learning pressure."
+    },
+    {
+      "speaker": "codex",
+      "ref": "curiosity:qianxuesen:terminology:004",
+      "text": "The terminology is repeated and the knowledge gap should become a case before writing memory or rules."
+    }
+  ]
+}

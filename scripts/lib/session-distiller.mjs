@@ -25,6 +25,12 @@ export const SIGNAL_RULES = [
   ["avoid_overreaction", /\b(overreact|overreaction|too complicated|过度反应|太复杂|别搞这么麻烦|不要搞这么麻烦)\b/iu],
   ["single_failure", /\b(single|once|transient|单次|偶发)\b/iu],
   ["repeated_failure_pattern", /\b(timeout|failure|failed|error|retry|exception|失败|报错|重试|超时)\b/iu],
+  ["external_framework_change", /(?:LangGraph|LangChain|Neynar|Snapchain|Farcaster|Frames?|GEPA|EvoAgentX|SDK|API|protocol|framework|外部框架|协议|文档|竞品)[\s\S]{0,80}(?:changed|updated|release|changelog|breaking|deprecated|drift|变化|变更|更新|升级|改了|发布)|(?:changed|updated|release|changelog|breaking|deprecated|drift|变化|变更|更新|升级|改了|发布)[\s\S]{0,80}(?:LangGraph|LangChain|Neynar|Snapchain|Farcaster|Frames?|GEPA|EvoAgentX|SDK|API|protocol|framework|外部框架|协议|文档|竞品)/iu],
+  ["competitor_change", /(?:competitor|rival|alternative|benchmark|竞品|对标|同类框架)[\s\S]{0,80}(?:changed|updated|release|changelog|benchmark|变化|变更|更新|升级|发布|对比)|(?:changed|updated|release|changelog|benchmark|变化|变更|更新|升级|发布|对比)[\s\S]{0,80}(?:competitor|rival|alternative|benchmark|竞品|对标|同类框架)/iu],
+  ["knowledge_gap", /\b(unknown|not sure|unclear|knowledge gap|missing context|cannot answer|can't answer|outdated|不知道|不确定|不清楚|知识缺口|资料不够|上下文不够|过时)\b/iu],
+  ["research_needed", /\b(need to research|research needed|look up|check docs|read docs|verify against docs|需要研究|需要查|查资料|先查资料|看文档|查文档|核对文档)\b/iu],
+  ["user_correction", /\b(user corrected|correction from user|corrected me|you misunderstood|agent misunderstood|model was wrong|i was wrong|misunderstood|不对|错了|你理解错|你搞错|纠正|修正|漏了|不是[\s\S]{0,40}是)\b/iu],
+  ["repeated_terminology", /\b(terminology|repeated term|term keeps appearing|domain term|专业术语|术语反复|关键词反复|反复出现|概念反复)\b/iu],
   ["explicit_user_boundary", /\b(do not|don't|without|must not|blocked|approval|不要|不用|不能|别|必须|禁止)\b/iu],
   ["public_posting_boundary", /\b(farcaster|post|reply|cast|publisher|webhook|x402|public[- ]?(?:post|reply|channel|thread)|公开|帖子|回复)\b/iu],
   ["farcaster_public_memory_risk", /\b(public memory|private|secret|leak|privacy|隐私|秘密|记忆泄露)\b/iu],
@@ -40,9 +46,9 @@ export const LESSON_ROUTE_ORDER = ["policy", "damping", "skill", "case", "memory
 export const LESSON_ROUTE_SIGNALS = {
   policy: ["explicit_user_boundary", "public_posting_boundary", "farcaster_public_memory_risk"],
   damping: ["candidate_replay_failed", "avoid_overreaction", "single_failure"],
-  skill: ["reusable_workflow"],
-  case: ["repeated_failure_pattern"],
-  memory: ["stable_user_preference", "stable_project_fact"]
+  skill: ["reusable_workflow", "external_framework_change", "competitor_change"],
+  case: ["repeated_failure_pattern", "knowledge_gap", "research_needed", "user_correction"],
+  memory: ["stable_user_preference", "stable_project_fact", "repeated_terminology"]
 };
 
 export const LESSON_ALLOWED_SIGNALS = {
@@ -54,9 +60,25 @@ export const LESSON_ALLOWED_SIGNALS = {
     "stable_project_fact"
   ],
   damping: ["candidate_replay_failed", "avoid_overreaction", "single_failure"],
-  skill: ["reusable_workflow", "stable_project_fact", "stable_user_preference"],
-  case: ["repeated_failure_pattern", "stable_project_fact"],
-  memory: ["stable_user_preference", "stable_project_fact"]
+  skill: [
+    "reusable_workflow",
+    "external_framework_change",
+    "competitor_change",
+    "stable_project_fact",
+    "stable_user_preference",
+    "repeated_terminology"
+  ],
+  case: [
+    "repeated_failure_pattern",
+    "knowledge_gap",
+    "research_needed",
+    "user_correction",
+    "external_framework_change",
+    "competitor_change",
+    "repeated_terminology",
+    "stable_project_fact"
+  ],
+  memory: ["stable_user_preference", "stable_project_fact", "repeated_terminology"]
 };
 
 export const LESSON_FALLBACK_SIGNAL = {
@@ -104,11 +126,15 @@ function tokenize(text) {
 }
 
 function extractSignalsFromText(text, sourceKind) {
-  const signals = [];
+  let signals = [];
   for (const [signal, pattern] of SIGNAL_RULES) {
     if (pattern.test(text)) {
       signals.push(signal);
     }
+  }
+
+  if (/\bno\b[\s\S]{0,80}\b(?:failure|error|retry|timeout)\b[\s\S]{0,40}\b(?:involved|described|observed|reported)\b/iu.test(text)) {
+    signals = signals.filter((signal) => signal !== "repeated_failure_pattern");
   }
 
   if (sourceKind === "failure_log") {
@@ -138,8 +164,17 @@ function expectedRouteFor(signals) {
     return "policy";
   }
   if (signals.includes("avoid_overreaction") || signals.includes("single_failure")) return "damping";
+  if (
+    signals.includes("knowledge_gap")
+    || signals.includes("research_needed")
+    || signals.includes("user_correction")
+  ) {
+    return "case";
+  }
+  if (signals.includes("external_framework_change") || signals.includes("competitor_change")) return "skill";
   if (signals.includes("reusable_workflow")) return "skill";
   if (signals.includes("repeated_failure_pattern")) return "case";
+  if (signals.includes("repeated_terminology")) return "memory";
   if (signals.includes("stable_user_preference") || signals.includes("stable_project_fact")) return "memory";
   return "ignore";
 }
@@ -150,6 +185,14 @@ function isPolicySignal(signals) {
 
 function isDampingSignal(signals) {
   return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.damping);
+}
+
+function isSkillSignal(signals) {
+  return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.skill);
+}
+
+function isCaseSignal(signals) {
+  return hasAnySignal(signals, LESSON_ROUTE_SIGNALS.case);
 }
 
 function segmentSupportsLessonRoute(segment, route) {
@@ -164,14 +207,14 @@ function segmentSupportsLessonRoute(segment, route) {
   }
 
   if (route === "skill") {
-    return signals.includes("reusable_workflow")
+    return isSkillSignal(signals)
       && !isPolicySignal(signals)
+      && !isCaseSignal(signals)
       && !isDampingSignal(signals);
   }
 
   if (route === "case") {
-    return signals.includes("repeated_failure_pattern")
-      && !signals.includes("reusable_workflow")
+    return isCaseSignal(signals)
       && !isPolicySignal(signals)
       && !isDampingSignal(signals);
   }
@@ -201,12 +244,13 @@ function sourceLevelFallbackAllowed(sourceSignals, route) {
   }
 
   if (route === "skill") {
-    return !isPolicySignal(sourceSignals) && !isDampingSignal(sourceSignals);
+    return !isPolicySignal(sourceSignals)
+      && !isCaseSignal(sourceSignals)
+      && !isDampingSignal(sourceSignals);
   }
 
   if (route === "case") {
-    return !sourceSignals.includes("reusable_workflow")
-      && !isPolicySignal(sourceSignals)
+    return !isPolicySignal(sourceSignals)
       && !isDampingSignal(sourceSignals);
   }
 
@@ -244,8 +288,8 @@ function lessonSetpointFor(route, source) {
   const defaults = {
     policy: "keep future behavior or public-memory boundaries behind approval",
     damping: "hold weak or single-sample evidence to avoid overreaction",
-    skill: "turn repeatable local behavior into a draft skill only after replay",
-    case: "record repeated failure patterns before changing runtime behavior",
+    skill: "turn repeatable or externally shifted behavior into a draft skill only after replay",
+    case: "record repeated failures, corrections, or knowledge gaps before changing runtime behavior",
     memory: "preserve stable facts or preferences as draft memory candidates"
   };
 
@@ -398,7 +442,15 @@ function expectationFor(route) {
 function inferRiskLevel(source, signals) {
   if (source.risk_level) return source.risk_level;
   if (signals.includes("farcaster_public_memory_risk") || signals.includes("explicit_user_boundary")) return "high";
-  if (signals.includes("repeated_failure_pattern") || signals.includes("farcaster_low_quality_reply")) return "medium";
+  if (
+    signals.includes("repeated_failure_pattern")
+    || signals.includes("farcaster_low_quality_reply")
+    || signals.includes("knowledge_gap")
+    || signals.includes("research_needed")
+    || signals.includes("user_correction")
+    || signals.includes("external_framework_change")
+    || signals.includes("competitor_change")
+  ) return "medium";
   return "low";
 }
 
@@ -411,6 +463,9 @@ function inferOutcome(source, signals) {
 
 function inferSetpoint(source, signals) {
   if (source.setpoint) return source.setpoint;
+  if (signals.includes("research_needed") || signals.includes("knowledge_gap")) return "turn knowledge gaps into research digests before changing skills or rules";
+  if (signals.includes("external_framework_change") || signals.includes("competitor_change")) return "treat external changes as evolution pressure and replay candidates before promotion";
+  if (signals.includes("user_correction")) return "preserve user corrections as case evidence before updating behavior";
   if (signals.includes("repeated_failure_pattern")) return "convert repeated local failures into case candidates before changing runtime behavior";
   if (signals.includes("public_posting_boundary")) return "keep public-channel behavior behind local checks and approval";
   if (signals.includes("reusable_workflow")) return "turn repeated local behavior into a draft skill only after replay";

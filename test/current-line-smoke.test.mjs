@@ -24,6 +24,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("vector-memory:rank"), true);
   assert.equal(result.command_surface.includes("vector-store:local"), true);
   assert.equal(result.command_surface.includes("skill:evolution"), true);
+  assert.equal(result.command_surface.includes("curiosity:signals"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
@@ -31,6 +32,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("vector-memory:classify dry-run"));
   assert.ok(checkNames.has("vector-store:local dry-run"));
   assert.ok(checkNames.has("skill:evolution dry-run"));
+  assert.ok(checkNames.has("curiosity:signals dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -151,6 +153,23 @@ function safeArtifacts() {
       safety: {
         zilliz_written: false,
         external_api_calls: 0
+      }
+    },
+    curiosityGate: {
+      ok: true,
+      summary: {
+        evaluated_source_count: 2,
+        llm_variant_generation_count: 1,
+        deterministic_review_optional_count: 1,
+        missed_review_worthy_count: 0,
+        noise_selected_count: 0
+      },
+      safety: {
+        writes_persistent_memory: false,
+        changes_route: false,
+        changes_winner: false,
+        llm_api_calls: 0,
+        production_authority: false
       }
     }
   };

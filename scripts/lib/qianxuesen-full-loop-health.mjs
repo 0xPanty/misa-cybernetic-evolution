@@ -101,6 +101,13 @@ function componentStatus(calibration, smoke) {
       && allNamedChecksOk(calibration.checks, "perception replay keeps Qianxuesen route authority")
       && allNamedChecksOk(calibration.checks, "perception replay keeps writes and provider calls off")
     ),
+    curiosity_signal_gate: statusFor(
+      smoke.checks.some((check) => check.name === "curiosity:signals dry-run" && check.ok)
+      && allNamedChecksOk(calibration.checks, "curiosity gate catches review-worthy signals without selecting noise")
+      && allNamedChecksOk(calibration.checks, "curiosity gate kept signal selection precise")
+      && calibration.summary.curiosity_missed_review_worthy_count === 0
+      && calibration.summary.curiosity_noise_selected_count === 0
+    ),
     retrieval: statusFor(
       calibration.summary.retrieval_top1_exact_recall === 1
       && sampleRetrievalOk
@@ -181,6 +188,10 @@ function coverageSummary(calibration, smoke) {
     route_counts: calibration.summary.route_counts,
     route_coverage: REQUIRED_ROUTES.filter((route) => (calibration.summary.route_counts?.[route] ?? 0) > 0),
     perception_replay_ok: calibration.summary.perception_replay_ok,
+    curiosity_llm_variant_generation: calibration.summary.curiosity_llm_variant_generation_count,
+    curiosity_optional_review: calibration.summary.curiosity_optional_review_count,
+    curiosity_missed_review_worthy: calibration.summary.curiosity_missed_review_worthy_count,
+    curiosity_noise_selected: calibration.summary.curiosity_noise_selected_count,
     retrieval_top1_exact_recall: calibration.summary.retrieval_top1_exact_recall,
     judge_recommended: calibration.summary.judge_recommended_count,
     judge_near_threshold: calibration.summary.judge_near_threshold_count,
@@ -242,6 +253,8 @@ function componentSummaries(calibration, smoke, components) {
   const samples = sampleSetSummaries(calibration);
   const localVectorStoreCheck = smoke.checks.find((check) => check.name === "vector-store:local dry-run");
   const skillEvolutionCheck = smoke.checks.find((check) => check.name === "skill:evolution dry-run");
+  const curiosityLayer = layers.get("curiosity_llm_value_gate");
+  const curiosityCheck = smoke.checks.find((check) => check.name === "curiosity:signals dry-run");
 
   return {
     current_line_smoke: {
@@ -313,6 +326,18 @@ function componentSummaries(calibration, smoke, components) {
       ledger_statuses: calibration.perception_shadow_replay.ledger_statuses,
       blocked_outputs: perceptionLayer?.blocked_outputs ?? []
     },
+    curiosity_signal_gate: {
+      status: components.curiosity_signal_gate,
+      authority: curiosityLayer?.authority ?? "unknown",
+      llm_variant_generation_count: calibration.summary.curiosity_llm_variant_generation_count,
+      optional_review_count: calibration.summary.curiosity_optional_review_count,
+      review_worthy_count: calibration.summary.curiosity_review_worthy_count,
+      missed_review_worthy_count: calibration.summary.curiosity_missed_review_worthy_count,
+      noise_selected_count: calibration.summary.curiosity_noise_selected_count,
+      smoke_sources: curiosityCheck?.sources ?? null,
+      production_authority: curiosityLayer?.production_authority ?? false,
+      llm_api_calls: curiosityLayer?.llm_api_calls ?? 0
+    },
     retrieval: {
       status: components.retrieval,
       authority: retrievalLayer?.authority ?? "unknown",
@@ -358,6 +383,7 @@ function keyFindings({ ok, components, safety, coverage }) {
       : "Safety boundary needs review: at least one live-effect flag changed.",
     `Routes covered: ${coverage.route_coverage.join(", ")}.`,
     `Retrieval exact recall: ${coverage.retrieval_top1_exact_recall}; perception replay: ${coverage.perception_replay_ok}.`,
+    `Curiosity gate selected ${coverage.curiosity_llm_variant_generation} LLM-variant candidates, held ${coverage.curiosity_optional_review} optional reviews, missed ${coverage.curiosity_missed_review_worthy}, and selected ${coverage.curiosity_noise_selected} noise items.`,
     `Judge surfaced ${coverage.judge_recommended} high-value review candidates, kept ${coverage.judge_near_threshold} near-threshold cases deterministic, and made ${safety.llm_api_calls} LLM calls.`
   ];
 }

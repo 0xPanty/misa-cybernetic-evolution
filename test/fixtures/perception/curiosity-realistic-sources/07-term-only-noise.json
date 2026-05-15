@@ -1,0 +1,32 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "curiosity-term-only-noise-007",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T05:30:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Term-only sample that should not trigger LLM review.",
+  "summary": "A repeated term was noted without any gap, correction, external change, or behavior impact.",
+  "signals": [
+    "repeated_terminology"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "noise:term-only"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "curiosity:noise:term-only:007",
+      "text": "The repeated term vector store appeared as a label in notes, with no unanswered question and no action requested."
+    }
+  ]
+}

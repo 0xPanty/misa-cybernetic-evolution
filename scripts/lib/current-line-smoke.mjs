@@ -1,7 +1,9 @@
 import path from "node:path";
+import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
+import { buildPerceptionDigest } from "./perception-sidecar.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
@@ -121,6 +123,19 @@ function summarizeRetrievalRanker(ranker) {
   };
 }
 
+function summarizeCuriosityGate(curiosityGate) {
+  return {
+    ok: curiosityGate.ok,
+    sources: curiosityGate.summary.evaluated_source_count,
+    llm_variant_generation: curiosityGate.summary.llm_variant_generation_count,
+    optional_review: curiosityGate.summary.deterministic_review_optional_count,
+    missed_review_worthy: curiosityGate.summary.missed_review_worthy_count,
+    noise_selected: curiosityGate.summary.noise_selected_count,
+    llm_api_calls: curiosityGate.safety.llm_api_calls,
+    production_authority: curiosityGate.safety.production_authority
+  };
+}
+
 function noLiveWritesOrProviderCallsCheck({
   routing,
   sessionReview,
@@ -129,7 +144,8 @@ function noLiveWritesOrProviderCallsCheck({
   localVectorStore,
   skillEvolution,
   zillizAdapter,
-  retrievalRanker
+  retrievalRanker,
+  curiosityGate
 }) {
   const details = {
     durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
@@ -150,7 +166,11 @@ function noLiveWritesOrProviderCallsCheck({
     adapter_zilliz_written: zillizAdapter.safety.zilliz_written,
     adapter_embedding_created: zillizAdapter.safety.embedding_created,
     retrieval_zilliz_written: retrievalRanker.safety.zilliz_written,
-    retrieval_external_api_calls: retrievalRanker.safety.external_api_calls
+    retrieval_external_api_calls: retrievalRanker.safety.external_api_calls,
+    curiosity_writes_persistent_memory: curiosityGate.safety.writes_persistent_memory,
+    curiosity_changes_route: curiosityGate.safety.changes_route,
+    curiosity_changes_winner: curiosityGate.safety.changes_winner,
+    curiosity_llm_api_calls: curiosityGate.safety.llm_api_calls
   };
 
   return checkResult("no live writes or provider calls", (
@@ -173,6 +193,10 @@ function noLiveWritesOrProviderCallsCheck({
     && details.adapter_embedding_created === false
     && details.retrieval_zilliz_written === false
     && details.retrieval_external_api_calls === 0
+    && details.curiosity_writes_persistent_memory === false
+    && details.curiosity_changes_route === false
+    && details.curiosity_changes_winner === false
+    && details.curiosity_llm_api_calls === 0
   ), details);
 }
 
@@ -184,7 +208,8 @@ function buildCurrentLineSmokeChecks({
   localVectorStore,
   skillEvolution,
   zillizAdapter,
-  retrievalRanker
+  retrievalRanker,
+  curiosityGate
 }) {
   return [
     checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
@@ -193,6 +218,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
     checkResult("vector-store:local dry-run", localVectorStore.ok, summarizeLocalVectorStore(localVectorStore)),
     checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
+    checkResult("curiosity:signals dry-run", curiosityGate.ok, summarizeCuriosityGate(curiosityGate)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -203,7 +229,8 @@ function buildCurrentLineSmokeChecks({
       localVectorStore,
       skillEvolution,
       zillizAdapter,
-      retrievalRanker
+      retrievalRanker,
+      curiosityGate
     })
   ];
 }
@@ -250,6 +277,27 @@ export async function runCurrentLineSmoke({
     now
   });
   const retrievalRanker = evaluateVectorRetrievalScenarios();
+  const perceptionDigest = await buildPerceptionDigest({
+    repoRoot,
+    sourceDir: path.join("test", "fixtures", "perception", "shadow-sources"),
+    ledgerFile: path.join("test", "fixtures", "perception", "handled-signal-ledger.json"),
+    now
+  });
+  const curiosityGate = buildCuriositySignalGateFromDigest(perceptionDigest, {
+    expectedReviewWorthySourceIds: [
+      "shadow-public-memory-risk-001",
+      "shadow-candidate-replay-failed-002",
+      "shadow-provider-timeout-repeat-003",
+      "shadow-repeatable-validation-workflow-a-004",
+      "shadow-repeatable-validation-workflow-b-005",
+      "shadow-work-order-router-drift-009",
+      "shadow-public-memory-risk-discord-010"
+    ],
+    expectedNoiseSourceIds: [
+      "shadow-smalltalk-noise-007",
+      "shadow-background-note-noise-008"
+    ]
+  });
 
   const checks = buildCurrentLineSmokeChecks({
     routing,
@@ -259,7 +307,8 @@ export async function runCurrentLineSmoke({
     localVectorStore,
     skillEvolution,
     zillizAdapter,
-    retrievalRanker
+    retrievalRanker,
+    curiosityGate
   });
 
   return {
@@ -271,6 +320,7 @@ export async function runCurrentLineSmoke({
       "vector-memory:rank",
       "vector-store:local",
       "skill:evolution",
+      "curiosity:signals",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -296,7 +346,8 @@ export function buildCurrentLineSmokeFromArtifacts({
   localVectorStore,
   skillEvolution,
   zillizAdapter,
-  retrievalRanker
+  retrievalRanker,
+  curiosityGate
 }) {
   const checks = buildCurrentLineSmokeChecks({
     routing: workOrderRouting,
@@ -306,7 +357,8 @@ export function buildCurrentLineSmokeFromArtifacts({
     localVectorStore,
     skillEvolution,
     zillizAdapter,
-    retrievalRanker
+    retrievalRanker,
+    curiosityGate
   });
 
   return {

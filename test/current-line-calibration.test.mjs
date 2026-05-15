@@ -39,7 +39,7 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(result.summary.repair_ticket_count, 5);
   assert.equal(result.summary.work_order_count, 5);
   assert.equal(result.summary.tournament_count, 49);
-  assert.equal(result.summary.signal_layer_count, 6);
+  assert.equal(result.summary.signal_layer_count, 7);
   assert.equal(result.summary.observed_signal_count, 9);
   assert.equal(result.summary.perception_replay_count, 1);
   assert.equal(result.summary.perception_replay_ok, true);
@@ -48,6 +48,11 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(result.summary.perception_recurring_after_fix_count, 1);
   assert.equal(result.summary.perception_already_processed_count, 1);
   assert.equal(result.summary.perception_damping_repeated_to_case_count, 1);
+  assert.equal(result.summary.curiosity_llm_variant_generation_count, 3);
+  assert.equal(result.summary.curiosity_optional_review_count, 4);
+  assert.equal(result.summary.curiosity_review_worthy_count, 7);
+  assert.equal(result.summary.curiosity_missed_review_worthy_count, 0);
+  assert.equal(result.summary.curiosity_noise_selected_count, 0);
   assert.equal(result.summary.retrieval_probe_count, 5);
   assert.equal(result.summary.retrieval_top1_exact_recall, 1);
   assert.deepEqual(result.summary.route_counts, {
@@ -83,6 +88,7 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
     "source_distillation_signals",
     "qianxuesen_route_signals",
     "shadow_perception_signals",
+    "curiosity_llm_value_gate",
     "work_order_signals",
     "retrieval_ranker_signals",
     "tournament_quality_signals"
@@ -94,9 +100,9 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.deepEqual(
     result.signal_layers.find((layer) => layer.layer_id === "shadow_perception_signals").taxonomy,
     {
-      risk_signal_count: 5,
-      novelty_signal_count: 4,
-      signal_family_count: 10
+      risk_signal_count: 10,
+      novelty_signal_count: 9,
+      signal_family_count: 15
     }
   );
   assert.deepEqual(
@@ -112,6 +118,15 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(
     result.signal_layers.find((layer) => layer.layer_id === "retrieval_ranker_signals").ranking_inputs.includes("lexical_intent_match"),
     true
+  );
+  assert.deepEqual(
+    result.signal_layers.find((layer) => layer.layer_id === "curiosity_llm_value_gate").selected_counts,
+    {
+      llm_variant_generation: 3,
+      optional_review: 4,
+      missed_review_worthy: 0,
+      noise_selected: 0
+    }
   );
   assert.equal(
     result.signal_layers.find((layer) => layer.layer_id === "tournament_quality_signals").production_authority,
@@ -164,8 +179,17 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.equal(result.perception_shadow_replay.safety.changes_winner, false);
   assert.equal(result.perception_shadow_replay.safety.llm_api_calls, 0);
   assert.equal(result.perception_shadow_replay.safety.external_api_calls, 0);
+  assert.equal(result.perception_shadow_replay.curiosity_gate.ok, true);
+  assert.equal(result.perception_shadow_replay.curiosity_gate.summary.llm_variant_generation_count, 3);
+  assert.equal(result.perception_shadow_replay.curiosity_gate.summary.deterministic_review_optional_count, 4);
+  assert.equal(result.perception_shadow_replay.curiosity_gate.summary.missed_review_worthy_count, 0);
+  assert.equal(result.perception_shadow_replay.curiosity_gate.summary.noise_selected_count, 0);
   assert.equal(
     result.checks.some((check) => check.name === "perception shadow replay passed" && check.ok),
+    true
+  );
+  assert.equal(
+    result.checks.some((check) => check.name === "curiosity gate kept signal selection precise" && check.ok),
     true
   );
 });
@@ -213,6 +237,17 @@ test("current-line calibration keeps semantic boundaries independent of fixture 
   assert.equal(result.perception_shadow_replay.safety.changes_winner, false);
   assert.equal(result.perception_shadow_replay.safety.writes_persistent_memory, false);
   assert.equal(result.perception_shadow_replay.safety.writes_zilliz, false);
+
+  const curiosityLayer = layers.get("curiosity_llm_value_gate");
+  assert.equal(curiosityLayer.authority, "advice_only");
+  assert.equal(curiosityLayer.production_authority, false);
+  assert.equal(curiosityLayer.llm_api_calls, 0);
+  assert.deepEqual(curiosityLayer.blocked_outputs, [
+    "route_change",
+    "winner_change",
+    "persistent_memory_write",
+    "provider_call"
+  ]);
 
   const retrievalLayer = layers.get("retrieval_ranker_signals");
   assert.equal(retrievalLayer.authority, "read_side_ranking_only");

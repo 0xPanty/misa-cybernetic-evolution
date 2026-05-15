@@ -18,6 +18,7 @@
     "distill:misa": "node scripts/distill-misa.mjs",
     "perception:digest": "node scripts/perception-digest.mjs",
     "perception:layout": "node scripts/perception-log-layout.mjs",
+    "curiosity:signals": "node scripts/curiosity-signal-gate.mjs",
     "hermes:map-distillation": "node scripts/hermes-distillation-mapper.mjs",
     "density:misa": "node scripts/genericagent-density.mjs",
     "adaptive:misa": "node scripts/adaptive-candidates.mjs",

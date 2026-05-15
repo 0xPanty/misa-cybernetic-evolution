@@ -49,9 +49,16 @@ runs/bootstrap-local/latest.json
 npm run vector-store:local -- --mode stats
 npm run vector-store:local -- --mode query --query "public posting policy" --route policy
 npm run skill:evolution
+npm run curiosity:signals
 npm run health:qianxuesen
 npm run precheck
 npm test
+```
+
+For the heavier curiosity sample check, run:
+
+```bash
+npm run curiosity:signals -- --source-dir test/fixtures/perception/curiosity-realistic-sources
 ```
 
 ## What This Does Not Do

@@ -1,0 +1,41 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "curiosity-competitor-change-agent-framework-004",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T05:15:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted real-style competitor pressure sample.",
+  "summary": "A competitor agent framework released a new optimization flow that may be relevant but needs research and replay first.",
+  "setpoint": "treat competitor changes as external evolution pressure, not as direct rule updates",
+  "evidence_count": 2,
+  "outcome": "unknown",
+  "risk_level": "medium",
+  "source_refs": [
+    "curiosity:competitor:framework:004"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "external:competitor-agent-framework-redacted"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "curiosity:competitor:framework:004",
+      "text": "A competitor agent framework released a GEPA-style optimizer update. It may change the benchmark for skill evolution."
+    },
+    {
+      "speaker": "codex",
+      "ref": "curiosity:competitor:framework:005",
+      "text": "Research needed before candidate generation; replay should decide whether this becomes an evolution variant."
+    }
+  ]
+}

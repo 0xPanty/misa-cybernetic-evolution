@@ -1,0 +1,41 @@
+{
+  "schema_version": "misa.local_distillation_source.v1",
+  "source_id": "curiosity-langgraph-doc-drift-002",
+  "source_kind": "chat_window",
+  "channel": "local",
+  "created_at": "2026-05-14T05:05:00.000Z",
+  "local_only": true,
+  "uses_zilliz_proxy": false,
+  "vector_lookup_required": false,
+  "raw_window_default": false,
+  "redaction_status": "redacted",
+  "redaction_note": "Redacted real-style local framework correction sample.",
+  "summary": "The user corrected the agent after a stale LangGraph answer, and the docs appear changed enough to need research.",
+  "setpoint": "turn stale external framework answers into research digest candidates before adapting local skills",
+  "evidence_count": 3,
+  "outcome": "partial",
+  "risk_level": "medium",
+  "source_refs": [
+    "curiosity:langgraph:doc-drift:002"
+  ],
+  "artifact_evidence": {
+    "injected": [],
+    "read": [
+      "external:langgraph-docs-redacted"
+    ],
+    "modified": [],
+    "tool_errors": []
+  },
+  "turns": [
+    {
+      "speaker": "operator",
+      "ref": "curiosity:langgraph:doc-drift:002",
+      "text": "You misunderstood the LangGraph bridge because the docs changed and your answer sounded outdated."
+    },
+    {
+      "speaker": "codex",
+      "ref": "curiosity:langgraph:doc-drift:003",
+      "text": "This is a knowledge gap. Need to research docs and replay the bridge behavior before proposing a skill variant."
+    }
+  ]
+}

@@ -118,7 +118,10 @@ function priorityFor(events, signals) {
   const signalBoost = signals.reduce((score, signal) => {
     if (signal === "farcaster_public_memory_risk" || signal === "public_posting_boundary") return score + 10;
     if (signal === "explicit_user_boundary" || signal === "candidate_replay_failed") return score + 8;
+    if (signal === "knowledge_gap" || signal === "research_needed" || signal === "user_correction") return score + 7;
+    if (signal === "external_framework_change" || signal === "competitor_change") return score + 6;
     if (signal === "reusable_workflow" || signal === "repeated_failure_pattern") return score + 5;
+    if (signal === "repeated_terminology") return score + 3;
     return score;
   }, 0);
 
@@ -327,6 +330,16 @@ function attentionReasons(signals, routeCounts) {
   if (signals.includes("candidate_replay_failed") || signals.includes("repeated_failure_pattern")) {
     reasons.push("failure pattern may need damping, case, or repair handoff");
   }
+  if (
+    signals.includes("knowledge_gap")
+    || signals.includes("research_needed")
+    || signals.includes("user_correction")
+  ) {
+    reasons.push("knowledge gap or user correction may need research before behavior changes");
+  }
+  if (signals.includes("external_framework_change") || signals.includes("competitor_change")) {
+    reasons.push("external change may be useful evolution pressure after replay");
+  }
   if (signals.includes("reusable_workflow") && !hasPolicyPressure(signals)) {
     reasons.push("workflow signal may become a skill candidate after Qianxuesen checks");
   }
@@ -418,9 +431,14 @@ function reviewValueFor(sourceId, priority, signals, refs) {
   const publicBoundary = signals.includes("farcaster_public_memory_risk") || signals.includes("public_posting_boundary");
   const failurePattern = signals.includes("candidate_replay_failed") || signals.includes("repeated_failure_pattern");
   const workflowCandidate = signals.includes("reusable_workflow");
+  const researchPressure = signals.includes("knowledge_gap")
+    || signals.includes("research_needed")
+    || signals.includes("user_correction")
+    || signals.includes("external_framework_change")
+    || signals.includes("competitor_change");
   const level = publicBoundary && priority >= 90
     ? "high"
-    : failurePattern || workflowCandidate
+    : failurePattern || workflowCandidate || researchPressure
       ? "medium"
       : "low";
 
@@ -431,7 +449,7 @@ function reviewValueFor(sourceId, priority, signals, refs) {
     expected_value: level === "high"
       ? "strong downstream review value because a public or authority boundary is present"
       : level === "medium"
-        ? "possible downstream review value if Qianxuesen turns this into a repair or skill candidate"
+        ? "possible downstream review value if Qianxuesen turns this into a repair, research digest, or skill candidate"
         : "deterministic routing should be enough unless later evidence changes",
     call_policy: level === "high" ? "optional_downstream_review" : "hint_only",
     source_refs: refs,

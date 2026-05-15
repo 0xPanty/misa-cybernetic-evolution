@@ -32,6 +32,31 @@ export const PERCEPTION_RISK_SIGNAL_HINTS = Object.freeze([
     kind: "reliability_failure",
     level: "medium",
     reason: "repeated failure pattern should be reviewed before runtime changes"
+  })]),
+  Object.freeze(["external_framework_change", Object.freeze({
+    kind: "external_drift",
+    level: "medium",
+    reason: "external framework or protocol changes can invalidate old skill behavior"
+  })]),
+  Object.freeze(["competitor_change", Object.freeze({
+    kind: "competitive_pressure",
+    level: "medium",
+    reason: "competitor or adjacent-framework changes can create useful evolution pressure"
+  })]),
+  Object.freeze(["knowledge_gap", Object.freeze({
+    kind: "knowledge_gap",
+    level: "medium",
+    reason: "known uncertainty should become research evidence before behavior changes"
+  })]),
+  Object.freeze(["research_needed", Object.freeze({
+    kind: "research_needed",
+    level: "medium",
+    reason: "explicit research need should be captured before generating variants"
+  })]),
+  Object.freeze(["user_correction", Object.freeze({
+    kind: "user_correction",
+    level: "medium",
+    reason: "user corrections are strong evidence that current behavior needs calibration"
   })])
 ]);
 
@@ -51,6 +76,26 @@ export const PERCEPTION_NOVELTY_SIGNAL_HINTS = Object.freeze([
   Object.freeze(["farcaster_reply_success", Object.freeze({
     kind: "public_reply_pattern",
     reason: "successful public reply pattern is useful only with public-boundary checks"
+  })]),
+  Object.freeze(["external_framework_change", Object.freeze({
+    kind: "external_framework_candidate",
+    reason: "external framework drift may justify a research digest or skill variant"
+  })]),
+  Object.freeze(["competitor_change", Object.freeze({
+    kind: "competitor_candidate",
+    reason: "competitor change may be useful as external evolution pressure"
+  })]),
+  Object.freeze(["knowledge_gap", Object.freeze({
+    kind: "research_gap_candidate",
+    reason: "knowledge gaps should be researched before becoming candidates"
+  })]),
+  Object.freeze(["research_needed", Object.freeze({
+    kind: "research_digest_candidate",
+    reason: "explicit research need may become a research digest candidate"
+  })]),
+  Object.freeze(["repeated_terminology", Object.freeze({
+    kind: "terminology_candidate",
+    reason: "repeated domain terms can indicate missing external or conceptual context"
   })])
 ]);
 
@@ -61,6 +106,11 @@ export const PERCEPTION_SIGNAL_FAMILIES = Object.freeze([
   Object.freeze(["candidate_replay_failed", Object.freeze(["candidate_replay_failed"])]),
   Object.freeze(["overreaction_damping", Object.freeze(["avoid_overreaction", "single_failure"])]),
   Object.freeze(["repeated_failure", Object.freeze(["repeated_failure_pattern"])]),
+  Object.freeze(["external_framework_change", Object.freeze(["external_framework_change"])]),
+  Object.freeze(["competitor_change", Object.freeze(["competitor_change"])]),
+  Object.freeze(["knowledge_gap", Object.freeze(["knowledge_gap", "research_needed"])]),
+  Object.freeze(["user_correction", Object.freeze(["user_correction"])]),
+  Object.freeze(["repeated_terminology", Object.freeze(["repeated_terminology"])]),
   Object.freeze(["workflow", Object.freeze(["reusable_workflow"])]),
   Object.freeze(["user_preference", Object.freeze(["stable_user_preference"])]),
   Object.freeze(["project_fact", Object.freeze(["stable_project_fact"])]),

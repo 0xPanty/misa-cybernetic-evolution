@@ -2,6 +2,7 @@ import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
 import { buildPerceptionDigest } from "./perception-sidecar.mjs";
+import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import {
   PERCEPTION_NOVELTY_SIGNAL_HINTS,
@@ -23,7 +24,20 @@ import {
 const DEFAULT_NOW = new Date("2026-05-14T00:00:00Z");
 const DEFAULT_PERCEPTION_REPLAY = Object.freeze({
   source_dir: "test/fixtures/perception/shadow-sources",
-  ledger_file: "test/fixtures/perception/handled-signal-ledger.json"
+  ledger_file: "test/fixtures/perception/handled-signal-ledger.json",
+  expected_review_worthy_source_ids: Object.freeze([
+    "shadow-public-memory-risk-001",
+    "shadow-candidate-replay-failed-002",
+    "shadow-provider-timeout-repeat-003",
+    "shadow-repeatable-validation-workflow-a-004",
+    "shadow-repeatable-validation-workflow-b-005",
+    "shadow-work-order-router-drift-009",
+    "shadow-public-memory-risk-discord-010"
+  ]),
+  expected_noise_source_ids: Object.freeze([
+    "shadow-smalltalk-noise-007",
+    "shadow-background-note-noise-008"
+  ])
 });
 
 export const DEFAULT_CALIBRATION_SAMPLE_SETS = [
@@ -293,6 +307,23 @@ function buildSignalLayerMap(sampleResults, summary, perceptionReplay) {
       production_authority: false
     },
     {
+      layer_id: "curiosity_llm_value_gate",
+      owner: "curiosity signal gate",
+      role: "decide which existing candidate signals are worth LLM or GEPA-style variant generation",
+      authority: "advice_only",
+      input_surface: "perception digest, signal ledger status, route pressure, review-value hints",
+      output_surface: "llm_variant_generation_recommended or deterministic_review_optional",
+      selected_counts: perceptionReplay ? {
+        llm_variant_generation: perceptionReplay.curiosity_gate.summary.llm_variant_generation_count,
+        optional_review: perceptionReplay.curiosity_gate.summary.deterministic_review_optional_count,
+        missed_review_worthy: perceptionReplay.curiosity_gate.summary.missed_review_worthy_count,
+        noise_selected: perceptionReplay.curiosity_gate.summary.noise_selected_count
+      } : null,
+      blocked_outputs: ["route_change", "winner_change", "persistent_memory_write", "provider_call"],
+      llm_api_calls: 0,
+      production_authority: false
+    },
+    {
       layer_id: "work_order_signals",
       owner: "repair ticket and work-order router",
       role: "turn repair pressure into local primary-agent handoff",
@@ -362,6 +393,10 @@ async function runPerceptionShadowReplay({ repoRoot, now }) {
     sourceDir: DEFAULT_PERCEPTION_REPLAY.source_dir,
     ledgerFile: DEFAULT_PERCEPTION_REPLAY.ledger_file,
     now
+  });
+  const curiosityGate = buildCuriositySignalGateFromDigest(digest, {
+    expectedReviewWorthySourceIds: [...DEFAULT_PERCEPTION_REPLAY.expected_review_worthy_source_ids],
+    expectedNoiseSourceIds: [...DEFAULT_PERCEPTION_REPLAY.expected_noise_source_ids]
   });
   const attentionBySource = mapBy(digest.attention_queue, (item) => item.source_id);
   const fingerprintById = mapBy(digest.signal_fingerprints, (fingerprint) => fingerprint.fingerprint_id);
@@ -447,6 +482,12 @@ async function runPerceptionShadowReplay({ repoRoot, now }) {
     ), {
       signal_fingerprint_count: digest.summary.signal_fingerprint_count,
       ledger_update_proposal_count: digest.summary.ledger_update_proposal_count
+    }),
+    checkResult("curiosity gate catches review-worthy signals without selecting noise", curiosityGate.ok, {
+      llm_variant_generation_count: curiosityGate.summary.llm_variant_generation_count,
+      optional_review_count: curiosityGate.summary.deterministic_review_optional_count,
+      missed_review_worthy_count: curiosityGate.summary.missed_review_worthy_count,
+      noise_selected_count: curiosityGate.summary.noise_selected_count
     })
   ];
 
@@ -471,7 +512,12 @@ async function runPerceptionShadowReplay({ repoRoot, now }) {
       ledger_update_proposal_count: digest.summary.ledger_update_proposal_count,
       recurring_after_fix_count: digest.summary.recurring_after_fix_count,
       already_processed_count: digest.summary.already_processed_count,
-      damping_repeated_to_case_count: digest.summary.damping_repeated_to_case_count
+      damping_repeated_to_case_count: digest.summary.damping_repeated_to_case_count,
+      curiosity_llm_variant_generation_count: curiosityGate.summary.llm_variant_generation_count,
+      curiosity_optional_review_count: curiosityGate.summary.deterministic_review_optional_count,
+      curiosity_review_worthy_count: curiosityGate.summary.review_worthy_count,
+      curiosity_missed_review_worthy_count: curiosityGate.summary.missed_review_worthy_count,
+      curiosity_noise_selected_count: curiosityGate.summary.noise_selected_count
     },
     safety: {
       production_authority: digest.safety.production_authority,
@@ -484,6 +530,7 @@ async function runPerceptionShadowReplay({ repoRoot, now }) {
       llm_api_calls: digest.safety.llm_api_calls,
       external_api_calls: digest.safety.external_api_calls
     },
+    curiosity_gate: curiosityGate,
     checks
   };
 }
@@ -755,6 +802,11 @@ export async function runCurrentLineCalibration({
   summary.perception_recurring_after_fix_count = perceptionReplay.summary.recurring_after_fix_count;
   summary.perception_already_processed_count = perceptionReplay.summary.already_processed_count;
   summary.perception_damping_repeated_to_case_count = perceptionReplay.summary.damping_repeated_to_case_count;
+  summary.curiosity_llm_variant_generation_count = perceptionReplay.summary.curiosity_llm_variant_generation_count;
+  summary.curiosity_optional_review_count = perceptionReplay.summary.curiosity_optional_review_count;
+  summary.curiosity_review_worthy_count = perceptionReplay.summary.curiosity_review_worthy_count;
+  summary.curiosity_missed_review_worthy_count = perceptionReplay.summary.curiosity_missed_review_worthy_count;
+  summary.curiosity_noise_selected_count = perceptionReplay.summary.curiosity_noise_selected_count;
   const overallChecks = [
     checkResult("all sample sets passed", sampleResults.every((sample) => sample.ok), {
       failed_sample_sets: sampleResults.filter((sample) => !sample.ok).map((sample) => sample.sample_set_id)
@@ -766,6 +818,16 @@ export async function runCurrentLineCalibration({
       top_attention_source_id: perceptionReplay.top_attention_source_id,
       duplicate_cluster_count: perceptionReplay.summary.duplicate_cluster_count,
       recurring_after_fix_count: perceptionReplay.summary.recurring_after_fix_count
+    }),
+    checkResult("curiosity gate kept signal selection precise", (
+      perceptionReplay.curiosity_gate.ok
+      && perceptionReplay.curiosity_gate.summary.missed_review_worthy_count === 0
+      && perceptionReplay.curiosity_gate.summary.noise_selected_count === 0
+    ), {
+      llm_variant_generation_count: perceptionReplay.curiosity_gate.summary.llm_variant_generation_count,
+      optional_review_count: perceptionReplay.curiosity_gate.summary.deterministic_review_optional_count,
+      missed_review_worthy_count: perceptionReplay.curiosity_gate.summary.missed_review_worthy_count,
+      noise_selected_count: perceptionReplay.curiosity_gate.summary.noise_selected_count
     }),
     checkResult("shadow mode kept all live effects off", (
       summary.live_effect_allowed === false

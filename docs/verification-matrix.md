@@ -50,6 +50,8 @@ npm run bootstrap:local
 npm run simulate:misa
 npm run distill:misa
 npm run perception:digest
+npm run curiosity:signals -- --json
+npm run curiosity:signals -- --source-dir test/fixtures/perception/curiosity-realistic-sources --expect-review-worthy curiosity-farcaster-protocol-drift-001,curiosity-langgraph-doc-drift-002,curiosity-user-correction-qianxuesen-003,curiosity-competitor-change-agent-framework-004 --expect-noise curiosity-one-off-buzzword-noise-005,curiosity-marketing-note-noise-006,curiosity-term-only-noise-007
 npm run crystallize:misa
 npm run self-repair:misa -- --validation-mode
 npm run hermes:map-distillation -- --json
