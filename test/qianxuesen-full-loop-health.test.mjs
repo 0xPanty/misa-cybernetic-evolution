@@ -41,12 +41,16 @@ test("qianxuesen full-loop health writes latest plus timestamped history", async
   assert.equal(report.safety.changes_winner, false);
   assert.equal(report.safety.controller_authority_leaked, false);
   assert.equal(report.coverage.route_coverage.includes("policy"), true);
-  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 14);
+  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 15);
   assert.equal(report.component_summaries.skill_evolution.replay_required, 1);
   assert.equal(report.component_summaries.skill_evolution.no_write, true);
   assert.equal(report.component_summaries.hermes_runtime_adapter.evolution_candidates, 4);
   assert.equal(report.component_summaries.hermes_runtime_adapter.writes_skills, false);
   assert.equal(report.component_summaries.hermes_runtime_adapter.blocks_runtime, false);
+  assert.equal(report.component_summaries.hermes_work_order.work_orders, 4);
+  assert.equal(report.component_summaries.hermes_work_order.variants, 20);
+  assert.equal(report.component_summaries.hermes_work_order.positive_lift_rate, 1);
+  assert.equal(report.component_summaries.hermes_work_order.safety_regressions, 0);
   assert.equal(report.component_summaries.source_distillation.sources, 18);
   assert.equal(report.component_summaries.qianxuesen_route_decision.owner, "qianxuesen");
   assert.equal(report.component_summaries.perception.authority, "hint_only");

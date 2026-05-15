@@ -319,7 +319,14 @@ function buildLlmReviewGate(order, variants, winner) {
   const margin = runnerUp ? winner.scores.composite - runnerUp.scores.composite : 1;
   const value = baseValueScore(order);
   const uncertainty = uncertaintyScore(order, variants);
-  const importantCategory = ["engineering_repair", "operator_quality"].includes(order.category);
+  const importantCategory = [
+    "engineering_repair",
+    "operator_quality",
+    "hermes_skill_evolution",
+    "hermes_policy_boundary",
+    "hermes_research_followup",
+    "hermes_damping"
+  ].includes(order.category);
   const recommended = value >= 0.62
     && uncertainty >= 0.55
     && margin <= 0.1

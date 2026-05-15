@@ -28,6 +28,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("skill:evolution"), true);
   assert.equal(result.command_surface.includes("curiosity:signals"), true);
   assert.equal(result.command_surface.includes("hermes:adapt-runtime"), true);
+  assert.equal(result.command_surface.includes("hermes:work-order"), true);
   assert.equal(result.command_surface.includes("hermes:plugin:doctor"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
@@ -40,6 +41,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("skill:evolution dry-run"));
   assert.ok(checkNames.has("curiosity:signals dry-run"));
   assert.ok(checkNames.has("hermes:adapt-runtime dry-run"));
+  assert.ok(checkNames.has("hermes:work-order dry-run"));
   assert.ok(checkNames.has("hermes:plugin:doctor dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
@@ -230,6 +232,34 @@ function safeArtifacts() {
         writes_persistent_memory: false,
         writes_skills: false,
         blocks_runtime: false,
+        llm_api_calls: 0,
+        external_api_calls: 0
+      }
+    },
+    hermesWorkOrderPipeline: {
+      ok: true,
+      routing: {
+        summary: {
+          work_order_count: 4
+        }
+      },
+      variants: {
+        summary: {
+          variant_count: 20
+        }
+      },
+      quality: {
+        summary: {
+          comparison_count: 4,
+          avg_delta: 0.158,
+          positive_lift_rate: 1,
+          safety_regression_count: 0
+        }
+      },
+      safety: {
+        executes_work_orders: false,
+        writes_persistent_memory: false,
+        writes_skills: false,
         llm_api_calls: 0,
         external_api_calls: 0
       }

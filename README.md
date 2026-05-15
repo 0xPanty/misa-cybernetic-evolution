@@ -140,6 +140,7 @@ Two rules matter most:
 | Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
 | Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
 | Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests and replay candidates |
+| Hermes work orders | `npm run hermes:work-order -- --json --dry-run` | turns Hermes self-evolution signals into Qianxuesen work orders, variants, selected winners, and quality comparisons |
 | Hermes plugin install | `npm run hermes:plugin:install` | copies the observe-only plugin sample into a local Hermes plugin folder |
 | Hermes plugin doctor | `npm run hermes:plugin:doctor` | checks plugin files and replays local NDJSON events when present |
 | Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
@@ -162,7 +163,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, skill evolution, curiosity signals, Hermes runtime adapter/plugin, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -291,6 +292,18 @@ npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.
 
 The plugin only writes a local NDJSON event log. It does not block Hermes tools,
 write Hermes memory, change skills, call models, or call external APIs.
+
+Hermes signals do not stop at observe-only. The public work-order chain turns
+runtime pressure into Qianxuesen work orders:
+
+```bash
+npm run hermes:work-order -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json --dry-run
+```
+
+That command keeps Hermes' self-evolution advantage by moving signals directly
+into work orders, seeded variants, selected winners, and quality comparisons.
+It still does not write Hermes memory, mutate skills, publish, call models, or
+call external APIs.
 
 ## Evolution Tournament
 

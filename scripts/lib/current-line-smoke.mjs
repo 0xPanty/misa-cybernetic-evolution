@@ -2,6 +2,7 @@ import path from "node:path";
 import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { runHermesRuntimeAdapter } from "./hermes-runtime-adapter.mjs";
+import { runHermesWorkOrderPipeline } from "./hermes-work-order.mjs";
 import { runHermesRuntimePluginDoctor } from "./hermes-runtime-plugin.mjs";
 import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
@@ -198,6 +199,20 @@ function summarizeHermesRuntimePluginDoctor(doctor) {
   };
 }
 
+function summarizeHermesWorkOrderPipeline(pipeline) {
+  return {
+    ok: pipeline.ok,
+    work_orders: pipeline.routing.summary.work_order_count,
+    variants: pipeline.variants.summary.variant_count,
+    comparisons: pipeline.quality.summary.comparison_count,
+    avg_delta: pipeline.quality.summary.avg_delta,
+    positive_lift_rate: pipeline.quality.summary.positive_lift_rate,
+    safety_regressions: pipeline.quality.summary.safety_regression_count,
+    llm_api_calls: pipeline.safety.llm_api_calls,
+    external_api_calls: pipeline.safety.external_api_calls
+  };
+}
+
 function noLiveWritesOrProviderCallsCheck({
   routing,
   sessionReview,
@@ -211,6 +226,7 @@ function noLiveWritesOrProviderCallsCheck({
   retrievalRanker,
   curiosityGate,
   hermesRuntimeAdapter,
+  hermesWorkOrderPipeline,
   hermesRuntimePluginDoctor
 }) {
   const details = {
@@ -252,6 +268,11 @@ function noLiveWritesOrProviderCallsCheck({
     hermes_adapter_blocks_runtime: hermesRuntimeAdapter.safety.blocks_runtime,
     hermes_adapter_llm_api_calls: hermesRuntimeAdapter.safety.llm_api_calls,
     hermes_adapter_external_api_calls: hermesRuntimeAdapter.safety.external_api_calls,
+    hermes_work_order_executes_work_orders: hermesWorkOrderPipeline.safety.executes_work_orders,
+    hermes_work_order_writes_persistent_memory: hermesWorkOrderPipeline.safety.writes_persistent_memory,
+    hermes_work_order_writes_skills: hermesWorkOrderPipeline.safety.writes_skills,
+    hermes_work_order_llm_api_calls: hermesWorkOrderPipeline.safety.llm_api_calls,
+    hermes_work_order_external_api_calls: hermesWorkOrderPipeline.safety.external_api_calls,
     hermes_plugin_writes_plugin_files: hermesRuntimePluginDoctor.safety.writes_plugin_files,
     hermes_plugin_writes_persistent_memory: hermesRuntimePluginDoctor.safety.writes_persistent_memory,
     hermes_plugin_writes_skills: hermesRuntimePluginDoctor.safety.writes_skills,
@@ -299,6 +320,11 @@ function noLiveWritesOrProviderCallsCheck({
     && details.hermes_adapter_blocks_runtime === false
     && details.hermes_adapter_llm_api_calls === 0
     && details.hermes_adapter_external_api_calls === 0
+    && details.hermes_work_order_executes_work_orders === false
+    && details.hermes_work_order_writes_persistent_memory === false
+    && details.hermes_work_order_writes_skills === false
+    && details.hermes_work_order_llm_api_calls === 0
+    && details.hermes_work_order_external_api_calls === 0
     && details.hermes_plugin_writes_plugin_files === false
     && details.hermes_plugin_writes_persistent_memory === false
     && details.hermes_plugin_writes_skills === false
@@ -321,6 +347,7 @@ function buildCurrentLineSmokeChecks({
   retrievalRanker,
   curiosityGate,
   hermesRuntimeAdapter,
+  hermesWorkOrderPipeline,
   hermesRuntimePluginDoctor
 }) {
   return [
@@ -334,6 +361,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
     checkResult("curiosity:signals dry-run", curiosityGate.ok, summarizeCuriosityGate(curiosityGate)),
     checkResult("hermes:adapt-runtime dry-run", hermesRuntimeAdapter.ok, summarizeHermesRuntimeAdapter(hermesRuntimeAdapter)),
+    checkResult("hermes:work-order dry-run", hermesWorkOrderPipeline.ok, summarizeHermesWorkOrderPipeline(hermesWorkOrderPipeline)),
     checkResult("hermes:plugin:doctor dry-run", hermesRuntimePluginDoctor.ok, summarizeHermesRuntimePluginDoctor(hermesRuntimePluginDoctor)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
@@ -350,6 +378,7 @@ function buildCurrentLineSmokeChecks({
       retrievalRanker,
       curiosityGate,
       hermesRuntimeAdapter,
+      hermesWorkOrderPipeline,
       hermesRuntimePluginDoctor
     })
   ];
@@ -432,6 +461,10 @@ export async function runCurrentLineSmoke({
     repoRoot,
     now
   });
+  const hermesWorkOrderPipeline = await runHermesWorkOrderPipeline({
+    repoRoot,
+    now
+  });
   const hermesRuntimePluginDoctor = await runHermesRuntimePluginDoctor({
     repoRoot,
     pluginDir: path.join("examples", "hermes-runtime-plugin"),
@@ -452,6 +485,7 @@ export async function runCurrentLineSmoke({
     retrievalRanker,
     curiosityGate,
     hermesRuntimeAdapter,
+    hermesWorkOrderPipeline,
     hermesRuntimePluginDoctor
   });
 
@@ -468,6 +502,7 @@ export async function runCurrentLineSmoke({
       "skill:evolution",
       "curiosity:signals",
       "hermes:adapt-runtime",
+      "hermes:work-order",
       "hermes:plugin:doctor",
       "zilliz:adapt",
       "work-order:route",
@@ -499,6 +534,7 @@ export function buildCurrentLineSmokeFromArtifacts({
   retrievalRanker,
   curiosityGate,
   hermesRuntimeAdapter,
+  hermesWorkOrderPipeline,
   hermesRuntimePluginDoctor
 }) {
   const checks = buildCurrentLineSmokeChecks({
@@ -514,6 +550,7 @@ export function buildCurrentLineSmokeFromArtifacts({
     retrievalRanker,
     curiosityGate,
     hermesRuntimeAdapter,
+    hermesWorkOrderPipeline,
     hermesRuntimePluginDoctor
   });
 
