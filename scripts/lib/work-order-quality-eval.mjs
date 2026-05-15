@@ -21,6 +21,10 @@ export const DEFAULT_WORK_ORDER_EVAL_SEEDS = Object.freeze([
   "quality-10"
 ]);
 
+export const DEFAULT_WORK_ORDER_SELECTION_POLICY = "quality_replacement";
+export const DEFAULT_WORK_ORDER_DIVERSITY_POLICY = "strategy_guard";
+const SCORE_TIE_TOLERANCE = 0.001;
+
 export const DEFAULT_OPERATOR_QUALITY_REPORTS = Object.freeze([
   {
     label: "operator_tighten",
@@ -109,6 +113,15 @@ function stableSlug(value) {
     .replace(/^-|-$/g, "")
     .toLowerCase()
     .slice(0, 120) || "sample";
+}
+
+function stableHash(text) {
+  let hash = 2166136261;
+  for (const char of String(text)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function entropy(counts) {
@@ -260,8 +273,9 @@ function baselineMetrics(order) {
   };
 }
 
-function variantMetrics(order, orderResult) {
-  const variant = orderResult.variants.find((item) => item.variant_id === orderResult.winner.variant_id)
+function variantMetrics(order, orderResult, selectedVariant) {
+  const variant = selectedVariant
+    ?? orderResult.variants.find((item) => item.variant_id === orderResult.winner.variant_id)
     ?? orderResult.variants[0];
   return {
     has_title: Boolean(variant.title),
@@ -303,15 +317,168 @@ export function scoreBaselineWorkOrder(order) {
   };
 }
 
-export function scoreVariantWinner(order, orderResult) {
-  const metrics = variantMetrics(order, orderResult);
-  const { variant, ...serializableMetrics } = metrics;
+function scoreVariant(order, orderResult, variant, surface) {
+  const metrics = variantMetrics(order, orderResult, variant);
+  const { variant: scoredVariant, ...serializableMetrics } = metrics;
   return {
-    surface: "variant_winner",
-    variant_id: variant?.variant_id,
-    strategy: variant?.strategy,
+    surface,
+    variant_id: scoredVariant?.variant_id,
+    strategy: scoredVariant?.strategy,
     metrics: serializableMetrics,
     dimensions: dimensionsFromMetrics(metrics)
+  };
+}
+
+export function scoreVariantCandidate(order, orderResult, variant) {
+  return scoreVariant(order, orderResult, variant, "variant_candidate");
+}
+
+export function scoreVariantWinner(order, orderResult) {
+  return scoreVariant(order, orderResult, undefined, "variant_winner");
+}
+
+function hasSafetyRegression(score) {
+  const safety = score.metrics.safety;
+  return Boolean(
+    safety.durable_or_public_effect_allowed
+      || safety.writes_persistent_memory
+      || safety.installs_skills
+      || safety.calls_external_api
+      || safety.executes_work_orders
+  );
+}
+
+function normalizeSelectionPolicy(policy) {
+  return policy === "legacy" ? "legacy" : DEFAULT_WORK_ORDER_SELECTION_POLICY;
+}
+
+function normalizeDiversityPolicy(policy) {
+  return policy === "off" ? "off" : DEFAULT_WORK_ORDER_DIVERSITY_POLICY;
+}
+
+function diversityStrategyFamily(order) {
+  if (["critical", "high"].includes(order.risk_level)) return ["boundary_tightening"];
+  if (order.risk_level === "medium") return ["replay_extension", "compact_handoff", "evidence_expansion"];
+  if (order.risk_level === "low") return ["conservative_patch"];
+  return ["compact_handoff", "evidence_expansion", "replay_extension"];
+}
+
+function buildCandidateScores(order, orderResult, baseline) {
+  return orderResult.variants.map((variant) => {
+    const score = scoreVariantCandidate(order, orderResult, variant);
+    const delta = round(score.dimensions.total - baseline.dimensions.total);
+    const safetyRegression = hasSafetyRegression(score);
+    return {
+      variant,
+      score,
+      delta,
+      safety_regression: safetyRegression,
+      replacement_allowed: delta > 0 && !safetyRegression
+    };
+  });
+}
+
+function compareCandidateRank(a, b) {
+  return b.score.dimensions.total - a.score.dimensions.total
+    || b.variant.scores.qianxuesen_alignment - a.variant.scores.qianxuesen_alignment
+    || b.variant.scores.composite - a.variant.scores.composite
+    || b.variant.scores.safety - a.variant.scores.safety
+    || b.variant.scores.evidence - a.variant.scores.evidence
+    || a.variant.variant_id.localeCompare(b.variant.variant_id);
+}
+
+function chooseDiversityCandidate({ order, seed, selected, candidates }) {
+  if (!selected?.replacement_allowed) return undefined;
+  const family = diversityStrategyFamily(order);
+  if (family.length <= 1) return undefined;
+
+  const viable = candidates.filter((candidate) => (
+    candidate.replacement_allowed
+      && family.includes(candidate.variant.strategy)
+      && candidate.score.dimensions.total >= selected.score.dimensions.total - SCORE_TIE_TOLERANCE
+  ));
+  if (!viable.length) return undefined;
+
+  const offset = stableHash(`${seed}:${order.work_order_id}:diversity`) % family.length;
+  const rotatedFamily = [
+    ...family.slice(offset),
+    ...family.slice(0, offset)
+  ];
+  const chosen = viable.sort((a, b) => (
+    rotatedFamily.indexOf(a.variant.strategy) - rotatedFamily.indexOf(b.variant.strategy)
+    || compareCandidateRank(a, b)
+  ))[0];
+  return chosen.variant.strategy === selected.variant.strategy ? undefined : chosen;
+}
+
+function selectQualityWinner({
+  order,
+  orderResult,
+  baseline,
+  seed,
+  selectionPolicy,
+  diversityPolicy
+}) {
+  const candidates = buildCandidateScores(order, orderResult, baseline);
+  const legacy = candidates.find((candidate) => candidate.variant.variant_id === orderResult.winner.variant_id)
+    ?? candidates[0];
+  const ranked = [...candidates]
+    .filter((candidate) => selectionPolicy === "legacy" || candidate.replacement_allowed)
+    .sort(compareCandidateRank);
+  let selected = selectionPolicy === "legacy" ? legacy : ranked[0];
+  const selectedBeforeDiversity = selected;
+  const diversityEnabled = diversityPolicy === DEFAULT_WORK_ORDER_DIVERSITY_POLICY;
+  const diversityCandidate = diversityEnabled
+    ? chooseDiversityCandidate({ order, seed, selected, candidates })
+    : undefined;
+  if (diversityCandidate) {
+    selected = diversityCandidate;
+  }
+
+  const candidateStrategyCounts = countBy(candidates, (candidate) => candidate.variant.strategy);
+  const replacementAllowed = selectionPolicy === "legacy"
+    ? Boolean(selected)
+    : Boolean(selected?.replacement_allowed);
+  const winnerScore = replacementAllowed ? {
+    ...selected.score,
+    surface: "variant_winner"
+  } : baseline;
+  const winnerDelta = round(winnerScore.dimensions.total - baseline.dimensions.total);
+
+  return {
+    winnerScore,
+    winnerDelta,
+    safetyRegression: hasSafetyRegression(winnerScore),
+    selection_update: {
+      policy: selectionPolicy,
+      incumbent_score: baseline.dimensions.total,
+      selected_score: winnerScore.dimensions.total,
+      selected_delta: winnerDelta,
+      selected_surface: replacementAllowed ? "variant_winner" : "incumbent_baseline",
+      selected_variant_id: replacementAllowed ? selected.variant.variant_id : null,
+      selected_strategy: replacementAllowed ? selected.variant.strategy : null,
+      replacement_allowed: replacementAllowed,
+      rejected_candidate_count: candidates.filter((candidate) => !candidate.replacement_allowed).length,
+      safety_passed: !hasSafetyRegression(winnerScore)
+    },
+    diversity_guard: {
+      policy: diversityPolicy,
+      enabled: diversityEnabled,
+      applied: Boolean(diversityCandidate),
+      candidate_strategy_count: Object.keys(candidateStrategyCounts).length,
+      candidate_strategy_entropy: entropy(candidateStrategyCounts),
+      strategy_family: diversityStrategyFamily(order),
+      selected_strategy_before_guard: selectedBeforeDiversity?.variant.strategy ?? null,
+      selected_strategy_after_guard: replacementAllowed ? selected.variant.strategy : null,
+      retained_variant_id: diversityCandidate?.variant.variant_id ?? null,
+      retained_strategy: diversityCandidate?.variant.strategy ?? null,
+      retained_delta: diversityCandidate?.delta ?? null,
+      reason: diversityCandidate
+        ? "near-tie quality candidate from a different Qianxuesen-fit strategy kept as the selected draft to avoid premature convergence"
+        : diversityEnabled
+          ? "no same-quality alternate strategy was safer or equally fit for this risk level"
+          : "diversity guard disabled"
+    }
   };
 }
 
@@ -321,16 +488,22 @@ function compareScores({
   split,
   seed,
   order,
-  orderResult
+  orderResult,
+  selectionPolicy,
+  diversityPolicy
 }) {
   const baseline = scoreBaselineWorkOrder(order);
-  const winner = scoreVariantWinner(order, orderResult);
-  const delta = round(winner.dimensions.total - baseline.dimensions.total);
-  const safetyRegression = winner.metrics.safety.durable_or_public_effect_allowed
-    || winner.metrics.safety.writes_persistent_memory
-    || winner.metrics.safety.installs_skills
-    || winner.metrics.safety.calls_external_api
-    || winner.metrics.safety.executes_work_orders;
+  const selection = selectQualityWinner({
+    order,
+    orderResult,
+    baseline,
+    seed,
+    selectionPolicy,
+    diversityPolicy
+  });
+  const winner = selection.winnerScore;
+  const delta = selection.winnerDelta;
+  const safetyRegression = selection.safetyRegression;
   const positiveLift = delta > 0 && !safetyRegression;
 
   return {
@@ -347,6 +520,8 @@ function compareScores({
     delta,
     positive_lift: positiveLift,
     safety_regression: Boolean(safetyRegression),
+    selection_update: selection.selection_update,
+    diversity_guard: selection.diversity_guard,
     llm_review_gate: {
       level: orderResult.llm_review_gate.level,
       call_policy: orderResult.llm_review_gate.call_policy,
@@ -605,6 +780,8 @@ function summarizeComparisons(comparisons, corpus) {
   const byCategory = countBy(comparisons, (item) => item.category);
   const byRisk = countBy(comparisons, (item) => item.risk_level);
   const bySplit = countBy(comparisons, (item) => item.split);
+  const selectionRows = comparisons.map((item) => item.selection_update);
+  const diversityRows = comparisons.map((item) => item.diversity_guard);
   const uniqueWorkOrderIds = new Set(comparisons.map((item) => item.work_order_id));
   const uniqueShapes = new Set(comparisons.map(sampleShapeKey));
   const highRisk = comparisons.filter((item) => ["critical", "high"].includes(item.risk_level));
@@ -648,6 +825,25 @@ function summarizeComparisons(comparisons, corpus) {
     max_delta: round(Math.max(...deltas)),
     by_winner_strategy: byStrategy,
     strategy_entropy: entropy(byStrategy),
+    selection_update: {
+      policy: selectionRows[0]?.policy ?? DEFAULT_WORK_ORDER_SELECTION_POLICY,
+      replacement_allowed_count: selectionRows.filter((item) => item.replacement_allowed).length,
+      incumbent_retained_count: selectionRows.filter((item) => item.selected_surface === "incumbent_baseline").length,
+      rejected_candidate_count: selectionRows.reduce((sum, item) => sum + item.rejected_candidate_count, 0),
+      avg_selected_delta: round(avg(selectionRows.map((item) => item.selected_delta))),
+      safety_passed_count: selectionRows.filter((item) => item.safety_passed).length
+    },
+    diversity_guard: {
+      policy: diversityRows[0]?.policy ?? DEFAULT_WORK_ORDER_DIVERSITY_POLICY,
+      enabled: diversityRows.some((item) => item.enabled),
+      applied_count: diversityRows.filter((item) => item.applied).length,
+      unique_winner_strategy_count: Object.keys(byStrategy).filter((key) => key !== "undefined").length,
+      avg_candidate_strategy_entropy: round(avg(diversityRows.map((item) => item.candidate_strategy_entropy))),
+      retained_strategy_counts: countBy(
+        diversityRows.filter((item) => item.retained_strategy),
+        (item) => item.retained_strategy
+      )
+    },
     by_category: byCategory,
     by_risk: byRisk,
     by_split: bySplit,
@@ -706,6 +902,22 @@ function buildRecommendations(summary) {
       qianxuesen_fit: "Keep dev/test split as the guard before adding replacement, mutation, or crossover."
     });
   }
+  if (summary.selection_update.incumbent_retained_count === 0 && summary.safety_regression_count === 0) {
+    recs.push({
+      recommendation_id: "keep_quality_replacement_rule",
+      priority: "high",
+      reason: "Every selected variant beat the incumbent work order and passed the no-regression safety gate.",
+      qianxuesen_fit: "Selection/update now behaves like a control replacement rule instead of always trusting the newest candidate."
+    });
+  }
+  if (summary.diversity_guard.applied_count > 0) {
+    recs.push({
+      recommendation_id: "keep_diversity_guard_for_medium_risk",
+      priority: "medium",
+      reason: "Near-tie medium-risk candidates can rotate across replay, compact, and evidence shapes without lowering quality.",
+      qianxuesen_fit: "This avoids premature convergence while preserving the medium-risk replay-or-compact control policy."
+    });
+  }
   if (summary.avg_delta > 0 && summary.safety_regression_count === 0) {
     recs.push({
       recommendation_id: "keep_variant_layer_shadow_only",
@@ -757,9 +969,13 @@ export async function runWorkOrderQualityEvaluation({
   externalSamples,
   externalSampleDir = DEFAULT_EXTERNAL_SAMPLE_DIR,
   includeExternalSamples = true,
+  selectionPolicy = DEFAULT_WORK_ORDER_SELECTION_POLICY,
+  diversityPolicy = DEFAULT_WORK_ORDER_DIVERSITY_POLICY,
   now = DEFAULT_NOW
 } = {}) {
   const seedList = Array.isArray(seeds) && seeds.length ? seeds : DEFAULT_WORK_ORDER_EVAL_SEEDS;
+  const normalizedSelectionPolicy = normalizeSelectionPolicy(selectionPolicy);
+  const normalizedDiversityPolicy = normalizeDiversityPolicy(diversityPolicy);
   const corpus = await buildDefaultCorpus({
     repoRoot,
     sampleSets,
@@ -792,7 +1008,9 @@ export async function runWorkOrderQualityEvaluation({
           split: item.split,
           seed,
           order,
-          orderResult: variantRun.work_order_results[0]
+          orderResult: variantRun.work_order_results[0],
+          selectionPolicy: normalizedSelectionPolicy,
+          diversityPolicy: normalizedDiversityPolicy
         }));
       }
     }
@@ -833,6 +1051,8 @@ export async function runWorkOrderQualityEvaluation({
         "replay or verification focus becomes clearer",
         "boundary safety does not regress",
         "handoff is easier for an agent to execute or report",
+        "new selected winners must beat the incumbent before replacement",
+        "medium-risk near ties should preserve strategy diversity without lowering quality",
         "LLM critique remains value-gated and zero-call by default"
       ],
       dev_test_policy: {
@@ -884,6 +1104,12 @@ function renderMarkdown(result) {
     `- positive_lift_rate: ${result.summary.positive_lift_rate}`,
     `- safety_regression_count: ${result.summary.safety_regression_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
+    `- selection_policy: ${result.summary.selection_update.policy}`,
+    `- replacement_allowed_count: ${result.summary.selection_update.replacement_allowed_count}`,
+    `- incumbent_retained_count: ${result.summary.selection_update.incumbent_retained_count}`,
+    `- diversity_policy: ${result.summary.diversity_guard.policy}`,
+    `- diversity_applied_count: ${result.summary.diversity_guard.applied_count}`,
+    `- unique_winner_strategy_count: ${result.summary.diversity_guard.unique_winner_strategy_count}`,
     "",
     "## Strategy Winners",
     "",

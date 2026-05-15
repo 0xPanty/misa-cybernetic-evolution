@@ -18,6 +18,11 @@ handoff. The work-order quality evaluator now checks whether the final selected
 work-order packet improves Qianxuesen control-loop quality rather than merely
 passing the command path, and it now carries local issue/PR-shaped dev/test
 samples so future tuning has a holdout guard.
+The evaluator now also adds a small selection/update rule and a medium-risk
+diversity guard: selected winners must beat the incumbent baseline without
+safety regression, and same-quality medium-risk candidates can rotate across
+replay, compact handoff, and evidence expansion instead of collapsing into one
+strategy.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -104,7 +109,7 @@ chain above.
 | v0.22 | Hermes runtime plugin install/doctor plus NDJSON adapter replay | observe-only local event capture, no memory write, skill write, block, LLM, or external API |
 | v0.23 | Seeded work-order variants and value-gated LLM critique recommendation | local draft search only, no model call or execution |
 | v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
-| v0.25 | Issue/PR-shaped external work-order samples plus dev/test holdout | local fixture adapter only, no external fetch or execution |
+| v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, and medium-risk diversity guard | local fixture adapter only, no external fetch, execution, model call, or external API |
 
 ## Historical Sample Validation
 

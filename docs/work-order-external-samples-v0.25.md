@@ -80,3 +80,14 @@ With the default 10 seeds:
   `holdout_passed=true`
 - `llm_api_calls=0`
 - `external_api_calls=0`
+
+With the follow-up selection/update and diversity guard enabled by default:
+
+- all 140 selected winners beat the incumbent baseline score
+- incumbent retained count is `0`
+- medium-risk diversity guard applies on 31 comparisons
+- winner strategies cover all 5 strategy families
+- average lift and held-out `test` lift stay unchanged at `+0.168` and
+  `+0.176`
+- `llm_api_calls=0`
+- `external_api_calls=0`

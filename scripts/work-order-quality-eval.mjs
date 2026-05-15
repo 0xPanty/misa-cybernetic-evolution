@@ -2,7 +2,9 @@
 
 import { writeJsonOutFile } from "./lib/cli-output.mjs";
 import {
+  DEFAULT_WORK_ORDER_DIVERSITY_POLICY,
   DEFAULT_WORK_ORDER_EVAL_SEEDS,
+  DEFAULT_WORK_ORDER_SELECTION_POLICY,
   runWorkOrderQualityEvaluation,
   writeWorkOrderQualityArtifacts
 } from "./lib/work-order-quality-eval.mjs";
@@ -30,11 +32,19 @@ const now = nowArg ? new Date(nowArg) : new Date();
 const seeds = parseSeeds(readArg("seeds") ?? readArg("seed"));
 const dryRun = hasArg("dry-run") || hasArg("no-write");
 const includeExternalSamples = !hasArg("no-external-samples");
+const selectionPolicy = hasArg("no-selection-update")
+  ? "legacy"
+  : readArg("selection-policy") ?? DEFAULT_WORK_ORDER_SELECTION_POLICY;
+const diversityPolicy = hasArg("no-diversity-guard")
+  ? "off"
+  : readArg("diversity-policy") ?? DEFAULT_WORK_ORDER_DIVERSITY_POLICY;
 
 let result = await runWorkOrderQualityEvaluation({
   seeds,
   includeExternalSamples,
   externalSampleDir: readArg("external-sample-dir"),
+  selectionPolicy,
+  diversityPolicy,
   now
 });
 
@@ -64,6 +74,10 @@ if (hasArg("json")) {
   console.log(`positive_lift_rate=${result.summary.positive_lift_rate}`);
   console.log(`safety_regressions=${result.summary.safety_regression_count}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
+  console.log(`selection_policy=${result.summary.selection_update.policy}`);
+  console.log(`incumbent_retained=${result.summary.selection_update.incumbent_retained_count}`);
+  console.log(`diversity_policy=${result.summary.diversity_guard.policy}`);
+  console.log(`diversity_applied=${result.summary.diversity_guard.applied_count}`);
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);
   }

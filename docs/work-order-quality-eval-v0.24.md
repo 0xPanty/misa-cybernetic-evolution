@@ -10,6 +10,8 @@ The command compares:
 - the winning `work-order:variants` packet
 - the same source set across multiple deterministic seeds
 - the local regression split plus issue/PR-shaped `dev` and `test` samples
+- the selected winner after a quality replacement rule and optional diversity
+  guard
 
 ## Command
 
@@ -21,6 +23,14 @@ For a smaller deterministic sample:
 
 ```bash
 npm run work-order:evaluate -- --json --dry-run --seeds qa-01,qa-02,qa-03
+```
+
+For side-by-side checks:
+
+```bash
+npm run work-order:evaluate -- --json --dry-run --no-selection-update --no-diversity-guard
+npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --no-diversity-guard
+npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --diversity-policy strategy_guard
 ```
 
 By default, v0.25 also loads local issue/PR-shaped samples from
@@ -54,6 +64,27 @@ The variant scorer now includes a small control-loop alignment signal:
 This is not a hard rule. It is a bias that reflects the local architecture:
 stabilize boundaries before improving wording, replay medium-risk changes before
 promotion, and keep low-risk work small.
+
+## Selection/Update and Diversity
+
+The default evaluator now applies a small replacement rule after candidate
+generation:
+
+- a selected variant must beat the incumbent baseline work-order score;
+- a selected variant must not introduce durable/public effects, memory writes,
+  skill installs, external calls, or direct execution;
+- if no candidate clears that gate, the incumbent baseline is retained.
+
+The diversity guard only acts on same-quality near ties. It does not spend
+tokens and does not let diversity override risk fit:
+
+- high-risk work stays on `boundary_tightening`;
+- low-risk work stays on `conservative_patch`;
+- medium-risk near ties can rotate across `replay_extension`,
+  `compact_handoff`, and `evidence_expansion`.
+
+This keeps the useful EvoPrompt idea of selection/update without turning the
+work-order layer into a broad genetic algorithm.
 
 ## Safety
 
@@ -90,3 +121,15 @@ With the default 10 seeds, the current v0.25 corpus runs 140 comparisons across
 700 variants. The old regression-only corpus runs 80 comparisons. The average
 lift changes from `+0.165` to `+0.168`, and the held-out `test` split shows
 `+0.176` with no safety regression, LLM call, or external API call.
+
+After the replacement and diversity follow-up, the side-by-side result is:
+
+| Mode | avg_delta | test_avg_delta | positive_lift_rate | safety_regressions | diversity_applied | winner strategies |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| v0.25 baseline | `+0.168` | `+0.176` | `1` | `0` | `0` | `4` |
+| + Selection/Update | `+0.168` | `+0.176` | `1` | `0` | `0` | `3` |
+| + Selection/Update + Diversity | `+0.168` | `+0.176` | `1` | `0` | `31` | `5` |
+
+The final default keeps the third row. It does not lift the numeric score above
+v0.25, but it keeps the same quality and safety numbers while preventing the
+medium-risk winner set from collapsing into one strategy.

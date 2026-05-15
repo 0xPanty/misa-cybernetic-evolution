@@ -52,6 +52,13 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.summary.positive_lift_rate, 1);
   assert.equal(result.summary.regression_count, 0);
   assert.equal(result.summary.safety_regression_count, 0);
+  assert.equal(result.summary.selection_update.policy, "quality_replacement");
+  assert.equal(result.summary.selection_update.incumbent_retained_count, 0);
+  assert.equal(result.summary.selection_update.replacement_allowed_count, result.summary.comparison_count);
+  assert.equal(result.summary.selection_update.safety_passed_count, result.summary.comparison_count);
+  assert.equal(result.summary.diversity_guard.policy, "strategy_guard");
+  assert.ok(result.summary.diversity_guard.applied_count > 0);
+  assert.ok(result.summary.diversity_guard.unique_winner_strategy_count >= 4);
   assert.ok(result.summary.avg_winner_score > result.summary.avg_baseline_score);
   assert.ok(result.summary.avg_delta > 0);
   assert.equal(result.summary.qianxuesen_signal_fit.high_risk_boundary_fit_count, result.summary.qianxuesen_signal_fit.high_risk_count);
@@ -66,6 +73,41 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
   assert.equal(result.safety.external_api_calls, 0);
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "expand_external_issue_pr_samples"));
   assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_dev_test_split_in_gate"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_quality_replacement_rule"));
+  assert.ok(result.qianxuesen_adaptation.next_adaptation_candidates.some((item) => item.recommendation_id === "keep_diversity_guard_for_medium_risk"));
+});
+
+test("work-order quality replacement and diversity compare side by side without lowering holdout quality", async () => {
+  const common = {
+    seeds: ["side-by-side-01", "side-by-side-02", "side-by-side-03"],
+    now: new Date("2026-05-15T00:00:00Z")
+  };
+  const baseline = await runWorkOrderQualityEvaluation({
+    ...common,
+    selectionPolicy: "legacy",
+    diversityPolicy: "off"
+  });
+  const replacement = await runWorkOrderQualityEvaluation({
+    ...common,
+    selectionPolicy: "quality_replacement",
+    diversityPolicy: "off"
+  });
+  const diverse = await runWorkOrderQualityEvaluation({
+    ...common,
+    selectionPolicy: "quality_replacement",
+    diversityPolicy: "strategy_guard"
+  });
+
+  assert.equal(baseline.summary.safety_regression_count, 0);
+  assert.equal(replacement.summary.safety_regression_count, 0);
+  assert.equal(diverse.summary.safety_regression_count, 0);
+  assert.equal(replacement.summary.avg_delta >= baseline.summary.avg_delta, true);
+  assert.equal(diverse.summary.avg_delta >= replacement.summary.avg_delta, true);
+  assert.equal(replacement.summary.dev_test.holdout_passed, true);
+  assert.equal(diverse.summary.dev_test.holdout_passed, true);
+  assert.equal(diverse.summary.positive_lift_rate, 1);
+  assert.equal(diverse.summary.llm_api_calls, 0);
+  assert.ok(diverse.summary.diversity_guard.applied_count > replacement.summary.diversity_guard.applied_count);
 });
 
 test("work-order quality evaluation validates against schema", async () => {

@@ -71,6 +71,8 @@
         "max_delta",
         "by_winner_strategy",
         "strategy_entropy",
+        "selection_update",
+        "diversity_guard",
         "by_category",
         "by_risk",
         "by_split",
@@ -99,6 +101,8 @@
         "max_delta": { "type": "number" },
         "by_winner_strategy": { "$ref": "#/$defs/count_map" },
         "strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "selection_update": { "$ref": "#/$defs/selection_update_summary" },
+        "diversity_guard": { "$ref": "#/$defs/diversity_guard_summary" },
         "by_category": { "$ref": "#/$defs/count_map" },
         "by_risk": { "$ref": "#/$defs/count_map" },
         "by_split": { "$ref": "#/$defs/count_map" },
@@ -246,6 +250,46 @@
         "safety_regression_count": { "type": "integer", "minimum": 0 }
       }
     },
+    "selection_update_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "replacement_allowed_count",
+        "incumbent_retained_count",
+        "rejected_candidate_count",
+        "avg_selected_delta",
+        "safety_passed_count"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["legacy", "quality_replacement"] },
+        "replacement_allowed_count": { "type": "integer", "minimum": 0 },
+        "incumbent_retained_count": { "type": "integer", "minimum": 0 },
+        "rejected_candidate_count": { "type": "integer", "minimum": 0 },
+        "avg_selected_delta": { "type": "number" },
+        "safety_passed_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "diversity_guard_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "enabled",
+        "applied_count",
+        "unique_winner_strategy_count",
+        "avg_candidate_strategy_entropy",
+        "retained_strategy_counts"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["off", "strategy_guard"] },
+        "enabled": { "type": "boolean" },
+        "applied_count": { "type": "integer", "minimum": 0 },
+        "unique_winner_strategy_count": { "type": "integer", "minimum": 0 },
+        "avg_candidate_strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "retained_strategy_counts": { "$ref": "#/$defs/count_map" }
+      }
+    },
     "recommendation": {
       "type": "object",
       "additionalProperties": false,
@@ -255,6 +299,66 @@
         "priority": { "type": "string", "enum": ["low", "medium", "high"] },
         "reason": { "type": "string" },
         "qianxuesen_fit": { "type": "string" }
+      }
+    },
+    "selection_update": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "incumbent_score",
+        "selected_score",
+        "selected_delta",
+        "selected_surface",
+        "selected_variant_id",
+        "selected_strategy",
+        "replacement_allowed",
+        "rejected_candidate_count",
+        "safety_passed"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["legacy", "quality_replacement"] },
+        "incumbent_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "selected_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "selected_delta": { "type": "number" },
+        "selected_surface": { "type": "string", "enum": ["variant_winner", "incumbent_baseline"] },
+        "selected_variant_id": { "type": ["string", "null"] },
+        "selected_strategy": { "type": ["string", "null"] },
+        "replacement_allowed": { "type": "boolean" },
+        "rejected_candidate_count": { "type": "integer", "minimum": 0 },
+        "safety_passed": { "type": "boolean" }
+      }
+    },
+    "diversity_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "enabled",
+        "applied",
+        "candidate_strategy_count",
+        "candidate_strategy_entropy",
+        "strategy_family",
+        "selected_strategy_before_guard",
+        "selected_strategy_after_guard",
+        "retained_variant_id",
+        "retained_strategy",
+        "retained_delta",
+        "reason"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["off", "strategy_guard"] },
+        "enabled": { "type": "boolean" },
+        "applied": { "type": "boolean" },
+        "candidate_strategy_count": { "type": "integer", "minimum": 0 },
+        "candidate_strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "strategy_family": { "$ref": "#/$defs/string_array" },
+        "selected_strategy_before_guard": { "type": ["string", "null"] },
+        "selected_strategy_after_guard": { "type": ["string", "null"] },
+        "retained_variant_id": { "type": ["string", "null"] },
+        "retained_strategy": { "type": ["string", "null"] },
+        "retained_delta": { "type": ["number", "null"] },
+        "reason": { "type": "string" }
       }
     },
     "comparison": {
@@ -274,6 +378,8 @@
         "delta",
         "positive_lift",
         "safety_regression",
+        "selection_update",
+        "diversity_guard",
         "llm_review_gate",
         "qianxuesen_signals"
       ],
@@ -291,6 +397,8 @@
         "delta": { "type": "number" },
         "positive_lift": { "type": "boolean" },
         "safety_regression": { "type": "boolean" },
+        "selection_update": { "$ref": "#/$defs/selection_update" },
+        "diversity_guard": { "$ref": "#/$defs/diversity_guard" },
         "llm_review_gate": {
           "type": "object",
           "additionalProperties": false,
