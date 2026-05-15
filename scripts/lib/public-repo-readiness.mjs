@@ -9,6 +9,7 @@ import {
   upsertDistillationToLocalVectorStore
 } from "./local-vector-store.mjs";
 import { runHermesRuntimePluginDoctor } from "./hermes-runtime-plugin.mjs";
+import { runWorkOrderQualityEvaluation } from "./work-order-quality-eval.mjs";
 import { runWorkOrderVariants } from "./work-order-variants.mjs";
 import { runPrecheck } from "./precheck-core.mjs";
 import { runQianxuesenFullLoopHealth } from "./qianxuesen-full-loop-health.mjs";
@@ -27,6 +28,7 @@ const REQUIRED_PUBLIC_SCRIPTS = [
   "hermes:plugin:install",
   "hermes:plugin:doctor",
   "work-order:variants",
+  "work-order:evaluate",
   "smoke:current-line",
   "health:qianxuesen",
   "precheck",
@@ -86,6 +88,11 @@ export async function runPublicRepoDoctor({
     seed: "public-repo-doctor",
     now
   });
+  const workOrderQualityEval = await runWorkOrderQualityEvaluation({
+    repoRoot,
+    seeds: ["doctor-quality-01", "doctor-quality-02", "doctor-quality-03"],
+    now
+  });
   const hermesPluginDoctor = await runHermesRuntimePluginDoctor({
     repoRoot,
     pluginDir: path.join("examples", "hermes-runtime-plugin"),
@@ -133,6 +140,15 @@ export async function runPublicRepoDoctor({
       llmCritiqueRecommended: workOrderVariants.summary.llm_critique_recommended_count,
       executesWorkOrders: workOrderVariants.safety.executes_work_orders,
       llmApiCalls: workOrderVariants.safety.llm_api_calls
+    }),
+    checkResult("work-order quality evaluation shows positive local lift", workOrderQualityEval.ok, {
+      comparisons: workOrderQualityEval.summary.comparison_count,
+      avgBaselineScore: workOrderQualityEval.summary.avg_baseline_score,
+      avgWinnerScore: workOrderQualityEval.summary.avg_winner_score,
+      avgDelta: workOrderQualityEval.summary.avg_delta,
+      positiveLiftRate: workOrderQualityEval.summary.positive_lift_rate,
+      safetyRegressions: workOrderQualityEval.summary.safety_regression_count,
+      llmApiCalls: workOrderQualityEval.safety.llm_api_calls
     }),
     checkResult("Hermes runtime plugin sample is checkable", hermesPluginDoctor.ok, {
       checks: hermesPluginDoctor.summary,

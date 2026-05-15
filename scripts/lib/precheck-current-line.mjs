@@ -4,6 +4,7 @@ import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
+import { runWorkOrderQualityEvaluation } from "./work-order-quality-eval.mjs";
 import { buildWorkOrderVariants } from "./work-order-variants.mjs";
 import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
@@ -79,6 +80,27 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     name: "validate work-order variants dry-run"
   }));
 
+  const workOrderQualityEval = await runWorkOrderQualityEvaluation({
+    repoRoot,
+    seeds: ["precheck-quality-01", "precheck-quality-02", "precheck-quality-03"],
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  checks.push(currentLineCheck("Work-order quality evaluation check", workOrderQualityEval.ok, {
+    comparisons: workOrderQualityEval.summary.comparison_count,
+    avgBaselineScore: workOrderQualityEval.summary.avg_baseline_score,
+    avgWinnerScore: workOrderQualityEval.summary.avg_winner_score,
+    avgDelta: workOrderQualityEval.summary.avg_delta,
+    positiveLiftRate: workOrderQualityEval.summary.positive_lift_rate,
+    safetyRegressions: workOrderQualityEval.summary.safety_regression_count,
+    llmApiCalls: workOrderQualityEval.safety.llm_api_calls
+  }));
+  checks.push(await currentLineValidation({
+    repoRoot,
+    schemaRel: "schemas/work_order_quality_eval.schema.json",
+    data: workOrderQualityEval,
+    name: "validate work-order quality evaluation"
+  }));
+
   const localVectorStore = await upsertDistillationToLocalVectorStore({
     repoRoot,
     sourceDir: path.join("examples", "misa-distillation"),
@@ -152,6 +174,7 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
       sessionDistillerCyberneticReview,
       vectorMemoryStorage,
       workOrderVariants,
+      workOrderQualityEval,
       localVectorStore,
       skillEvolution,
       zillizVectorAdapter,

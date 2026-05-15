@@ -8,11 +8,11 @@ the beginning. The initial integration is observation-only.
 
 ## Current Line
 
-The current package line is `0.23.0`.
+The current package line is `0.24.0`.
 
 Versioned v0.x references later in this file are history and feature-origin
 anchors. They do not create separate current lines; the current command surface
-is the v0.23 shadow chain described here.
+is the v0.24 shadow chain described here.
 
 For public users, the clone-time path is:
 
@@ -23,15 +23,15 @@ npm ci -> npm run doctor -> npm run bootstrap:local
 The live system remains Misa/Hermes. This repository is the read-only
 control-learning sidecar: it turns redacted evidence and existing
 Hermes/Zilliz artifacts into local distillates, routed candidates, repair
-tickets, work orders, seeded work-order variants, vector-memory dry-run
-metadata, a default local vector store, retrieval-ranker checks,
+tickets, work orders, seeded work-order variants, work-order quality evaluation,
+vector-memory dry-run metadata, a default local vector store, retrieval-ranker checks,
 session-distiller review findings, and observe-only Hermes runtime
 plugin/adapter reports.
 
 Plain version:
 
 ```text
-evidence -> distill -> route -> candidate -> work order variants -> work order -> owner or primary agent
+evidence -> distill -> route -> candidate -> work order variants -> quality eval -> work order -> owner or primary agent
 ```
 
 Candidate records and vector-store records do not equal live memory. The default
@@ -241,11 +241,11 @@ Misa memory, replace Zilliz, publish Farcaster, publish Skills, touch runtime
 services, or start timers.
 
 For Misa, the launch shape is still structure reference plus local precheck.
-The newer v0.19-v0.23 line adds vector-memory lineage, kind-aware retrieval
+The newer v0.19-v0.24 line adds vector-memory lineage, kind-aware retrieval
 ranking, Zilliz adapter dry-run payloads, read-only session-distiller
 cybernetic review, the observe-only Hermes runtime plugin/adapter, and seeded
-work-order variants. Those features are confidence-chain inputs, not production
-authority.
+work-order variants plus work-order quality evaluation. Those features are
+confidence-chain inputs, not production authority.
 
 ### 8. Work Order Handoff Plane
 
@@ -258,6 +258,11 @@ does a seeded local search over several work-order shapes, scores them
 deterministically, and recommends one draft winner. LLM critique is only a
 value-gated recommendation with `llm_api_calls=0` by default. It cannot execute,
 publish, write memory, install skills, or change route/winner authority.
+
+The v0.24 quality layer checks that this actually improves the final work-order
+packet. It compares baseline routing output against the selected variant on
+source trace, replayability, boundary safety, handoff clarity, control-loop fit,
+and Qianxuesen fit. The evaluator is still report-only and zero-call.
 
 Each work order goes first to the primary agent, which reports the summary to
 the user and asks whether to handle, hold, or escalate. Engineering repairs can

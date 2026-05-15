@@ -42,7 +42,8 @@ const SCHEMA_ONLY_FILES = [
   "schemas/hermes_distillation_mapping.schema.json",
   "schemas/omniagent_footprint_bridge.schema.json",
   "schemas/local_vector_store.schema.json",
-  "schemas/work_order_variants.schema.json"
+  "schemas/work_order_variants.schema.json",
+  "schemas/work_order_quality_eval.schema.json"
 ];
 
 async function readJson(filePath) {

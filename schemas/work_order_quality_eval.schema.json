@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/work_order_quality_eval.schema.json",
+  "title": "WorkOrderQualityEvaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "seeds",
+    "sample_summary",
+    "summary",
+    "qianxuesen_adaptation",
+    "comparisons",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.work_order_quality_eval.v1" },
+    "mode": { "type": "string", "const": "work-order-quality-eval" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "seeds": { "$ref": "#/$defs/string_array" },
+    "sample_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_count",
+        "work_order_count",
+        "unique_work_order_id_count",
+        "unique_work_order_shape_count",
+        "sample_quality"
+      ],
+      "properties": {
+        "source_set_count": { "type": "integer", "minimum": 0 },
+        "work_order_count": { "type": "integer", "minimum": 0 },
+        "unique_work_order_id_count": { "type": "integer", "minimum": 0 },
+        "unique_work_order_shape_count": { "type": "integer", "minimum": 0 },
+        "sample_quality": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_set_count",
+        "work_order_count",
+        "unique_work_order_id_count",
+        "unique_work_order_shape_count",
+        "seed_count",
+        "comparison_count",
+        "variant_count",
+        "positive_lift_count",
+        "positive_lift_rate",
+        "regression_count",
+        "safety_regression_count",
+        "avg_baseline_score",
+        "avg_winner_score",
+        "avg_delta",
+        "min_delta",
+        "max_delta",
+        "by_winner_strategy",
+        "strategy_entropy",
+        "by_category",
+        "by_risk",
+        "llm_critique_recommended_count",
+        "llm_api_calls",
+        "external_api_calls",
+        "qianxuesen_signal_fit"
+      ],
+      "properties": {
+        "source_set_count": { "type": "integer", "minimum": 0 },
+        "work_order_count": { "type": "integer", "minimum": 0 },
+        "unique_work_order_id_count": { "type": "integer", "minimum": 0 },
+        "unique_work_order_shape_count": { "type": "integer", "minimum": 0 },
+        "seed_count": { "type": "integer", "minimum": 0 },
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "variant_count": { "type": "integer", "minimum": 0 },
+        "positive_lift_count": { "type": "integer", "minimum": 0 },
+        "positive_lift_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "avg_baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_winner_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "min_delta": { "type": "number" },
+        "max_delta": { "type": "number" },
+        "by_winner_strategy": { "$ref": "#/$defs/count_map" },
+        "strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "by_category": { "$ref": "#/$defs/count_map" },
+        "by_risk": { "$ref": "#/$defs/count_map" },
+        "llm_critique_recommended_count": { "type": "integer", "minimum": 0 },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 },
+        "qianxuesen_signal_fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "high_risk_count",
+            "high_risk_boundary_fit_count",
+            "medium_risk_count",
+            "medium_risk_replay_or_compact_fit_count",
+            "low_risk_count",
+            "low_risk_conservative_fit_count",
+            "route_preserved_count",
+            "source_trace_preserved_count",
+            "no_direct_execution_count"
+          ],
+          "properties": {
+            "high_risk_count": { "type": "integer", "minimum": 0 },
+            "high_risk_boundary_fit_count": { "type": "integer", "minimum": 0 },
+            "medium_risk_count": { "type": "integer", "minimum": 0 },
+            "medium_risk_replay_or_compact_fit_count": { "type": "integer", "minimum": 0 },
+            "low_risk_count": { "type": "integer", "minimum": 0 },
+            "low_risk_conservative_fit_count": { "type": "integer", "minimum": 0 },
+            "route_preserved_count": { "type": "integer", "minimum": 0 },
+            "source_trace_preserved_count": { "type": "integer", "minimum": 0 },
+            "no_direct_execution_count": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "qianxuesen_adaptation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interpretation",
+        "required_positive_direction",
+        "next_adaptation_candidates"
+      ],
+      "properties": {
+        "interpretation": { "type": "string" },
+        "required_positive_direction": { "$ref": "#/$defs/string_array" },
+        "next_adaptation_candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/recommendation" }
+        }
+      }
+    },
+    "comparisons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/comparison" }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "installs_skills",
+        "durable_or_public_effect_allowed",
+        "changes_route",
+        "changes_winner_authority",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "durable_or_public_effect_allowed": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner_authority": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "warnings": { "$ref": "#/$defs/string_array" },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_dir", "json_path", "markdown_path"],
+      "properties": {
+        "output_dir": { "type": "string" },
+        "json_path": { "type": "string" },
+        "markdown_path": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "count_map": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recommendation_id", "priority", "reason", "qianxuesen_fit"],
+      "properties": {
+        "recommendation_id": { "type": "string" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "reason": { "type": "string" },
+        "qianxuesen_fit": { "type": "string" }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_label",
+        "source_kind",
+        "seed",
+        "work_order_id",
+        "category",
+        "severity",
+        "risk_level",
+        "baseline",
+        "winner",
+        "delta",
+        "positive_lift",
+        "safety_regression",
+        "llm_review_gate",
+        "qianxuesen_signals"
+      ],
+      "properties": {
+        "source_label": { "type": "string" },
+        "source_kind": { "type": "string" },
+        "seed": { "type": "string" },
+        "work_order_id": { "type": "string" },
+        "category": { "type": "string" },
+        "severity": { "type": "string" },
+        "risk_level": { "type": "string" },
+        "baseline": { "$ref": "#/$defs/scored_surface" },
+        "winner": { "$ref": "#/$defs/scored_surface" },
+        "delta": { "type": "number" },
+        "positive_lift": { "type": "boolean" },
+        "safety_regression": { "type": "boolean" },
+        "llm_review_gate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["level", "call_policy", "llm_api_calls", "recommended"],
+          "properties": {
+            "level": { "type": "string", "enum": ["none", "medium", "high"] },
+            "call_policy": { "type": "string", "enum": ["do_not_call", "call_when_auto_enabled"] },
+            "llm_api_calls": { "type": "integer", "const": 0 },
+            "recommended": { "type": "boolean" }
+          }
+        },
+        "qianxuesen_signals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "high_risk_boundary_fit",
+            "medium_risk_replay_or_compact_fit",
+            "low_risk_conservative_fit",
+            "route_preserved",
+            "source_trace_preserved",
+            "no_direct_execution"
+          ],
+          "properties": {
+            "high_risk_boundary_fit": { "type": "boolean" },
+            "medium_risk_replay_or_compact_fit": { "type": "boolean" },
+            "low_risk_conservative_fit": { "type": "boolean" },
+            "route_preserved": { "type": "boolean" },
+            "source_trace_preserved": { "type": "boolean" },
+            "no_direct_execution": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "scored_surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "metrics", "dimensions"],
+      "properties": {
+        "surface": { "type": "string" },
+        "variant_id": { "type": "string" },
+        "strategy": { "type": "string" },
+        "metrics": { "$ref": "#/$defs/metrics" },
+        "dimensions": { "$ref": "#/$defs/dimensions" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "has_title",
+        "has_summary",
+        "has_route",
+        "has_task_gate",
+        "has_executor",
+        "has_delivery_policy",
+        "has_default_next_step",
+        "has_owner_or_escalation",
+        "has_verification_focus",
+        "has_stop_condition",
+        "has_evidence",
+        "source_refs_required",
+        "source_trace_preserved",
+        "source_refs",
+        "reproduction_commands",
+        "acceptance_criteria",
+        "forbidden_scope",
+        "requested_operations",
+        "safety"
+      ],
+      "properties": {
+        "has_title": { "type": "boolean" },
+        "has_summary": { "type": "boolean" },
+        "has_route": { "type": "boolean" },
+        "has_task_gate": { "type": "boolean" },
+        "has_executor": { "type": "boolean" },
+        "has_delivery_policy": { "type": "boolean" },
+        "has_default_next_step": { "type": "boolean" },
+        "has_owner_or_escalation": { "type": "boolean" },
+        "has_verification_focus": { "type": "boolean" },
+        "has_stop_condition": { "type": "boolean" },
+        "has_evidence": { "type": "boolean" },
+        "source_refs_required": { "type": "boolean" },
+        "source_trace_preserved": { "type": "boolean" },
+        "source_refs": { "type": "integer", "minimum": 0 },
+        "reproduction_commands": { "type": "integer", "minimum": 0 },
+        "acceptance_criteria": { "type": "integer", "minimum": 0 },
+        "forbidden_scope": { "type": "integer", "minimum": 0 },
+        "requested_operations": { "type": "integer", "minimum": 0 },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "executes_work_orders",
+            "durable_or_public_effect_allowed",
+            "writes_persistent_memory",
+            "installs_skills",
+            "calls_llm",
+            "calls_external_api"
+          ],
+          "properties": {
+            "executes_work_orders": { "type": "boolean" },
+            "durable_or_public_effect_allowed": { "type": "boolean" },
+            "writes_persistent_memory": { "type": "boolean" },
+            "installs_skills": { "type": "boolean" },
+            "calls_llm": { "type": "boolean" },
+            "calls_external_api": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_trace",
+        "replayability",
+        "boundary_safety",
+        "handoff_clarity",
+        "control_loop_fit",
+        "qianxuesen_fit",
+        "overdesign_penalty",
+        "total"
+      ],
+      "properties": {
+        "source_trace": { "type": "number", "minimum": 0, "maximum": 1 },
+        "replayability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "boundary_safety": { "type": "number", "minimum": 0, "maximum": 1 },
+        "handoff_clarity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "control_loop_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+        "qianxuesen_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+        "overdesign_penalty": { "type": "number", "minimum": 0, "maximum": 1 },
+        "total": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

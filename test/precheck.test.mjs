@@ -26,9 +26,9 @@ test("repository dry-run precheck passes", async () => {
   assert.ok(result.phase_summary.contracts.total > 0);
   assert.ok(result.phase_summary["current-line"].total > 0);
   assertPhaseCounts(result.phase_summary, "static", 4);
-  assertPhaseCounts(result.phase_summary, "contracts", 89);
+  assertPhaseCounts(result.phase_summary, "contracts", 90);
   assertPhaseCounts(result.phase_summary, "bridges", 21);
-  assertPhaseCounts(result.phase_summary, "current-line", 23);
+  assertPhaseCounts(result.phase_summary, "current-line", 25);
   assertPhaseCounts(result.phase_summary, "smoke", 12);
   assert.equal(result.checks.every((check) => Object.values(PHASES).includes(check.phase)), true);
   assert.ok(result.checks.some((check) => check.name === "README/package version sync"));

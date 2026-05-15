@@ -5,16 +5,18 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.23.0`.
+The package is currently `0.24.0`.
 
-The current direction is v0.23 convergence: keep the control boundary stable,
+The current direction is v0.24 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
 hits by requested kind before same-source context, let the session-distiller ask
 Qianxuesen for read-only work-order review, calibrate the current line on
 redacted samples, pin the shadow chain in CI, and close the Hermes plugin
 adapter loop with local NDJSON replay. Work-order output now has a seeded local
 variant generator so the system can compare several draft task shapes before
-handoff.
+handoff. The work-order quality evaluator now checks whether the final selected
+work-order packet improves Qianxuesen control-loop quality rather than merely
+passing the command path.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -63,10 +65,15 @@ recommends LLM critique when value and uncertainty signals justify the token
 cost. It does not call a model, execute work, write memory, install skills, or
 change route/winner authority.
 
+The work-order quality evaluation line is now present. It adds
+`work-order:evaluate`, a baseline-vs-winner scorer for final work-order packets.
+It tracks source trace, replayability, boundary safety, handoff clarity,
+control-loop fit, Qianxuesen fit, sample diversity, and zero-call safety.
+
 ## Version History
 
-Rows before v0.23 are historical anchors for retained behavior. They should not
-be read as competing current tracks; the current line is the v0.23 convergence
+Rows before v0.24 are historical anchors for retained behavior. They should not
+be read as competing current tracks; the current line is the v0.24 convergence
 chain above.
 
 | Version | Added | Boundary |
@@ -94,6 +101,7 @@ chain above.
 | v0.21 | Session-distiller review, current-line smoke/calibration, shadow CI, and tournament experience ledger | read-only artifact review and local shadow evidence only |
 | v0.22 | Hermes runtime plugin install/doctor plus NDJSON adapter replay | observe-only local event capture, no memory write, skill write, block, LLM, or external API |
 | v0.23 | Seeded work-order variants and value-gated LLM critique recommendation | local draft search only, no model call or execution |
+| v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
 
 ## Historical Sample Validation
 

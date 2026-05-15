@@ -59,6 +59,7 @@ npm run hermes:adapt-runtime -- --json
 npm run hermes:plugin:doctor
 npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
 npm run work-order:variants -- --json --dry-run
+npm run work-order:evaluate -- --json --dry-run
 npm run skill:evolution -- --json
 npm run vector-memory:classify -- --json
 npm run vector-store:local -- --mode upsert --dry-run
@@ -87,7 +88,7 @@ Historical simulator pieces are documented in:
 - [source-synthesis.md](./source-synthesis.md)
 
 These files explain retained historical invariants. They are not alternate
-current release tracks; the current local shadow gate above is the v0.23 entry
+current release tracks; the current local shadow gate above is the v0.24 entry
 point.
 
 It checks that Misa-style events can route to memory, skill, case, policy, and
@@ -105,12 +106,13 @@ The current-line additions are documented in:
 - [vector-memory-storage-v0.19.md](./vector-memory-storage-v0.19.md)
 - [local-vector-store-v0.21.md](./local-vector-store-v0.21.md)
 - [work-order-variants-v0.23.md](./work-order-variants-v0.23.md)
+- [work-order-quality-eval-v0.24.md](./work-order-quality-eval-v0.24.md)
 - [skill-evolution-adapter-v0.22.md](./skill-evolution-adapter-v0.22.md)
 - [hermes-runtime-adapter-v0.22.md](./hermes-runtime-adapter-v0.22.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)
 - [current-line-calibration-v0.21.md](./current-line-calibration-v0.21.md)
 
-The older version names remain useful for audit history, but v0.23 owns the
+The older version names remain useful for audit history, but v0.24 owns the
 active smoke, calibration, precheck, and CI command surface.
 
 ## Gate Boundaries

@@ -10,6 +10,7 @@ import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
+import { runWorkOrderQualityEvaluation } from "./work-order-quality-eval.mjs";
 import { buildWorkOrderVariants } from "./work-order-variants.mjs";
 import { routeWorkOrders } from "./work-order-router.mjs";
 import { buildZillizVectorAdapterPlan } from "./zilliz-vector-adapter.mjs";
@@ -88,6 +89,21 @@ function summarizeWorkOrderVariants(variants) {
     installs_skills: variants.safety.installs_skills,
     llm_api_calls: variants.safety.llm_api_calls,
     external_api_calls: variants.safety.external_api_calls
+  };
+}
+
+function summarizeWorkOrderQualityEval(evaluation) {
+  return {
+    ok: evaluation.ok,
+    work_orders: evaluation.summary.work_order_count,
+    comparisons: evaluation.summary.comparison_count,
+    avg_baseline_score: evaluation.summary.avg_baseline_score,
+    avg_winner_score: evaluation.summary.avg_winner_score,
+    avg_delta: evaluation.summary.avg_delta,
+    positive_lift_rate: evaluation.summary.positive_lift_rate,
+    safety_regressions: evaluation.summary.safety_regression_count,
+    llm_api_calls: evaluation.safety.llm_api_calls,
+    external_api_calls: evaluation.safety.external_api_calls
   };
 }
 
@@ -188,6 +204,7 @@ function noLiveWritesOrProviderCallsCheck({
   tournament,
   vectorStorage,
   workOrderVariants,
+  workOrderQualityEval,
   localVectorStore,
   skillEvolution,
   zillizAdapter,
@@ -209,6 +226,11 @@ function noLiveWritesOrProviderCallsCheck({
     work_order_variants_installs_skills: workOrderVariants.safety.installs_skills,
     work_order_variants_llm_api_calls: workOrderVariants.safety.llm_api_calls,
     work_order_variants_external_api_calls: workOrderVariants.safety.external_api_calls,
+    work_order_quality_executes_work_orders: workOrderQualityEval.safety.executes_work_orders,
+    work_order_quality_writes_persistent_memory: workOrderQualityEval.safety.writes_persistent_memory,
+    work_order_quality_installs_skills: workOrderQualityEval.safety.installs_skills,
+    work_order_quality_llm_api_calls: workOrderQualityEval.safety.llm_api_calls,
+    work_order_quality_external_api_calls: workOrderQualityEval.safety.external_api_calls,
     local_store_written: localVectorStore.safety.local_vector_store_written,
     local_store_zilliz_written: localVectorStore.safety.zilliz_written,
     local_store_embedding_created: localVectorStore.safety.embedding_created,
@@ -251,6 +273,11 @@ function noLiveWritesOrProviderCallsCheck({
     && details.work_order_variants_installs_skills === false
     && details.work_order_variants_llm_api_calls === 0
     && details.work_order_variants_external_api_calls === 0
+    && details.work_order_quality_executes_work_orders === false
+    && details.work_order_quality_writes_persistent_memory === false
+    && details.work_order_quality_installs_skills === false
+    && details.work_order_quality_llm_api_calls === 0
+    && details.work_order_quality_external_api_calls === 0
     && details.local_store_written === false
     && details.local_store_zilliz_written === false
     && details.local_store_embedding_created === false
@@ -287,6 +314,7 @@ function buildCurrentLineSmokeChecks({
   tournament,
   vectorStorage,
   workOrderVariants,
+  workOrderQualityEval,
   localVectorStore,
   skillEvolution,
   zillizAdapter,
@@ -301,6 +329,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
     checkResult("vector-memory:classify dry-run", vectorStorage.ok, summarizeVectorStorage(vectorStorage)),
     checkResult("work-order:variants dry-run", workOrderVariants.ok, summarizeWorkOrderVariants(workOrderVariants)),
+    checkResult("work-order:evaluate dry-run", workOrderQualityEval.ok, summarizeWorkOrderQualityEval(workOrderQualityEval)),
     checkResult("vector-store:local dry-run", localVectorStore.ok, summarizeLocalVectorStore(localVectorStore)),
     checkResult("skill:evolution dry-run", skillEvolution.ok, summarizeSkillEvolution(skillEvolution)),
     checkResult("curiosity:signals dry-run", curiosityGate.ok, summarizeCuriosityGate(curiosityGate)),
@@ -314,6 +343,7 @@ function buildCurrentLineSmokeChecks({
       tournament,
       vectorStorage,
       workOrderVariants,
+      workOrderQualityEval,
       localVectorStore,
       skillEvolution,
       zillizAdapter,
@@ -354,6 +384,11 @@ export async function runCurrentLineSmoke({
   const workOrderVariants = buildWorkOrderVariants({
     workOrderRouting: routing,
     seed: "current-line-smoke",
+    now
+  });
+  const workOrderQualityEval = await runWorkOrderQualityEvaluation({
+    repoRoot,
+    seeds: ["smoke-quality-01", "smoke-quality-02", "smoke-quality-03"],
     now
   });
   const localVectorStore = await upsertDistillationToLocalVectorStore({
@@ -410,6 +445,7 @@ export async function runCurrentLineSmoke({
     tournament,
     vectorStorage,
     workOrderVariants,
+    workOrderQualityEval,
     localVectorStore,
     skillEvolution,
     zillizAdapter,
@@ -428,6 +464,7 @@ export async function runCurrentLineSmoke({
       "vector-memory:rank",
       "vector-store:local",
       "work-order:variants",
+      "work-order:evaluate",
       "skill:evolution",
       "curiosity:signals",
       "hermes:adapt-runtime",
@@ -455,6 +492,7 @@ export function buildCurrentLineSmokeFromArtifacts({
   tournament,
   vectorStorage,
   workOrderVariants,
+  workOrderQualityEval,
   localVectorStore,
   skillEvolution,
   zillizAdapter,
@@ -469,6 +507,7 @@ export function buildCurrentLineSmokeFromArtifacts({
     tournament,
     vectorStorage,
     workOrderVariants,
+    workOrderQualityEval,
     localVectorStore,
     skillEvolution,
     zillizAdapter,

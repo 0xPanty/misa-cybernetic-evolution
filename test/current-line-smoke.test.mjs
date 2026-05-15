@@ -20,6 +20,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("session-distiller:review"), true);
   assert.equal(result.command_surface.includes("work-order:route"), true);
   assert.equal(result.command_surface.includes("work-order:variants"), true);
+  assert.equal(result.command_surface.includes("work-order:evaluate"), true);
   assert.equal(result.command_surface.includes("evolution:tournament:misa"), true);
   assert.equal(result.command_surface.includes("vector-memory:classify"), true);
   assert.equal(result.command_surface.includes("vector-memory:rank"), true);
@@ -32,6 +33,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
   assert.ok(checkNames.has("work-order:variants dry-run"));
+  assert.ok(checkNames.has("work-order:evaluate dry-run"));
   assert.ok(checkNames.has("evolution:tournament:misa dry-run"));
   assert.ok(checkNames.has("vector-memory:classify dry-run"));
   assert.ok(checkNames.has("vector-store:local dry-run"));
@@ -117,6 +119,25 @@ function safeArtifacts() {
         llm_critique_recommended_count: 0,
         llm_api_calls: 0,
         external_api_calls: 0
+      },
+      safety: {
+        executes_work_orders: false,
+        writes_persistent_memory: false,
+        installs_skills: false,
+        llm_api_calls: 0,
+        external_api_calls: 0
+      }
+    },
+    workOrderQualityEval: {
+      ok: true,
+      summary: {
+        work_order_count: 1,
+        comparison_count: 3,
+        avg_baseline_score: 0.7,
+        avg_winner_score: 0.85,
+        avg_delta: 0.15,
+        positive_lift_rate: 1,
+        safety_regression_count: 0
       },
       safety: {
         executes_work_orders: false,

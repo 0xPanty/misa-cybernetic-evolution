@@ -151,11 +151,37 @@ function scoreStrategyFit(order, strategy) {
   return 0.5;
 }
 
+function qianxuesenStrategyAlignment(order, strategy) {
+  if (["critical", "high"].includes(order.risk_level)) {
+    if (strategy === "boundary_tightening") return 1;
+    if (strategy === "replay_extension") return 0.62;
+    if (strategy === "compact_handoff") return 0.58;
+    if (strategy === "evidence_expansion") return 0.55;
+    return 0.42;
+  }
+  if (order.risk_level === "medium") {
+    if (strategy === "replay_extension") return 1;
+    if (strategy === "compact_handoff") return 0.84;
+    if (strategy === "evidence_expansion") return 0.78;
+    if (strategy === "boundary_tightening") return 0.62;
+    return 0.48;
+  }
+  if (order.risk_level === "low") {
+    if (strategy === "conservative_patch") return 1;
+    if (strategy === "compact_handoff") return 0.72;
+    if (strategy === "boundary_tightening") return 0.6;
+    if (strategy === "evidence_expansion") return 0.56;
+    return 0.5;
+  }
+  return 0.55;
+}
+
 function buildVariant(order, strategyDef, { seed, rank }) {
   const trace = order.traceability ?? {};
   const baseValue = baseValueScore(order);
   const evidence = evidenceScore(order);
   const strategyFit = scoreStrategyFit(order, strategyDef.strategy);
+  const qianxuesenAlignment = qianxuesenStrategyAlignment(order, strategyDef.strategy);
   const safety = 1;
   const clarity = clamp01(
     (trace.acceptance_criteria?.length ? 0.28 : 0)
@@ -177,6 +203,7 @@ function buildVariant(order, strategyDef, { seed, rank }) {
       + safety * 0.2
       + clarity * 0.16
       + strategyFit * 0.16
+      + qianxuesenAlignment * 0.08
       + novelty * 0.06
       - complexityPenalty * 0.08
       + deterministicJitter
@@ -227,6 +254,7 @@ function buildVariant(order, strategyDef, { seed, rank }) {
       safety: round(safety),
       clarity: round(clarity),
       strategy_fit: round(strategyFit),
+      qianxuesen_alignment: round(qianxuesenAlignment),
       novelty: round(novelty),
       complexity_penalty: round(complexityPenalty),
       deterministic_jitter: round(deterministicJitter),

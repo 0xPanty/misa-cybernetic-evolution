@@ -41,7 +41,7 @@ test("qianxuesen full-loop health writes latest plus timestamped history", async
   assert.equal(report.safety.changes_winner, false);
   assert.equal(report.safety.controller_authority_leaked, false);
   assert.equal(report.coverage.route_coverage.includes("policy"), true);
-  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 13);
+  assert.equal(report.component_summaries.current_line_smoke.checks.passed, 14);
   assert.equal(report.component_summaries.skill_evolution.replay_required, 1);
   assert.equal(report.component_summaries.skill_evolution.no_write, true);
   assert.equal(report.component_summaries.hermes_runtime_adapter.evolution_candidates, 4);
