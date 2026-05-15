@@ -30,7 +30,8 @@ For side-by-side checks:
 ```bash
 npm run work-order:evaluate -- --json --dry-run --no-selection-update --no-diversity-guard
 npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --no-diversity-guard
-npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --diversity-policy strategy_guard
+npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --diversity-policy strategy_guard --budget-policy fixed_5
+npm run work-order:evaluate -- --json --dry-run --selection-policy quality_replacement --diversity-policy strategy_guard --budget-policy risk_adaptive
 ```
 
 By default, v0.25 also loads local issue/PR-shaped samples from
@@ -86,6 +87,20 @@ tokens and does not let diversity override risk fit:
 This keeps the useful EvoPrompt idea of selection/update without turning the
 work-order layer into a broad genetic algorithm.
 
+## Budget/Popsize
+
+The default budget policy is now `risk_adaptive`. It keeps the candidate pool
+small, but ties the spend to risk:
+
+- high or critical risk: 5 candidates, with `boundary_tightening` required;
+- medium risk: 4 candidates, with `replay_extension`, `compact_handoff`, and
+  `evidence_expansion` required;
+- low risk: 3 candidates, with `conservative_patch` required.
+
+This is intentionally not a multi-round budget curve yet. It is just enough to
+stop spending a full population on low-risk work while keeping the money spent
+where the Qianxuesen control loop needs it.
+
 ## Safety
 
 The evaluator is local and dry-run by design:
@@ -124,12 +139,14 @@ lift changes from `+0.165` to `+0.168`, and the held-out `test` split shows
 
 After the replacement and diversity follow-up, the side-by-side result is:
 
-| Mode | avg_delta | test_avg_delta | positive_lift_rate | safety_regressions | diversity_applied | winner strategies |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| v0.25 baseline | `+0.168` | `+0.176` | `1` | `0` | `0` | `4` |
-| + Selection/Update | `+0.168` | `+0.176` | `1` | `0` | `0` | `3` |
-| + Selection/Update + Diversity | `+0.168` | `+0.176` | `1` | `0` | `31` | `5` |
+| Mode | variants | saved vs fixed5 | avg_delta | test_avg_delta | positive_lift_rate | safety_regressions | diversity_applied | winner strategies |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| v0.25 baseline | `700` | `0` | `+0.168` | `+0.176` | `1` | `0` | `0` | `4` |
+| + Selection/Update | `700` | `0` | `+0.168` | `+0.176` | `1` | `0` | `0` | `3` |
+| + Selection/Update + Diversity | `700` | `0` | `+0.168` | `+0.176` | `1` | `0` | `31` | `5` |
+| + Risk-Adaptive Budget | `600` | `100` | `+0.168` | `+0.176` | `1` | `0` | `31` | `5` |
 
-The final default keeps the third row. It does not lift the numeric score above
+The final default keeps the fourth row. It does not lift the numeric score above
 v0.25, but it keeps the same quality and safety numbers while preventing the
-medium-risk winner set from collapsing into one strategy.
+medium-risk winner set from collapsing into one strategy and avoiding 100
+unneeded candidate slots.

@@ -43,7 +43,15 @@ test("work-order quality evaluation compares baseline and winner on Qianxuesen m
     test: 3
   });
   assert.equal(result.summary.comparison_count, 42);
-  assert.equal(result.summary.variant_count, result.summary.comparison_count * 5);
+  assert.equal(result.summary.variant_count, 180);
+  assert.equal(result.summary.budget_control.policy, "risk_adaptive");
+  assert.equal(result.summary.budget_control.fixed5_variant_budget, result.summary.comparison_count * 5);
+  assert.equal(result.summary.budget_control.saved_variant_count_against_fixed5, 30);
+  assert.deepEqual(result.summary.budget_control.by_population_size, {
+    3: 9,
+    4: 12,
+    5: 21
+  });
   assert.equal(result.summary.by_split.local_regression, 24);
   assert.equal(result.summary.by_split.dev, 9);
   assert.equal(result.summary.by_split.test, 9);
@@ -85,17 +93,26 @@ test("work-order quality replacement and diversity compare side by side without 
   const baseline = await runWorkOrderQualityEvaluation({
     ...common,
     selectionPolicy: "legacy",
-    diversityPolicy: "off"
+    diversityPolicy: "off",
+    budgetPolicy: "fixed_5"
   });
   const replacement = await runWorkOrderQualityEvaluation({
     ...common,
     selectionPolicy: "quality_replacement",
-    diversityPolicy: "off"
+    diversityPolicy: "off",
+    budgetPolicy: "fixed_5"
   });
   const diverse = await runWorkOrderQualityEvaluation({
     ...common,
     selectionPolicy: "quality_replacement",
-    diversityPolicy: "strategy_guard"
+    diversityPolicy: "strategy_guard",
+    budgetPolicy: "fixed_5"
+  });
+  const budgeted = await runWorkOrderQualityEvaluation({
+    ...common,
+    selectionPolicy: "quality_replacement",
+    diversityPolicy: "strategy_guard",
+    budgetPolicy: "risk_adaptive"
   });
 
   assert.equal(baseline.summary.safety_regression_count, 0);
@@ -108,6 +125,13 @@ test("work-order quality replacement and diversity compare side by side without 
   assert.equal(diverse.summary.positive_lift_rate, 1);
   assert.equal(diverse.summary.llm_api_calls, 0);
   assert.ok(diverse.summary.diversity_guard.applied_count > replacement.summary.diversity_guard.applied_count);
+  assert.equal(budgeted.summary.variant_count < diverse.summary.variant_count, true);
+  assert.equal(budgeted.summary.avg_delta, diverse.summary.avg_delta);
+  assert.equal(budgeted.summary.dev_test.test.avg_delta, diverse.summary.dev_test.test.avg_delta);
+  assert.equal(budgeted.summary.dev_test.holdout_passed, true);
+  assert.equal(budgeted.summary.positive_lift_rate, 1);
+  assert.equal(budgeted.summary.safety_regression_count, 0);
+  assert.equal(budgeted.summary.llm_api_calls, 0);
 });
 
 test("work-order quality evaluation validates against schema", async () => {
@@ -170,6 +194,8 @@ test("work-order quality CLI writes clean JSON handoff artifacts", async () => {
     assert.equal(result.ok, true);
     assert.equal(result.seeds.length, 3);
     assert.equal(result.sample_summary.external_issue_pr_sample_count, 6);
+    assert.equal(result.summary.budget_control.policy, "risk_adaptive");
+    assert.equal(result.summary.budget_control.saved_variant_count_against_fixed5, 30);
     assert.equal(result.summary.dev_test.holdout_passed, true);
     assert.equal(result.summary.llm_api_calls, 0);
   } finally {

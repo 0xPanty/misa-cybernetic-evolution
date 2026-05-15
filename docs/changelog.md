@@ -23,6 +23,10 @@ diversity guard: selected winners must beat the incumbent baseline without
 safety regression, and same-quality medium-risk candidates can rotate across
 replay, compact handoff, and evidence expansion instead of collapsing into one
 strategy.
+It also uses a small risk-adaptive budget: high-risk work keeps the full
+population, medium-risk work keeps replay/compact/evidence coverage, and
+low-risk work spends fewer candidate slots without losing the held-out quality
+lift.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -109,7 +113,7 @@ chain above.
 | v0.22 | Hermes runtime plugin install/doctor plus NDJSON adapter replay | observe-only local event capture, no memory write, skill write, block, LLM, or external API |
 | v0.23 | Seeded work-order variants and value-gated LLM critique recommendation | local draft search only, no model call or execution |
 | v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
-| v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, and medium-risk diversity guard | local fixture adapter only, no external fetch, execution, model call, or external API |
+| v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, medium-risk diversity guard, and risk-adaptive candidate budget | local fixture adapter only, no external fetch, execution, model call, or external API |
 
 ## Historical Sample Validation
 

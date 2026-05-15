@@ -71,6 +71,7 @@
         "max_delta",
         "by_winner_strategy",
         "strategy_entropy",
+        "budget_control",
         "selection_update",
         "diversity_guard",
         "by_category",
@@ -101,6 +102,7 @@
         "max_delta": { "type": "number" },
         "by_winner_strategy": { "$ref": "#/$defs/count_map" },
         "strategy_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "budget_control": { "$ref": "#/$defs/budget_control_summary" },
         "selection_update": { "$ref": "#/$defs/selection_update_summary" },
         "diversity_guard": { "$ref": "#/$defs/diversity_guard_summary" },
         "by_category": { "$ref": "#/$defs/count_map" },
@@ -250,6 +252,28 @@
         "safety_regression_count": { "type": "integer", "minimum": 0 }
       }
     },
+    "budget_control_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "total_variant_budget",
+        "fixed5_variant_budget",
+        "saved_variant_count_against_fixed5",
+        "avg_population_size",
+        "by_population_size",
+        "by_risk_population_size"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["fixed_5", "risk_adaptive"] },
+        "total_variant_budget": { "type": "integer", "minimum": 0 },
+        "fixed5_variant_budget": { "type": "integer", "minimum": 0 },
+        "saved_variant_count_against_fixed5": { "type": "integer", "minimum": 0 },
+        "avg_population_size": { "type": "number", "minimum": 0, "maximum": 5 },
+        "by_population_size": { "$ref": "#/$defs/count_map" },
+        "by_risk_population_size": { "$ref": "#/$defs/count_map" }
+      }
+    },
     "selection_update_summary": {
       "type": "object",
       "additionalProperties": false,
@@ -299,6 +323,26 @@
         "priority": { "type": "string", "enum": ["low", "medium", "high"] },
         "reason": { "type": "string" },
         "qianxuesen_fit": { "type": "string" }
+      }
+    },
+    "budget_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy",
+        "population_size",
+        "required_strategies",
+        "budget_reason",
+        "generated_variant_count",
+        "saved_variant_count_against_fixed5"
+      ],
+      "properties": {
+        "policy": { "type": "string", "enum": ["fixed_5", "risk_adaptive"] },
+        "population_size": { "type": "integer", "minimum": 3, "maximum": 5 },
+        "required_strategies": { "$ref": "#/$defs/string_array" },
+        "budget_reason": { "type": "string" },
+        "generated_variant_count": { "type": "integer", "minimum": 3, "maximum": 5 },
+        "saved_variant_count_against_fixed5": { "type": "integer", "minimum": 0, "maximum": 2 }
       }
     },
     "selection_update": {
@@ -378,6 +422,7 @@
         "delta",
         "positive_lift",
         "safety_regression",
+        "budget_control",
         "selection_update",
         "diversity_guard",
         "llm_review_gate",
@@ -397,6 +442,7 @@
         "delta": { "type": "number" },
         "positive_lift": { "type": "boolean" },
         "safety_regression": { "type": "boolean" },
+        "budget_control": { "$ref": "#/$defs/budget_control" },
         "selection_update": { "$ref": "#/$defs/selection_update" },
         "diversity_guard": { "$ref": "#/$defs/diversity_guard" },
         "llm_review_gate": {

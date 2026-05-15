@@ -281,6 +281,38 @@ function chooseWinner(variants) {
   ))[0];
 }
 
+function selectStrategyDefinitions(order, { seed, populationSize, requiredStrategies = [] }) {
+  const byStrategy = new Map(STRATEGIES.map((strategy) => [strategy.strategy, strategy]));
+  const required = requiredStrategies
+    .map((strategy) => byStrategy.get(strategy))
+    .filter(Boolean);
+  const selected = [];
+  const seen = new Set();
+
+  for (const strategy of required) {
+    if (!seen.has(strategy.strategy) && selected.length < populationSize) {
+      selected.push(strategy);
+      seen.add(strategy.strategy);
+    }
+  }
+
+  const seeded = STRATEGIES
+    .filter((strategy) => !seen.has(strategy.strategy))
+    .map((strategy, index) => ({
+      strategy,
+      sortKey: seededUnit(seed, `${order.work_order_id}:${strategy.strategy}:order`),
+      index
+    }))
+    .sort((a, b) => a.sortKey - b.sortKey || a.index - b.index);
+
+  for (const item of seeded) {
+    if (selected.length >= populationSize) break;
+    selected.push(item.strategy);
+  }
+
+  return selected;
+}
+
 function buildLlmReviewGate(order, variants, winner) {
   const sorted = [...variants].sort((a, b) => b.scores.composite - a.scores.composite);
   const runnerUp = sorted.find((variant) => variant.variant_id !== winner.variant_id);
@@ -341,16 +373,12 @@ function variantLedger(variants, winner) {
     }));
 }
 
-function buildOrderResult(order, { seed, populationSize }) {
-  const selected = STRATEGIES
-    .map((strategy, index) => ({
-      strategy,
-      sortKey: seededUnit(seed, `${order.work_order_id}:${strategy.strategy}:order`),
-      index
-    }))
-    .sort((a, b) => a.sortKey - b.sortKey || a.index - b.index)
-    .slice(0, populationSize)
-    .map((item, index) => buildVariant(order, item.strategy, { seed, rank: index }));
+function buildOrderResult(order, { seed, populationSize, requiredStrategies }) {
+  const selected = selectStrategyDefinitions(order, {
+    seed,
+    populationSize,
+    requiredStrategies
+  }).map((strategy, index) => buildVariant(order, strategy, { seed, rank: index }));
   const variants = selected.sort((a, b) => b.scores.composite - a.scores.composite || a.variant_id.localeCompare(b.variant_id));
   const winner = chooseWinner(variants);
   const llmReviewGate = buildLlmReviewGate(order, variants, winner);
@@ -404,12 +432,14 @@ export function buildWorkOrderVariants({
   workOrderRouting,
   seed = DEFAULT_SEED,
   populationSize = 5,
+  requiredStrategies = [],
   now = DEFAULT_NOW
 } = {}) {
   const size = Math.max(3, Math.min(Number(populationSize) || 5, STRATEGIES.length));
   const orderResults = (workOrderRouting?.work_orders ?? []).map((order) => buildOrderResult(order, {
     seed,
-    populationSize: size
+    populationSize: size,
+    requiredStrategies
   }));
   const summary = buildSummary(orderResults);
 
@@ -460,6 +490,7 @@ export async function runWorkOrderVariants({
   workOrderRouting,
   seed = DEFAULT_SEED,
   populationSize = 5,
+  requiredStrategies = [],
   now = DEFAULT_NOW
 } = {}) {
   const routing = workOrderRouting ?? await routeWorkOrders({ repoRoot, now });
@@ -467,6 +498,7 @@ export async function runWorkOrderVariants({
     workOrderRouting: routing,
     seed,
     populationSize,
+    requiredStrategies,
     now
   });
 }

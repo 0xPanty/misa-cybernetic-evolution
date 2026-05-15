@@ -2,6 +2,7 @@
 
 import { writeJsonOutFile } from "./lib/cli-output.mjs";
 import {
+  DEFAULT_WORK_ORDER_BUDGET_POLICY,
   DEFAULT_WORK_ORDER_DIVERSITY_POLICY,
   DEFAULT_WORK_ORDER_EVAL_SEEDS,
   DEFAULT_WORK_ORDER_SELECTION_POLICY,
@@ -38,6 +39,9 @@ const selectionPolicy = hasArg("no-selection-update")
 const diversityPolicy = hasArg("no-diversity-guard")
   ? "off"
   : readArg("diversity-policy") ?? DEFAULT_WORK_ORDER_DIVERSITY_POLICY;
+const budgetPolicy = hasArg("fixed-population")
+  ? "fixed_5"
+  : readArg("budget-policy") ?? DEFAULT_WORK_ORDER_BUDGET_POLICY;
 
 let result = await runWorkOrderQualityEvaluation({
   seeds,
@@ -45,6 +49,7 @@ let result = await runWorkOrderQualityEvaluation({
   externalSampleDir: readArg("external-sample-dir"),
   selectionPolicy,
   diversityPolicy,
+  budgetPolicy,
   now
 });
 
@@ -68,6 +73,10 @@ if (hasArg("json")) {
   console.log(`dev_samples=${result.sample_summary.dev_sample_count}`);
   console.log(`test_samples=${result.sample_summary.test_sample_count}`);
   console.log(`comparisons=${result.summary.comparison_count}`);
+  console.log(`variants=${result.summary.variant_count}`);
+  console.log(`budget_policy=${result.summary.budget_control.policy}`);
+  console.log(`fixed5_variant_budget=${result.summary.budget_control.fixed5_variant_budget}`);
+  console.log(`saved_variants=${result.summary.budget_control.saved_variant_count_against_fixed5}`);
   console.log(`avg_delta=${result.summary.avg_delta}`);
   console.log(`test_avg_delta=${result.summary.dev_test.test.avg_delta}`);
   console.log(`holdout_passed=${result.summary.dev_test.holdout_passed}`);

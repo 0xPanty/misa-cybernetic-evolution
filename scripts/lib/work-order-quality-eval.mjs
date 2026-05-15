@@ -23,6 +23,7 @@ export const DEFAULT_WORK_ORDER_EVAL_SEEDS = Object.freeze([
 
 export const DEFAULT_WORK_ORDER_SELECTION_POLICY = "quality_replacement";
 export const DEFAULT_WORK_ORDER_DIVERSITY_POLICY = "strategy_guard";
+export const DEFAULT_WORK_ORDER_BUDGET_POLICY = "risk_adaptive";
 const SCORE_TIE_TOLERANCE = 0.001;
 
 export const DEFAULT_OPERATOR_QUALITY_REPORTS = Object.freeze([
@@ -356,11 +357,56 @@ function normalizeDiversityPolicy(policy) {
   return policy === "off" ? "off" : DEFAULT_WORK_ORDER_DIVERSITY_POLICY;
 }
 
+function normalizeBudgetPolicy(policy) {
+  return policy === "fixed_5" ? "fixed_5" : DEFAULT_WORK_ORDER_BUDGET_POLICY;
+}
+
 function diversityStrategyFamily(order) {
   if (["critical", "high"].includes(order.risk_level)) return ["boundary_tightening"];
   if (order.risk_level === "medium") return ["replay_extension", "compact_handoff", "evidence_expansion"];
   if (order.risk_level === "low") return ["conservative_patch"];
   return ["compact_handoff", "evidence_expansion", "replay_extension"];
+}
+
+function budgetForOrder(order, policy) {
+  if (policy === "fixed_5") {
+    return {
+      policy,
+      population_size: 5,
+      required_strategies: [],
+      budget_reason: "fixed full population baseline"
+    };
+  }
+  if (["critical", "high"].includes(order.risk_level)) {
+    return {
+      policy,
+      population_size: 5,
+      required_strategies: ["boundary_tightening"],
+      budget_reason: "high-risk work keeps the full budget and always includes boundary tightening"
+    };
+  }
+  if (order.risk_level === "medium") {
+    return {
+      policy,
+      population_size: 4,
+      required_strategies: ["replay_extension", "compact_handoff", "evidence_expansion"],
+      budget_reason: "medium-risk work keeps replay, compact handoff, and evidence expansion before spending the last slot"
+    };
+  }
+  if (order.risk_level === "low") {
+    return {
+      policy,
+      population_size: 3,
+      required_strategies: ["conservative_patch"],
+      budget_reason: "low-risk work keeps the conservative candidate and avoids spending a full population"
+    };
+  }
+  return {
+    policy,
+    population_size: 4,
+    required_strategies: ["compact_handoff", "evidence_expansion"],
+    budget_reason: "unknown risk keeps a modest budget with traceable handoff strategies"
+  };
 }
 
 function buildCandidateScores(order, orderResult, baseline) {
@@ -490,7 +536,8 @@ function compareScores({
   order,
   orderResult,
   selectionPolicy,
-  diversityPolicy
+  diversityPolicy,
+  budgetControl
 }) {
   const baseline = scoreBaselineWorkOrder(order);
   const selection = selectQualityWinner({
@@ -520,6 +567,11 @@ function compareScores({
     delta,
     positive_lift: positiveLift,
     safety_regression: Boolean(safetyRegression),
+    budget_control: {
+      ...budgetControl,
+      generated_variant_count: orderResult.variants.length,
+      saved_variant_count_against_fixed5: Math.max(0, 5 - orderResult.variants.length)
+    },
     selection_update: selection.selection_update,
     diversity_guard: selection.diversity_guard,
     llm_review_gate: {
@@ -780,6 +832,7 @@ function summarizeComparisons(comparisons, corpus) {
   const byCategory = countBy(comparisons, (item) => item.category);
   const byRisk = countBy(comparisons, (item) => item.risk_level);
   const bySplit = countBy(comparisons, (item) => item.split);
+  const budgetRows = comparisons.map((item) => item.budget_control);
   const selectionRows = comparisons.map((item) => item.selection_update);
   const diversityRows = comparisons.map((item) => item.diversity_guard);
   const uniqueWorkOrderIds = new Set(comparisons.map((item) => item.work_order_id));
@@ -813,7 +866,7 @@ function summarizeComparisons(comparisons, corpus) {
     unique_work_order_shape_count: uniqueShapes.size,
     seed_count: new Set(comparisons.map((item) => item.seed)).size,
     comparison_count: comparisons.length,
-    variant_count: comparisons.length * 5,
+    variant_count: budgetRows.reduce((sum, item) => sum + item.generated_variant_count, 0),
     positive_lift_count: comparisons.filter((item) => item.positive_lift).length,
     positive_lift_rate: round(avg(comparisons.map((item) => boolScore(item.positive_lift)))),
     regression_count: comparisons.filter((item) => item.delta < 0).length,
@@ -825,6 +878,18 @@ function summarizeComparisons(comparisons, corpus) {
     max_delta: round(Math.max(...deltas)),
     by_winner_strategy: byStrategy,
     strategy_entropy: entropy(byStrategy),
+    budget_control: {
+      policy: budgetRows[0]?.policy ?? DEFAULT_WORK_ORDER_BUDGET_POLICY,
+      total_variant_budget: budgetRows.reduce((sum, item) => sum + item.generated_variant_count, 0),
+      fixed5_variant_budget: comparisons.length * 5,
+      saved_variant_count_against_fixed5: budgetRows.reduce((sum, item) => sum + item.saved_variant_count_against_fixed5, 0),
+      avg_population_size: round(avg(budgetRows.map((item) => item.generated_variant_count))),
+      by_population_size: countBy(budgetRows, (item) => String(item.generated_variant_count)),
+      by_risk_population_size: countBy(
+        comparisons,
+        (item) => `${item.risk_level}:${item.budget_control.generated_variant_count}`
+      )
+    },
     selection_update: {
       policy: selectionRows[0]?.policy ?? DEFAULT_WORK_ORDER_SELECTION_POLICY,
       replacement_allowed_count: selectionRows.filter((item) => item.replacement_allowed).length,
@@ -918,6 +983,14 @@ function buildRecommendations(summary) {
       qianxuesen_fit: "This avoids premature convergence while preserving the medium-risk replay-or-compact control policy."
     });
   }
+  if (summary.budget_control.saved_variant_count_against_fixed5 > 0 && summary.dev_test.holdout_passed) {
+    recs.push({
+      recommendation_id: "keep_risk_adaptive_budget",
+      priority: "medium",
+      reason: "The evaluator spent fewer candidate slots while preserving holdout quality and safety.",
+      qianxuesen_fit: "Spend full attention on high-risk boundaries, keep medium-risk replay diversity, and keep low-risk work conservative."
+    });
+  }
   if (summary.avg_delta > 0 && summary.safety_regression_count === 0) {
     recs.push({
       recommendation_id: "keep_variant_layer_shadow_only",
@@ -971,11 +1044,13 @@ export async function runWorkOrderQualityEvaluation({
   includeExternalSamples = true,
   selectionPolicy = DEFAULT_WORK_ORDER_SELECTION_POLICY,
   diversityPolicy = DEFAULT_WORK_ORDER_DIVERSITY_POLICY,
+  budgetPolicy = DEFAULT_WORK_ORDER_BUDGET_POLICY,
   now = DEFAULT_NOW
 } = {}) {
   const seedList = Array.isArray(seeds) && seeds.length ? seeds : DEFAULT_WORK_ORDER_EVAL_SEEDS;
   const normalizedSelectionPolicy = normalizeSelectionPolicy(selectionPolicy);
   const normalizedDiversityPolicy = normalizeDiversityPolicy(diversityPolicy);
+  const normalizedBudgetPolicy = normalizeBudgetPolicy(budgetPolicy);
   const corpus = await buildDefaultCorpus({
     repoRoot,
     sampleSets,
@@ -990,6 +1065,7 @@ export async function runWorkOrderQualityEvaluation({
   for (const item of corpus) {
     for (const order of item.routing.work_orders) {
       for (const seed of seedList) {
+        const budgetControl = budgetForOrder(order, normalizedBudgetPolicy);
         const variantRun = buildWorkOrderVariants({
           workOrderRouting: {
             ...item.routing,
@@ -1000,6 +1076,8 @@ export async function runWorkOrderQualityEvaluation({
             }
           },
           seed,
+          populationSize: budgetControl.population_size,
+          requiredStrategies: budgetControl.required_strategies,
           now
         });
         comparisons.push(compareScores({
@@ -1010,7 +1088,8 @@ export async function runWorkOrderQualityEvaluation({
           order,
           orderResult: variantRun.work_order_results[0],
           selectionPolicy: normalizedSelectionPolicy,
-          diversityPolicy: normalizedDiversityPolicy
+          diversityPolicy: normalizedDiversityPolicy,
+          budgetControl
         }));
       }
     }
@@ -1053,6 +1132,7 @@ export async function runWorkOrderQualityEvaluation({
         "handoff is easier for an agent to execute or report",
         "new selected winners must beat the incumbent before replacement",
         "medium-risk near ties should preserve strategy diversity without lowering quality",
+        "candidate budget follows risk instead of spending full population on every low-risk work order",
         "LLM critique remains value-gated and zero-call by default"
       ],
       dev_test_policy: {
@@ -1096,6 +1176,9 @@ function renderMarkdown(result) {
     `- test_samples: ${result.sample_summary.test_sample_count}`,
     `- comparison_count: ${result.summary.comparison_count}`,
     `- variant_count: ${result.summary.variant_count}`,
+    `- budget_policy: ${result.summary.budget_control.policy}`,
+    `- fixed5_variant_budget: ${result.summary.budget_control.fixed5_variant_budget}`,
+    `- saved_variant_count_against_fixed5: ${result.summary.budget_control.saved_variant_count_against_fixed5}`,
     `- avg_baseline_score: ${result.summary.avg_baseline_score}`,
     `- avg_winner_score: ${result.summary.avg_winner_score}`,
     `- avg_delta: ${result.summary.avg_delta}`,

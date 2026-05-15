@@ -87,6 +87,9 @@ With the follow-up selection/update and diversity guard enabled by default:
 - incumbent retained count is `0`
 - medium-risk diversity guard applies on 31 comparisons
 - winner strategies cover all 5 strategy families
+- risk-adaptive budget spends 600 candidates instead of the fixed 700
+- high-risk samples keep population size 5, medium-risk samples use 4, and
+  low-risk samples use 3
 - average lift and held-out `test` lift stay unchanged at `+0.168` and
   `+0.176`
 - `llm_api_calls=0`

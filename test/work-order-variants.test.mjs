@@ -89,6 +89,30 @@ test("work-order variants validate against schema and gate LLM critique by value
   }
 });
 
+test("work-order variants preserve required strategies under smaller budgets", async () => {
+  const repairTickets = await reviewRepairTickets({
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  const routing = buildWorkOrderRouting({
+    repairTicketReview: repairTickets,
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  const result = buildWorkOrderVariants({
+    workOrderRouting: routing,
+    seed: "required-strategy-budget-test",
+    populationSize: 3,
+    requiredStrategies: ["boundary_tightening"],
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+
+  for (const orderResult of result.work_order_results) {
+    assert.equal(orderResult.variants.length, 3);
+    assert.ok(orderResult.variants.some((variant) => variant.strategy === "boundary_tightening"));
+    assert.equal(orderResult.variants.every((variant) => variant.constraints.no_direct_execution), true);
+    assert.equal(orderResult.variants.every((variant) => variant.safety.calls_llm === false), true);
+  }
+});
+
 test("work-order variant artifacts write local JSON and Markdown only", async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-work-order-variants-"));
 
