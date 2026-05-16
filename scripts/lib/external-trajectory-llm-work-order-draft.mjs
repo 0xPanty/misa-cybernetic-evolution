@@ -54,6 +54,17 @@ const GENERIC_TASK_PATTERNS = Object.freeze([
   /discuss.*team/i
 ]);
 
+const TASK_EXPECTATION_PATTERNS = Object.freeze([
+  /must|only|preserve|remain|keep|blocked|false|reject|pass|fail|contains|equals|does not|do not/i,
+  /必须|只能|仅|保留|保持|阻止|拒绝|通过|失败|包含|等于|不得|不允许|不会|不写|不改|不执行/
+]);
+
+const TASK_FIELD_PATTERNS = Object.freeze([
+  /source_id|readout_family|route_hint|status|authority|execution_policy|forbidden_scope|allowed_verification_commands/i,
+  /route|winner|memory|Zilliz|embedding|llm_api_calls|external_api_calls|persistent_memory|publication/i,
+  /信号|字段|状态|权限|边界|路由|胜者|发布|内存|证据|白名单/
+]);
+
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? new Date("2026-05-16T05:00:00.000Z").toISOString() : date.toISOString();
@@ -344,11 +355,21 @@ function promptForPacket(packet, { previousFailure } = {}) {
 质量要求：
 - title 不能是 Explain external trajectory signal 这种模板标题。
 - concrete_tasks 至少 4 条，每条必须带一个具体锚点：文件路径、source_id、信号名、evidence ref、字段名或测试名。
+- 每条 concrete_tasks 尽量写成：在 <文件或测试> 中，检查 <source_id/信号/字段> 是否保持 <明确期望结果>。
+- 不要只写“审查/验证/确保某逻辑”。必须说清楚检查哪个字段、哪个信号、失败时说明什么。
+- 不要用“相关测试”“符合预期”“正确实施”“覆盖情况”当任务结尾；要写出具体期望，比如 route_change_allowed=false 或 authority=suggestion_only。
 - verification_commands 只能从 allowed_verification_commands 里原样选择，禁止编命令。
 - evidence_refs 必须完整保留输入中的 evidence_refs，禁止编造。
 - forbidden_scope 必须完整包含 required_forbidden_scope。
 - 不要写“团队认可”“制定方案”“优化流程”这种空话，除非同时点名具体文件或测试。
 - 不要要求真实发帖、真实写库、真实部署。
+
+坏任务例子：
+- "审查 scripts/lib/perception-sidecar.mjs 文件中的公共边界处理逻辑。"
+
+好任务例子：
+- "在 scripts/lib/perception-sidecar.mjs 中追踪 source_id=farcaster-reply-audit-007，确认 readout_family=safety_boundary_pressure 只生成 suggestion_only/no_write 输出，不改变 route、winner、memory。"
+- "在 test/external-trajectory-online-shadow-contract.test.mjs 中补看 route_hint=policy 的断言，期望 execution_policy.route_change_allowed=false 且 persistent_memory_write_allowed=false。"
 
 输入：
 ${JSON.stringify(compactPacket, null, 2)}
@@ -470,10 +491,10 @@ function deterministicDraftForPacket(packet) {
     problem: `${packet.source_id} carries ${signal} evidence for ${packet.record.readout_family}; keep it as no-write external trajectory review material.`,
     evidence_refs: [...packet.workOrder.evidence_refs],
     concrete_tasks: [
-      `Check ${fileA} against ${packet.source_id} and preserve evidence refs ${packet.workOrder.evidence_refs.join(", ")}.`,
-      `Review ${fileB} for ${signal} coverage and keep route_hint=${packet.workOrder.route_hint} as a hint only.`,
-      `Confirm ${packet.context.context_anchors.slice(0, 3).join(", ")} remain observe-only in the draft.`,
-      `Update only the local review wording if needed; keep status=${packet.workOrder.status} and authority=${packet.workOrder.authority}.`
+      `In ${fileA}, trace source_id=${packet.source_id} and preserve evidence_refs=${packet.workOrder.evidence_refs.join(", ")} without adding new refs.`,
+      `In ${fileB}, check signal=${signal} and route_hint=${packet.workOrder.route_hint}; expected result is hint_only/suggestion_only with no route or winner change.`,
+      `In ${fileA}, confirm ${packet.context.context_anchors.slice(0, 3).join(", ")} stay observe-only and do not request memory, Zilliz, embedding, VPS, GitHub, or public publish effects.`,
+      `In ${fileB}, verify status=${packet.workOrder.status} and authority=${packet.workOrder.authority}; expected result is a draft review note only, not work-order execution.`
     ],
     acceptance_criteria: [
       `${packet.source_id} keeps every original evidence ref in the draft.`,
@@ -564,6 +585,42 @@ function genericTaskCount(draft) {
   )).length;
 }
 
+function actionableTaskDetails(draft, packet) {
+  return (draft?.concrete_tasks ?? []).map((task) => {
+    const text = String(task ?? "");
+    const hasFileOrTest = packet.context.relevant_files.some((filePath) => text.includes(filePath))
+      || /\b(?:scripts|test|schemas|examples)[\\/][\w./-]+\.(?:mjs|json|md)\b/i.test(text);
+    const hasSourceOrRef = text.includes(packet.source_id)
+      || (packet.workOrder.evidence_refs ?? []).some((ref) => text.includes(ref));
+    const hasSignal = [
+      packet.record.readout_family,
+      packet.context.source_class,
+      ...(packet.record.observed_signals ?? []),
+      ...packet.context.task_focus
+    ].some((signal) => signal && text.includes(signal));
+    const hasField = TASK_FIELD_PATTERNS.some((pattern) => pattern.test(text));
+    const hasExpectation = TASK_EXPECTATION_PATTERNS.some((pattern) => pattern.test(text));
+    const anchorTypeCount = [
+      hasFileOrTest,
+      hasSourceOrRef,
+      hasSignal,
+      hasField,
+      hasExpectation
+    ].filter(Boolean).length;
+
+    return {
+      task: text,
+      actionable: anchorTypeCount >= 3 && hasExpectation,
+      anchorTypeCount,
+      hasFileOrTest,
+      hasSourceOrRef,
+      hasSignal,
+      hasField,
+      hasExpectation
+    };
+  });
+}
+
 export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerError = null } = {}) {
   const violations = [];
   const refs = packet?.workOrder?.evidence_refs ?? [];
@@ -594,8 +651,13 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
 
   const specificityHits = taskSpecificityHits(draft, packet);
   const vagueTaskCount = genericTaskCount(draft);
+  const actionability = actionableTaskDetails(draft, packet);
+  const actionableTaskCount = actionability.filter((task) => task.actionable).length;
+  const weakTaskCount = Math.max(0, (draft?.concrete_tasks?.length ?? 0) - actionableTaskCount);
   if (specificityHits < 3) violations.push("too_few_context_anchors");
   if (vagueTaskCount > 1) violations.push("too_many_generic_tasks");
+  if (actionableTaskCount < 4) violations.push("too_few_actionable_tasks");
+  if (weakTaskCount > 0) violations.push("too_many_weak_tasks");
 
   const scoreParts = {
     title_specific: draft?.title && !/Explain external trajectory signal/i.test(draft.title) ? 1 : 0,
@@ -605,15 +667,19 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
       : 0,
     task_count: Math.min((draft?.concrete_tasks?.length ?? 0) / 4, 1),
     context_specificity: Math.min(specificityHits / 5, 1),
-    generic_penalty: Math.min(vagueTaskCount / 4, 1)
+    actionable_tasks: Math.min(actionableTaskCount / 4, 1),
+    generic_penalty: Math.min(vagueTaskCount / 4, 1),
+    weak_task_penalty: Math.min(weakTaskCount / 4, 1)
   };
   const quality_score = Math.round(1000 * Math.max(0,
-    scoreParts.title_specific * 0.16
-      + scoreParts.refs_preserved * 0.18
-      + scoreParts.commands_whitelisted * 0.2
-      + scoreParts.task_count * 0.16
-      + scoreParts.context_specificity * 0.22
-      - scoreParts.generic_penalty * 0.12
+    scoreParts.title_specific * 0.12
+      + scoreParts.refs_preserved * 0.16
+      + scoreParts.commands_whitelisted * 0.18
+      + scoreParts.task_count * 0.12
+      + scoreParts.context_specificity * 0.18
+      + scoreParts.actionable_tasks * 0.24
+      - scoreParts.generic_penalty * 0.1
+      - scoreParts.weak_task_penalty * 0.1
   )) / 1000;
 
   if (quality_score < 0.74) violations.push("quality_score_below_threshold");
@@ -633,6 +699,9 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
         .filter((command) => packet.allowed_verification_commands.includes(command)).length,
       specificityHits,
       genericTaskCount: vagueTaskCount,
+      actionableTaskCount,
+      weakTaskCount,
+      taskActionability: actionability,
       providerError
     }
   };

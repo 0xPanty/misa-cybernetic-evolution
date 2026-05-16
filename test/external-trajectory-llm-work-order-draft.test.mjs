@@ -140,6 +140,8 @@ test("LLM work-order gate rejects fake commands and generic tasks", () => {
   assert.ok(gate.violations.includes("non_whitelisted_verification_command"));
   assert.ok(gate.violations.includes("live_effect_language_detected"));
   assert.ok(gate.violations.includes("too_many_generic_tasks"));
+  assert.ok(gate.violations.includes("too_few_actionable_tasks"));
+  assert.ok(gate.violations.includes("too_many_weak_tasks"));
 });
 
 test("LLM work-order draft report passes with context-specific mock provider", async () => {
@@ -159,7 +161,9 @@ test("LLM work-order draft report passes with context-specific mock provider", a
   assert.equal(result.summary.external_api_calls, 0);
   assert.equal(result.safety.changes_route, false);
   assert.equal(result.safety.writes_memory, false);
-  assert.equal(result.results.every((item) => item.gate.quality_score >= 0.74), true);
+  assert.equal(result.results.every((item) => item.gate.quality_score >= 0.82), true);
+  assert.equal(result.results.every((item) => item.gate.checks.actionableTaskCount >= 4), true);
+  assert.equal(result.results.every((item) => item.gate.checks.weakTaskCount === 0), true);
   assert.ok(result.results[0].draft.verification_commands.every((command) => (
     result.results[0].packet.allowed_verification_commands.includes(command)
   )));
