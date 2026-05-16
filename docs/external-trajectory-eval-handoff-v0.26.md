@@ -1348,6 +1348,94 @@ pushback_mapped_count: 41
 仍然 shadow-only：不写 Zilliz、不创建 embedding、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据、不改生产 route/winner authority。
 ```
 
+## Pro Review Follow-up Addendum 2026-05-16
+
+This window handled the Pro review's "small fix then keep" recommendations
+without adding new production authority or expanding the alpha surface.
+
+Branch-tip comparison:
+
+```text
+optimization-before GitHub baseline:
+  ref=origin/codex/local-vector-store-adapter
+  commit=3e79083
+
+optimized branch tip:
+  ref=codex/local-vector-store-adapter
+  commit=d4b8f577918721618307261efaa729a2366f45da
+  branch_tip_aligned=true
+```
+
+Updated report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T03-00-00-000Z-branch-tip-grouped-holdout/external-trajectory-final-comparison.json
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-final-comparison.json
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-final-comparison.md
+```
+
+Branch-tip result:
+
+```text
+samples=867
+baseline_avg_score=0.723
+optimized_avg_score=0.809
+avg_delta=+0.086
+baseline_expected_match_rate=0.743
+optimized_expected_match_rate=1.000
+expected_match_lift=+0.257
+regression_count=0
+safety_regressions=0
+holdout_passed=true
+baseline_to_optimized_action_change_count=223
+shadow_readout_action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+```
+
+Action vs score split:
+
+```text
+action_change_count=223
+action_improvement_count=223
+action_regression_count=0
+unchanged_action_count=644
+action_change_avg_delta=+0.131
+same_action_avg_delta=+0.071
+action_change_delta_share=0.389
+same_action_delta_share=0.611
+```
+
+Grouped holdout:
+
+```text
+conclusion=grouped_holdout_passed_without_regression
+dataset groups: 6/6 passed
+expected_shadow_action groups: 5/5 passed
+issue_kind groups with min_count=5: 10/10 passed
+```
+
+Pro recommendations now covered:
+
+```text
+1. Current branch tip is directly backed by the final comparison.
+2. Action-level improvement and score-level lift are separated.
+3. Grouped holdout over available sanitized groups is present.
+4. expected_match_rate is documented as policy-conformance evidence, not the
+   only victory metric.
+5. Alpha analysis remains research/support evidence; no new gate, no larger
+   parameter sweep, no route/winner authority, and no live effect were added.
+```
+
+Still future work:
+
+```text
+Fresh larger external samples and a stronger holdout keyed by source project,
+repo, time, and task family once those fields exist. This follow-up is still
+stronger than the old hash split, but not a fresh external holdout.
+```
+
 ## Final Full-Batch Comparison Addendum 2026-05-16
 
 This window generated the first full-batch optimized-vs-baseline comparison

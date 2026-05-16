@@ -15,9 +15,11 @@
     "measurement_note",
     "side_by_side_input",
     "overall",
+    "action_score_separation",
     "by_dataset",
     "by_expected_shadow_action",
     "action_transitions",
+    "grouped_holdout",
     "shadow_readout_closure",
     "qianxuesen_generalization",
     "boundaries",
@@ -35,10 +37,12 @@
     "optimized": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ref", "commit", "behavior", "selected_profile"],
+      "required": ["ref", "commit", "branch_tip_commit", "branch_tip_aligned", "behavior", "selected_profile"],
       "properties": {
         "ref": { "type": "string" },
         "commit": { "type": "string" },
+        "branch_tip_commit": { "type": ["string", "null"] },
+        "branch_tip_aligned": { "type": "boolean" },
         "behavior": { "type": "string" },
         "selected_profile": { "type": ["string", "null"] }
       }
@@ -69,9 +73,11 @@
       }
     },
     "overall": { "$ref": "#/$defs/comparison_stats" },
+    "action_score_separation": { "$ref": "#/$defs/action_score_separation" },
     "by_dataset": { "$ref": "#/$defs/stats_map" },
     "by_expected_shadow_action": { "$ref": "#/$defs/stats_map" },
     "action_transitions": { "$ref": "#/$defs/count_map" },
+    "grouped_holdout": { "$ref": "#/$defs/grouped_holdout" },
     "shadow_readout_closure": { "$ref": "#/$defs/authority_closure" },
     "qianxuesen_generalization": {
       "type": "array",
@@ -197,6 +203,138 @@
         "regression_count": { "type": "integer", "minimum": 0 },
         "safety_regression_count": { "type": "integer", "minimum": 0 },
         "baseline_to_optimized_action_change_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "action_score_separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_level", "score_level"],
+      "properties": {
+        "action_level": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "comparison_count",
+            "action_change_count",
+            "action_change_rate",
+            "action_improvement_count",
+            "action_regression_count",
+            "unchanged_action_count",
+            "baseline_expected_match_count",
+            "optimized_expected_match_count",
+            "expected_match_lift"
+          ],
+          "properties": {
+            "comparison_count": { "type": "integer", "minimum": 0 },
+            "action_change_count": { "type": "integer", "minimum": 0 },
+            "action_change_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+            "action_improvement_count": { "type": "integer", "minimum": 0 },
+            "action_regression_count": { "type": "integer", "minimum": 0 },
+            "unchanged_action_count": { "type": "integer", "minimum": 0 },
+            "baseline_expected_match_count": { "type": "integer", "minimum": 0 },
+            "optimized_expected_match_count": { "type": "integer", "minimum": 0 },
+            "expected_match_lift": { "type": "number" }
+          }
+        },
+        "score_level": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "total_delta_sum",
+            "action_change_delta_sum",
+            "same_action_delta_sum",
+            "action_change_avg_delta",
+            "same_action_avg_delta",
+            "action_change_delta_share",
+            "same_action_delta_share",
+            "same_action_improved_count",
+            "score_only_note"
+          ],
+          "properties": {
+            "total_delta_sum": { "type": "number" },
+            "action_change_delta_sum": { "type": "number" },
+            "same_action_delta_sum": { "type": "number" },
+            "action_change_avg_delta": { "type": "number" },
+            "same_action_avg_delta": { "type": "number" },
+            "action_change_delta_share": { "type": "number" },
+            "same_action_delta_share": { "type": "number" },
+            "same_action_improved_count": { "type": "integer", "minimum": 0 },
+            "score_only_note": { "type": "string" }
+          }
+        }
+      }
+    },
+    "grouped_holdout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "independence_level", "group_keys", "conclusion", "families"],
+      "properties": {
+        "mode": { "type": "string", "const": "grouped_holdout_over_sanitized_batch" },
+        "independence_level": { "type": "string" },
+        "group_keys": { "$ref": "#/$defs/string_array" },
+        "conclusion": {
+          "type": "string",
+          "enum": ["grouped_holdout_passed_without_regression", "grouped_holdout_needs_review"]
+        },
+        "families": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/grouped_holdout_family" }
+        }
+      }
+    },
+    "grouped_holdout_family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "min_count",
+        "group_count",
+        "passed_group_count",
+        "failed_group_count",
+        "passed",
+        "groups"
+      ],
+      "properties": {
+        "family": { "type": "string" },
+        "min_count": { "type": "integer", "minimum": 1 },
+        "group_count": { "type": "integer", "minimum": 0 },
+        "passed_group_count": { "type": "integer", "minimum": 0 },
+        "failed_group_count": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "boolean" },
+        "groups": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/grouped_holdout_group" }
+        }
+      }
+    },
+    "grouped_holdout_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family",
+        "group_id",
+        "count",
+        "avg_delta",
+        "baseline_expected_match_rate",
+        "optimized_expected_match_rate",
+        "expected_match_lift",
+        "regression_count",
+        "safety_regression_count",
+        "action_change_count",
+        "passed"
+      ],
+      "properties": {
+        "family": { "type": "string" },
+        "group_id": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 },
+        "avg_delta": { "type": "number" },
+        "baseline_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "optimized_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "expected_match_lift": { "type": "number" },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "action_change_count": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "boolean" }
       }
     },
     "authority_closure": {

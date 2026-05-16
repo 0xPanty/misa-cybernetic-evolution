@@ -1188,3 +1188,62 @@ The final comparison path is no longer hand-built. Future windows can rerun the
 same command and check the same schema before making closeout or GitHub
 decisions.
 ```
+
+## Pro Review Follow-up Addendum 2026-05-16
+
+Pro review recommended keeping the optimization after small verification fixes:
+align the final comparison to the current branch tip, separate action-level
+improvement from score-level lift, and add a stronger grouped holdout.
+
+Updated formal report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T03-00-00-000Z-branch-tip-grouped-holdout/external-trajectory-final-comparison.json
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-final-comparison.json
+```
+
+Branch-tip alignment:
+
+```text
+optimized_commit=d4b8f577918721618307261efaa729a2366f45da
+branch_tip_aligned=true
+```
+
+Action-level readout:
+
+```text
+action_change_count=223
+action_improvement_count=223
+action_regression_count=0
+unchanged_action_count=644
+baseline_expected_match_count=644
+optimized_expected_match_count=867
+```
+
+Score-level readout:
+
+```text
+total_delta_sum=74.899
+action_change_delta_sum=29.133
+same_action_delta_sum=45.766
+action_change_delta_share=0.389
+same_action_delta_share=0.611
+```
+
+Grouped holdout:
+
+```text
+conclusion=grouped_holdout_passed_without_regression
+dataset groups: 6/6 passed
+expected_shadow_action groups: 5/5 passed
+issue_kind groups with min_count=5: 10/10 passed
+```
+
+Boundary:
+
+```text
+No new alpha gates were promoted.
+No parameter sweep expansion was added.
+No route/winner authority was added.
+No production effect, Zilliz write, embedding, external API call, or LLM call was added.
+```

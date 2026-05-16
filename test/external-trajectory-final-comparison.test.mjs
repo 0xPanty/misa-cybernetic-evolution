@@ -174,20 +174,25 @@ test("external trajectory final comparison quantifies optimized lift without aut
     sideBySide: sideBySideFixture(),
     alpha: alphaFixture(),
     baselineCommit: "3e79083",
-    optimizedCommit: "bf844f9",
+    optimizedCommit: "HEAD",
     now: new Date("2026-05-16T02:20:00Z")
   });
 
   assert.equal(result.mode, "external-trajectory-final-comparison");
   assert.equal(result.ok, true);
   assert.equal(result.baseline.commit, "3e79083");
-  assert.equal(result.optimized.commit, "bf844f9");
+  assert.equal(result.optimized.branch_tip_aligned, true);
+  assert.ok(result.optimized.commit);
   assert.equal(result.optimized.selected_profile, "noise_tolerant_pushback_strict_v1");
   assert.equal(result.overall.count, 3);
   assert.ok(result.overall.optimized_avg_score > result.overall.baseline_avg_score);
   assert.equal(result.overall.regression_count, 0);
   assert.equal(result.overall.safety_regression_count, 0);
   assert.equal(result.overall.baseline_to_optimized_action_change_count, 2);
+  assert.equal(result.action_score_separation.action_level.action_improvement_count, 2);
+  assert.equal(result.action_score_separation.action_level.action_regression_count, 0);
+  assert.equal(result.action_score_separation.score_level.same_action_improved_count, 1);
+  assert.equal(result.grouped_holdout.conclusion, "grouped_holdout_passed_without_regression");
   assert.equal(result.shadow_readout_closure.action_change_count, 0);
   assert.equal(result.shadow_readout_closure.route_authority_changed, false);
   assert.equal(result.shadow_readout_closure.winner_authority_changed, false);
@@ -207,7 +212,7 @@ test("external trajectory final comparison validates against schema", async () =
     sideBySide: sideBySideFixture(),
     alpha: alphaFixture(),
     baselineCommit: "3e79083",
-    optimizedCommit: "bf844f9",
+    optimizedCommit: "HEAD",
     now: new Date("2026-05-16T02:20:00Z")
   });
   const validation = await validateJsonData({
@@ -226,7 +231,7 @@ test("external trajectory final comparison writes local reports only", async () 
       sideBySide: sideBySideFixture(),
       alpha: alphaFixture(),
       baselineCommit: "3e79083",
-      optimizedCommit: "bf844f9",
+      optimizedCommit: "HEAD",
       now: new Date("2026-05-16T02:20:00Z")
     });
     const written = await writeExternalTrajectoryFinalComparisonArtifacts({

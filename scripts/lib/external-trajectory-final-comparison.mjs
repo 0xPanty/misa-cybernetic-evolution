@@ -1,10 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const DEFAULT_NOW = new Date("2026-05-16T00:00:00Z");
 const DEFAULT_BASELINE_REF = "origin/codex/local-vector-store-adapter";
 const DEFAULT_BASELINE_COMMIT = "3e79083";
 const DEFAULT_OPTIMIZED_REF = "codex/local-vector-store-adapter";
+const execFileAsync = promisify(execFile);
 
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -49,6 +52,20 @@ async function fileExists(filePath) {
   } catch {
     return false;
   }
+}
+
+async function gitCommit(repoRoot, ref) {
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", ref], { cwd: repoRoot });
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
+function commitAligned(commit, branchTipCommit) {
+  if (!commit || !branchTipCommit) return false;
+  return branchTipCommit.startsWith(commit) || commit.startsWith(branchTipCommit);
 }
 
 function resolvePath(repoRoot, maybePath) {
@@ -115,6 +132,114 @@ function groupedStats(comparisons, selector) {
 
 function actionTransitions(comparisons) {
   return countBy(comparisons, (item) => `${item.baseline?.action ?? "unknown"} -> ${item.calibrated?.action ?? "unknown"}`);
+}
+
+function sum(values) {
+  return round(values.reduce((total, value) => total + value, 0));
+}
+
+function actionScoreSeparation(comparisons) {
+  const actionChanged = comparisons.filter((item) => item.baseline?.action !== item.calibrated?.action);
+  const sameAction = comparisons.filter((item) => item.baseline?.action === item.calibrated?.action);
+  const actionImproved = comparisons.filter((item) => (
+    item.baseline?.action_matches_expected === false
+    && item.calibrated?.action_matches_expected === true
+  ));
+  const actionRegressed = comparisons.filter((item) => (
+    item.baseline?.action_matches_expected === true
+    && item.calibrated?.action_matches_expected === false
+  ));
+  const totalDelta = sum(comparisons.map((item) => item.delta ?? 0));
+  const actionChangeDelta = sum(actionChanged.map((item) => item.delta ?? 0));
+  const sameActionDelta = sum(sameAction.map((item) => item.delta ?? 0));
+
+  return {
+    action_level: {
+      comparison_count: comparisons.length,
+      action_change_count: actionChanged.length,
+      action_change_rate: rate(actionChanged.length, comparisons.length),
+      action_improvement_count: actionImproved.length,
+      action_regression_count: actionRegressed.length,
+      unchanged_action_count: sameAction.length,
+      baseline_expected_match_count: comparisons.filter((item) => item.baseline?.action_matches_expected).length,
+      optimized_expected_match_count: comparisons.filter((item) => item.calibrated?.action_matches_expected).length,
+      expected_match_lift: comparisonStats(comparisons).expected_match_lift
+    },
+    score_level: {
+      total_delta_sum: totalDelta,
+      action_change_delta_sum: actionChangeDelta,
+      same_action_delta_sum: sameActionDelta,
+      action_change_avg_delta: avg(actionChanged.map((item) => item.delta ?? 0)),
+      same_action_avg_delta: avg(sameAction.map((item) => item.delta ?? 0)),
+      action_change_delta_share: totalDelta ? round(actionChangeDelta / totalDelta) : 0,
+      same_action_delta_share: totalDelta ? round(sameActionDelta / totalDelta) : 0,
+      same_action_improved_count: sameAction.filter((item) => item.improved).length,
+      score_only_note: "Same-action lift is reported separately because it can reflect score calibration rather than behavior change."
+    }
+  };
+}
+
+function groupsFor(comparisons, selector) {
+  const buckets = new Map();
+  for (const comparison of comparisons) {
+    const values = selector(comparison).filter(Boolean);
+    for (const value of values.length ? values : ["none"]) {
+      if (!buckets.has(value)) buckets.set(value, []);
+      buckets.get(value).push(comparison);
+    }
+  }
+  return [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b));
+}
+
+function groupedHoldoutFamily(comparisons, family, selector, { minCount = 1 } = {}) {
+  const groups = groupsFor(comparisons, selector)
+    .filter(([, items]) => items.length >= minCount)
+    .map(([group_id, items]) => {
+      const stats = comparisonStats(items);
+      return {
+        family,
+        group_id,
+        count: items.length,
+        avg_delta: stats.avg_delta,
+        baseline_expected_match_rate: stats.baseline_expected_match_rate,
+        optimized_expected_match_rate: stats.optimized_expected_match_rate,
+        expected_match_lift: stats.expected_match_lift,
+        regression_count: stats.regression_count,
+        safety_regression_count: stats.safety_regression_count,
+        action_change_count: stats.baseline_to_optimized_action_change_count,
+        passed: stats.avg_delta >= 0
+          && stats.regression_count === 0
+          && stats.safety_regression_count === 0
+          && stats.optimized_expected_match_rate >= stats.baseline_expected_match_rate
+      };
+    });
+
+  return {
+    family,
+    min_count: minCount,
+    group_count: groups.length,
+    passed_group_count: groups.filter((group) => group.passed).length,
+    failed_group_count: groups.filter((group) => !group.passed).length,
+    passed: groups.length === 0 || groups.every((group) => group.passed),
+    groups
+  };
+}
+
+function groupedHoldout(comparisons) {
+  const families = [
+    groupedHoldoutFamily(comparisons, "dataset", (item) => [item.dataset ?? "unknown"]),
+    groupedHoldoutFamily(comparisons, "expected_shadow_action", (item) => [item.expected_shadow_action ?? "unknown"]),
+    groupedHoldoutFamily(comparisons, "issue_kind", (item) => item.issue_kinds ?? [], { minCount: 5 })
+  ];
+  return {
+    mode: "grouped_holdout_over_sanitized_batch",
+    independence_level: "stronger_than_hash_split_but_not_external_holdout",
+    group_keys: ["dataset", "expected_shadow_action", "issue_kind_min_count_5"],
+    conclusion: families.every((family) => family.passed)
+      ? "grouped_holdout_passed_without_regression"
+      : "grouped_holdout_needs_review",
+    families
+  };
 }
 
 function defaultPolicyClosure() {
@@ -191,6 +316,17 @@ function buildChecks(result) {
       holdout_passed: result.side_by_side_input.holdout_passed
     },
     {
+      name: "grouped holdout passed on available sanitized groups",
+      ok: result.grouped_holdout.conclusion === "grouped_holdout_passed_without_regression",
+      conclusion: result.grouped_holdout.conclusion
+    },
+    {
+      name: "optimized commit is aligned with current branch tip",
+      ok: result.optimized.branch_tip_aligned === true,
+      optimized_commit: result.optimized.commit,
+      branch_tip_commit: result.optimized.branch_tip_commit
+    },
+    {
       name: "shadow readout changed no authority",
       ok: result.shadow_readout_closure.action_change_count === 0
         && result.shadow_readout_closure.route_authority_changed === false
@@ -230,6 +366,10 @@ export async function runExternalTrajectoryFinalComparison({
   optimizedRef = DEFAULT_OPTIMIZED_REF,
   optimizedCommit = "HEAD"
 } = {}) {
+  const branchTipCommit = await gitCommit(repoRoot, "HEAD");
+  const resolvedOptimizedCommit = optimizedCommit === "HEAD"
+    ? branchTipCommit ?? optimizedCommit
+    : optimizedCommit;
   const sideBySidePath = sideBySideReportPath
     ? resolvePath(repoRoot, sideBySideReportPath)
     : await latestReport({
@@ -263,7 +403,9 @@ export async function runExternalTrajectoryFinalComparison({
     },
     optimized: {
       ref: optimizedRef,
-      commit: optimizedCommit,
+      commit: resolvedOptimizedCommit,
+      branch_tip_commit: branchTipCommit,
+      branch_tip_aligned: commitAligned(resolvedOptimizedCommit, branchTipCommit),
       behavior: "optimized_calibrated_shadow_action_and_score",
       selected_profile: sideBySideData.parameter_sweep?.selected_profile_id
         ?? sideBySideData.calibration_draft?.parameter_profile_id
@@ -281,9 +423,11 @@ export async function runExternalTrajectoryFinalComparison({
       shadow_policy_readout_conclusion: sideBySideData.shadow_policy_readout?.conclusion ?? null
     },
     overall: comparisonStats(comparisons),
+    action_score_separation: actionScoreSeparation(comparisons),
     by_dataset: groupedStats(comparisons, (item) => item.dataset ?? "unknown"),
     by_expected_shadow_action: groupedStats(comparisons, (item) => item.expected_shadow_action ?? "unknown"),
     action_transitions: actionTransitions(comparisons),
+    grouped_holdout: groupedHoldout(comparisons),
     shadow_readout_closure: closure,
     qianxuesen_generalization: qianxuesenGeneralization(alphaData),
     boundaries: {
@@ -302,7 +446,9 @@ export async function runExternalTrajectoryFinalComparison({
     },
     warnings: [
       "This is a local shadow-only comparison report, not production route or winner authority.",
-      "The GitHub baseline predates the external-trajectory harness, so baseline behavior is measured through the current neutral comparison layer."
+      "The GitHub baseline predates the external-trajectory harness, so baseline behavior is measured through the current neutral comparison layer.",
+      "Expected-match lift is policy-conformance evidence, not an independent external judge.",
+      "Same-action score lift is separated from action-level lift to avoid overstating behavior change."
     ]
   };
 
@@ -322,6 +468,8 @@ export function renderExternalTrajectoryFinalComparisonMarkdown(result) {
     `- created_at: ${result.created_at}`,
     `- baseline: ${result.baseline.ref}@${result.baseline.commit}`,
     `- optimized: ${result.optimized.ref}@${result.optimized.commit}`,
+    `- branch_tip_commit: ${result.optimized.branch_tip_commit}`,
+    `- branch_tip_aligned: ${result.optimized.branch_tip_aligned}`,
     `- selected_profile: ${result.optimized.selected_profile}`,
     `- samples: ${result.overall.count}`,
     `- baseline_avg_score: ${result.overall.baseline_avg_score}`,
@@ -347,6 +495,28 @@ export function renderExternalTrajectoryFinalComparisonMarkdown(result) {
   lines.push("", "## Expected Action Result", "");
   for (const [action, stats] of Object.entries(result.by_expected_shadow_action)) {
     lines.push(`- ${action}: n=${stats.count}, delta=${stats.avg_delta}, match_lift=${stats.expected_match_lift}, action_changes=${stats.baseline_to_optimized_action_change_count}`);
+  }
+
+  lines.push("", "## Action And Score Separation", "");
+  lines.push(
+    `- action_change_count: ${result.action_score_separation.action_level.action_change_count}`,
+    `- action_improvement_count: ${result.action_score_separation.action_level.action_improvement_count}`,
+    `- action_regression_count: ${result.action_score_separation.action_level.action_regression_count}`,
+    `- unchanged_action_count: ${result.action_score_separation.action_level.unchanged_action_count}`,
+    `- same_action_avg_delta: ${result.action_score_separation.score_level.same_action_avg_delta}`,
+    `- action_change_avg_delta: ${result.action_score_separation.score_level.action_change_avg_delta}`,
+    `- same_action_delta_share: ${result.action_score_separation.score_level.same_action_delta_share}`,
+    `- action_change_delta_share: ${result.action_score_separation.score_level.action_change_delta_share}`
+  );
+
+  lines.push("", "## Grouped Holdout", "");
+  lines.push(
+    `- mode: ${result.grouped_holdout.mode}`,
+    `- independence_level: ${result.grouped_holdout.independence_level}`,
+    `- conclusion: ${result.grouped_holdout.conclusion}`
+  );
+  for (const family of result.grouped_holdout.families) {
+    lines.push(`- ${family.family}: groups=${family.group_count}, passed=${family.passed_group_count}, failed=${family.failed_group_count}, min_count=${family.min_count}`);
   }
 
   lines.push("", "## Qianxuesen Generalization", "");

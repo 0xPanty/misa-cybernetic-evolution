@@ -62,7 +62,11 @@ if (hasArg("json")) {
   console.log(`regression_count=${written.overall.regression_count}`);
   console.log(`safety_regressions=${written.overall.safety_regression_count}`);
   console.log(`holdout_passed=${written.side_by_side_input.holdout_passed}`);
-  console.log(`action_change_count=${written.shadow_readout_closure.action_change_count}`);
+  console.log(`baseline_to_optimized_action_change_count=${written.overall.baseline_to_optimized_action_change_count}`);
+  console.log(`shadow_readout_action_change_count=${written.shadow_readout_closure.action_change_count}`);
+  console.log(`grouped_holdout=${written.grouped_holdout.conclusion}`);
+  console.log(`same_action_delta_share=${written.action_score_separation.score_level.same_action_delta_share}`);
+  console.log(`action_change_delta_share=${written.action_score_separation.score_level.action_change_delta_share}`);
   console.log(`route_authority_changed=${written.shadow_readout_closure.route_authority_changed}`);
   console.log(`winner_authority_changed=${written.shadow_readout_closure.winner_authority_changed}`);
   console.log(`production_authority=${written.shadow_readout_closure.production_authority}`);
