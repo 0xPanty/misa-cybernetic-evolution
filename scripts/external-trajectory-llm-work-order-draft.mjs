@@ -25,12 +25,21 @@ function csvArg(name) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function jsonArrayArg(name) {
+  const value = readArg(name);
+  if (!value) return undefined;
+  const parsed = JSON.parse(value);
+  if (!Array.isArray(parsed)) throw new Error(`--${name} must be a JSON array`);
+  return parsed.map((item) => String(item));
+}
+
 const nowArg = readArg("now");
 const now = nowArg ? new Date(nowArg) : new Date();
 const dryRun = hasArg("dry-run") || hasArg("no-write");
 const maxSamples = readArg("max-samples");
 const repairAttempts = readArg("repair-attempts");
 const ollamaTimeoutMs = readArg("ollama-timeout-ms");
+const hermesDelegateTimeoutMs = readArg("hermes-delegate-timeout-ms");
 
 let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   onlineShadowReportPath: readArg("online-shadow-report"),
@@ -41,6 +50,9 @@ let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   model: readArg("model") ?? undefined,
   ollamaEndpoint: readArg("ollama-endpoint") ?? undefined,
   ollamaTimeoutMs: ollamaTimeoutMs ? Number(ollamaTimeoutMs) : undefined,
+  hermesDelegateCommand: readArg("hermes-delegate-command") ?? undefined,
+  hermesDelegateArgs: jsonArrayArg("hermes-delegate-args-json"),
+  hermesDelegateTimeoutMs: hermesDelegateTimeoutMs ? Number(hermesDelegateTimeoutMs) : undefined,
   repairAttempts: repairAttempts ? Number(repairAttempts) : undefined,
   now
 });

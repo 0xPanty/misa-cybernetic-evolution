@@ -1,10 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { runExternalTrajectoryOnlineShadowContract } from "./external-trajectory-online-shadow-contract.mjs";
 
 export const DEFAULT_LLM_DRAFT_MODEL = "qwen2.5:14b";
 export const DEFAULT_LLM_DRAFT_PROVIDER = "mock";
 export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
+export const DEFAULT_HERMES_DELEGATE_TIMEOUT_MS = 180000;
 
 const REQUIRED_FORBIDDEN_SCOPE = Object.freeze([
   "do_not_change_route",
@@ -395,6 +397,216 @@ function serializeProviderError(error) {
   };
 }
 
+function parseJsonArray(value) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function replaceArgPlaceholders(args, replacements) {
+  return (args ?? []).map((arg) => String(arg)
+    .replaceAll("{prompt}", replacements.prompt)
+    .replaceAll("{audit_packet_json}", JSON.stringify(replacements.auditPacket)));
+}
+
+function hermesDelegateCommandFromEnv() {
+  return process.env.HERMES_DELEGATE_COMMAND || "hermes";
+}
+
+function hermesDelegateArgsFromEnv() {
+  return parseJsonArray(process.env.HERMES_DELEGATE_ARGS_JSON);
+}
+
+export function buildHermesDelegateAuditPacket(packet) {
+  return {
+    schema_version: "misa.external_trajectory_l2_audit_packet.v1",
+    mode: "hermes-delegate-observe-only",
+    layer: "L2",
+    role: "no-context-auditor",
+    context_policy: {
+      inherit_chat_history: false,
+      parent_context_allowed: false,
+      allowed_context: "this audit packet only",
+      writes_memory: false,
+      writes_zilliz: false,
+      creates_embeddings: false
+    },
+    execution_policy: {
+      observe_only: true,
+      draft_only: true,
+      execute_work_order: false,
+      route_change_allowed: false,
+      winner_change_allowed: false,
+      memory_write_allowed: false,
+      zilliz_write_allowed: false,
+      embedding_creation_allowed: false,
+      vps_touch_allowed: false,
+      github_push_allowed: false,
+      public_publish_allowed: false
+    },
+    source: {
+      source_id: packet.source_id,
+      source_kind: packet.record.source_kind,
+      readout_family: packet.record.readout_family,
+      route_hint: packet.workOrder.route_hint,
+      severity: packet.ticket?.severity ?? null,
+      priority: packet.record.suggested_priority,
+      observed_signals: packet.record.observed_signals ?? [],
+      evidence_refs: packet.workOrder.evidence_refs ?? [],
+      source_class: packet.context.source_class,
+      relevant_files: packet.context.relevant_files,
+      context_anchors: packet.context.context_anchors,
+      task_focus: packet.context.task_focus,
+      allowed_verification_commands: packet.allowed_verification_commands
+    },
+    current_template_work_order: {
+      title: packet.workOrder.title,
+      status: packet.workOrder.status,
+      authority: packet.workOrder.authority,
+      review_tasks: packet.workOrder.review_tasks,
+      non_goals: packet.workOrder.non_goals
+    },
+    output_contract: {
+      required_fields: packet.output_contract.required_fields,
+      required_forbidden_scope: packet.output_contract.required_forbidden_scope,
+      min_concrete_tasks: 4,
+      weak_task_count_must_be: 0,
+      verification_commands_must_be_whitelisted: true
+    }
+  };
+}
+
+function promptForHermesDelegate(packet, { previousFailure } = {}) {
+  const auditPacket = buildHermesDelegateAuditPacket(packet);
+  const retryText = previousFailure
+    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.\n`
+    : "";
+
+  return `You are a fresh Hermes L2 no-context audit sub-agent.
+Use delegate_task if it is available; otherwise complete the same observe-only audit directly.
+Do not use any chat history, memory, Zilliz, embeddings, route/winner authority, VPS, GitHub push, public posting, or real work-order execution.
+Only use the AuditPacket below. Return JSON only, with exactly the draft shape requested by output_contract.${retryText}
+
+AuditPacket:
+${JSON.stringify(auditPacket, null, 2)}
+
+Return shape:
+{
+  "title": string,
+  "problem": string,
+  "evidence_refs": string[],
+  "concrete_tasks": string[],
+  "acceptance_criteria": string[],
+  "verification_commands": string[],
+  "forbidden_scope": string[],
+  "risk_notes": string[],
+  "stop_condition": string,
+  "llm_notes": string
+}`;
+}
+
+async function runHermesDelegateCommand({
+  command,
+  args,
+  stdinPayload,
+  repoRoot,
+  timeoutMs
+}) {
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    let stdout = "";
+    let stderr = "";
+    const child = spawn(command, args, {
+      cwd: repoRoot,
+      windowsHide: true,
+      stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        MISA_CYBERNETIC_OBSERVE_ONLY: "1",
+        MISA_CYBERNETIC_NO_WRITE: "1",
+        HERMES_DELEGATE_NO_CONTEXT: "1",
+        HERMES_DELEGATE_OBSERVE_ONLY: "1"
+      }
+    });
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+
+    let timeout = null;
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      timeout = setTimeout(() => {
+        const error = new Error(`hermes-delegate timeout after ${timeoutMs}ms`);
+        error.code = "hermes_delegate_timeout";
+        child.kill();
+        fail(error);
+      }, timeoutMs);
+    }
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString("utf8");
+    });
+    child.on("error", (error) => {
+      if (timeout) clearTimeout(timeout);
+      error.code = error.code ?? "hermes_delegate_unavailable";
+      fail(error);
+    });
+    child.on("close", (code, signal) => {
+      if (timeout) clearTimeout(timeout);
+      if (settled) return;
+      if (code !== 0) {
+        const error = new Error(`hermes-delegate exited with code ${code ?? signal}: ${stderr || stdout}`.slice(0, 500));
+        error.code = "hermes_delegate_failed";
+        fail(error);
+        return;
+      }
+      settled = true;
+      resolve(stdout);
+    });
+
+    child.stdin.end(`${JSON.stringify(stdinPayload, null, 2)}\n`);
+  });
+}
+
+async function callHermesDelegate({
+  packet,
+  repoRoot,
+  command,
+  args,
+  timeoutMs,
+  previousFailure
+}) {
+  const auditPacket = buildHermesDelegateAuditPacket(packet);
+  const prompt = promptForHermesDelegate(packet, { previousFailure });
+  const effectiveCommand = command ?? hermesDelegateCommandFromEnv();
+  const configuredArgs = args ?? hermesDelegateArgsFromEnv();
+  const effectiveArgs = configuredArgs
+    ? replaceArgPlaceholders(configuredArgs, { prompt, auditPacket })
+    : ["chat", "--toolsets", "delegation", "-q", prompt];
+  return await runHermesDelegateCommand({
+    command: effectiveCommand,
+    args: effectiveArgs,
+    repoRoot,
+    timeoutMs,
+    stdinPayload: {
+      schema_version: "misa.hermes_delegate_bridge_input.v1",
+      provider: "hermes-delegate",
+      mode: "l2_no_context_observe_only",
+      prompt,
+      audit_packet: auditPacket
+    }
+  });
+}
+
 async function readOllamaStream(body, { onReader } = {}) {
   const decoder = new TextDecoder();
   const reader = body.getReader();
@@ -512,7 +724,16 @@ function deterministicDraftForPacket(packet) {
   };
 }
 
-async function callDraftProvider({ packet, provider, model, ollamaEndpoint, ollamaTimeoutMs, prompt, previousFailure }) {
+async function callDraftProvider({
+  packet,
+  provider,
+  model,
+  ollamaEndpoint,
+  ollamaTimeoutMs,
+  prompt,
+  hermesDelegateOptions = {},
+  previousFailure
+}) {
   if (provider === "mock") {
     return {
       raw: JSON.stringify(deterministicDraftForPacket(packet)),
@@ -528,6 +749,28 @@ async function callDraftProvider({ packet, provider, model, ollamaEndpoint, olla
           model,
           endpoint: ollamaEndpoint,
           timeoutMs: ollamaTimeoutMs
+        }),
+        llm_api_calls: 1,
+        provider_error: null
+      };
+    } catch (error) {
+      return {
+        raw: "",
+        llm_api_calls: 1,
+        provider_error: serializeProviderError(error)
+      };
+    }
+  }
+  if (provider === "hermes-delegate") {
+    try {
+      return {
+        raw: await callHermesDelegate({
+          packet,
+          repoRoot: hermesDelegateOptions.repoRoot ?? process.cwd(),
+          command: hermesDelegateOptions.command,
+          args: hermesDelegateOptions.args,
+          timeoutMs: hermesDelegateOptions.timeoutMs ?? DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
+          previousFailure
         }),
         llm_api_calls: 1,
         provider_error: null
@@ -709,10 +952,14 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
 
 async function draftOnePacket({
   packet,
+  repoRoot,
   provider,
   model,
   ollamaEndpoint,
   ollamaTimeoutMs,
+  hermesDelegateCommand,
+  hermesDelegateArgs,
+  hermesDelegateTimeoutMs,
   repairAttempts
 }) {
   let previousFailure = null;
@@ -730,6 +977,14 @@ async function draftOnePacket({
       model,
       ollamaEndpoint,
       ollamaTimeoutMs,
+      hermesDelegateOptions: provider === "hermes-delegate"
+        ? {
+          repoRoot,
+          command: hermesDelegateCommand,
+          args: hermesDelegateArgs,
+          timeoutMs: hermesDelegateTimeoutMs
+        }
+        : undefined,
       previousFailure
     });
     raw = providerResult.raw;
@@ -787,6 +1042,9 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   model = DEFAULT_LLM_DRAFT_MODEL,
   ollamaEndpoint = "http://127.0.0.1:11434/api/generate",
   ollamaTimeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
+  hermesDelegateCommand,
+  hermesDelegateArgs,
+  hermesDelegateTimeoutMs = DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
   repairAttempts = 1,
   now = new Date()
 } = {}) {
@@ -809,10 +1067,14 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   for (const packet of packets) {
     results.push(await draftOnePacket({
       packet,
+      repoRoot,
       provider,
       model,
       ollamaEndpoint,
       ollamaTimeoutMs,
+      hermesDelegateCommand,
+      hermesDelegateArgs,
+      hermesDelegateTimeoutMs,
       repairAttempts
     }));
   }

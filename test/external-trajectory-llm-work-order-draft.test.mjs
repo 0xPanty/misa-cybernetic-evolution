@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { test } from "node:test";
 import { buildExternalTrajectoryOnlineShadowContractReport } from "../scripts/lib/external-trajectory-online-shadow-contract.mjs";
 import {
+  buildHermesDelegateAuditPacket,
   buildExternalTrajectoryLlmWorkOrderDraftReport,
   buildLlmWorkOrderDraftingPackets,
   gateLlmWorkOrderDraft
@@ -85,6 +89,53 @@ function onlineShadowFixture() {
   });
 }
 
+async function writeHermesDelegateStub(body) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "misa-hermes-delegate-stub-"));
+  const stubPath = path.join(dir, "delegate-stub.mjs");
+  await fs.writeFile(stubPath, body, "utf8");
+  return stubPath;
+}
+
+const passingHermesDelegateStub = `
+let stdin = "";
+process.stdin.setEncoding("utf8");
+for await (const chunk of process.stdin) stdin += chunk;
+const input = JSON.parse(stdin);
+const audit = input.audit_packet;
+const source = audit.source;
+const fileA = source.relevant_files[0];
+const fileB = source.relevant_files[1] ?? fileA;
+const signal = source.observed_signals[0] ?? source.readout_family;
+const commandA = source.allowed_verification_commands[0];
+const commandB = source.allowed_verification_commands.includes("npm run precheck")
+  ? "npm run precheck"
+  : source.allowed_verification_commands[1] ?? commandA;
+
+process.stdout.write(JSON.stringify({
+  title: source.source_class + ": " + source.source_id + " L2 observe-only audit",
+  problem: source.source_id + " carries " + signal + " evidence; L2 should draft only and keep route/winner/memory authority blocked.",
+  evidence_refs: source.evidence_refs,
+  concrete_tasks: [
+    "In " + fileA + ", check source_id=" + source.source_id + " signal=" + signal + " field=execution_policy.route_change_allowed; expected result route_change_allowed=false and winner_change_allowed=false.",
+    "In " + fileB + ", verify evidence_refs=" + source.evidence_refs.join(", ") + " field=persistent_memory_write_allowed; expected result persistent_memory_write_allowed=false and zilliz_write_allowed=false.",
+    "In " + fileA + ", inspect source_class=" + source.source_class + " and readout_family=" + source.readout_family + "; expected result authority remains hint_only/suggestion_only, not execution authority.",
+    "In " + fileB + ", confirm allowed_verification_commands contains only whitelisted local commands; expected result no task executes a real work order, VPS action, GitHub push, memory write, Zilliz write, or embedding creation."
+  ],
+  acceptance_criteria: [
+    source.source_id + " preserves every original evidence ref and keeps route_change_allowed=false.",
+    "The L2 draft uses only whitelisted verification commands and keeps execute_work_order=false."
+  ],
+  verification_commands: [commandA, commandB],
+  forbidden_scope: audit.output_contract.required_forbidden_scope,
+  risk_notes: [
+    "Hermes L2 receives only this audit packet and must not inherit parent chat history.",
+    "Any output that changes route, winner, memory, Zilliz, embedding, VPS, GitHub, public publish, or execution authority fails the gate."
+  ],
+  stop_condition: "Stop after observe-only L2 draft validation; do not execute the work order.",
+  llm_notes: "Stubbed Hermes delegate bridge returned a direct JSON draft for provider integration tests."
+}));
+`;
+
 test("LLM work-order packets include context anchors and command whitelist", () => {
   const onlineShadow = onlineShadowFixture();
   const packets = buildLlmWorkOrderDraftingPackets({
@@ -99,6 +150,26 @@ test("LLM work-order packets include context anchors and command whitelist", () 
   assert.ok(packets[0].context.relevant_files.includes("test/curiosity-signal-gate.test.mjs"));
   assert.ok(packets[0].allowed_verification_commands.includes("npm test"));
   assert.ok(packets[0].allowed_verification_commands.some((command) => command.startsWith("npm run external:online-shadow")));
+});
+
+test("Hermes delegate audit packet is no-context observe-only", () => {
+  const [packet] = buildLlmWorkOrderDraftingPackets({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"]
+  });
+  const auditPacket = buildHermesDelegateAuditPacket(packet);
+
+  assert.equal(auditPacket.layer, "L2");
+  assert.equal(auditPacket.role, "no-context-auditor");
+  assert.equal(auditPacket.context_policy.inherit_chat_history, false);
+  assert.equal(auditPacket.execution_policy.observe_only, true);
+  assert.equal(auditPacket.execution_policy.route_change_allowed, false);
+  assert.equal(auditPacket.execution_policy.winner_change_allowed, false);
+  assert.equal(auditPacket.execution_policy.memory_write_allowed, false);
+  assert.equal(auditPacket.execution_policy.zilliz_write_allowed, false);
+  assert.equal(auditPacket.execution_policy.embedding_creation_allowed, false);
+  assert.equal(auditPacket.execution_policy.execute_work_order, false);
 });
 
 test("LLM work-order gate rejects fake commands and generic tasks", () => {
@@ -169,6 +240,38 @@ test("LLM work-order draft report passes with context-specific mock provider", a
   )));
 });
 
+test("Hermes delegate provider passes through a local JSON bridge stub", async () => {
+  const stubPath = await writeHermesDelegateStub(passingHermesDelegateStub);
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: "hermes-delegate",
+    hermesDelegateCommand: process.execPath,
+    hermesDelegateArgs: [stubPath],
+    maxSamples: 1,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.provider, "hermes-delegate");
+  assert.equal(result.summary.sample_count, 1);
+  assert.equal(result.summary.passed_gate_count, 1);
+  assert.equal(result.summary.llm_api_calls, 1);
+  assert.equal(result.summary.memory_writes, 0);
+  assert.equal(result.summary.zilliz_writes, 0);
+  assert.equal(result.summary.embedding_creations, 0);
+  assert.equal(result.summary.route_changes, 0);
+  assert.equal(result.summary.winner_changes, 0);
+  assert.equal(result.safety.executes_work_orders, false);
+  assert.equal(result.safety.writes_memory, false);
+  assert.equal(result.safety.writes_zilliz, false);
+  assert.equal(result.safety.creates_embeddings, false);
+  assert.equal(result.safety.changes_route, false);
+  assert.equal(result.safety.changes_winner, false);
+  assert.equal(result.results[0].gate.checks.weakTaskCount, 0);
+});
+
 test("LLM work-order draft report contains provider failures instead of throwing", async () => {
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),
@@ -193,4 +296,44 @@ test("LLM work-order draft report contains provider failures instead of throwing
   assert.ok(result.results[0].gate.violations.includes("draft_missing"));
   assert.equal(result.safety.executes_work_orders, false);
   assert.equal(result.safety.writes_memory, false);
+});
+
+test("Hermes delegate unavailable and malformed output become failed gates", async () => {
+  const missingResult = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: "hermes-delegate",
+    hermesDelegateCommand: path.join(os.tmpdir(), "missing-hermes-delegate-command"),
+    hermesDelegateArgs: [],
+    repairAttempts: 0,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(missingResult.ok, false);
+  assert.equal(missingResult.summary.failed_gate_count, 1);
+  assert.equal(missingResult.summary.provider_error_count, 1);
+  assert.ok(missingResult.results[0].gate.violations.includes("provider_call_failed"));
+  assert.equal(missingResult.safety.executes_work_orders, false);
+  assert.equal(missingResult.safety.writes_memory, false);
+
+  const badJsonStub = await writeHermesDelegateStub("process.stdout.write('not json');\n");
+  const malformedResult = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: "hermes-delegate",
+    hermesDelegateCommand: process.execPath,
+    hermesDelegateArgs: [badJsonStub],
+    repairAttempts: 0,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(malformedResult.ok, false);
+  assert.equal(malformedResult.summary.failed_gate_count, 1);
+  assert.equal(malformedResult.summary.provider_error_count, 0);
+  assert.ok(malformedResult.results[0].gate.violations.includes("json_parse_failed"));
+  assert.ok(malformedResult.results[0].gate.violations.includes("draft_missing"));
+  assert.equal(malformedResult.safety.executes_work_orders, false);
+  assert.equal(malformedResult.safety.writes_zilliz, false);
 });
