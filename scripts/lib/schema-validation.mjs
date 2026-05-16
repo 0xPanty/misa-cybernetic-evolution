@@ -48,7 +48,8 @@ const SCHEMA_ONLY_FILES = [
   "schemas/external_work_order_sample.schema.json",
   "schemas/external_trajectory_adaptation.schema.json",
   "schemas/external_trajectory_side_by_side.schema.json",
-  "schemas/external_trajectory_alpha.schema.json"
+  "schemas/external_trajectory_alpha.schema.json",
+  "schemas/external_trajectory_final_comparison.schema.json"
 ];
 
 async function readJson(filePath) {

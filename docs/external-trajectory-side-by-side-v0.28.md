@@ -1130,3 +1130,61 @@ The optimized profile wins on the full available batch without safety or
 authority regression. The comparison is local and shadow-only: it closes the
 calibration evidence loop, not production rollout.
 ```
+
+## Formal Final Comparison Command Addendum 2026-05-16
+
+The full-batch comparison is now reproducible through the repo command
+`npm run external:compare`.
+
+Formal report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T02-20-00-000Z-formal-github-baseline-vs-optimized/external-trajectory-final-comparison.json
+```
+
+Code surface:
+
+```text
+scripts/external-trajectory-final-comparison.mjs
+scripts/lib/external-trajectory-final-comparison.mjs
+schemas/external_trajectory_final_comparison.schema.json
+test/external-trajectory-final-comparison.test.mjs
+```
+
+Formal rerun:
+
+```text
+samples=867
+baseline_avg_score=0.723
+optimized_avg_score=0.809
+avg_delta=+0.086
+baseline_expected_match_rate=0.743
+optimized_expected_match_rate=1.000
+expected_match_lift=+0.257
+regression_count=0
+safety_regressions=0
+holdout_passed=true
+action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+```
+
+Boundary:
+
+```text
+zilliz_written=false
+embedding_created=false
+llm_api_calls=false
+external_api_calls=false
+vps_touched=false
+github_pushed=false
+```
+
+Plain interpretation:
+
+```text
+The final comparison path is no longer hand-built. Future windows can rerun the
+same command and check the same schema before making closeout or GitHub
+decisions.
+```

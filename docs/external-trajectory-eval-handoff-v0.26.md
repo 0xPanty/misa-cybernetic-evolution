@@ -1467,6 +1467,78 @@ This is still local/shadow-only evidence. It is strong enough to close the local
 calibration lane, but it is not production authority.
 ```
 
+## Formal Final Comparison Command Addendum 2026-05-16
+
+The final full-batch comparison is now a repo command instead of a one-off
+report script.
+
+New production-ready local command:
+
+```text
+npm run external:compare -- --side-by-side-report runs/external-trajectory-side-by-side/2026-05-16T01-10-00-000Z-qianxuesen-generalization-guard-readout/external-trajectory-side-by-side.json --alpha-report runs/external-trajectory-alpha/2026-05-16T01-00-00-000Z-qianxuesen-generalization-guard/external-trajectory-alpha.json --baseline-ref origin/codex/local-vector-store-adapter --baseline-commit 3e79083 --optimized-ref codex/local-vector-store-adapter --optimized-commit bf844f9 --now 2026-05-16T02:20:00.000Z --out-dir runs/external-trajectory-final-comparison/2026-05-16T02-20-00-000Z-formal-github-baseline-vs-optimized
+```
+
+New formal report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T02-20-00-000Z-formal-github-baseline-vs-optimized/external-trajectory-final-comparison.json
+runs/external-trajectory-final-comparison/2026-05-16T02-20-00-000Z-formal-github-baseline-vs-optimized/external-trajectory-final-comparison.md
+```
+
+Code and test surface:
+
+```text
+scripts/external-trajectory-final-comparison.mjs
+scripts/lib/external-trajectory-final-comparison.mjs
+schemas/external_trajectory_final_comparison.schema.json
+test/external-trajectory-final-comparison.test.mjs
+package script: external:compare
+```
+
+Formal rerun result:
+
+```text
+baseline_ref=origin/codex/local-vector-store-adapter
+baseline_commit=3e79083
+optimized_ref=codex/local-vector-store-adapter
+optimized_commit=bf844f9
+selected_profile=noise_tolerant_pushback_strict_v1
+samples=867
+baseline_avg_score=0.723
+optimized_avg_score=0.809
+avg_delta=+0.086
+baseline_expected_match_rate=0.743
+optimized_expected_match_rate=1.000
+expected_match_lift=+0.257
+regression_count=0
+safety_regressions=0
+holdout_passed=true
+action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+verdict=optimized_shadow_readout_beats_baseline_without_safety_or_authority_regression
+```
+
+Verification:
+
+```text
+node --test test/external-trajectory-final-comparison.test.mjs
+npm run validate:schemas
+generated final comparison validates against schemas/external_trajectory_final_comparison.schema.json
+```
+
+Plain interpretation:
+
+```text
+The root problem was not the alpha math anymore; the remaining weak point was
+that the final comparison was not a reusable repo path. It is now a small,
+schema-checked local command. The algorithm is intentionally simple: compare
+baseline action/score and optimized action/score on the same sanitized records,
+then fail closeout if any regression, safety regression, holdout failure, or
+authority/storage/provider boundary change appears.
+```
+
 ## Next Window Recovery Phrase 2026-05-16 After Full-Batch Comparison
 
 Use this exact recovery phrase:

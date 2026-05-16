@@ -38,6 +38,7 @@
     "external:command-stress": "node scripts/external-trajectory-command-stress.mjs",
     "external:side-by-side": "node scripts/external-trajectory-side-by-side.mjs",
     "external:alpha": "node scripts/external-trajectory-alpha.mjs",
+    "external:compare": "node scripts/external-trajectory-final-comparison.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",
     "vector-store:local": "node scripts/local-vector-store.mjs",

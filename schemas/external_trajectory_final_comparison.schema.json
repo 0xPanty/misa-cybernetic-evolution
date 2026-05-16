@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/external_trajectory_final_comparison.schema.json",
+  "title": "ExternalTrajectoryFinalComparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "comparison_scope",
+    "baseline",
+    "optimized",
+    "measurement_note",
+    "side_by_side_input",
+    "overall",
+    "by_dataset",
+    "by_expected_shadow_action",
+    "action_transitions",
+    "shadow_readout_closure",
+    "qianxuesen_generalization",
+    "boundaries",
+    "warnings",
+    "checks",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.external_trajectory_final_comparison.v1" },
+    "mode": { "type": "string", "const": "external-trajectory-final-comparison" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "comparison_scope": { "type": "string" },
+    "baseline": { "$ref": "#/$defs/comparison_anchor" },
+    "optimized": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "commit", "behavior", "selected_profile"],
+      "properties": {
+        "ref": { "type": "string" },
+        "commit": { "type": "string" },
+        "behavior": { "type": "string" },
+        "selected_profile": { "type": ["string", "null"] }
+      }
+    },
+    "measurement_note": { "type": "string" },
+    "side_by_side_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_path",
+        "alpha_report_path",
+        "sample_count",
+        "comparison_count",
+        "avg_delta",
+        "safety_regression_count",
+        "holdout_passed",
+        "shadow_policy_readout_conclusion"
+      ],
+      "properties": {
+        "report_path": { "type": ["string", "null"] },
+        "alpha_report_path": { "type": ["string", "null"] },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "avg_delta": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_passed": { "type": ["boolean", "null"] },
+        "shadow_policy_readout_conclusion": { "type": ["string", "null"] }
+      }
+    },
+    "overall": { "$ref": "#/$defs/comparison_stats" },
+    "by_dataset": { "$ref": "#/$defs/stats_map" },
+    "by_expected_shadow_action": { "$ref": "#/$defs/stats_map" },
+    "action_transitions": { "$ref": "#/$defs/count_map" },
+    "shadow_readout_closure": { "$ref": "#/$defs/authority_closure" },
+    "qianxuesen_generalization": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/qianxuesen_candidate" }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shadow_only",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "raw_external_content_persisted",
+        "persistent_memory_written",
+        "zilliz_written",
+        "embedding_created",
+        "llm_api_calls",
+        "external_api_calls",
+        "vps_touched",
+        "github_pushed"
+      ],
+      "properties": {
+        "shadow_only": { "type": "boolean", "const": true },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "raw_external_content_persisted": { "type": "boolean", "const": false },
+        "persistent_memory_written": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "boolean", "const": false },
+        "vps_touched": { "type": "boolean", "const": false },
+        "github_pushed": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": { "$ref": "#/$defs/string_array" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "ok"],
+        "properties": {
+          "name": { "type": "string" },
+          "ok": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "optimized_shadow_readout_beats_baseline_without_safety_or_authority_regression",
+        "not_ready_for_closeout"
+      ]
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_dir", "json_path", "markdown_path"],
+      "properties": {
+        "output_dir": { "type": "string" },
+        "json_path": { "type": "string" },
+        "markdown_path": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "comparison_anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "commit", "behavior"],
+      "properties": {
+        "ref": { "type": "string" },
+        "commit": { "type": "string" },
+        "behavior": { "type": "string" }
+      }
+    },
+    "count_map": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "stats_map": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/comparison_stats" }
+    },
+    "comparison_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "baseline_avg_score",
+        "optimized_avg_score",
+        "avg_delta",
+        "baseline_expected_match_count",
+        "optimized_expected_match_count",
+        "baseline_expected_match_rate",
+        "optimized_expected_match_rate",
+        "expected_match_lift",
+        "improved_count",
+        "unchanged_count",
+        "regression_count",
+        "safety_regression_count",
+        "baseline_to_optimized_action_change_count"
+      ],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "baseline_avg_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "optimized_avg_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "baseline_expected_match_count": { "type": "integer", "minimum": 0 },
+        "optimized_expected_match_count": { "type": "integer", "minimum": 0 },
+        "baseline_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "optimized_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "expected_match_lift": { "type": "number" },
+        "improved_count": { "type": "integer", "minimum": 0 },
+        "unchanged_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "baseline_to_optimized_action_change_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "authority_closure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "raw_external_content_persisted",
+        "persistent_memory_written",
+        "zilliz_written",
+        "embedding_created",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "raw_external_content_persisted": { "type": "boolean", "const": false },
+        "persistent_memory_written": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "boolean", "const": false }
+      }
+    },
+    "qianxuesen_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "decision",
+        "authority_scope",
+        "sample_count",
+        "avg_delta",
+        "expected_match_lift",
+        "safety_regression_count",
+        "regression_count",
+        "source_scope",
+        "generalization_status",
+        "holdout_passed",
+        "holdout_avg_delta",
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "decision": { "type": "string" },
+        "authority_scope": { "type": "string" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "avg_delta": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "source_scope": { "type": "string" },
+        "generalization_status": { "type": "string" },
+        "holdout_passed": { "type": ["boolean", "null"] },
+        "holdout_avg_delta": { "type": ["number", "null"] },
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    }
+  }
+}
