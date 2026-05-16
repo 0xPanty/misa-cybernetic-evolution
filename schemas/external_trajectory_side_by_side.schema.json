@@ -1,0 +1,597 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/external_trajectory_side_by_side.schema.json",
+  "title": "ExternalTrajectorySideBySide",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "input",
+    "calibration_draft",
+    "parameter_sweep",
+    "summary",
+    "shadow_policy_readout",
+    "comparisons",
+    "safety",
+    "warnings",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.external_trajectory_side_by_side.v1" },
+    "mode": { "type": "string", "const": "external-trajectory-side-by-side" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adaptation_report_path",
+        "alpha_report_path",
+        "adaptation_schema_version",
+        "adaptation_mode",
+        "baseline_commit",
+        "baseline_policy",
+        "sample_count",
+        "issue_count",
+        "raw_external_data_persisted"
+      ],
+      "properties": {
+        "adaptation_report_path": { "type": ["string", "null"] },
+        "alpha_report_path": { "type": ["string", "null"] },
+        "adaptation_schema_version": { "type": ["string", "null"] },
+        "adaptation_mode": { "type": ["string", "null"] },
+        "baseline_commit": { "type": ["string", "null"] },
+        "baseline_policy": { "type": ["string", "null"] },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "raw_external_data_persisted": { "type": "boolean", "const": false }
+      }
+    },
+    "calibration_draft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "parameter_profile_id", "status", "parameters", "rules", "blocked_outputs"],
+      "properties": {
+        "profile": { "type": "string" },
+        "parameter_profile_id": { "type": "string" },
+        "status": { "type": "string", "const": "draft_shadow_only" },
+        "parameters": { "$ref": "#/$defs/calibration_parameters" },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rule_id", "effect"],
+            "properties": {
+              "rule_id": { "type": "string" },
+              "effect": { "type": "string" }
+            }
+          }
+        },
+        "blocked_outputs": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "parameter_sweep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "candidate_count",
+        "selection_policy",
+        "requested_profile_id",
+        "recommended_profile_id",
+        "selected_profile_id",
+        "parameter_table",
+        "candidates"
+      ],
+      "properties": {
+        "enabled": { "type": "boolean", "const": true },
+        "candidate_count": { "type": "integer", "minimum": 1 },
+        "selection_policy": { "type": "string" },
+        "requested_profile_id": { "type": ["string", "null"] },
+        "recommended_profile_id": { "type": ["string", "null"] },
+        "selected_profile_id": { "type": ["string", "null"] },
+        "parameter_table": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/parameter_table_row" }
+        },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sweep_candidate" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_count",
+        "comparison_count",
+        "by_dataset",
+        "by_expected_shadow_action",
+        "by_calibrated_action",
+        "data_diagnostics",
+        "avg_baseline_score",
+        "avg_calibrated_score",
+        "avg_delta",
+        "min_delta",
+        "max_delta",
+        "improved_count",
+        "unchanged_count",
+        "regression_count",
+        "safety_regression_count",
+        "noise_false_positive_reduced_count",
+        "actual_risk_preserved_count",
+        "weak_proxy_downranked_count",
+        "pushback_mapped_count",
+        "blocked_coverage_issue_count",
+        "dev_holdout"
+      ],
+      "properties": {
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "by_dataset": { "$ref": "#/$defs/count_map" },
+        "by_expected_shadow_action": { "$ref": "#/$defs/count_map" },
+        "by_calibrated_action": { "$ref": "#/$defs/count_map" },
+        "data_diagnostics": { "$ref": "#/$defs/data_diagnostics" },
+        "avg_baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_calibrated_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "min_delta": { "type": "number" },
+        "max_delta": { "type": "number" },
+        "improved_count": { "type": "integer", "minimum": 0 },
+        "unchanged_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "const": 0 },
+        "noise_false_positive_reduced_count": { "type": "integer", "minimum": 0 },
+        "actual_risk_preserved_count": { "type": "integer", "minimum": 0 },
+        "weak_proxy_downranked_count": { "type": "integer", "minimum": 0 },
+        "pushback_mapped_count": { "type": "integer", "minimum": 0 },
+        "blocked_coverage_issue_count": { "type": "integer", "minimum": 0 },
+        "dev_holdout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dev", "holdout", "overfit_gap", "holdout_passed"],
+          "properties": {
+            "dev": { "$ref": "#/$defs/split_stats" },
+            "holdout": { "$ref": "#/$defs/split_stats" },
+            "overfit_gap": { "type": "number" },
+            "holdout_passed": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "comparisons": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/comparison" }
+    },
+    "shadow_policy_readout": { "$ref": "#/$defs/shadow_policy_readout" },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shadow_only",
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "writes_zilliz",
+        "creates_embeddings",
+        "persists_raw_external_data",
+        "calls_llm",
+        "calls_external_api",
+        "touches_vps",
+        "pushes_to_github",
+        "changes_route",
+        "changes_winner_authority"
+      ],
+      "properties": {
+        "shadow_only": { "type": "boolean", "const": true },
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "writes_zilliz": { "type": "boolean", "const": false },
+        "creates_embeddings": { "type": "boolean", "const": false },
+        "persists_raw_external_data": { "type": "boolean", "const": false },
+        "calls_llm": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false },
+        "pushes_to_github": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": { "$ref": "#/$defs/string_array" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "ok"],
+        "properties": {
+          "name": { "type": "string" },
+          "ok": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_dir", "json_path", "markdown_path"],
+      "properties": {
+        "output_dir": { "type": "string" },
+        "json_path": { "type": "string" },
+        "markdown_path": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "calibration_parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_risk_keyword_threshold",
+        "non_actual_noise_threshold",
+        "pushback_review_threshold",
+        "weak_proxy_policy",
+        "scores"
+      ],
+      "properties": {
+        "actual_risk_keyword_threshold": { "type": "integer", "minimum": 1 },
+        "non_actual_noise_threshold": { "type": "integer", "minimum": 1 },
+        "pushback_review_threshold": { "type": "integer", "minimum": 1 },
+        "weak_proxy_policy": { "type": "string", "enum": ["holdout_unresolved", "accept_adopted"] },
+        "scores": {
+          "type": "object",
+          "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "parameter_table_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parameter_profile_id", "label", "intent", "parameters"],
+      "properties": {
+        "parameter_profile_id": { "type": "string" },
+        "label": { "type": "string" },
+        "intent": { "type": "string" },
+        "parameters": { "$ref": "#/$defs/calibration_parameters" }
+      }
+    },
+    "sweep_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter_profile_id",
+        "label",
+        "intent",
+        "parameters",
+        "status",
+        "objective_score",
+        "avg_delta",
+        "holdout_avg_delta",
+        "overfit_gap",
+        "holdout_passed",
+        "improved_count",
+        "regression_count",
+        "safety_regression_count",
+        "noise_false_positive_reduced_count",
+        "actual_risk_preserved_count",
+        "weak_proxy_downranked_count",
+        "pushback_mapped_count",
+        "calibrated_expected_match_count",
+        "holdout_count"
+      ],
+      "properties": {
+        "parameter_profile_id": { "type": "string" },
+        "label": { "type": "string" },
+        "intent": { "type": "string" },
+        "parameters": { "$ref": "#/$defs/calibration_parameters" },
+        "status": {
+          "type": "string",
+          "enum": ["eligible", "watch_regressions", "rejected_safety_regression", "rejected_holdout", "rejected_architecture_gate"]
+        },
+        "objective_score": { "type": "number" },
+        "control_loop_fit_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "architecture_gates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "safety_regression_free",
+            "holdout_passed",
+            "actual_command_threshold_supported",
+            "weak_proxy_controlled",
+            "pushback_controlled",
+            "coverage_complete"
+          ],
+          "properties": {
+            "safety_regression_free": { "type": "boolean" },
+            "holdout_passed": { "type": "boolean" },
+            "actual_command_threshold_supported": { "type": "boolean" },
+            "weak_proxy_controlled": { "type": "boolean" },
+            "pushback_controlled": { "type": "boolean" },
+            "coverage_complete": { "type": "boolean" }
+          }
+        },
+        "architecture_reasons": { "$ref": "#/$defs/string_array" },
+        "avg_delta": { "type": "number" },
+        "holdout_avg_delta": { "type": "number" },
+        "overfit_gap": { "type": "number" },
+        "holdout_passed": { "type": "boolean" },
+        "improved_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "noise_false_positive_reduced_count": { "type": "integer", "minimum": 0 },
+        "actual_risk_preserved_count": { "type": "integer", "minimum": 0 },
+        "weak_proxy_downranked_count": { "type": "integer", "minimum": 0 },
+        "pushback_mapped_count": { "type": "integer", "minimum": 0 },
+        "calibrated_expected_match_count": { "type": "integer", "minimum": 0 },
+        "holdout_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "data_diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_risk_keyword_record_count",
+        "actual_risk_without_unsafe_label_count",
+        "actual_risk_confounded_with_unsafe_label_count",
+        "non_actual_keyword_only_record_count",
+        "weak_unresolved_proxy_record_count",
+        "pushback_record_count",
+        "resolved_true_record_count",
+        "blocked_coverage_issue_count",
+        "diagnostic_notes"
+      ],
+      "properties": {
+        "actual_risk_keyword_record_count": { "type": "integer", "minimum": 0 },
+        "actual_risk_without_unsafe_label_count": { "type": "integer", "minimum": 0 },
+        "actual_risk_confounded_with_unsafe_label_count": { "type": "integer", "minimum": 0 },
+        "non_actual_keyword_only_record_count": { "type": "integer", "minimum": 0 },
+        "weak_unresolved_proxy_record_count": { "type": "integer", "minimum": 0 },
+        "pushback_record_count": { "type": "integer", "minimum": 0 },
+        "resolved_true_record_count": { "type": "integer", "minimum": 0 },
+        "blocked_coverage_issue_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_notes": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "count_map": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "split_stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_count",
+        "avg_baseline_score",
+        "avg_calibrated_score",
+        "avg_delta",
+        "improved_count",
+        "unchanged_count",
+        "regression_count",
+        "safety_regression_count",
+        "baseline_expected_match_count",
+        "calibrated_expected_match_count"
+      ],
+      "properties": {
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "avg_baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_calibrated_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "improved_count": { "type": "integer", "minimum": 0 },
+        "unchanged_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "safety_regression_count": { "type": "integer", "const": 0 },
+        "baseline_expected_match_count": { "type": "integer", "minimum": 0 },
+        "calibrated_expected_match_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "shadow_policy_readout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "conclusion",
+        "source_alpha_report_path",
+        "source_alpha_conclusion",
+        "selected_profile",
+        "consumed_alpha_ids",
+        "blocked_alpha_ids",
+        "policy_channels",
+        "policy_closure",
+        "closure_checks"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "side_by_side_shadow_policy_readout" },
+        "conclusion": {
+          "type": "string",
+          "enum": [
+            "shadow_policy_surface_not_provided",
+            "side_by_side_consumed_shadow_policy_surface",
+            "side_by_side_shadow_policy_surface_blocked"
+          ]
+        },
+        "source_alpha_report_path": { "type": ["string", "null"] },
+        "source_alpha_conclusion": { "type": ["string", "null"] },
+        "selected_profile": { "type": ["string", "null"] },
+        "consumed_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "blocked_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "policy_channels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/shadow_policy_readout_channel" }
+        },
+        "policy_closure": { "$ref": "#/$defs/shadow_policy_closure" },
+        "closure_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ok"],
+            "properties": {
+              "name": { "type": "string" },
+              "ok": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "shadow_policy_readout_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel_id",
+        "alpha_id",
+        "source_ablation_id",
+        "authority_scope",
+        "surface_status",
+        "readout_effect",
+        "allowed_downstream_uses",
+        "blocked_downstream_uses",
+        "affected_comparison_count",
+        "signal_pressure_count",
+        "side_by_side_consumption",
+        "side_by_side_action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority"
+      ],
+      "properties": {
+        "channel_id": { "type": "string" },
+        "alpha_id": { "type": "string" },
+        "source_ablation_id": { "type": ["string", "null"] },
+        "authority_scope": { "type": "string", "const": "shadow_readout_only" },
+        "surface_status": {
+          "type": "string",
+          "enum": ["enabled_shadow_readout", "blocked_by_shadow_guardrails"]
+        },
+        "readout_effect": { "type": "string" },
+        "allowed_downstream_uses": { "$ref": "#/$defs/string_array" },
+        "blocked_downstream_uses": { "$ref": "#/$defs/string_array" },
+        "affected_comparison_count": { "type": "integer", "minimum": 0 },
+        "signal_pressure_count": { "type": "integer", "minimum": 0 },
+        "side_by_side_consumption": { "type": "string", "const": "readout_annotation_only" },
+        "side_by_side_action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "shadow_policy_closure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "raw_external_content_persisted",
+        "persistent_memory_written",
+        "zilliz_written",
+        "embedding_created",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "raw_external_content_persisted": { "type": "boolean", "const": false },
+        "persistent_memory_written": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "boolean", "const": false }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_id",
+        "parameter_profile_id",
+        "dataset",
+        "sample_type",
+        "expected_shadow_action",
+        "baseline",
+        "calibrated",
+        "delta",
+        "improved",
+        "regressed",
+        "safety_regression",
+        "noise_false_positive_reduced",
+        "actual_risk_preserved",
+        "weak_proxy_downranked",
+        "pushback_mapped",
+        "issue_kinds"
+      ],
+      "properties": {
+        "sample_id": { "type": "string" },
+        "parameter_profile_id": { "type": "string" },
+        "dataset": { "type": "string" },
+        "sample_type": { "type": "string" },
+        "expected_shadow_action": { "type": "string" },
+        "baseline": { "$ref": "#/$defs/scored_decision" },
+        "calibrated": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "action_matches_expected", "dimensions", "triggered_rules"],
+          "properties": {
+            "action": { "type": "string" },
+            "action_matches_expected": { "type": "boolean" },
+            "dimensions": { "$ref": "#/$defs/dimensions" },
+            "triggered_rules": { "$ref": "#/$defs/string_array" }
+          }
+        },
+        "delta": { "type": "number" },
+        "improved": { "type": "boolean" },
+        "regressed": { "type": "boolean" },
+        "safety_regression": { "type": "boolean", "const": false },
+        "noise_false_positive_reduced": { "type": "boolean" },
+        "actual_risk_preserved": { "type": "boolean" },
+        "weak_proxy_downranked": { "type": "boolean" },
+        "pushback_mapped": { "type": "boolean" },
+        "issue_kinds": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "scored_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "action_matches_expected", "dimensions"],
+      "properties": {
+        "action": { "type": "string" },
+        "action_matches_expected": { "type": "boolean" },
+        "dimensions": { "$ref": "#/$defs/dimensions" }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_fidelity",
+        "safety_precision",
+        "adoption_precision",
+        "rejection_mapping",
+        "noise_resistance",
+        "coverage_honesty",
+        "total"
+      ],
+      "properties": {
+        "signal_fidelity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "safety_precision": { "type": "number", "minimum": 0, "maximum": 1 },
+        "adoption_precision": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rejection_mapping": { "type": "number", "minimum": 0, "maximum": 1 },
+        "noise_resistance": { "type": "number", "minimum": 0, "maximum": 1 },
+        "coverage_honesty": { "type": "number", "minimum": 0, "maximum": 1 },
+        "total": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

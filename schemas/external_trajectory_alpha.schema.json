@@ -1,0 +1,778 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/external_trajectory_alpha.schema.json",
+  "title": "ExternalTrajectoryAlpha",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "input",
+    "summary",
+    "signal_analysis",
+    "missed_alpha_candidates",
+    "pairwise_contrasts",
+    "profile_implications",
+    "alpha_inspection",
+    "qianxuesen_alpha_fit",
+    "safety",
+    "warnings",
+    "checks"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.external_trajectory_alpha.v1" },
+    "mode": { "type": "string", "const": "external-trajectory-alpha" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side_by_side_report_path",
+        "adaptation_report_path",
+        "baseline_commit",
+        "selected_parameter_profile",
+        "recommended_parameter_profile",
+        "sample_count",
+        "comparison_count",
+        "adaptation_records_available"
+      ],
+      "properties": {
+        "side_by_side_report_path": { "type": ["string", "null"] },
+        "adaptation_report_path": { "type": ["string", "null"] },
+        "baseline_commit": { "type": ["string", "null"] },
+        "selected_parameter_profile": { "type": ["string", "null"] },
+        "recommended_parameter_profile": { "type": ["string", "null"] },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "comparison_count": { "type": "integer", "minimum": 0 },
+        "adaptation_records_available": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_count",
+        "actionable_alpha_count",
+        "watch_signal_count",
+        "missed_alpha_candidate_count",
+        "avg_delta",
+        "safety_regression_count",
+        "holdout_passed",
+        "top_actionable_signal_ids",
+        "watch_signal_ids",
+        "top_missed_alpha_candidate_ids",
+        "architecture_readout"
+      ],
+      "properties": {
+        "signal_count": { "type": "integer", "minimum": 0 },
+        "actionable_alpha_count": { "type": "integer", "minimum": 0 },
+        "watch_signal_count": { "type": "integer", "minimum": 0 },
+        "missed_alpha_candidate_count": { "type": "integer", "minimum": 0 },
+        "avg_delta": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_passed": { "type": ["boolean", "null"] },
+        "top_actionable_signal_ids": { "$ref": "#/$defs/string_array" },
+        "watch_signal_ids": { "$ref": "#/$defs/string_array" },
+        "top_missed_alpha_candidate_ids": { "$ref": "#/$defs/string_array" },
+        "architecture_readout": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "signal_analysis": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/signal_analysis_item" }
+    },
+    "missed_alpha_candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/missed_alpha_candidate" }
+    },
+    "pairwise_contrasts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pairwise_contrast" }
+    },
+    "profile_implications": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/profile_implication" }
+    },
+    "alpha_inspection": { "$ref": "#/$defs/alpha_inspection" },
+    "qianxuesen_alpha_fit": { "$ref": "#/$defs/qianxuesen_alpha_fit" },
+    "alpha_ablation": { "$ref": "#/$defs/alpha_ablation" },
+    "shadow_policy_surface": { "$ref": "#/$defs/shadow_policy_surface" },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shadow_only",
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "writes_zilliz",
+        "creates_embeddings",
+        "persists_raw_external_data",
+        "calls_llm",
+        "calls_external_api",
+        "touches_vps",
+        "pushes_to_github",
+        "changes_route",
+        "changes_winner_authority"
+      ],
+      "properties": {
+        "shadow_only": { "type": "boolean", "const": true },
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "writes_zilliz": { "type": "boolean", "const": false },
+        "creates_embeddings": { "type": "boolean", "const": false },
+        "persists_raw_external_data": { "type": "boolean", "const": false },
+        "calls_llm": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false },
+        "pushes_to_github": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": { "$ref": "#/$defs/string_array" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "ok"],
+        "properties": {
+          "name": { "type": "string" },
+          "ok": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output_dir", "json_path", "markdown_path"],
+      "properties": {
+        "output_dir": { "type": "string" },
+        "json_path": { "type": "string" },
+        "markdown_path": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "count_map": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "signal_analysis_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_id",
+        "label",
+        "kind",
+        "sample_count",
+        "coverage_rate",
+        "avg_delta",
+        "avg_baseline_score",
+        "avg_calibrated_score",
+        "baseline_expected_match_rate",
+        "calibrated_expected_match_rate",
+        "expected_match_lift",
+        "safety_regression_count",
+        "regression_count",
+        "noise_false_positive_reduced_count",
+        "actual_risk_preserved_count",
+        "weak_proxy_downranked_count",
+        "pushback_mapped_count",
+        "by_calibrated_action",
+        "by_dataset",
+        "alpha_score",
+        "decision",
+        "architecture_recommendation"
+      ],
+      "properties": {
+        "signal_id": { "type": "string" },
+        "label": { "type": "string" },
+        "kind": { "type": "string" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "coverage_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "avg_baseline_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_calibrated_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "baseline_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "calibrated_expected_match_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "expected_match_lift": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "noise_false_positive_reduced_count": { "type": "integer", "minimum": 0 },
+        "actual_risk_preserved_count": { "type": "integer", "minimum": 0 },
+        "weak_proxy_downranked_count": { "type": "integer", "minimum": 0 },
+        "pushback_mapped_count": { "type": "integer", "minimum": 0 },
+        "by_calibrated_action": { "$ref": "#/$defs/count_map" },
+        "by_dataset": { "$ref": "#/$defs/count_map" },
+        "alpha_score": { "type": "number" },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "promote_to_gate_support",
+            "promote_to_noise_filter",
+            "promote_to_holdout_gate",
+            "promote_to_rejection_gate",
+            "promote_to_negative_outcome_gate",
+            "use_as_calibration_feature",
+            "reject_or_tighten",
+            "needs_more_stress",
+            "watch_more_data",
+            "diagnostic_only"
+          ]
+        },
+        "architecture_recommendation": { "type": "string" }
+      }
+    },
+    "missed_alpha_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "signal_id",
+        "kind",
+        "sample_count",
+        "alpha_score",
+        "avg_delta",
+        "expected_match_lift",
+        "disposition",
+        "recommendation"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "signal_id": { "type": "string" },
+        "kind": { "type": "string" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "alpha_score": { "type": "number" },
+        "avg_delta": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "disposition": { "type": "string" },
+        "recommendation": { "type": "string" }
+      }
+    },
+    "pairwise_contrast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contrast_id",
+        "left_signal_id",
+        "right_signal_id",
+        "left_sample_count",
+        "right_sample_count",
+        "avg_delta_lift",
+        "expected_match_lift",
+        "readout"
+      ],
+      "properties": {
+        "contrast_id": { "type": "string" },
+        "left_signal_id": { "type": ["string", "null"] },
+        "right_signal_id": { "type": ["string", "null"] },
+        "left_sample_count": { "type": "integer", "minimum": 0 },
+        "right_sample_count": { "type": "integer", "minimum": 0 },
+        "avg_delta_lift": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "readout": { "type": "string" }
+      }
+    },
+    "profile_implication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter_profile_id",
+        "status",
+        "control_loop_fit_score",
+        "objective_score",
+        "avg_delta",
+        "safety_regression_count",
+        "implication"
+      ],
+      "properties": {
+        "parameter_profile_id": { "type": "string" },
+        "status": { "type": "string" },
+        "control_loop_fit_score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "objective_score": { "type": "number" },
+        "avg_delta": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "implication": { "type": "string" }
+      }
+    },
+    "alpha_inspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conclusion",
+        "promoted_alpha_count",
+        "diagnostic_only_count",
+        "benign_actual_command_context",
+        "high_tool_activity",
+        "non_actual_command_pattern_alpha",
+        "promoted_alpha",
+        "diagnostic_only"
+      ],
+      "properties": {
+        "conclusion": { "type": "string" },
+        "promoted_alpha_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_only_count": { "type": "integer", "minimum": 0 },
+        "benign_actual_command_context": { "$ref": "#/$defs/alpha_inspection_signal" },
+        "high_tool_activity": { "$ref": "#/$defs/alpha_inspection_signal" },
+        "non_actual_command_pattern_alpha": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "signal_count",
+            "sample_pressure_count",
+            "top_signals",
+            "disposition",
+            "interpretation"
+          ],
+          "properties": {
+            "signal_count": { "type": "integer", "minimum": 0 },
+            "sample_pressure_count": { "type": "integer", "minimum": 0 },
+            "top_signals": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_actual_command_alpha_signal" }
+            },
+            "disposition": { "type": "string" },
+            "interpretation": { "type": "string" }
+          }
+        },
+        "promoted_alpha": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/alpha_promotion" }
+        },
+        "diagnostic_only": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/alpha_promotion" }
+        }
+      }
+    },
+    "alpha_inspection_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_id",
+        "sample_count",
+        "alpha_score",
+        "avg_delta",
+        "expected_match_lift",
+        "safety_regression_count",
+        "by_calibrated_action",
+        "by_dataset",
+        "dominant_action",
+        "disposition",
+        "rule_candidate",
+        "interpretation"
+      ],
+      "properties": {
+        "signal_id": { "type": "string" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "alpha_score": { "type": "number" },
+        "avg_delta": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "by_calibrated_action": { "$ref": "#/$defs/count_map" },
+        "by_dataset": { "$ref": "#/$defs/count_map" },
+        "dominant_action": { "type": "string" },
+        "disposition": { "type": "string" },
+        "rule_candidate": { "type": "boolean" },
+        "interpretation": { "type": "string" }
+      }
+    },
+    "non_actual_command_alpha_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signal_id",
+        "pattern",
+        "context",
+        "sample_count",
+        "alpha_score",
+        "avg_delta",
+        "expected_match_lift",
+        "safety_regression_count",
+        "dominant_action",
+        "decision"
+      ],
+      "properties": {
+        "signal_id": { "type": "string" },
+        "pattern": { "type": "string" },
+        "context": { "type": "string" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "alpha_score": { "type": "number" },
+        "avg_delta": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "dominant_action": { "type": "string" },
+        "decision": { "type": "string" }
+      }
+    },
+    "alpha_promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alpha_id",
+        "source_signal_ids",
+        "decision",
+        "allowed_use",
+        "blocked_use"
+      ],
+      "properties": {
+        "alpha_id": { "type": "string" },
+        "source_signal_ids": { "$ref": "#/$defs/string_array" },
+        "decision": { "type": "string" },
+        "allowed_use": { "type": "string" },
+        "blocked_use": { "type": "string" }
+      }
+    },
+    "qianxuesen_alpha_fit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "conclusion",
+        "selected_profile",
+        "candidate_count",
+        "promoted_candidate_count",
+        "watch_candidate_count",
+        "blocked_candidate_count",
+        "promoted_candidate_ids",
+        "watch_candidate_ids",
+        "blocked_candidate_ids",
+        "candidates",
+        "control_closure",
+        "closure_checks",
+        "next_shadow_step"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "qianxuesen_alpha_fit" },
+        "conclusion": {
+          "type": "string",
+          "enum": [
+            "second_order_alpha_found_for_shadow_control",
+            "second_order_alpha_watch_only",
+            "no_second_order_alpha_observed"
+          ]
+        },
+        "selected_profile": { "type": ["string", "null"] },
+        "candidate_count": { "type": "integer", "minimum": 0 },
+        "promoted_candidate_count": { "type": "integer", "minimum": 0 },
+        "watch_candidate_count": { "type": "integer", "minimum": 0 },
+        "blocked_candidate_count": { "type": "integer", "minimum": 0 },
+        "promoted_candidate_ids": { "$ref": "#/$defs/string_array" },
+        "watch_candidate_ids": { "$ref": "#/$defs/string_array" },
+        "blocked_candidate_ids": { "$ref": "#/$defs/string_array" },
+        "candidates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/qianxuesen_alpha_candidate" }
+        },
+        "control_closure": { "$ref": "#/$defs/qianxuesen_control_closure" },
+        "closure_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ok"],
+            "properties": {
+              "name": { "type": "string" },
+              "ok": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "next_shadow_step": { "type": "string" }
+      }
+    },
+    "qianxuesen_alpha_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "signal_family",
+        "control_role",
+        "source_predicates",
+        "decision",
+        "authority_scope",
+        "sample_count",
+        "coverage_rate",
+        "avg_delta",
+        "expected_match_lift",
+        "safety_regression_count",
+        "regression_count",
+        "by_dataset",
+        "by_calibrated_action",
+        "dataset_count",
+        "source_scope",
+        "qianxuesen_fit_score",
+        "allowed_use",
+        "blocked_use",
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "next_gate"
+      ],
+      "properties": {
+        "candidate_id": { "type": "string" },
+        "signal_family": { "type": "string" },
+        "control_role": { "type": "string" },
+        "source_predicates": { "$ref": "#/$defs/string_array" },
+        "decision": { "type": "string" },
+        "authority_scope": { "type": "string", "const": "shadow_control_prior_only" },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "coverage_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "avg_delta": { "type": "number" },
+        "expected_match_lift": { "type": "number" },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "regression_count": { "type": "integer", "minimum": 0 },
+        "by_dataset": { "$ref": "#/$defs/count_map" },
+        "by_calibrated_action": { "$ref": "#/$defs/count_map" },
+        "dataset_count": { "type": "integer", "minimum": 0 },
+        "source_scope": {
+          "type": "string",
+          "enum": ["none", "single_dataset", "multi_dataset"]
+        },
+        "qianxuesen_fit_score": { "type": "number" },
+        "allowed_use": { "type": "string" },
+        "blocked_use": { "type": "string" },
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "next_gate": { "type": "string" }
+      }
+    },
+    "qianxuesen_control_closure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "raw_external_content_persisted",
+        "persistent_memory_written",
+        "zilliz_written",
+        "embedding_created",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "raw_external_content_persisted": { "type": "boolean", "const": false },
+        "persistent_memory_written": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "boolean", "const": false }
+      }
+    },
+    "alpha_ablation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "conclusion",
+        "enabled_alpha_ids",
+        "blocked_alpha_ids",
+        "selected_profile",
+        "scenarios",
+        "combined_affected_comparison_count",
+        "combined_signal_pressure_count",
+        "closure_checks"
+      ],
+      "properties": {
+        "mode": { "type": "string" },
+        "conclusion": { "type": "string" },
+        "enabled_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "blocked_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "selected_profile": { "type": ["string", "null"] },
+        "scenarios": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/alpha_ablation_scenario" }
+        },
+        "combined_affected_comparison_count": { "type": "integer", "minimum": 0 },
+        "combined_signal_pressure_count": { "type": "integer", "minimum": 0 },
+        "closure_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ok"],
+            "properties": {
+              "name": { "type": "string" },
+              "ok": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "shadow_policy_surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "conclusion",
+        "selected_profile",
+        "consumed_alpha_ids",
+        "blocked_alpha_ids",
+        "policy_channels",
+        "policy_closure",
+        "closure_checks",
+        "next_shadow_step"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "shadow_policy_surface" },
+        "conclusion": { "type": "string" },
+        "selected_profile": { "type": ["string", "null"] },
+        "consumed_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "blocked_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "policy_channels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/shadow_policy_channel" }
+        },
+        "policy_closure": { "$ref": "#/$defs/shadow_policy_closure" },
+        "closure_checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "ok"],
+            "properties": {
+              "name": { "type": "string" },
+              "ok": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "next_shadow_step": { "type": "string" }
+      }
+    },
+    "shadow_policy_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel_id",
+        "alpha_id",
+        "source_signal_ids",
+        "source_ablation_id",
+        "authority_scope",
+        "surface_status",
+        "readout_effect",
+        "allowed_downstream_uses",
+        "blocked_downstream_uses",
+        "affected_comparison_count",
+        "signal_pressure_count",
+        "action_change_count",
+        "safety_regression_count",
+        "holdout_passed",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority"
+      ],
+      "properties": {
+        "channel_id": { "type": "string" },
+        "alpha_id": { "type": "string" },
+        "source_signal_ids": { "$ref": "#/$defs/string_array" },
+        "source_ablation_id": { "type": ["string", "null"] },
+        "authority_scope": { "type": "string", "const": "shadow_readout_only" },
+        "surface_status": {
+          "type": "string",
+          "enum": ["enabled_shadow_readout", "blocked_by_shadow_guardrails"]
+        },
+        "readout_effect": { "type": "string" },
+        "allowed_downstream_uses": { "$ref": "#/$defs/string_array" },
+        "blocked_downstream_uses": { "$ref": "#/$defs/string_array" },
+        "affected_comparison_count": { "type": "integer", "minimum": 0 },
+        "signal_pressure_count": { "type": "integer", "minimum": 0 },
+        "action_change_count": { "type": "integer", "const": 0 },
+        "safety_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_passed": { "type": ["boolean", "null"] },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "shadow_policy_closure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "raw_external_content_persisted",
+        "persistent_memory_written",
+        "zilliz_written",
+        "embedding_created",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "action_change_count": { "type": "integer", "const": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "raw_external_content_persisted": { "type": "boolean", "const": false },
+        "persistent_memory_written": { "type": "boolean", "const": false },
+        "zilliz_written": { "type": "boolean", "const": false },
+        "embedding_created": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "boolean", "const": false },
+        "external_api_calls": { "type": "boolean", "const": false }
+      }
+    },
+    "alpha_ablation_scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ablation_id",
+        "enabled_alpha_ids",
+        "selected_profile_before",
+        "selected_profile_after",
+        "affected_comparison_count",
+        "signal_pressure_count",
+        "affected_by_dataset",
+        "affected_by_expected_action",
+        "affected_safety_regression_count",
+        "global_safety_regression_count",
+        "holdout_passed",
+        "action_change_count",
+        "route_authority_changed",
+        "winner_authority_changed",
+        "production_authority",
+        "allowed_effect",
+        "blocked_effect",
+        "verdict"
+      ],
+      "properties": {
+        "ablation_id": { "type": "string" },
+        "enabled_alpha_ids": { "$ref": "#/$defs/string_array" },
+        "selected_profile_before": { "type": ["string", "null"] },
+        "selected_profile_after": { "type": ["string", "null"] },
+        "affected_comparison_count": { "type": "integer", "minimum": 0 },
+        "signal_pressure_count": { "type": "integer", "minimum": 0 },
+        "affected_by_dataset": { "$ref": "#/$defs/count_map" },
+        "affected_by_expected_action": { "$ref": "#/$defs/count_map" },
+        "affected_safety_regression_count": { "type": "integer", "minimum": 0 },
+        "global_safety_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_passed": { "type": ["boolean", "null"] },
+        "action_change_count": { "type": "integer", "minimum": 0 },
+        "route_authority_changed": { "type": "boolean", "const": false },
+        "winner_authority_changed": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "allowed_effect": { "type": "string" },
+        "blocked_effect": { "type": "string" },
+        "verdict": { "type": "string" }
+      }
+    }
+  }
+}
