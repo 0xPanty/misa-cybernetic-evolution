@@ -2907,3 +2907,93 @@ Next-window recovery phrase:
 
 下一步只做：设计线上 observe-only shadow 和 no-write suggestion/ticket contract；补 full-perception 后更独立 holdout 字段规划。不要接生产 authority，不写 Zilliz/embedding，不跑真实 LLM，不碰 VPS，不扩参数 sweep，不升 watch-only alpha。
 ```
+
+## Online Observe-only Shadow Contract Addendum 2026-05-16
+
+This window landed the next staged contract. It does not change the 867-sample
+side-by-side behavior anchor and does not connect production authority.
+
+New local command:
+
+```text
+npm run external:online-shadow -- --json --dry-run
+```
+
+New contract artifacts:
+
+```text
+scripts/external-trajectory-online-shadow-contract.mjs
+scripts/lib/external-trajectory-online-shadow-contract.mjs
+schemas/external_trajectory_online_shadow_contract.schema.json
+examples/external-trajectory-online-shadow/generic-workflow-digest.example.json
+examples/external-trajectory-online-shadow/generic-workflow-adapter/
+test/external-trajectory-online-shadow-contract.test.mjs
+docs/external-trajectory-online-shadow-contract-v0.29.md
+```
+
+Contract result:
+
+```text
+online observe-only shadow: implemented locally
+allowed outputs: external_trajectory_readout / review_hints / repair_ticket_drafts / work_order_drafts
+suggestion contract: no-write drafts only
+route authority: false
+winner authority: false
+production authority: false
+persistent memory write: false
+Zilliz write: false
+embedding creation: false
+LLM/API calls: 0
+VPS/GitHub effects: false
+```
+
+Full-perception holdout fields are now explicit future gates:
+
+```text
+source_project
+repo
+time
+task_family
+```
+
+Meaning:
+
+```text
+Real signals may now be shaped into an external trajectory readout path, but
+only as observation, explanation, review hints, and no-write ticket/work-order
+drafts. They still cannot pick routes, pick winners, write memory, create
+embeddings, or execute repairs.
+```
+
+Public adapter clarification:
+
+```text
+The core contract is the generic plug socket. Hermes/Farcaster/GitHub/Discord/CI
+or custom workflow logic should live in thin adapters that translate native
+events into misa.perception_digest.v1. The shared contract only reads sanitized
+source_refs / observed_signals / route_pressure plus the full-perception
+holdout fields source_project / repo / time / task_family.
+
+The runnable template is npm run external:generic-adapter -- --json. It turns
+examples/external-trajectory-online-shadow/generic-workflow-adapter/input.workflow-events.json
+into a public perception digest that can be fed to external:online-shadow.
+```
+
+Verification in this window:
+
+```text
+node --test test/external-trajectory-online-shadow-contract.test.mjs
+npm run validate:schemas -- --json
+```
+
+Next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution external trajectory lane。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Online Observe-only Shadow Contract Addendum 2026-05-16，再读 docs/external-trajectory-online-shadow-contract-v0.29.md。
+用 git status/log 对齐本地状态。external trajectory baseline 仍固定看 3e79083；comparison behavior anchor 仍固定看 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b。
+
+当前已落地：online observe-only shadow contract + no-write suggestion/ticket contract。本地命令是 npm run external:online-shadow -- --json --dry-run。真实信号只能进入 external trajectory readout / review hints / repair-ticket drafts / work-order drafts；不接 route/winner authority，不写 memory/Zilliz/embedding，不跑真实 LLM/API，不碰 VPS/GitHub。
+
+下一步如果继续，只做 full-perception 后 source_project/repo/time/task_family 独立 holdout 接入规划或 fresh larger samples 证据，不要扩参数 sweep，不升 alpha gate。
+```

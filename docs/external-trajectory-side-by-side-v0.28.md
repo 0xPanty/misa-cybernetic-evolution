@@ -1309,3 +1309,45 @@ Move only toward online observe-only shadow plus no-write suggestion/ticket
 contracts, then later add stronger holdout fields once full perception provides
 source_project, repo, time, and task_family.
 ```
+
+## Online Observe-only Shadow Contract Addendum 2026-05-16
+
+Side-by-side behavior remains closed at the second Pro review anchor:
+
+```text
+baseline=origin/codex/local-vector-store-adapter@3e79083
+comparison_behavior_anchor=1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
+```
+
+This addendum did not tune the 867 samples, expand the parameter sweep, or add
+route/winner authority. It only added the local contract that the previous
+closeout named as the next staged step:
+
+```text
+npm run external:online-shadow -- --json --dry-run
+```
+
+The contract lets real sanitized perception signals become:
+
+```text
+external_trajectory_readout
+review_hints
+repair_ticket_drafts
+work_order_drafts
+```
+
+All of those outputs are observe-only/no-write:
+
+```text
+route_authority=false
+winner_authority=false
+production_authority=false
+persistent_memory_written=false
+zilliz_written=false
+embedding_created=false
+llm_api_calls=0
+external_api_calls=0
+```
+
+So the side-by-side lane stays closed locally, while the future online lane now
+has a safe readout contract for real signals.

@@ -156,6 +156,8 @@ Two rules matter most:
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Work-order variants | `npm run work-order:variants -- --json --dry-run` | seeded local candidate work orders; LLM critique is value-gated and zero-call by default |
 | Work-order quality eval | `npm run work-order:evaluate -- --json --dry-run` | baseline-vs-winner quality score for final Qianxuesen work-order packets |
+| External trajectory generic adapter | `npm run external:generic-adapter -- --json` | template adapter that converts custom workflow events into `misa.perception_digest.v1` |
+| External trajectory online shadow | `npm run external:online-shadow -- --json --dry-run` | observe-only signal readout plus no-write review hints, repair-ticket drafts, and work-order drafts |
 | Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
@@ -166,6 +168,13 @@ Two rules matter most:
 | Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
+
+External trajectory online shadow is the generic plug socket. Custom workflow
+adapters should translate their own logs/events into
+`misa.perception_digest.v1` and preserve `source_project`, `repo`, `time`, and
+`task_family` when full perception is available. See
+`examples/external-trajectory-online-shadow/generic-workflow-adapter/README.md`
+and `examples/external-trajectory-online-shadow/generic-workflow-digest.example.json`.
 
 ## Current-Line Command Map
 

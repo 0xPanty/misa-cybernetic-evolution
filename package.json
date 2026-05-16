@@ -39,6 +39,8 @@
     "external:side-by-side": "node scripts/external-trajectory-side-by-side.mjs",
     "external:alpha": "node scripts/external-trajectory-alpha.mjs",
     "external:compare": "node scripts/external-trajectory-final-comparison.mjs",
+    "external:online-shadow": "node scripts/external-trajectory-online-shadow-contract.mjs",
+    "external:generic-adapter": "node examples/external-trajectory-online-shadow/generic-workflow-adapter/adapter.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",
     "vector-store:local": "node scripts/local-vector-store.mjs",

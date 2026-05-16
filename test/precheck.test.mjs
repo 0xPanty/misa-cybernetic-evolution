@@ -26,7 +26,7 @@ test("repository dry-run precheck passes", async () => {
   assert.ok(result.phase_summary.contracts.total > 0);
   assert.ok(result.phase_summary["current-line"].total > 0);
   assertPhaseCounts(result.phase_summary, "static", 4);
-  assertPhaseCounts(result.phase_summary, "contracts", 101);
+  assertPhaseCounts(result.phase_summary, "contracts", 103);
   assertPhaseCounts(result.phase_summary, "bridges", 21);
   assertPhaseCounts(result.phase_summary, "current-line", 25);
   assertPhaseCounts(result.phase_summary, "smoke", 12);

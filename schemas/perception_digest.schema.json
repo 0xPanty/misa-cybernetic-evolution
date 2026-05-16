@@ -201,6 +201,17 @@
         },
         "signal_fingerprint_id": { "type": "string", "minLength": 1 },
         "ledger_status": { "type": "string", "minLength": 1 },
+        "full_perception_holdout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source_project", "repo", "time", "task_family"],
+          "properties": {
+            "source_project": { "type": "string", "minLength": 1 },
+            "repo": { "type": "string", "minLength": 1 },
+            "time": { "type": "string", "format": "date-time" },
+            "task_family": { "type": "string", "minLength": 1 }
+          }
+        },
         "suggested_priority": { "type": "integer", "minimum": 0, "maximum": 100 },
         "authority": { "type": "string", "const": "hint_only" }
       }

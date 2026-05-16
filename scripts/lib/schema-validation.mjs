@@ -25,6 +25,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/vector_memory_storage.schema.json", "examples/vector_memory_storage.example.json"],
   ["schemas/zilliz_vector_adapter.schema.json", "examples/zilliz_vector_adapter.example.json"],
   ["schemas/perception_digest.schema.json", "examples/perception_digest.example.json"],
+  ["schemas/perception_digest.schema.json", "examples/external-trajectory-online-shadow/generic-workflow-digest.example.json"],
   ["schemas/perception_log_layout.schema.json", "examples/perception_log_layout.example.json"],
   ["schemas/signal_ledger.schema.json", "examples/signal_ledger.example.json"],
   ["schemas/damping_rules.schema.json", "examples/damping_rules.example.json"],
@@ -49,7 +50,8 @@ const SCHEMA_ONLY_FILES = [
   "schemas/external_trajectory_adaptation.schema.json",
   "schemas/external_trajectory_side_by_side.schema.json",
   "schemas/external_trajectory_alpha.schema.json",
-  "schemas/external_trajectory_final_comparison.schema.json"
+  "schemas/external_trajectory_final_comparison.schema.json",
+  "schemas/external_trajectory_online_shadow_contract.schema.json"
 ];
 
 async function readJson(filePath) {

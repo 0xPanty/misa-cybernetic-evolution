@@ -1,0 +1,43 @@
+{
+  "adapter_id": "generic-workflow-adapter-template",
+  "generated_at": "2026-05-16T04:30:00.000Z",
+  "events": [
+    {
+      "event_id": "custom-ci-failure-001",
+      "source_project": "example-project",
+      "repo": "example-org/example-repo",
+      "time": "2026-05-16T04:30:00.000Z",
+      "task_family": "ci_regression_review",
+      "source_kind": "custom_workflow",
+      "source_refs": [
+        "github:example-org/example-repo:pull/42",
+        "ci:run:123456"
+      ],
+      "observed_signals": [
+        "repeated_failure_pattern",
+        "test_regression",
+        "human_review_requested"
+      ],
+      "route_pressure": {
+        "damping": 1,
+        "case": 1
+      },
+      "signal_family": "repeated_ci_failure",
+      "priority": 85,
+      "risk": {
+        "kind": "repeated_failure",
+        "level": "high",
+        "reason": "repeated CI failure should be reviewed before changing workflow behavior"
+      },
+      "novelty": {
+        "kind": "custom_workflow_signal",
+        "level": "medium",
+        "reason": "custom workflow signal may become useful external trajectory evidence after review"
+      },
+      "expected_review_value": {
+        "level": "high",
+        "text": "custom workflow failure may be useful external trajectory evidence after observe-only review"
+      }
+    }
+  ]
+}
