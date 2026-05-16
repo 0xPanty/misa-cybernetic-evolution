@@ -1570,13 +1570,15 @@ export async function runExternalTrajectoryAlpha({
   adaptation,
   now = DEFAULT_NOW
 } = {}) {
-  const sideBySidePath = sideBySideReportPath
-    ? resolvePath(repoRoot, sideBySideReportPath)
-    : await latestReport({
+  const sideBySidePath = sideBySide
+    ? null
+    : sideBySideReportPath
+      ? resolvePath(repoRoot, sideBySideReportPath)
+      : await latestReport({
       repoRoot,
       runsDir: "runs/external-trajectory-side-by-side",
       fileName: "external-trajectory-side-by-side.json"
-    });
+      });
   const sideBySideData = sideBySide ?? await readJson(sideBySidePath);
   const adaptationPath = adaptationReportPath
     ? resolvePath(repoRoot, adaptationReportPath)

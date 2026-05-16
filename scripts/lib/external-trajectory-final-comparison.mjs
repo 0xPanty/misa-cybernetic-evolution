@@ -370,20 +370,24 @@ export async function runExternalTrajectoryFinalComparison({
   const resolvedOptimizedCommit = optimizedCommit === "HEAD"
     ? branchTipCommit ?? optimizedCommit
     : optimizedCommit;
-  const sideBySidePath = sideBySideReportPath
-    ? resolvePath(repoRoot, sideBySideReportPath)
-    : await latestReport({
+  const sideBySidePath = sideBySide
+    ? null
+    : sideBySideReportPath
+      ? resolvePath(repoRoot, sideBySideReportPath)
+      : await latestReport({
       repoRoot,
       runsDir: "runs/external-trajectory-side-by-side",
       fileName: "external-trajectory-side-by-side.json"
-    });
-  const alphaPath = alphaReportPath
-    ? resolvePath(repoRoot, alphaReportPath)
-    : await latestReport({
+      });
+  const alphaPath = alpha
+    ? null
+    : alphaReportPath
+      ? resolvePath(repoRoot, alphaReportPath)
+      : await latestReport({
       repoRoot,
       runsDir: "runs/external-trajectory-alpha",
       fileName: "external-trajectory-alpha.json"
-    });
+      });
 
   const sideBySideData = sideBySide ?? await readJson(sideBySidePath);
   const alphaData = alpha ?? await readJson(alphaPath);
