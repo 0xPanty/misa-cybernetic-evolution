@@ -164,3 +164,29 @@ test("LLM work-order draft report passes with context-specific mock provider", a
     result.results[0].packet.allowed_verification_commands.includes(command)
   )));
 });
+
+test("LLM work-order draft report contains provider failures instead of throwing", async () => {
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: async () => {
+      throw new Error("local model timed out");
+    },
+    repairAttempts: 1,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.sample_count, 1);
+  assert.equal(result.summary.draft_count, 0);
+  assert.equal(result.summary.passed_gate_count, 0);
+  assert.equal(result.summary.failed_gate_count, 1);
+  assert.equal(result.summary.provider_error_count, 1);
+  assert.equal(result.summary.llm_api_calls, 1);
+  assert.equal(result.results[0].provider_error.code, "provider_error");
+  assert.ok(result.results[0].gate.violations.includes("provider_call_failed"));
+  assert.ok(result.results[0].gate.violations.includes("draft_missing"));
+  assert.equal(result.safety.executes_work_orders, false);
+  assert.equal(result.safety.writes_memory, false);
+});

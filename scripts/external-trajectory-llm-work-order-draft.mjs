@@ -30,6 +30,7 @@ const now = nowArg ? new Date(nowArg) : new Date();
 const dryRun = hasArg("dry-run") || hasArg("no-write");
 const maxSamples = readArg("max-samples");
 const repairAttempts = readArg("repair-attempts");
+const ollamaTimeoutMs = readArg("ollama-timeout-ms");
 
 let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   onlineShadowReportPath: readArg("online-shadow-report"),
@@ -39,6 +40,7 @@ let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   provider: readArg("provider") ?? undefined,
   model: readArg("model") ?? undefined,
   ollamaEndpoint: readArg("ollama-endpoint") ?? undefined,
+  ollamaTimeoutMs: ollamaTimeoutMs ? Number(ollamaTimeoutMs) : undefined,
   repairAttempts: repairAttempts ? Number(repairAttempts) : undefined,
   now
 });
@@ -65,7 +67,8 @@ if (hasArg("json")) {
   console.log(`avg_quality_score=${result.summary.avg_quality_score}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
   for (const item of result.results) {
-    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score} title=${item.draft?.title ?? "PARSE_FAILED"}`);
+    const providerError = item.provider_error ? ` provider_error=${item.provider_error.code}` : "";
+    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score}${providerError} title=${item.draft?.title ?? "PARSE_FAILED"}`);
   }
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);

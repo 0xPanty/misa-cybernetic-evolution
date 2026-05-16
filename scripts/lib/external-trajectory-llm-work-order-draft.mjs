@@ -4,6 +4,7 @@ import { runExternalTrajectoryOnlineShadowContract } from "./external-trajectory
 
 export const DEFAULT_LLM_DRAFT_MODEL = "qwen2.5:14b";
 export const DEFAULT_LLM_DRAFT_PROVIDER = "mock";
+export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
 
 const REQUIRED_FORBIDDEN_SCOPE = Object.freeze([
   "do_not_change_route",
@@ -364,25 +365,95 @@ function stripJson(text) {
   return body;
 }
 
-async function callOllama({ prompt, model, endpoint }) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      model,
-      prompt,
-      stream: false,
-      format: "json",
-      options: {
-        temperature: 0,
-        num_ctx: 8192,
-        num_predict: 1600
+function serializeProviderError(error) {
+  const cause = error?.cause;
+  return {
+    name: error?.name ?? "Error",
+    code: cause?.code ?? error?.code ?? "provider_error",
+    message: String(error?.message ?? error ?? "provider call failed").slice(0, 300)
+  };
+}
+
+async function readOllamaStream(body, { onReader } = {}) {
+  const decoder = new TextDecoder();
+  const reader = body.getReader();
+  onReader?.(reader);
+  let buffer = "";
+  let output = "";
+
+  const consumeLine = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    const chunk = JSON.parse(trimmed);
+    if (chunk.error) throw new Error(`ollama failed: ${chunk.error}`);
+    output += chunk.response ?? "";
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    for (const line of lines) consumeLine(line);
+  }
+  buffer += decoder.decode();
+  consumeLine(buffer);
+  return output;
+}
+
+async function callOllama({ prompt, model, endpoint, timeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS }) {
+  const controller = new AbortController();
+  let reader = null;
+  const timeoutError = () => new Error(`ollama timeout after ${timeoutMs}ms`);
+  const run = (async () => {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: true,
+        format: "json",
+        options: {
+          temperature: 0,
+          num_ctx: 8192,
+          num_predict: 1600
+        }
+      })
+    });
+    if (!response.ok) throw new Error(`ollama failed ${response.status}`);
+    if (response.body) {
+      return await readOllamaStream(response.body, {
+        onReader: (activeReader) => {
+          reader = activeReader;
+        }
+      });
+    }
+    const data = await response.json();
+    return data.response;
+  })();
+
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return await run;
+
+  let timeout = null;
+  const deadline = new Promise((_, reject) => {
+    timeout = setTimeout(() => {
+      const error = timeoutError();
+      controller.abort(error);
+      if (reader) {
+        reader.cancel(error).catch(() => {});
       }
-    })
+      reject(error);
+    }, timeoutMs);
   });
-  if (!response.ok) throw new Error(`ollama failed ${response.status}`);
-  const data = await response.json();
-  return data.response;
+
+  try {
+    return await Promise.race([run, deadline]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function deterministicDraftForPacket(packet) {
@@ -420,32 +491,52 @@ function deterministicDraftForPacket(packet) {
   };
 }
 
-async function callDraftProvider({ packet, provider, model, ollamaEndpoint, prompt, previousFailure }) {
+async function callDraftProvider({ packet, provider, model, ollamaEndpoint, ollamaTimeoutMs, prompt, previousFailure }) {
   if (provider === "mock") {
     return {
       raw: JSON.stringify(deterministicDraftForPacket(packet)),
-      llm_api_calls: 0
+      llm_api_calls: 0,
+      provider_error: null
     };
   }
   if (provider === "ollama") {
-    return {
-      raw: await callOllama({
-        prompt: promptForPacket(packet, { previousFailure }),
-        model,
-        endpoint: ollamaEndpoint
-      }),
-      llm_api_calls: 1
-    };
+    try {
+      return {
+        raw: await callOllama({
+          prompt: promptForPacket(packet, { previousFailure }),
+          model,
+          endpoint: ollamaEndpoint,
+          timeoutMs: ollamaTimeoutMs
+        }),
+        llm_api_calls: 1,
+        provider_error: null
+      };
+    } catch (error) {
+      return {
+        raw: "",
+        llm_api_calls: 1,
+        provider_error: serializeProviderError(error)
+      };
+    }
   }
   if (typeof provider === "function") {
-    return {
-      raw: await provider({
-        packet,
-        prompt: prompt ?? promptForPacket(packet, { previousFailure }),
-        previousFailure
-      }),
-      llm_api_calls: 1
-    };
+    try {
+      return {
+        raw: await provider({
+          packet,
+          prompt: prompt ?? promptForPacket(packet, { previousFailure }),
+          previousFailure
+        }),
+        llm_api_calls: 1,
+        provider_error: null
+      };
+    } catch (error) {
+      return {
+        raw: "",
+        llm_api_calls: 1,
+        provider_error: serializeProviderError(error)
+      };
+    }
   }
   throw new Error(`unsupported LLM draft provider: ${provider}`);
 }
@@ -473,7 +564,7 @@ function genericTaskCount(draft) {
   )).length;
 }
 
-export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true } = {}) {
+export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerError = null } = {}) {
   const violations = [];
   const refs = packet?.workOrder?.evidence_refs ?? [];
   const activeText = JSON.stringify({
@@ -486,6 +577,7 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true } = {}) {
     stop_condition: draft?.stop_condition
   });
 
+  if (providerError) violations.push("provider_call_failed");
   if (!parseOk) violations.push("json_parse_failed");
   if (!draft || typeof draft !== "object") violations.push("draft_missing");
   if (!draft?.title || /Explain external trajectory signal/i.test(draft.title)) violations.push("generic_title");
@@ -540,7 +632,8 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true } = {}) {
       whitelistedCommands: (draft?.verification_commands ?? [])
         .filter((command) => packet.allowed_verification_commands.includes(command)).length,
       specificityHits,
-      genericTaskCount: vagueTaskCount
+      genericTaskCount: vagueTaskCount,
+      providerError
     }
   };
 }
@@ -550,6 +643,7 @@ async function draftOnePacket({
   provider,
   model,
   ollamaEndpoint,
+  ollamaTimeoutMs,
   repairAttempts
 }) {
   let previousFailure = null;
@@ -558,6 +652,7 @@ async function draftOnePacket({
   let parseOk = false;
   let llmApiCalls = 0;
   let gate = null;
+  let providerError = null;
 
   for (let attempt = 0; attempt <= repairAttempts; attempt += 1) {
     const providerResult = await callDraftProvider({
@@ -565,10 +660,18 @@ async function draftOnePacket({
       provider,
       model,
       ollamaEndpoint,
+      ollamaTimeoutMs,
       previousFailure
     });
     raw = providerResult.raw;
     llmApiCalls += providerResult.llm_api_calls;
+    providerError = providerResult.provider_error ?? null;
+    if (providerError) {
+      draft = null;
+      parseOk = false;
+      gate = gateLlmWorkOrderDraft({ packet, draft, parseOk, providerError });
+      break;
+    }
     try {
       draft = JSON.parse(stripJson(raw));
       parseOk = true;
@@ -599,6 +702,7 @@ async function draftOnePacket({
     },
     draft,
     raw_response: raw,
+    provider_error: providerError,
     gate
   };
 }
@@ -613,6 +717,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   provider = DEFAULT_LLM_DRAFT_PROVIDER,
   model = DEFAULT_LLM_DRAFT_MODEL,
   ollamaEndpoint = "http://127.0.0.1:11434/api/generate",
+  ollamaTimeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   repairAttempts = 1,
   now = new Date()
 } = {}) {
@@ -638,6 +743,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       provider,
       model,
       ollamaEndpoint,
+      ollamaTimeoutMs,
       repairAttempts
     }));
   }
@@ -661,6 +767,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       draft_count: results.filter((result) => result.draft).length,
       passed_gate_count: results.filter((result) => result.gate.ok).length,
       failed_gate_count: results.filter((result) => !result.gate.ok).length,
+      provider_error_count: results.filter((result) => result.provider_error).length,
       avg_quality_score: results.length
         ? Math.round(1000 * results.reduce((sum, result) => sum + result.gate.quality_score, 0) / results.length) / 1000
         : 0,
@@ -720,6 +827,7 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
       `- gate_ok: ${item.gate.ok}`,
       `- quality_score: ${item.gate.quality_score}`,
       `- violations: ${item.gate.violations.join(", ") || "none"}`,
+      `- provider_error: ${item.provider_error?.code ?? "none"}`,
       `- title: ${item.draft?.title ?? "PARSE_FAILED"}`,
       `- verification_commands: ${(item.draft?.verification_commands ?? []).join(" | ")}`,
       ""
