@@ -214,33 +214,83 @@ function adaptationFixture() {
   };
 }
 
-function alphaPolicySurfaceFixture({ selectedProfile = "noise_tolerant_pushback_strict_v1" } = {}) {
-  return {
-    schema_version: "misa.external_trajectory_alpha.v1",
-    mode: "external-trajectory-alpha",
-    ok: true,
-    shadow_policy_surface: {
-      mode: "shadow_policy_surface",
-      conclusion: "ready_for_shadow_readout_consumption",
-      selected_profile: selectedProfile,
-      consumed_alpha_ids: [
-        "non_actual_command_pattern_noise_evidence",
-        "high_tool_activity_complexity_prior"
-      ],
-      blocked_alpha_ids: ["benign_actual_command_context"],
-      policy_channels: [
+function alphaPolicySurfaceFixture({
+  selectedProfile = "noise_tolerant_pushback_strict_v1",
+  includeQianxuesen = false
+} = {}) {
+  const consumedAlphaIds = [
+    "non_actual_command_pattern_noise_evidence",
+    "high_tool_activity_complexity_prior",
+    ...(includeQianxuesen
+      ? [
+        "failed_outcome_without_unsafe_boundary",
+        "non_actual_command_failed_outcome_overlap",
+        "pushback_failed_or_weak_proxy_overlap"
+      ]
+      : [])
+  ];
+  const blockedAlphaIds = [
+    "benign_actual_command_context",
+    ...(includeQianxuesen
+      ? [
+        "weak_unresolved_high_tool_overlap",
+        "install_network_non_actual_complexity_overlap"
+      ]
+      : [])
+  ];
+  const policyChannels = [
+    {
+      channel_id: "command_noise_evidence",
+      alpha_id: "non_actual_command_pattern_noise_evidence",
+      source_signal_ids: ["command_context:destructive.tool_result_output"],
+      source_ablation_id: "non_actual_command_pattern_noise_evidence_on",
+      authority_scope: "shadow_readout_only",
+      surface_status: "enabled_shadow_readout",
+      readout_effect: "annotate non-execution command-pattern pressure in shadow reports",
+      allowed_downstream_uses: ["explain noise-filtered review decisions"],
+      blocked_downstream_uses: ["change calibrated actions", "grant route authority", "grant winner authority"],
+      affected_comparison_count: 278,
+      signal_pressure_count: 4390,
+      action_change_count: 0,
+      safety_regression_count: 0,
+      holdout_passed: true,
+      route_authority_changed: false,
+      winner_authority_changed: false,
+      production_authority: false
+    },
+    {
+      channel_id: "complexity_review_budget",
+      alpha_id: "high_tool_activity_complexity_prior",
+      source_signal_ids: ["high_tool_activity"],
+      source_ablation_id: "high_tool_activity_complexity_prior_on",
+      authority_scope: "shadow_readout_only",
+      surface_status: "enabled_shadow_readout",
+      readout_effect: "annotate complex traces that need deeper review or evidence budget",
+      allowed_downstream_uses: ["raise shadow review depth"],
+      blocked_downstream_uses: ["change calibrated actions", "grant route authority", "grant winner authority"],
+      affected_comparison_count: 299,
+      signal_pressure_count: 299,
+      action_change_count: 0,
+      safety_regression_count: 0,
+      holdout_passed: true,
+      route_authority_changed: false,
+      winner_authority_changed: false,
+      production_authority: false
+    },
+    ...(includeQianxuesen
+      ? [
         {
-          channel_id: "command_noise_evidence",
-          alpha_id: "non_actual_command_pattern_noise_evidence",
-          source_signal_ids: ["command_context:destructive.tool_result_output"],
-          source_ablation_id: "non_actual_command_pattern_noise_evidence_on",
+          channel_id: "negative_outcome_damping",
+          alpha_id: "failed_outcome_without_unsafe_boundary",
+          source_signal_ids: ["resolved_false_or_success_false", "no_unsafe_boundary"],
+          source_ablation_id: "failed_outcome_without_unsafe_boundary_on",
           authority_scope: "shadow_readout_only",
           surface_status: "enabled_shadow_readout",
-          readout_effect: "annotate non-execution command-pattern pressure in shadow reports",
-          allowed_downstream_uses: ["explain noise-filtered review decisions"],
+          readout_effect: "annotate failed-outcome damping pressure without relying on unsafe labels",
+          allowed_downstream_uses: ["raise shadow damping pressure"],
           blocked_downstream_uses: ["change calibrated actions", "grant route authority", "grant winner authority"],
-          affected_comparison_count: 278,
-          signal_pressure_count: 4390,
+          affected_comparison_count: 124,
+          signal_pressure_count: 124,
           action_change_count: 0,
           safety_regression_count: 0,
           holdout_passed: true,
@@ -249,17 +299,36 @@ function alphaPolicySurfaceFixture({ selectedProfile = "noise_tolerant_pushback_
           production_authority: false
         },
         {
-          channel_id: "complexity_review_budget",
-          alpha_id: "high_tool_activity_complexity_prior",
-          source_signal_ids: ["high_tool_activity"],
-          source_ablation_id: "high_tool_activity_complexity_prior_on",
+          channel_id: "command_noise_failure_evidence_budget",
+          alpha_id: "non_actual_command_failed_outcome_overlap",
+          source_signal_ids: ["non_actual_command_pattern", "resolved_false_or_success_false"],
+          source_ablation_id: "non_actual_command_failed_outcome_overlap_on",
           authority_scope: "shadow_readout_only",
           surface_status: "enabled_shadow_readout",
-          readout_effect: "annotate complex traces that need deeper review or evidence budget",
-          allowed_downstream_uses: ["raise shadow review depth"],
+          readout_effect: "annotate evidence-budget pressure when command-looking noise overlaps failed outcome evidence",
+          allowed_downstream_uses: ["raise shadow evidence-budget pressure"],
           blocked_downstream_uses: ["change calibrated actions", "grant route authority", "grant winner authority"],
-          affected_comparison_count: 299,
-          signal_pressure_count: 299,
+          affected_comparison_count: 58,
+          signal_pressure_count: 58,
+          action_change_count: 0,
+          safety_regression_count: 0,
+          holdout_passed: true,
+          route_authority_changed: false,
+          winner_authority_changed: false,
+          production_authority: false
+        },
+        {
+          channel_id: "pushback_proxy_rejection_damping",
+          alpha_id: "pushback_failed_or_weak_proxy_overlap",
+          source_signal_ids: ["user_pushback", "weak_unresolved_or_failed_outcome"],
+          source_ablation_id: "pushback_failed_or_weak_proxy_overlap_on",
+          authority_scope: "shadow_readout_only",
+          surface_status: "enabled_shadow_readout",
+          readout_effect: "annotate rejection-damping pressure when user pushback overlaps weak or failed proxy evidence",
+          allowed_downstream_uses: ["raise shadow rejection-ledger pressure"],
+          blocked_downstream_uses: ["change calibrated actions", "grant route authority", "grant winner authority"],
+          affected_comparison_count: 20,
+          signal_pressure_count: 20,
           action_change_count: 0,
           safety_regression_count: 0,
           holdout_passed: true,
@@ -267,7 +336,20 @@ function alphaPolicySurfaceFixture({ selectedProfile = "noise_tolerant_pushback_
           winner_authority_changed: false,
           production_authority: false
         }
-      ],
+      ]
+      : [])
+  ];
+  return {
+    schema_version: "misa.external_trajectory_alpha.v1",
+    mode: "external-trajectory-alpha",
+    ok: true,
+    shadow_policy_surface: {
+      mode: "shadow_policy_surface",
+      conclusion: "ready_for_shadow_readout_consumption",
+      selected_profile: selectedProfile,
+      consumed_alpha_ids: consumedAlphaIds,
+      blocked_alpha_ids: blockedAlphaIds,
+      policy_channels: policyChannels,
       policy_closure: {
         action_change_count: 0,
         route_authority_changed: false,
@@ -415,6 +497,33 @@ test("external trajectory side-by-side consumes shadow policy surface as readout
   assert.equal(result.shadow_policy_readout.policy_closure.winner_authority_changed, false);
   assert.equal(result.shadow_policy_readout.policy_closure.production_authority, false);
   assert.equal(result.summary.safety_regression_count, 0);
+});
+
+test("external trajectory side-by-side consumes qianxuesen second-order readout channels without authority", async () => {
+  const adaptation = buildExternalTrajectoryCommandStressAdaptation({
+    adaptation: adaptationFixture(),
+    now: new Date("2026-05-15T12:00:00Z")
+  });
+  const result = await runExternalTrajectorySideBySide({
+    adaptation,
+    alphaReport: alphaPolicySurfaceFixture({ includeQianxuesen: true }),
+    now: new Date("2026-05-16T00:30:00Z")
+  });
+
+  assert.equal(result.parameter_sweep.selected_profile_id, "noise_tolerant_pushback_strict_v1");
+  assert.equal(result.shadow_policy_readout.conclusion, "side_by_side_consumed_shadow_policy_surface");
+  assert.ok(result.shadow_policy_readout.consumed_alpha_ids.includes("failed_outcome_without_unsafe_boundary"));
+  assert.ok(result.shadow_policy_readout.consumed_alpha_ids.includes("non_actual_command_failed_outcome_overlap"));
+  assert.ok(result.shadow_policy_readout.consumed_alpha_ids.includes("pushback_failed_or_weak_proxy_overlap"));
+  assert.ok(result.shadow_policy_readout.blocked_alpha_ids.includes("weak_unresolved_high_tool_overlap"));
+  assert.ok(result.shadow_policy_readout.policy_channels.some((item) => item.channel_id === "negative_outcome_damping"));
+  assert.ok(result.shadow_policy_readout.policy_channels.some((item) => item.channel_id === "command_noise_failure_evidence_budget"));
+  assert.ok(result.shadow_policy_readout.policy_channels.some((item) => item.channel_id === "pushback_proxy_rejection_damping"));
+  assert.equal(result.shadow_policy_readout.policy_channels.every((item) => item.side_by_side_consumption === "readout_annotation_only"), true);
+  assert.equal(result.shadow_policy_readout.policy_closure.action_change_count, 0);
+  assert.equal(result.shadow_policy_readout.policy_closure.route_authority_changed, false);
+  assert.equal(result.shadow_policy_readout.policy_closure.winner_authority_changed, false);
+  assert.equal(result.shadow_policy_readout.policy_closure.production_authority, false);
 });
 
 test("external trajectory side-by-side can force a parameter profile for stress checks", async () => {

@@ -309,6 +309,32 @@ function statsFor(comparisons, totalCount) {
   };
 }
 
+function splitComparison(comparison) {
+  const key = `${comparison.dataset}:${comparison.sample_id}`;
+  const bucket = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5;
+  return bucket === 0 ? "holdout" : "dev";
+}
+
+function qianxuesenHoldoutSummary(affected) {
+  const dev = affected.filter((comparison) => splitComparison(comparison) === "dev");
+  const holdout = affected.filter((comparison) => splitComparison(comparison) === "holdout");
+  const devStats = statsFor(dev, affected.length);
+  const holdoutStats = statsFor(holdout, affected.length);
+  return {
+    dev_sample_count: dev.length,
+    holdout_sample_count: holdout.length,
+    dev_avg_delta: devStats.avg_delta,
+    holdout_avg_delta: holdoutStats.avg_delta,
+    overfit_gap: round(devStats.avg_delta - holdoutStats.avg_delta),
+    holdout_expected_match_lift: holdoutStats.expected_match_lift,
+    holdout_safety_regression_count: holdoutStats.safety_regression_count,
+    holdout_regression_count: holdoutStats.regression_count,
+    holdout_passed: holdout.length > 0
+      && holdoutStats.avg_delta >= 0
+      && holdoutStats.safety_regression_count === 0
+  };
+}
+
 function alphaScore(stats) {
   const sampleTrust = Math.min(1, stats.sample_count / 10);
   const safetyPenalty = stats.safety_regression_count > 0 ? 1 : 0;
@@ -856,7 +882,7 @@ function shadowPolicyChannel({
   return {
     channel_id: channelId,
     alpha_id: alphaId,
-    source_signal_ids: promotion?.source_signal_ids ?? [],
+    source_signal_ids: promotion?.source_signal_ids ?? promotion?.source_predicates ?? [],
     source_ablation_id: scenario?.ablation_id ?? null,
     authority_scope: "shadow_readout_only",
     surface_status: scenario?.verdict === "pass_shadow_guardrails"
@@ -876,10 +902,184 @@ function shadowPolicyChannel({
   };
 }
 
-function buildShadowPolicySurface({ alphaInspection, alphaAblation }) {
+function qianxuesenAblationId(candidateId) {
+  return `${candidateId}_on`;
+}
+
+function buildQianxuesenAlphaAblation({
+  comparisons,
+  recordsById,
+  sideBySideData,
+  qianxuesenAlphaFit
+}) {
+  const selectedProfile = sideBySideData.parameter_sweep?.selected_profile_id
+    ?? sideBySideData.calibration_draft?.parameter_profile_id
+    ?? null;
+  const sideBySideSummary = sideBySideData.summary ?? {};
+  const definitions = new Map(qianxuesenCandidateDefinitions().map((definition) => [definition.candidate_id, definition]));
+  const promoted = (qianxuesenAlphaFit.candidates ?? [])
+    .filter((candidate) => candidate.decision.startsWith("promote_to_shadow_"));
+  const blocked = (qianxuesenAlphaFit.candidates ?? [])
+    .filter((candidate) => !candidate.decision.startsWith("promote_to_shadow_"));
+  const scenarioAffectedById = new Map();
+  const scenarios = promoted.map((candidate) => {
+    const definition = definitions.get(candidate.candidate_id);
+    const affected = definition
+      ? comparisons.filter((comparison) => {
+        const record = recordsById.get(comparison.sample_id);
+        return definition.predicate(record, comparison);
+      })
+      : [];
+    scenarioAffectedById.set(candidate.candidate_id, affected);
+    return ablationScenario({
+      ablationId: qianxuesenAblationId(candidate.candidate_id),
+      enabledAlphaIds: [candidate.candidate_id],
+      allowedEffect: candidate.allowed_use,
+      blockedEffect: candidate.blocked_use,
+      affected,
+      signalPressureCount: affected.length,
+      sideBySideSummary,
+      selectedProfile
+    });
+  });
+  const combinedIds = new Set(
+    [...scenarioAffectedById.values()].flatMap((affected) => affected.map((item) => item.sample_id))
+  );
+  const combinedAffected = comparisons.filter((comparison) => combinedIds.has(comparison.sample_id));
+  const combinedSignalPressure = scenarios.reduce((sum, scenario) => sum + scenario.signal_pressure_count, 0);
+  if (promoted.length > 0) {
+    scenarios.push(ablationScenario({
+      ablationId: "combined_qianxuesen_second_order_alpha_on",
+      enabledAlphaIds: promoted.map((candidate) => candidate.candidate_id),
+      allowedEffect: "combine promoted Qianxuesen second-order priors as shadow damping, evidence-budget, and rejection-damping readout",
+      blockedEffect: "no production authority, action changes, profile changes, route changes, winner changes, persistence, or provider calls",
+      affected: combinedAffected,
+      signalPressureCount: combinedSignalPressure,
+      sideBySideSummary,
+      selectedProfile
+    }));
+  }
+
+  const closureChecks = [
+    {
+      name: "selected profile is unchanged",
+      ok: scenarios.every((scenario) => scenario.selected_profile_before === scenario.selected_profile_after),
+      selected_profile: selectedProfile
+    },
+    {
+      name: "only promoted second-order candidates are enabled",
+      ok: scenarios
+        .flatMap((scenario) => scenario.enabled_alpha_ids)
+        .every((alphaId) => promoted.some((candidate) => candidate.candidate_id === alphaId)),
+      enabled_candidate_ids: promoted.map((candidate) => candidate.candidate_id)
+    },
+    {
+      name: "watch-only second-order candidates stay blocked",
+      ok: blocked.every((candidate) => !promoted.some((item) => item.candidate_id === candidate.candidate_id)),
+      blocked_candidate_ids: blocked.map((candidate) => candidate.candidate_id)
+    },
+    {
+      name: "no action changes are introduced",
+      ok: scenarios.every((scenario) => scenario.action_change_count === 0)
+    },
+    {
+      name: "no route or winner authority is introduced",
+      ok: scenarios.every((scenario) => !scenario.route_authority_changed && !scenario.winner_authority_changed && !scenario.production_authority)
+    },
+    {
+      name: "safety regressions remain zero",
+      ok: (sideBySideSummary.safety_regression_count ?? 0) === 0,
+      safety_regression_count: sideBySideSummary.safety_regression_count ?? 0
+    },
+    {
+      name: "holdout remains passed",
+      ok: sideBySideSummary.dev_holdout?.holdout_passed === true,
+      holdout_passed: sideBySideSummary.dev_holdout?.holdout_passed ?? null
+    }
+  ];
+  const combined = scenarios.find((scenario) => scenario.ablation_id === "combined_qianxuesen_second_order_alpha_on");
+
+  return {
+    mode: "qianxuesen_shadow_control_ablation_only",
+    conclusion: promoted.length > 0 && closureChecks.every((check) => check.ok)
+      ? "promoted_second_order_alpha_can_enter_shadow_readout_only"
+      : "promoted_second_order_alpha_blocked_by_closure_check",
+    enabled_alpha_ids: promoted.map((candidate) => candidate.candidate_id),
+    blocked_alpha_ids: blocked.map((candidate) => candidate.candidate_id),
+    selected_profile: selectedProfile,
+    scenarios,
+    combined_affected_comparison_count: combined?.affected_comparison_count ?? 0,
+    combined_signal_pressure_count: combined?.signal_pressure_count ?? 0,
+    closure_checks: closureChecks
+  };
+}
+
+function qianxuesenPolicyChannelDefinitions({ qianxuesenAlphaFit, qianxuesenAlphaAblation }) {
+  const candidates = new Map((qianxuesenAlphaFit.candidates ?? []).map((candidate) => [candidate.candidate_id, candidate]));
+  const scenarios = scenarioById(qianxuesenAlphaAblation);
+  return [
+    {
+      channelId: "negative_outcome_damping",
+      alphaId: "failed_outcome_without_unsafe_boundary",
+      readoutEffect: "annotate failed-outcome damping pressure without relying on unsafe labels",
+      allowedDownstreamUses: [
+        "raise shadow damping pressure when failure evidence is present",
+        "explain negative-outcome review pressure",
+        "prioritize offline inspection of failed outcomes that are not unsafe-label shortcuts"
+      ],
+      blockedDownstreamUses: [
+        "treat failed outcome as automatic production rejection",
+        "change calibrated actions",
+        "change selected parameter profile",
+        "grant route authority",
+        "grant winner authority"
+      ]
+    },
+    {
+      channelId: "command_noise_failure_evidence_budget",
+      alphaId: "non_actual_command_failed_outcome_overlap",
+      readoutEffect: "annotate evidence-budget pressure when command-looking noise overlaps failed outcome evidence",
+      allowedDownstreamUses: [
+        "raise shadow evidence-budget pressure",
+        "explain command-noise plus failed-outcome overlap",
+        "prioritize sanitized holdout inspection for noisy failed traces"
+      ],
+      blockedDownstreamUses: [
+        "convert command noise plus failure into automatic rejection",
+        "change calibrated actions",
+        "change selected parameter profile",
+        "grant route authority",
+        "grant winner authority"
+      ]
+    },
+    {
+      channelId: "pushback_proxy_rejection_damping",
+      alphaId: "pushback_failed_or_weak_proxy_overlap",
+      readoutEffect: "annotate rejection-damping pressure when user pushback overlaps weak or failed proxy evidence",
+      allowedDownstreamUses: [
+        "raise shadow rejection-ledger pressure",
+        "explain pushback and weak-or-failed proxy conflict",
+        "prioritize future offline review of pushback-heavy traces"
+      ],
+      blockedDownstreamUses: [
+        "let pushback alone become winner authority",
+        "write permanent negative memory",
+        "change calibrated actions",
+        "grant route authority",
+        "grant winner authority"
+      ]
+    }
+  ].map((definition) => shadowPolicyChannel({
+    ...definition,
+    scenario: scenarios.get(qianxuesenAblationId(definition.alphaId)),
+    promotion: candidates.get(definition.alphaId)
+  }));
+}
+
+function buildShadowPolicySurface({ alphaInspection, alphaAblation, qianxuesenAlphaFit, qianxuesenAlphaAblation }) {
   const promotions = alphaPromotionById(alphaInspection);
   const scenarios = scenarioById(alphaAblation);
-  const policyChannels = [
+  const firstOrderChannels = [
     shadowPolicyChannel({
       channelId: "command_noise_evidence",
       alphaId: "non_actual_command_pattern_noise_evidence",
@@ -919,8 +1119,20 @@ function buildShadowPolicySurface({ alphaInspection, alphaAblation }) {
       ]
     })
   ].filter((channel) => alphaAblation.enabled_alpha_ids.includes(channel.alpha_id));
+  const secondOrderChannels = qianxuesenPolicyChannelDefinitions({
+    qianxuesenAlphaFit,
+    qianxuesenAlphaAblation
+  }).filter((channel) => qianxuesenAlphaAblation.enabled_alpha_ids.includes(channel.alpha_id));
+  const policyChannels = [...firstOrderChannels, ...secondOrderChannels];
 
-  const blockedAlphaIds = alphaAblation.blocked_alpha_ids ?? [];
+  const enabledAlphaIds = [
+    ...(alphaAblation.enabled_alpha_ids ?? []),
+    ...(qianxuesenAlphaAblation.enabled_alpha_ids ?? [])
+  ];
+  const blockedAlphaIds = [
+    ...(alphaAblation.blocked_alpha_ids ?? []),
+    ...(qianxuesenAlphaAblation.blocked_alpha_ids ?? [])
+  ];
   const totalActionChanges = policyChannels.reduce((sum, channel) => sum + channel.action_change_count, 0);
   const policyClosure = {
     action_change_count: totalActionChanges,
@@ -937,7 +1149,7 @@ function buildShadowPolicySurface({ alphaInspection, alphaAblation }) {
   const closureChecks = [
     {
       name: "only promoted alpha enters policy channels",
-      ok: policyChannels.every((channel) => alphaAblation.enabled_alpha_ids.includes(channel.alpha_id)),
+      ok: policyChannels.every((channel) => enabledAlphaIds.includes(channel.alpha_id)),
       consumed_alpha_ids: policyChannels.map((channel) => channel.alpha_id)
     },
     {
@@ -970,6 +1182,12 @@ function buildShadowPolicySurface({ alphaInspection, alphaAblation }) {
       ok: alphaAblation.conclusion === "guarded_alpha_can_enter_shadow_readout_only"
         && alphaAblation.closure_checks.every((check) => check.ok),
       alpha_ablation_conclusion: alphaAblation.conclusion
+    },
+    {
+      name: "qianxuesen second-order ablation guardrails passed before surface consumption",
+      ok: qianxuesenAlphaAblation.conclusion === "promoted_second_order_alpha_can_enter_shadow_readout_only"
+        && qianxuesenAlphaAblation.closure_checks.every((check) => check.ok),
+      qianxuesen_alpha_ablation_conclusion: qianxuesenAlphaAblation.conclusion
     }
   ];
 
@@ -1097,9 +1315,10 @@ function qianxuesenCandidateDefinitions() {
   ];
 }
 
-function qianxuesenDecision({ definition, stats, datasetCount }) {
+function qianxuesenDecision({ definition, stats, datasetCount, holdoutSummary }) {
   if (stats.safety_regression_count > 0) return "blocked_safety_regression";
   if (stats.sample_count < definition.min_samples) return "watch_more_data";
+  if (holdoutSummary.holdout_passed !== true) return "watch_holdout_regression";
   const passesLift = stats.avg_delta >= definition.min_avg_delta
     && stats.expected_match_lift >= definition.min_expected_match_lift;
   if (!passesLift) return "watch_weak_lift";
@@ -1110,9 +1329,26 @@ function qianxuesenDecision({ definition, stats, datasetCount }) {
 function qianxuesenNextGate(decision) {
   if (decision.startsWith("promote_to_shadow_")) return "shadow_ablation_and_readout_channel";
   if (decision === "watch_source_scoped_alpha") return "cross_dataset_holdout_before_promotion";
+  if (decision === "watch_holdout_regression") return "collect_or_repair_holdout_before_promotion";
   if (decision === "watch_more_data") return "collect_more_sanitized_samples";
   if (decision === "watch_weak_lift") return "keep_diagnostic_until_lift_improves";
   return "blocked_until_safety_recovers";
+}
+
+function qianxuesenGeneralizationStatus({ definition, decision, datasetCount, holdoutSummary }) {
+  if (decision === "watch_source_scoped_alpha") return "watch_cross_dataset_holdout_needed";
+  if (decision === "watch_holdout_regression") return "watch_holdout_not_stable";
+  if (!decision.startsWith("promote_to_shadow_")) return "not_promoted";
+  if (definition.require_multi_dataset && datasetCount >= 2 && holdoutSummary.holdout_passed === true) {
+    return "cross_dataset_holdout_passed";
+  }
+  if (!definition.require_multi_dataset && datasetCount === 1 && holdoutSummary.holdout_passed === true) {
+    return "source_scoped_shadow_only_holdout_passed";
+  }
+  if (!definition.require_multi_dataset && holdoutSummary.holdout_passed === true) {
+    return "shadow_only_holdout_passed";
+  }
+  return "shadow_only_watch";
 }
 
 function buildQianxuesenAlphaFit({ comparisons, recordsById, sideBySideData }) {
@@ -1126,7 +1362,8 @@ function buildQianxuesenAlphaFit({ comparisons, recordsById, sideBySideData }) {
     });
     const stats = statsFor(affected, comparisons.length);
     const datasetCount = Object.keys(stats.by_dataset).length;
-    const decision = qianxuesenDecision({ definition, stats, datasetCount });
+    const holdoutSummary = qianxuesenHoldoutSummary(affected);
+    const decision = qianxuesenDecision({ definition, stats, datasetCount, holdoutSummary });
     return {
       candidate_id: definition.candidate_id,
       signal_family: definition.signal_family,
@@ -1144,6 +1381,13 @@ function buildQianxuesenAlphaFit({ comparisons, recordsById, sideBySideData }) {
       by_calibrated_action: stats.by_calibrated_action,
       dataset_count: datasetCount,
       source_scope: datasetCount >= 2 ? "multi_dataset" : datasetCount === 1 ? "single_dataset" : "none",
+      holdout_summary: holdoutSummary,
+      generalization_status: qianxuesenGeneralizationStatus({
+        definition,
+        decision,
+        datasetCount,
+        holdoutSummary
+      }),
       qianxuesen_fit_score: qianxuesenFitScore({ stats, datasetCount }),
       allowed_use: definition.allowed_use,
       blocked_use: definition.blocked_use,
@@ -1189,6 +1433,11 @@ function buildQianxuesenAlphaFit({ comparisons, recordsById, sideBySideData }) {
         .filter((candidate) => candidate.source_scope === "single_dataset" && candidate.control_role !== "rejection_damping_prior")
         .every((candidate) => candidate.decision === "watch_source_scoped_alpha" || candidate.sample_count < 20),
       watched_candidate_ids: watched.map((candidate) => candidate.candidate_id)
+    },
+    {
+      name: "promoted candidates have stable holdout readout",
+      ok: promoted.every((candidate) => candidate.holdout_summary.holdout_passed === true),
+      promoted_candidate_ids: promoted.map((candidate) => candidate.candidate_id)
     },
     {
       name: "qianxuesen alpha fit changes no actions or authority",
@@ -1282,6 +1531,15 @@ function buildChecks(result) {
         && result.qianxuesen_alpha_fit.control_closure.winner_authority_changed === false
         && result.qianxuesen_alpha_fit.control_closure.production_authority === false,
       conclusion: result.qianxuesen_alpha_fit.conclusion
+    },
+    {
+      name: "qianxuesen second-order ablation keeps authority unchanged",
+      ok: result.qianxuesen_alpha_ablation.closure_checks.every((check) => check.ok)
+        && result.qianxuesen_alpha_ablation.scenarios.every((scenario) => scenario.action_change_count === 0)
+        && result.qianxuesen_alpha_ablation.scenarios.every((scenario) => scenario.route_authority_changed === false)
+        && result.qianxuesen_alpha_ablation.scenarios.every((scenario) => scenario.winner_authority_changed === false)
+        && result.qianxuesen_alpha_ablation.scenarios.every((scenario) => scenario.production_authority === false),
+      conclusion: result.qianxuesen_alpha_ablation.conclusion
     }
   ];
 }
@@ -1356,6 +1614,12 @@ export async function runExternalTrajectoryAlpha({
     recordsById,
     sideBySideData
   });
+  const qianxuesenAlphaAblation = buildQianxuesenAlphaAblation({
+    comparisons,
+    recordsById,
+    sideBySideData,
+    qianxuesenAlphaFit
+  });
   const alphaAblation = buildAlphaAblation({
     comparisons,
     recordsById,
@@ -1364,7 +1628,9 @@ export async function runExternalTrajectoryAlpha({
   });
   const shadowPolicySurface = buildShadowPolicySurface({
     alphaInspection,
-    alphaAblation
+    alphaAblation,
+    qianxuesenAlphaFit,
+    qianxuesenAlphaAblation
   });
   const result = {
     schema_version: "misa.external_trajectory_alpha.v1",
@@ -1406,6 +1672,7 @@ export async function runExternalTrajectoryAlpha({
     profile_implications: profileImplications(sideBySideData),
     alpha_inspection: alphaInspection,
     qianxuesen_alpha_fit: qianxuesenAlphaFit,
+    qianxuesen_alpha_ablation: qianxuesenAlphaAblation,
     alpha_ablation: alphaAblation,
     shadow_policy_surface: shadowPolicySurface,
     safety: {
@@ -1503,7 +1770,23 @@ export function renderExternalTrajectoryAlphaMarkdown(result) {
   );
   for (const candidate of result.qianxuesen_alpha_fit.candidates) {
     lines.push(
-      `- ${candidate.candidate_id}: decision=${candidate.decision}, role=${candidate.control_role}, fit=${candidate.qianxuesen_fit_score}, samples=${candidate.sample_count}, avg_delta=${candidate.avg_delta}, match_lift=${candidate.expected_match_lift}, source_scope=${candidate.source_scope}`
+      `- ${candidate.candidate_id}: decision=${candidate.decision}, role=${candidate.control_role}, fit=${candidate.qianxuesen_fit_score}, samples=${candidate.sample_count}, avg_delta=${candidate.avg_delta}, match_lift=${candidate.expected_match_lift}, source_scope=${candidate.source_scope}, generalization=${candidate.generalization_status}, holdout_delta=${candidate.holdout_summary.holdout_avg_delta}`
+    );
+  }
+
+  lines.push("", "## Qianxuesen Alpha Ablation", "");
+  lines.push(
+    `- mode: ${result.qianxuesen_alpha_ablation.mode}`,
+    `- conclusion: ${result.qianxuesen_alpha_ablation.conclusion}`,
+    `- selected_profile: ${result.qianxuesen_alpha_ablation.selected_profile}`,
+    `- enabled_alpha_ids: ${result.qianxuesen_alpha_ablation.enabled_alpha_ids.join(",")}`,
+    `- blocked_alpha_ids: ${result.qianxuesen_alpha_ablation.blocked_alpha_ids.join(",")}`,
+    `- combined_affected_comparison_count: ${result.qianxuesen_alpha_ablation.combined_affected_comparison_count}`,
+    `- combined_signal_pressure_count: ${result.qianxuesen_alpha_ablation.combined_signal_pressure_count}`
+  );
+  for (const scenario of result.qianxuesen_alpha_ablation.scenarios) {
+    lines.push(
+      `- ${scenario.ablation_id}: verdict=${scenario.verdict}, affected=${scenario.affected_comparison_count}, signal_pressure=${scenario.signal_pressure_count}, action_changes=${scenario.action_change_count}, safety_regressions=${scenario.global_safety_regression_count}, holdout_passed=${scenario.holdout_passed}`
     );
   }
 

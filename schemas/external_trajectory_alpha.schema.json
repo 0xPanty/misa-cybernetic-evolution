@@ -98,6 +98,7 @@
     },
     "alpha_inspection": { "$ref": "#/$defs/alpha_inspection" },
     "qianxuesen_alpha_fit": { "$ref": "#/$defs/qianxuesen_alpha_fit" },
+    "qianxuesen_alpha_ablation": { "$ref": "#/$defs/alpha_ablation" },
     "alpha_ablation": { "$ref": "#/$defs/alpha_ablation" },
     "shadow_policy_surface": { "$ref": "#/$defs/shadow_policy_surface" },
     "safety": {
@@ -510,6 +511,8 @@
         "by_calibrated_action",
         "dataset_count",
         "source_scope",
+        "holdout_summary",
+        "generalization_status",
         "qianxuesen_fit_score",
         "allowed_use",
         "blocked_use",
@@ -539,6 +542,8 @@
           "type": "string",
           "enum": ["none", "single_dataset", "multi_dataset"]
         },
+        "holdout_summary": { "$ref": "#/$defs/qianxuesen_holdout_summary" },
+        "generalization_status": { "type": "string" },
         "qianxuesen_fit_score": { "type": "number" },
         "allowed_use": { "type": "string" },
         "blocked_use": { "type": "string" },
@@ -547,6 +552,32 @@
         "winner_authority_changed": { "type": "boolean", "const": false },
         "production_authority": { "type": "boolean", "const": false },
         "next_gate": { "type": "string" }
+      }
+    },
+    "qianxuesen_holdout_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dev_sample_count",
+        "holdout_sample_count",
+        "dev_avg_delta",
+        "holdout_avg_delta",
+        "overfit_gap",
+        "holdout_expected_match_lift",
+        "holdout_safety_regression_count",
+        "holdout_regression_count",
+        "holdout_passed"
+      ],
+      "properties": {
+        "dev_sample_count": { "type": "integer", "minimum": 0 },
+        "holdout_sample_count": { "type": "integer", "minimum": 0 },
+        "dev_avg_delta": { "type": "number" },
+        "holdout_avg_delta": { "type": "number" },
+        "overfit_gap": { "type": "number" },
+        "holdout_expected_match_lift": { "type": "number" },
+        "holdout_safety_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_regression_count": { "type": "integer", "minimum": 0 },
+        "holdout_passed": { "type": "boolean" }
       }
     },
     "qianxuesen_control_closure": {

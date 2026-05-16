@@ -2203,3 +2203,281 @@ Next-window recovery phrase:
 下一步只做：对 failed_outcome_without_unsafe_boundary、non_actual_command_failed_outcome_overlap、pushback_failed_or_weak_proxy_overlap 做 shadow ablation/readout。
 不要先重跑大 sweep，不要接生产 authority，不要写 Zilliz/embedding，不要跑真实 LLM，不碰 VPS，不推 GitHub。
 ```
+
+## Qianxuesen Second-Order Shadow Ablation/Readout Addendum 2026-05-16
+
+This window implemented the narrow next work unit from the 2026-05-16 closeout:
+shadow ablation/readout for the three promoted Qianxuesen second-order priors.
+It reused the fixed 867-comparison batch and did not rerun a broad adapter sweep.
+
+Changed files:
+
+```text
+scripts/lib/external-trajectory-alpha.mjs
+schemas/external_trajectory_alpha.schema.json
+test/external-trajectory-alpha.test.mjs
+test/external-trajectory-side-by-side.test.mjs
+```
+
+Input reports:
+
+```text
+runs/external-trajectory-side-by-side/2026-05-15T17-45-00-000Z-shadow-policy-readout-consumption/external-trajectory-side-by-side.json
+runs/external-trajectory-adaptation/2026-05-15T15-46-00-000Z-combined-swe-rebench-stratified500-command-context-classifier-command-stress/external-trajectory-adaptation.json
+```
+
+New local reports:
+
+```text
+runs/external-trajectory-alpha/2026-05-16T00-20-00-000Z-qianxuesen-second-order-shadow-ablation-readout/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T00-30-00-000Z-qianxuesen-second-order-shadow-readout-consumption/external-trajectory-side-by-side.json
+```
+
+Main readout:
+
+```text
+selected/recommended profile: noise_tolerant_pushback_strict_v1
+samples/comparisons: 867
+avg_delta: +0.086
+safety_regressions: 0
+holdout_passed: true
+shadow_policy_readout.conclusion: side_by_side_consumed_shadow_policy_surface
+shadow_policy_channels: 5
+```
+
+Second-order ablation:
+
+```text
+qianxuesen_alpha_ablation.mode: qianxuesen_shadow_control_ablation_only
+qianxuesen_alpha_ablation.conclusion: promoted_second_order_alpha_can_enter_shadow_readout_only
+
+failed_outcome_without_unsafe_boundary_on:
+  affected=124
+  signal_pressure=124
+  action_changes=0
+  safety_regressions=0
+  holdout_passed=true
+
+non_actual_command_failed_outcome_overlap_on:
+  affected=58
+  signal_pressure=58
+  action_changes=0
+  safety_regressions=0
+  holdout_passed=true
+
+pushback_failed_or_weak_proxy_overlap_on:
+  affected=20
+  signal_pressure=20
+  action_changes=0
+  safety_regressions=0
+  holdout_passed=true
+
+combined_qianxuesen_second_order_alpha_on:
+  affected=124
+  signal_pressure=202
+  action_changes=0
+  safety_regressions=0
+  holdout_passed=true
+```
+
+Shadow readout channels now consumed by side-by-side:
+
+```text
+command_noise_evidence:
+  alpha_id=non_actual_command_pattern_noise_evidence
+  affected=278
+  signal_pressure=4390
+  side_by_side_consumption=readout_annotation_only
+
+complexity_review_budget:
+  alpha_id=high_tool_activity_complexity_prior
+  affected=299
+  signal_pressure=299
+  side_by_side_consumption=readout_annotation_only
+
+negative_outcome_damping:
+  alpha_id=failed_outcome_without_unsafe_boundary
+  affected=124
+  signal_pressure=124
+  side_by_side_consumption=readout_annotation_only
+
+command_noise_failure_evidence_budget:
+  alpha_id=non_actual_command_failed_outcome_overlap
+  affected=58
+  signal_pressure=58
+  side_by_side_consumption=readout_annotation_only
+
+pushback_proxy_rejection_damping:
+  alpha_id=pushback_failed_or_weak_proxy_overlap
+  affected=20
+  signal_pressure=20
+  side_by_side_consumption=readout_annotation_only
+```
+
+Still blocked / watch-only:
+
+```text
+benign_actual_command_context
+weak_unresolved_high_tool_overlap
+install_network_non_actual_complexity_overlap
+```
+
+Closure checks:
+
+```text
+action_change_count: 0
+route_authority_changed: false
+winner_authority_changed: false
+production_authority: false
+raw_external_content_persisted: false
+persistent_memory_written: false
+zilliz_written: false
+embedding_created: false
+llm_api_calls: false
+external_api_calls: false
+```
+
+Plain interpretation:
+
+```text
+The three second-order priors stood up as shadow readout signals. They explain
+where the shadow loop should add damping, evidence-budget pressure, or
+rejection-damping pressure. They still do not change the selected profile,
+actions, route authority, winner authority, or production behavior.
+
+The first-order readout plus the three second-order readouts are now visible in
+the side-by-side report as five annotation-only channels.
+```
+
+## Next Window Recovery Phrase 2026-05-16 After Second-Order Shadow Readout
+
+Use this exact recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution external trajectory lane。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Second-Order Shadow Ablation/Readout Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Second-Order Shadow Readout Addendum 2026-05-16。
+用 git status/log 对齐本地状态；本轮开始时本地 commit 锚点是 7220b5b，external trajectory baseline 固定看 a3f6cfb。
+
+最新本地报告：
+runs/external-trajectory-alpha/2026-05-16T00-20-00-000Z-qianxuesen-second-order-shadow-ablation-readout/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T00-30-00-000Z-qianxuesen-second-order-shadow-readout-consumption/external-trajectory-side-by-side.json
+
+当前结论：3 个 promoted second-order alpha 已通过 shadow ablation/readout：
+1. failed_outcome_without_unsafe_boundary -> negative_outcome_damping；
+2. non_actual_command_failed_outcome_overlap -> command_noise_failure_evidence_budget；
+3. pushback_failed_or_weak_proxy_overlap -> pushback_proxy_rejection_damping。
+
+稳定数字：
+samples=867
+avg_delta=+0.086
+safety_regressions=0
+holdout_passed=true
+action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+
+下一步：先收敛本地改动；如果继续校准，就只看两个 watch-only 信号的跨数据集 holdout，不要给生产 route/winner authority。
+
+仍然 shadow-only：不写 Zilliz、不创建 embedding、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据、不改生产 route/winner authority。
+```
+
+## Qianxuesen Generalization Guard Addendum 2026-05-16
+
+This window added a small anti-overfit readout to the Qianxuesen alpha report.
+Each second-order candidate now carries its own holdout summary and
+`generalization_status`, so source-scoped signals cannot be accidentally read as
+global alpha.
+
+New local reports:
+
+```text
+runs/external-trajectory-alpha/2026-05-16T01-00-00-000Z-qianxuesen-generalization-guard/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T01-10-00-000Z-qianxuesen-generalization-guard-readout/external-trajectory-side-by-side.json
+```
+
+Stable global readout:
+
+```text
+samples/comparisons: 867
+avg_delta: +0.086
+safety_regressions: 0
+holdout_passed: true
+shadow_policy_channels: 5
+action_change_count: 0
+route_authority_changed: false
+winner_authority_changed: false
+production_authority: false
+```
+
+Generalization readout:
+
+```text
+failed_outcome_without_unsafe_boundary:
+  status=cross_dataset_holdout_passed
+  datasets=agentrx-github,swe-chat,swe-rebench-openhands
+  holdout_n=23
+  holdout_avg_delta=+0.106
+  overfit_gap=+0.014
+
+non_actual_command_failed_outcome_overlap:
+  status=cross_dataset_holdout_passed
+  datasets=swe-chat,swe-rebench-openhands
+  holdout_n=10
+  holdout_avg_delta=+0.183
+  overfit_gap=+0.005
+
+pushback_failed_or_weak_proxy_overlap:
+  status=source_scoped_shadow_only_holdout_passed
+  datasets=swe-chat
+  holdout_n=1
+  holdout_avg_delta=+0.084
+  overfit_gap=+0.018
+
+weak_unresolved_high_tool_overlap:
+  status=watch_cross_dataset_holdout_needed
+  datasets=swe-chat
+
+install_network_non_actual_complexity_overlap:
+  status=watch_cross_dataset_holdout_needed
+  datasets=swe-rebench-openhands
+```
+
+Plain interpretation:
+
+```text
+This is the anti-runaway guard. The first two second-order signals look like
+real cross-source alpha. The pushback overlap signal is still useful, but only
+as shadow-only source-scoped rejection damping. The two watch-only signals keep
+their current boundary until they survive another dataset.
+```
+
+## Next Window Recovery Phrase 2026-05-16 After Generalization Guard
+
+Use this exact recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution external trajectory lane。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Generalization Guard Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Generalization Guard Readout Addendum 2026-05-16。
+用 git status/log 对齐本地状态；本轮开始时本地 commit 锚点是 7220b5b，external trajectory baseline 固定看 a3f6cfb。
+
+最新本地报告：
+runs/external-trajectory-alpha/2026-05-16T01-00-00-000Z-qianxuesen-generalization-guard/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T01-10-00-000Z-qianxuesen-generalization-guard-readout/external-trajectory-side-by-side.json
+
+当前结论：防跑偏读数已接入。failed_outcome_without_unsafe_boundary 和 non_actual_command_failed_outcome_overlap 是 cross_dataset_holdout_passed；pushback_failed_or_weak_proxy_overlap 只算 source_scoped_shadow_only_holdout_passed；weak_unresolved_high_tool_overlap 和 install_network_non_actual_complexity_overlap 继续 watch_cross_dataset_holdout_needed。
+
+稳定数字：
+samples=867
+avg_delta=+0.086
+safety_regressions=0
+holdout_passed=true
+action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+
+下一步：先收敛本地改动；继续校准时只补跨数据集证据，不写样本专属规则，不加新治理层。
+
+仍然 shadow-only：不写 Zilliz、不创建 embedding、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据、不改生产 route/winner authority。
+```

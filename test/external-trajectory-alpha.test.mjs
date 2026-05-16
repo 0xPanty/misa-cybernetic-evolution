@@ -256,6 +256,27 @@ function fixture() {
     }));
   }
 
+  for (let index = 0; index < 20; index += 1) {
+    const id = `swe-chat:pushback-failed-${index}`;
+    records.push(record({
+      id,
+      pushback: true,
+      confidence: "medium",
+      resolvedAvailable: true,
+      resolved: false
+    }));
+    comparisons.push(comparison({
+      id,
+      expected: "rejection_mapping_review",
+      baselineAction: "adoption_candidate",
+      calibratedAction: "rejection_mapping_review",
+      delta: 0.11,
+      rules: ["user_pushback_maps_to_rejection_review", "resolved_false_maps_to_boundary_review"],
+      issues: ["user_pushback_needs_rejection_mapping", "resolved_false_proxy_needs_negative_mapping"],
+      flags: { pushback: true }
+    }));
+  }
+
   return {
     adaptation: {
       schema_version: "misa.external_trajectory_adaptation.v1",
@@ -347,8 +368,11 @@ test("external trajectory alpha extracts architecture-actionable signals", async
   assert.equal(result.alpha_ablation.scenarios.every((item) => item.winner_authority_changed === false), true);
   assert.equal(result.shadow_policy_surface.conclusion, "ready_for_shadow_readout_consumption");
   assert.deepEqual(result.shadow_policy_surface.consumed_alpha_ids.sort(), [
+    "failed_outcome_without_unsafe_boundary",
     "high_tool_activity_complexity_prior",
-    "non_actual_command_pattern_noise_evidence"
+    "non_actual_command_failed_outcome_overlap",
+    "non_actual_command_pattern_noise_evidence",
+    "pushback_failed_or_weak_proxy_overlap"
   ]);
   assert.ok(result.shadow_policy_surface.blocked_alpha_ids.includes("benign_actual_command_context"));
   assert.ok(result.shadow_policy_surface.policy_channels.some((item) => item.channel_id === "command_noise_evidence"));
@@ -361,11 +385,43 @@ test("external trajectory alpha extracts architecture-actionable signals", async
   assert.equal(result.qianxuesen_alpha_fit.conclusion, "second_order_alpha_found_for_shadow_control");
   assert.ok(result.qianxuesen_alpha_fit.promoted_candidate_ids.includes("failed_outcome_without_unsafe_boundary"));
   assert.ok(result.qianxuesen_alpha_fit.promoted_candidate_ids.includes("non_actual_command_failed_outcome_overlap"));
+  assert.ok(result.qianxuesen_alpha_fit.promoted_candidate_ids.includes("pushback_failed_or_weak_proxy_overlap"));
   assert.ok(result.qianxuesen_alpha_fit.candidates.every((item) => item.authority_scope === "shadow_control_prior_only"));
+  const qianxuesenCandidateById = new Map(result.qianxuesen_alpha_fit.candidates.map((item) => [item.candidate_id, item]));
+  assert.equal(
+    qianxuesenCandidateById.get("failed_outcome_without_unsafe_boundary").generalization_status,
+    "cross_dataset_holdout_passed"
+  );
+  assert.equal(
+    qianxuesenCandidateById.get("non_actual_command_failed_outcome_overlap").generalization_status,
+    "cross_dataset_holdout_passed"
+  );
+  assert.equal(
+    qianxuesenCandidateById.get("pushback_failed_or_weak_proxy_overlap").generalization_status,
+    "source_scoped_shadow_only_holdout_passed"
+  );
+  assert.ok(!result.qianxuesen_alpha_ablation.enabled_alpha_ids.includes("weak_unresolved_high_tool_overlap"));
+  assert.equal(
+    qianxuesenCandidateById.get("failed_outcome_without_unsafe_boundary").holdout_summary.holdout_passed,
+    true
+  );
   assert.equal(result.qianxuesen_alpha_fit.control_closure.action_change_count, 0);
   assert.equal(result.qianxuesen_alpha_fit.control_closure.route_authority_changed, false);
   assert.equal(result.qianxuesen_alpha_fit.control_closure.winner_authority_changed, false);
   assert.equal(result.qianxuesen_alpha_fit.control_closure.production_authority, false);
+  assert.equal(result.qianxuesen_alpha_ablation.conclusion, "promoted_second_order_alpha_can_enter_shadow_readout_only");
+  assert.deepEqual(result.qianxuesen_alpha_ablation.enabled_alpha_ids.sort(), [
+    "failed_outcome_without_unsafe_boundary",
+    "non_actual_command_failed_outcome_overlap",
+    "pushback_failed_or_weak_proxy_overlap"
+  ]);
+  assert.ok(result.qianxuesen_alpha_ablation.blocked_alpha_ids.includes("weak_unresolved_high_tool_overlap"));
+  assert.ok(result.qianxuesen_alpha_ablation.scenarios.some((item) => item.ablation_id === "combined_qianxuesen_second_order_alpha_on"));
+  assert.equal(result.qianxuesen_alpha_ablation.scenarios.every((item) => item.action_change_count === 0), true);
+  assert.equal(result.qianxuesen_alpha_ablation.scenarios.every((item) => item.route_authority_changed === false), true);
+  assert.ok(result.shadow_policy_surface.policy_channels.some((item) => item.channel_id === "negative_outcome_damping"));
+  assert.ok(result.shadow_policy_surface.policy_channels.some((item) => item.channel_id === "command_noise_failure_evidence_budget"));
+  assert.ok(result.shadow_policy_surface.policy_channels.some((item) => item.channel_id === "pushback_proxy_rejection_damping"));
   assert.equal(result.safety.writes_zilliz, false);
   assert.equal(result.safety.calls_llm, false);
 });
@@ -407,6 +463,7 @@ test("external trajectory alpha writes local reports only", async () => {
     assert.equal(persisted.safety.persists_raw_external_data, false);
     assert.match(markdown, /# External Trajectory Alpha/);
     assert.match(markdown, /## Qianxuesen Alpha Fit/);
+    assert.match(markdown, /## Qianxuesen Alpha Ablation/);
     assert.match(markdown, /## Shadow Policy Surface/);
     assert.match(markdown, /ready_for_shadow_readout_consumption/);
     assert.match(markdown, /zilliz_written: false/);

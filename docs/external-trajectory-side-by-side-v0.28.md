@@ -935,3 +935,138 @@ Do not write Zilliz or create embeddings.
 Do not run real LLM calls.
 Do not touch VPS or GitHub.
 ```
+
+## Qianxuesen Second-Order Shadow Readout Addendum 2026-05-16
+
+The side-by-side layer now consumes the updated alpha report that includes the
+three promoted Qianxuesen second-order priors as annotation-only shadow readout
+channels. This is a readout change only, not a scoring or authority change.
+
+Reports:
+
+```text
+runs/external-trajectory-alpha/2026-05-16T00-20-00-000Z-qianxuesen-second-order-shadow-ablation-readout/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T00-30-00-000Z-qianxuesen-second-order-shadow-readout-consumption/external-trajectory-side-by-side.json
+```
+
+Stable numbers:
+
+```text
+selected/recommended profile: noise_tolerant_pushback_strict_v1
+samples/comparisons: 867
+avg_delta: +0.086
+safety_regressions: 0
+holdout_passed: true
+shadow_policy_readout.conclusion: side_by_side_consumed_shadow_policy_surface
+shadow_policy_channels: 5
+```
+
+Consumed alpha ids:
+
+```text
+non_actual_command_pattern_noise_evidence
+high_tool_activity_complexity_prior
+failed_outcome_without_unsafe_boundary
+non_actual_command_failed_outcome_overlap
+pushback_failed_or_weak_proxy_overlap
+```
+
+Blocked / watch-only ids:
+
+```text
+benign_actual_command_context
+weak_unresolved_high_tool_overlap
+install_network_non_actual_complexity_overlap
+```
+
+Second-order channels:
+
+```text
+negative_outcome_damping:
+  alpha=failed_outcome_without_unsafe_boundary
+  affected=124
+  signal_pressure=124
+  side_by_side_consumption=readout_annotation_only
+
+command_noise_failure_evidence_budget:
+  alpha=non_actual_command_failed_outcome_overlap
+  affected=58
+  signal_pressure=58
+  side_by_side_consumption=readout_annotation_only
+
+pushback_proxy_rejection_damping:
+  alpha=pushback_failed_or_weak_proxy_overlap
+  affected=20
+  signal_pressure=20
+  side_by_side_consumption=readout_annotation_only
+```
+
+Authority closure:
+
+```text
+action_change_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+raw_external_content_persisted=false
+zilliz_written=false
+embedding_created=false
+llm_api_calls=false
+external_api_calls=false
+```
+
+Plain interpretation:
+
+```text
+The second-order alpha stood up. The side-by-side report can now show why a
+trace gets failure damping, extra evidence-budget pressure, or rejection-damping
+pressure. It still cannot change actions, winner choice, route authority, or
+production behavior.
+```
+
+## Qianxuesen Generalization Guard Readout Addendum 2026-05-16
+
+The follow-up readout keeps the same side-by-side result but consumes the alpha
+report with per-candidate generalization status.
+
+Reports:
+
+```text
+runs/external-trajectory-alpha/2026-05-16T01-00-00-000Z-qianxuesen-generalization-guard/external-trajectory-alpha.json
+runs/external-trajectory-side-by-side/2026-05-16T01-10-00-000Z-qianxuesen-generalization-guard-readout/external-trajectory-side-by-side.json
+```
+
+Stable numbers:
+
+```text
+selected/recommended profile: noise_tolerant_pushback_strict_v1
+samples/comparisons: 867
+avg_delta: +0.086
+safety_regressions: 0
+holdout_passed: true
+shadow_policy_readout.conclusion: side_by_side_consumed_shadow_policy_surface
+shadow_policy_channels: 5
+```
+
+Generalization boundary:
+
+```text
+cross_dataset_holdout_passed:
+  - failed_outcome_without_unsafe_boundary
+  - non_actual_command_failed_outcome_overlap
+
+source_scoped_shadow_only_holdout_passed:
+  - pushback_failed_or_weak_proxy_overlap
+
+watch_cross_dataset_holdout_needed:
+  - weak_unresolved_high_tool_overlap
+  - install_network_non_actual_complexity_overlap
+```
+
+Plain interpretation:
+
+```text
+The report now says which alpha is broadly supported and which alpha is only
+source-scoped. This is meant to prevent overfitting: a signal can be useful in
+shadow readout without being treated as a global production rule.
+```
