@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { runExternalTrajectoryOnlineShadowContract } from "./external-trajectory-online-shadow-contract.mjs";
@@ -414,7 +415,9 @@ function replaceArgPlaceholders(args, replacements) {
 }
 
 function hermesDelegateCommandFromEnv() {
-  return process.env.HERMES_DELEGATE_COMMAND || "hermes";
+  if (process.env.HERMES_DELEGATE_COMMAND) return process.env.HERMES_DELEGATE_COMMAND;
+  if (fsSync.existsSync("/root/.local/bin/hermes")) return "/root/.local/bin/hermes";
+  return "hermes";
 }
 
 function hermesDelegateArgsFromEnv() {
