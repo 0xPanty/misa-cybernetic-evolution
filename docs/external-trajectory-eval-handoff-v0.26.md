@@ -1348,6 +1348,152 @@ pushback_mapped_count: 41
 仍然 shadow-only：不写 Zilliz、不创建 embedding、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据、不改生产 route/winner authority。
 ```
 
+## Final Full-Batch Comparison Addendum 2026-05-16
+
+This window generated the first full-batch optimized-vs-baseline comparison
+after the Qianxuesen generalization guard was committed locally.
+
+Comparison report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T02-00-00-000Z-github-baseline-vs-optimized/external-trajectory-final-comparison.json
+runs/external-trajectory-final-comparison/2026-05-16T02-00-00-000Z-github-baseline-vs-optimized/external-trajectory-final-comparison.md
+```
+
+Comparison anchors:
+
+```text
+optimization-before GitHub baseline:
+  ref=origin/codex/local-vector-store-adapter
+  commit=3e79083
+  note=GitHub remote state before external-trajectory scripts, schemas, reports,
+    and alpha tuning existed.
+
+optimization-after local commit:
+  ref=codex/local-vector-store-adapter
+  commit=bf844f9
+  selected_profile=noise_tolerant_pushback_strict_v1
+```
+
+Measurement note:
+
+```text
+The GitHub baseline commit does not contain the external-trajectory evaluation
+harness. The comparison therefore uses the current side-by-side harness as the
+neutral measurement layer: baseline action/score represents pre-optimization
+behavior, and calibrated action/score represents optimized behavior on the same
+sanitized 867-sample batch.
+```
+
+Overall result:
+
+```text
+samples: 867
+baseline_avg_score: 0.723
+optimized_avg_score: 0.809
+avg_delta: +0.086
+baseline_expected_match_rate: 0.743
+optimized_expected_match_rate: 1.000
+expected_match_lift: +0.257
+improved_count: 867
+regression_count: 0
+safety_regression_count: 0
+baseline_to_optimized_action_change_count: 223
+verdict: optimized_shadow_readout_beats_baseline_without_safety_or_authority_regression
+```
+
+Dataset readout:
+
+```text
+agentrx-github:
+  n=10
+  delta=+0.061
+  match_lift=+0.800
+  safety_regressions=0
+
+atbench:
+  n=250
+  delta=+0.060
+  match_lift=+0.000
+  safety_regressions=0
+
+atbench-codex:
+  n=250
+  delta=+0.060
+  match_lift=+0.000
+  safety_regressions=0
+
+sanitized-command-stress:
+  n=7
+  delta=+0.086
+  match_lift=+0.429
+  safety_regressions=0
+
+swe-chat:
+  n=250
+  delta=+0.106
+  match_lift=+0.648
+  safety_regressions=0
+
+swe-rebench-openhands:
+  n=100
+  delta=+0.174
+  match_lift=+0.500
+  safety_regressions=0
+```
+
+Boundary:
+
+```text
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+zilliz_written=false
+embedding_created=false
+llm_api_calls=false
+external_api_calls=false
+vps_touched=false
+github_pushed=false
+```
+
+Plain interpretation:
+
+```text
+The optimized shadow-readout profile beats the pre-optimization baseline on the
+full available 867-sample batch. The improvement is broad: every dataset has
+positive score delta, and the largest gains are on SWE-style external traces.
+
+This is still local/shadow-only evidence. It is strong enough to close the local
+calibration lane, but it is not production authority.
+```
+
+## Next Window Recovery Phrase 2026-05-16 After Full-Batch Comparison
+
+Use this exact recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution external trajectory lane。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Final Full-Batch Comparison Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Final Full-Batch Comparison Addendum 2026-05-16。
+用 git status/log 对齐本地状态；本轮本地收敛 commit 是 bf844f9，优化前 GitHub baseline 是 origin/codex/local-vector-store-adapter@3e79083。
+
+最新全量对照报告：
+runs/external-trajectory-final-comparison/2026-05-16T02-00-00-000Z-github-baseline-vs-optimized/external-trajectory-final-comparison.json
+
+当前结论：优化后 shadow readout 在 867 全量样本上优于优化前 baseline：
+baseline_avg_score=0.723
+optimized_avg_score=0.809
+avg_delta=+0.086
+baseline_expected_match_rate=0.743
+optimized_expected_match_rate=1.000
+regression_count=0
+safety_regression_count=0
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+
+下一步只做收尾判断：确认是否本地 closeout / 是否需要推 GitHub。不要碰 VPS，不要给生产 authority，不要写 Zilliz/embedding，不要跑真实 LLM。
+```
+
 Stop point:
 
 ```text

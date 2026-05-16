@@ -1070,3 +1070,63 @@ The report now says which alpha is broadly supported and which alpha is only
 source-scoped. This is meant to prevent overfitting: a signal can be useful in
 shadow readout without being treated as a global production rule.
 ```
+
+## Final Full-Batch Comparison Addendum 2026-05-16
+
+The final local comparison used the same 867 sanitized samples to compare the
+pre-optimization baseline score/action against the optimized calibrated
+score/action. The optimization-before GitHub anchor is
+`origin/codex/local-vector-store-adapter@3e79083`; the optimized local anchor is
+`bf844f9`.
+
+Report:
+
+```text
+runs/external-trajectory-final-comparison/2026-05-16T02-00-00-000Z-github-baseline-vs-optimized/external-trajectory-final-comparison.json
+```
+
+Overall:
+
+```text
+samples: 867
+baseline_avg_score: 0.723
+optimized_avg_score: 0.809
+avg_delta: +0.086
+baseline_expected_match_rate: 0.743
+optimized_expected_match_rate: 1.000
+expected_match_lift: +0.257
+improved_count: 867
+regression_count: 0
+safety_regression_count: 0
+```
+
+Dataset result:
+
+```text
+agentrx-github: delta=+0.061, match_lift=+0.800
+atbench: delta=+0.060, match_lift=+0.000
+atbench-codex: delta=+0.060, match_lift=+0.000
+sanitized-command-stress: delta=+0.086, match_lift=+0.429
+swe-chat: delta=+0.106, match_lift=+0.648
+swe-rebench-openhands: delta=+0.174, match_lift=+0.500
+```
+
+Authority closure:
+
+```text
+route_authority_changed=false
+winner_authority_changed=false
+production_authority=false
+zilliz_written=false
+embedding_created=false
+llm_api_calls=false
+external_api_calls=false
+```
+
+Plain interpretation:
+
+```text
+The optimized profile wins on the full available batch without safety or
+authority regression. The comparison is local and shadow-only: it closes the
+calibration evidence loop, not production rollout.
+```
