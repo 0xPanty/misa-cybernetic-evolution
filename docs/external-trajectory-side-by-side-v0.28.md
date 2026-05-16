@@ -1247,3 +1247,65 @@ No parameter sweep expansion was added.
 No route/winner authority was added.
 No production effect, Zilliz write, embedding, external API call, or LLM call was added.
 ```
+
+## Second Pro Review Closeout 2026-05-16
+
+Second Pro review accepted the direction but kept the next step staged:
+
+```text
+Local shadow-only complete version: small fix then close.
+GitHub branch retention: pass.
+Online observe-only shadow: small fix then pass.
+Suggestion-only real-layer hints/tickets: small fix.
+Route/winner authority: not passed.
+```
+
+The small fixes have been applied in the final-comparison path:
+
+```text
+formal JSON / Markdown / README anchor alignment
+action_score_separation in schema/lib/test/report
+grouped_holdout in schema/lib/test/report
+expected_match treated as policy conformance, not the only win metric
+```
+
+Current comparison anchor:
+
+```text
+baseline=origin/codex/local-vector-store-adapter@3e79083
+comparison_behavior_anchor=1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
+latest_review_bundle_commit_before_handoff=661e6f1
+```
+
+Stable action/score split:
+
+```text
+action_change_count=223
+action_improvement_count=223
+action_regression_count=0
+unchanged_action_count=644
+action_change_delta_share=0.389
+same_action_delta_share=0.611
+```
+
+Stable grouped holdout:
+
+```text
+conclusion=grouped_holdout_passed_without_regression
+dataset groups=6/6
+expected_shadow_action groups=5/5
+issue_kind groups with min_count=5 => 10/10
+```
+
+Next side-by-side lane:
+
+```text
+Do not keep tuning the current 867 samples for a prettier score.
+Do not expand parameter sweep.
+Do not add alpha gates.
+Do not grant production authority.
+
+Move only toward online observe-only shadow plus no-write suggestion/ticket
+contracts, then later add stronger holdout fields once full perception provides
+source_project, repo, time, and task_family.
+```

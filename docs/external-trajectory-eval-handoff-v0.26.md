@@ -2787,3 +2787,123 @@ production_authority=false
 
 仍然 shadow-only：不写 Zilliz、不创建 embedding、不跑真实 LLM、不碰 VPS、不推 GitHub、不提交原始外部数据、不改生产 route/winner authority。
 ```
+
+## Second Pro Review Closeout 2026-05-16
+
+Second Pro review verdict:
+
+```text
+Local closeout: small fix then yes.
+GitHub branch retention: pass.
+Online observe-only shadow: small fix then pass.
+Real-layer suggestion rights: small fix, only as no-write review hints / tickets.
+Real route/winner authority: fail / not yet.
+```
+
+Current repository anchors:
+
+```text
+GitHub branch: codex/local-vector-store-adapter
+GitHub tip before this handoff note: 661e6f1
+Comparison code/behavior anchor: 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
+Optimization-before baseline: origin/codex/local-vector-store-adapter@3e79083
+```
+
+Important nuance:
+
+```text
+Any commit after 1bfd0ac in this lane is report packaging / review-bundle /
+handoff documentation unless code diffs say otherwise. Do not treat a docs-only
+handoff commit as a new behavior anchor that requires rerunning the 867 compare.
+```
+
+Latest review bundle:
+
+```text
+docs/pro-review/external-trajectory-2026-05-16/README.md
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-final-comparison.json
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-final-comparison.md
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-side-by-side.json
+docs/pro-review/external-trajectory-2026-05-16/external-trajectory-alpha.json
+```
+
+Pro-requested fixes already landed:
+
+```text
+1. Formal JSON / Markdown / README now point at the same comparison behavior
+   anchor: 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b.
+2. action_score_separation is in the final-comparison library, schema, test,
+   generated JSON, and review bundle.
+3. grouped_holdout is in the final-comparison library, schema, test, generated
+   JSON, and review bundle.
+4. expected_match_rate is documented as policy-conformance evidence, not an
+   independent external judge.
+5. Alpha remains research/readout evidence; no new alpha gate, no expanded
+   parameter sweep, and no route/winner authority were added.
+```
+
+Stable post-review numbers:
+
+```text
+samples=867
+baseline_avg_score=0.723
+optimized_avg_score=0.809
+avg_delta=+0.086
+baseline_expected_match_rate=0.743
+optimized_expected_match_rate=1.000
+expected_match_lift=+0.257
+regression_count=0
+safety_regressions=0
+holdout_passed=true
+
+action_change_count=223
+action_improvement_count=223
+action_regression_count=0
+unchanged_action_count=644
+
+action_change_delta_share=0.389
+same_action_delta_share=0.611
+
+grouped_holdout=grouped_holdout_passed_without_regression
+dataset groups=6/6
+expected_shadow_action groups=5/5
+issue_kind groups with min_count=5 => 10/10
+```
+
+Next window exact work:
+
+```text
+1. First verify GitHub latest review bundle content. If Pro was reading stale
+   JSON, ask it to re-read 661e6f1-or-later files before changing code.
+2. Start the online observe-only shadow design, not production authority.
+3. Add a suggestion-only contract if moving beyond readout:
+   review_hints / repair_tickets / work_orders only;
+   no route changes, no winner authority, no memory writes.
+4. Plan stronger external holdout fields for full perception:
+   source_project, repo, time, task_family.
+5. Keep fresh larger samples as the next evidence target.
+```
+
+Do not do next:
+
+```text
+Do not chase optimized_expected_match_rate=1.000 as the main KPI.
+Do not promote watch-only or single-dataset alpha to a hard gate.
+Do not expand parameter sweep.
+Do not connect route/winner authority.
+Do not write Zilliz or create embeddings.
+Do not run real LLM calls.
+Do not touch VPS unless the user explicitly opens the VPS rollout lane.
+```
+
+Next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution external trajectory lane。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Second Pro Review Closeout 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Second Pro Review Closeout 2026-05-16，然后看 docs/pro-review/external-trajectory-2026-05-16/README.md。
+用 git status/log 对齐本地状态。external trajectory baseline 固定看 3e79083；comparison behavior anchor 固定看 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b；后续 docs-only handoff commit 不算新行为锚点。
+
+当前结论：Pro 第二轮判定为小修后本地 closeout / GitHub 保留通过 / observe-only shadow 小修后通过 / suggestion-only 小修 / route-winner authority 不通过。Pro 点名的小修已经落地：formal JSON、MD、README 锚点对齐；action_score_separation 和 grouped_holdout 已进入 schema/lib/test/report。
+
+下一步只做：设计线上 observe-only shadow 和 no-write suggestion/ticket contract；补 full-perception 后更独立 holdout 字段规划。不要接生产 authority，不写 Zilliz/embedding，不跑真实 LLM，不碰 VPS，不扩参数 sweep，不升 watch-only alpha。
+```

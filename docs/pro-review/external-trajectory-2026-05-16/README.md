@@ -142,7 +142,7 @@ positive, stable, and worth keeping as the GitHub branch state.
 Handled in this bundle:
 
 ```text
-1. Branch tip comparison is now aligned to d4b8f57.
+1. Branch-tip comparison is now aligned to 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b.
 2. Action-level improvement and score-level lift are reported separately.
 3. Grouped holdout was added for dataset, expected action, and issue kind.
 4. Expected-match rate is kept as policy-conformance evidence, not treated as
