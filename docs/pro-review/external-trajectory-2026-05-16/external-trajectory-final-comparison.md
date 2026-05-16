@@ -3,10 +3,10 @@
 ## Summary
 
 - ok: true
-- created_at: 2026-05-16T03:00:00.000Z
+- created_at: 2026-05-16T03:20:00.000Z
 - baseline: origin/codex/local-vector-store-adapter@3e79083
-- optimized: codex/local-vector-store-adapter@d4b8f577918721618307261efaa729a2366f45da
-- branch_tip_commit: d4b8f577918721618307261efaa729a2366f45da
+- optimized: codex/local-vector-store-adapter@1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
+- branch_tip_commit: 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
 - branch_tip_aligned: true
 - selected_profile: noise_tolerant_pushback_strict_v1
 - samples: 867

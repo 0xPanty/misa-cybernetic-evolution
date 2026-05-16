@@ -1362,7 +1362,7 @@ optimization-before GitHub baseline:
 
 optimized branch tip:
   ref=codex/local-vector-store-adapter
-  commit=d4b8f577918721618307261efaa729a2366f45da
+  commit=1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
   branch_tip_aligned=true
 ```
 

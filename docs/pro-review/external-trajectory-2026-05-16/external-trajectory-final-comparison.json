@@ -2,7 +2,7 @@
   "schema_version": "misa.external_trajectory_final_comparison.v1",
   "mode": "external-trajectory-final-comparison",
   "ok": true,
-  "created_at": "2026-05-16T03:00:00.000Z",
+  "created_at": "2026-05-16T03:20:00.000Z",
   "comparison_scope": "github_baseline_pre_external_trajectory_vs_local_optimized_shadow_readout",
   "baseline": {
     "ref": "origin/codex/local-vector-store-adapter",
@@ -11,8 +11,8 @@
   },
   "optimized": {
     "ref": "codex/local-vector-store-adapter",
-    "commit": "d4b8f577918721618307261efaa729a2366f45da",
-    "branch_tip_commit": "d4b8f577918721618307261efaa729a2366f45da",
+    "commit": "1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b",
+    "branch_tip_commit": "1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b",
     "branch_tip_aligned": true,
     "behavior": "optimized_calibrated_shadow_action_and_score",
     "selected_profile": "noise_tolerant_pushback_strict_v1"
@@ -732,8 +732,8 @@
     {
       "name": "optimized commit is aligned with current branch tip",
       "ok": true,
-      "optimized_commit": "d4b8f577918721618307261efaa729a2366f45da",
-      "branch_tip_commit": "d4b8f577918721618307261efaa729a2366f45da"
+      "optimized_commit": "1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b",
+      "branch_tip_commit": "1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b"
     },
     {
       "name": "shadow readout changed no authority",
@@ -772,8 +772,8 @@
   ],
   "verdict": "optimized_shadow_readout_beats_baseline_without_safety_or_authority_regression",
   "output": {
-    "output_dir": "runs/external-trajectory-final-comparison/2026-05-16T03-00-00-000Z-branch-tip-grouped-holdout",
-    "json_path": "runs/external-trajectory-final-comparison/2026-05-16T03-00-00-000Z-branch-tip-grouped-holdout/external-trajectory-final-comparison.json",
-    "markdown_path": "runs/external-trajectory-final-comparison/2026-05-16T03-00-00-000Z-branch-tip-grouped-holdout/external-trajectory-final-comparison.md"
+    "output_dir": "runs/external-trajectory-final-comparison/2026-05-16T03-20-00-000Z-pro-followup-code-anchor",
+    "json_path": "runs/external-trajectory-final-comparison/2026-05-16T03-20-00-000Z-pro-followup-code-anchor/external-trajectory-final-comparison.json",
+    "markdown_path": "runs/external-trajectory-final-comparison/2026-05-16T03-20-00-000Z-pro-followup-code-anchor/external-trajectory-final-comparison.md"
   }
 }

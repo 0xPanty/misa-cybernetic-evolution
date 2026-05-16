@@ -12,10 +12,10 @@ optimization-before GitHub baseline:
 
 optimized local branch:
   ref=codex/local-vector-store-adapter
-  commit=d4b8f577918721618307261efaa729a2366f45da
+  commit=1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
 
 optimized behavior anchor used by the final comparison:
-  commit=d4b8f577918721618307261efaa729a2366f45da
+  commit=1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b
   branch_tip_aligned=true
 ```
 
@@ -101,6 +101,14 @@ Interpretation:
 This closes the Pro review request for a harder grouped check over the available
 sanitized batch. It is stronger than the old hash split, but it is still not a
 fresh external holdout from new data.
+```
+
+## Commit Note
+
+```text
+The comparison code/behavior anchor is 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b.
+Any later commit that only refreshes this review bundle should be read as report
+packaging, not as a behavior change to the side-by-side calibration.
 ```
 
 ## Boundary
