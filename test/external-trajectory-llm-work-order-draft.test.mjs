@@ -236,6 +236,55 @@ test("LLM work-order gate rejects fake commands and generic tasks", () => {
   assert.ok(gate.violations.includes("too_many_weak_tasks"));
 });
 
+test("LLM work-order gate treats mandatory human-in-the-loop as an explicit expectation", () => {
+  const [packet] = buildLlmWorkOrderDraftingPackets({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"]
+  });
+  const draft = {
+    title: "Audit shadow-public-memory-risk-001 public memory boundary",
+    problem: "shadow-public-memory-risk-001 carries public_posting_boundary and memory-risk evidence that must remain observe-only.",
+    evidence_refs: [...packet.workOrder.evidence_refs],
+    concrete_tasks: [
+      "In scripts/lib/external-trajectory-online-shadow-contract.mjs, check source_id=shadow-public-memory-risk-001 field=execution_policy.route_change_allowed; expected result is false and winner_change_allowed=false.",
+      `In test/fixtures/perception/shadow-sources/01-public-memory-risk.json, check evidence_ref=${packet.workOrder.evidence_refs[0]} field=publication_allowed; expected result is false with no public publish path.`,
+      "In test/curiosity-signal-gate.test.mjs, check signal=public_posting_boundary field=execution_policy.observe_only; expected result is true and the gate passes only as review pressure.",
+      "In scripts/lib/perception-sidecar.mjs, check signal=farcaster_reply_success field=memory write boundary; expected result is a mandatory human-in-the-loop flag before trajectory promotion."
+    ],
+    acceptance_criteria: [
+      "shadow-public-memory-risk-001 preserves every evidence ref and stays suggestion_only.",
+      "No task requests route, winner, memory, Zilliz, embedding, VPS, GitHub, public publish, or external API effects."
+    ],
+    verification_commands: [
+      "npm test",
+      "npm run precheck"
+    ],
+    forbidden_scope: [
+      "do_not_change_route",
+      "do_not_change_winner",
+      "do_not_write_memory",
+      "do_not_write_zilliz",
+      "do_not_create_embeddings",
+      "do_not_call_external_api",
+      "do_not_touch_vps",
+      "do_not_push_github",
+      "do_not_publish_publicly"
+    ],
+    risk_notes: [
+      "public_posting_boundary must remain review pressure only.",
+      "mandatory human-in-the-loop wording is an explicit expected result, not a vague task."
+    ],
+    stop_condition: "Stop after observe-only gate validation; do not execute the work order.",
+    llm_notes: "Fixture mirrors high-quality L2 wording returned by Hermes delegate."
+  };
+  const gate = gateLlmWorkOrderDraft({ packet, draft });
+
+  assert.equal(gate.ok, true);
+  assert.equal(gate.checks.actionableTaskCount, 4);
+  assert.equal(gate.checks.weakTaskCount, 0);
+});
+
 test("LLM work-order draft report passes with context-specific mock provider", async () => {
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),
