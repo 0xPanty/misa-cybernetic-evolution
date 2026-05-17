@@ -41,6 +41,7 @@
     "external:compare": "node scripts/external-trajectory-final-comparison.mjs",
     "external:online-shadow": "node scripts/external-trajectory-online-shadow-contract.mjs",
     "external:llm-work-order": "node scripts/external-trajectory-llm-work-order-draft.mjs",
+    "selection-audit:review": "node scripts/l2-l3-selection-audit.mjs",
     "external:generic-adapter": "node examples/external-trajectory-online-shadow/generic-workflow-adapter/adapter.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",
