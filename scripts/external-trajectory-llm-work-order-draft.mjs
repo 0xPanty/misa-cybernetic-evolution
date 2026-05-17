@@ -52,6 +52,8 @@ let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   ollamaTimeoutMs: ollamaTimeoutMs ? Number(ollamaTimeoutMs) : undefined,
   hermesDelegateCommand: readArg("hermes-delegate-command") ?? undefined,
   hermesDelegateArgs: jsonArrayArg("hermes-delegate-args-json"),
+  hermesDelegateProvider: readArg("hermes-delegate-provider") ?? undefined,
+  hermesDelegateModel: readArg("hermes-delegate-model") ?? undefined,
   hermesDelegateTimeoutMs: hermesDelegateTimeoutMs ? Number(hermesDelegateTimeoutMs) : undefined,
   repairAttempts: repairAttempts ? Number(repairAttempts) : undefined,
   now

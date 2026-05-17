@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { buildExternalTrajectoryOnlineShadowContractReport } from "../scripts/lib/external-trajectory-online-shadow-contract.mjs";
 import {
+  buildHermesDelegateDefaultArgs,
   buildHermesDelegateAuditPacket,
   buildExternalTrajectoryLlmWorkOrderDraftReport,
   buildLlmWorkOrderDraftingPackets,
@@ -172,6 +173,26 @@ test("Hermes delegate audit packet is no-context observe-only", () => {
   assert.equal(auditPacket.execution_policy.execute_work_order, false);
 });
 
+test("Hermes delegate defaults to one-shot no-rules delegation args", () => {
+  const args = buildHermesDelegateDefaultArgs({
+    prompt: "return json only",
+    provider: "novai",
+    model: "gemini-3-flash-preview"
+  });
+
+  assert.deepEqual(args, [
+    "--ignore-rules",
+    "--provider",
+    "novai",
+    "--model",
+    "gemini-3-flash-preview",
+    "-t",
+    "delegation",
+    "-z",
+    "return json only"
+  ]);
+});
+
 test("LLM work-order gate rejects fake commands and generic tasks", () => {
   const [packet] = buildLlmWorkOrderDraftingPackets({
     onlineShadowReport: onlineShadowFixture(),
@@ -336,4 +357,23 @@ test("Hermes delegate unavailable and malformed output become failed gates", asy
   assert.ok(malformedResult.results[0].gate.violations.includes("draft_missing"));
   assert.equal(malformedResult.safety.executes_work_orders, false);
   assert.equal(malformedResult.safety.writes_zilliz, false);
+
+  const providerErrorStub = await writeHermesDelegateStub("process.stdout.write('API call failed after 3 retries: HTTP 429 RESOURCE_EXHAUSTED quota exceeded');\n");
+  const providerErrorResult = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: "hermes-delegate",
+    hermesDelegateCommand: process.execPath,
+    hermesDelegateArgs: [providerErrorStub],
+    repairAttempts: 0,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(providerErrorResult.ok, false);
+  assert.equal(providerErrorResult.summary.failed_gate_count, 1);
+  assert.equal(providerErrorResult.summary.provider_error_count, 1);
+  assert.equal(providerErrorResult.results[0].provider_error.code, "hermes_delegate_provider_error");
+  assert.ok(providerErrorResult.results[0].gate.violations.includes("provider_call_failed"));
+  assert.equal(providerErrorResult.safety.writes_memory, false);
 });

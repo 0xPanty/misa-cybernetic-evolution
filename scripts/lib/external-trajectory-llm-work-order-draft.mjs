@@ -57,6 +57,15 @@ const GENERIC_TASK_PATTERNS = Object.freeze([
   /discuss.*team/i
 ]);
 
+const HERMES_PROVIDER_ERROR_PATTERNS = Object.freeze([
+  /API call failed/i,
+  /HTTP\s+(?:4\d\d|5\d\d)/i,
+  /RESOURCE_EXHAUSTED/i,
+  /quota/i,
+  /AuthError/i,
+  /Traceback \(most recent call last\)/i
+]);
+
 const TASK_EXPECTATION_PATTERNS = Object.freeze([
   /must|only|preserve|remain|keep|blocked|false|reject|pass|fail|contains|equals|does not|do not/i,
   /必须|只能|仅|保留|保持|阻止|拒绝|通过|失败|包含|等于|不得|不允许|不会|不写|不改|不执行/
@@ -424,6 +433,26 @@ function hermesDelegateArgsFromEnv() {
   return parseJsonArray(process.env.HERMES_DELEGATE_ARGS_JSON);
 }
 
+function hermesDelegateProviderFromEnv() {
+  return process.env.HERMES_DELEGATE_PROVIDER || null;
+}
+
+function hermesDelegateModelFromEnv() {
+  return process.env.HERMES_DELEGATE_MODEL || null;
+}
+
+export function buildHermesDelegateDefaultArgs({
+  prompt,
+  provider = hermesDelegateProviderFromEnv(),
+  model = hermesDelegateModelFromEnv()
+} = {}) {
+  const args = ["--ignore-rules"];
+  if (provider) args.push("--provider", provider);
+  if (model) args.push("--model", model);
+  args.push("-t", "delegation", "-z", prompt);
+  return args;
+}
+
 export function buildHermesDelegateAuditPacket(packet) {
   return {
     schema_version: "misa.external_trajectory_l2_audit_packet.v1",
@@ -493,6 +522,17 @@ function promptForHermesDelegate(packet, { previousFailure } = {}) {
 Use delegate_task if it is available; otherwise complete the same observe-only audit directly.
 Do not use any chat history, memory, Zilliz, embeddings, route/winner authority, VPS, GitHub push, public posting, or real work-order execution.
 Only use the AuditPacket below. Return JSON only, with exactly the draft shape requested by output_contract.${retryText}
+
+Quality target:
+- Do not reuse the current_template_work_order title.
+- Write a specific title that names source_id and the boundary being audited.
+- concrete_tasks must contain exactly 4-6 engineering review tasks.
+- Every concrete task must name a file/test target, source_id or signal/evidence ref, a field/boundary to inspect, and an explicit expected result.
+- Prefer this task shape: "In <file/test>, check <source_id/signal/field>; expected result is <specific false/no-write/suggestion-only/pass condition>."
+- Do not write broad tasks like "Analyze the file", "Verify the logic", "Execute the command", "Audit coverage", or "ensure correct gating" unless the same sentence also states the exact field and expected result.
+- verification_commands must be copied exactly from source.allowed_verification_commands.
+- evidence_refs must preserve every source.evidence_refs item and must not invent new refs.
+- The result should be useful to an engineer reviewing production quality, not a policy summary.
 
 AuditPacket:
 ${JSON.stringify(auditPacket, null, 2)}
@@ -572,6 +612,12 @@ async function runHermesDelegateCommand({
         fail(error);
         return;
       }
+      if (HERMES_PROVIDER_ERROR_PATTERNS.some((pattern) => pattern.test(stdout))) {
+        const error = new Error(stdout.trim().slice(0, 500) || "hermes-delegate provider error");
+        error.code = "hermes_delegate_provider_error";
+        fail(error);
+        return;
+      }
       settled = true;
       resolve(stdout);
     });
@@ -585,6 +631,8 @@ async function callHermesDelegate({
   repoRoot,
   command,
   args,
+  hermesProvider,
+  hermesModel,
   timeoutMs,
   previousFailure
 }) {
@@ -594,7 +642,11 @@ async function callHermesDelegate({
   const configuredArgs = args ?? hermesDelegateArgsFromEnv();
   const effectiveArgs = configuredArgs
     ? replaceArgPlaceholders(configuredArgs, { prompt, auditPacket })
-    : ["chat", "--toolsets", "delegation", "-q", prompt];
+    : buildHermesDelegateDefaultArgs({
+      prompt,
+      provider: hermesProvider,
+      model: hermesModel
+    });
   return await runHermesDelegateCommand({
     command: effectiveCommand,
     args: effectiveArgs,
@@ -772,6 +824,8 @@ async function callDraftProvider({
           repoRoot: hermesDelegateOptions.repoRoot ?? process.cwd(),
           command: hermesDelegateOptions.command,
           args: hermesDelegateOptions.args,
+          hermesProvider: hermesDelegateOptions.provider,
+          hermesModel: hermesDelegateOptions.model,
           timeoutMs: hermesDelegateOptions.timeoutMs ?? DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
           previousFailure
         }),
@@ -962,6 +1016,8 @@ async function draftOnePacket({
   ollamaTimeoutMs,
   hermesDelegateCommand,
   hermesDelegateArgs,
+  hermesDelegateProvider,
+  hermesDelegateModel,
   hermesDelegateTimeoutMs,
   repairAttempts
 }) {
@@ -985,6 +1041,8 @@ async function draftOnePacket({
           repoRoot,
           command: hermesDelegateCommand,
           args: hermesDelegateArgs,
+          provider: hermesDelegateProvider,
+          model: hermesDelegateModel,
           timeoutMs: hermesDelegateTimeoutMs
         }
         : undefined,
@@ -1047,6 +1105,8 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   ollamaTimeoutMs = DEFAULT_OLLAMA_TIMEOUT_MS,
   hermesDelegateCommand,
   hermesDelegateArgs,
+  hermesDelegateProvider,
+  hermesDelegateModel,
   hermesDelegateTimeoutMs = DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
   repairAttempts = 1,
   now = new Date()
@@ -1077,6 +1137,8 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       ollamaTimeoutMs,
       hermesDelegateCommand,
       hermesDelegateArgs,
+      hermesDelegateProvider,
+      hermesDelegateModel,
       hermesDelegateTimeoutMs,
       repairAttempts
     }));
