@@ -38,6 +38,7 @@ const now = nowArg ? new Date(nowArg) : new Date();
 const dryRun = hasArg("dry-run") || hasArg("no-write");
 const maxSamples = readArg("max-samples");
 const repairAttempts = readArg("repair-attempts");
+const candidateCount = readArg("candidate-count");
 const ollamaTimeoutMs = readArg("ollama-timeout-ms");
 const hermesDelegateTimeoutMs = readArg("hermes-delegate-timeout-ms");
 
@@ -56,6 +57,7 @@ let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   hermesDelegateModel: readArg("hermes-delegate-model") ?? undefined,
   hermesDelegateTimeoutMs: hermesDelegateTimeoutMs ? Number(hermesDelegateTimeoutMs) : undefined,
   repairAttempts: repairAttempts ? Number(repairAttempts) : undefined,
+  candidateCount: candidateCount ? Number(candidateCount) : undefined,
   now
 });
 
@@ -76,13 +78,20 @@ if (hasArg("json")) {
   console.log(`provider=${result.provider}`);
   console.log(`model=${result.model}`);
   console.log(`samples=${result.summary.sample_count}`);
+  console.log(`requested_candidate_count=${result.summary.requested_candidate_count}`);
+  console.log(`candidate_count=${result.summary.candidate_count}`);
+  console.log(`winner_selected=${result.summary.winner_selected_count}`);
   console.log(`passed_gate=${result.summary.passed_gate_count}`);
   console.log(`failed_gate=${result.summary.failed_gate_count}`);
   console.log(`avg_quality_score=${result.summary.avg_quality_score}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
+  if (result.delegate?.provider || result.delegate?.model) {
+    console.log(`hermes_delegate=${result.delegate.provider ?? "default"}/${result.delegate.model ?? "default"}`);
+  }
   for (const item of result.results) {
     const providerError = item.provider_error ? ` provider_error=${item.provider_error.code}` : "";
-    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score}${providerError} title=${item.draft?.title ?? "PARSE_FAILED"}`);
+    const candidateText = item.candidates?.length ? ` candidates=${item.candidates.length} winner=${item.winner_candidate_id}` : "";
+    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score}${candidateText}${providerError} title=${item.draft?.title ?? "PARSE_FAILED"}`);
   }
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);

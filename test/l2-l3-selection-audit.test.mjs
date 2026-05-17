@@ -21,7 +21,10 @@ function makeL2Item({
   actionable = 4,
   weak = 0,
   violations = [],
-  providerError = null
+  providerError = null,
+  candidates = null,
+  winnerCandidateId = null,
+  winnerStrategy = null
 }) {
   return {
     source_id: sourceId,
@@ -33,6 +36,21 @@ function makeL2Item({
       readout_family: "safety_boundary_pressure",
       route_hint: "policy"
     },
+    candidate_selection: candidates ? {
+      requested_candidate_count: 3,
+      returned_candidate_count: candidates.length,
+      expected_candidate_count_met: candidates.length === 3,
+      winner_candidate_id: winnerCandidateId,
+      winner_strategy: winnerStrategy,
+      winner_quality_score: quality,
+      candidate_quality_scores: candidates.map((candidate) => candidate.gate.quality_score),
+      candidate_passed_gate_count: candidates.filter((candidate) => candidate.gate.ok).length,
+      candidate_failed_gate_count: candidates.filter((candidate) => !candidate.gate.ok).length,
+      avg_candidate_quality_score: candidates.reduce((sum, candidate) => sum + candidate.gate.quality_score, 0) / candidates.length
+    } : null,
+    candidates,
+    winner_candidate_id: winnerCandidateId,
+    winner_strategy: winnerStrategy,
     draft: providerError ? null : {
       title: `${sourceId} L2 audit`,
       evidence_refs: [`ref:${sourceId}`],
@@ -54,6 +72,7 @@ function makeL2Item({
 }
 
 function l2ReportFixture(results) {
+  const candidateCount = results.reduce((sum, item) => sum + (item.candidates?.length ?? 0), 0);
   return {
     schema_version: "misa.external_trajectory_llm_work_order_draft.v1",
     mode: "external-trajectory-llm-work-order-draft",
@@ -64,6 +83,11 @@ function l2ReportFixture(results) {
     summary: {
       sample_count: results.length,
       draft_count: results.filter((item) => item.draft).length,
+      requested_candidate_count: candidateCount ? 3 : 1,
+      candidate_count: candidateCount || results.length,
+      expected_candidate_count_met: candidateCount ? results.filter((item) => item.candidate_selection?.expected_candidate_count_met).length : null,
+      expected_candidate_count_miss: candidateCount ? results.filter((item) => !item.candidate_selection?.expected_candidate_count_met).length : null,
+      winner_selected_count: results.filter((item) => item.winner_candidate_id || item.draft).length,
       passed_gate_count: results.filter((item) => item.gate.ok).length,
       failed_gate_count: results.filter((item) => !item.gate.ok).length,
       provider_error_count: results.filter((item) => item.provider_error).length,
@@ -120,6 +144,49 @@ test("L2/L3 pool classifier forwards green and yellow but holds red", () => {
   assert.ok(yellow.reason_codes.includes("possible_false_reject"));
   assert.equal(red.pool, "red");
   assert.equal(red.l4_forward, false);
+});
+
+test("L2/L3 selection audit uses the L2-selected candidate winner", () => {
+  const candidates = [
+    {
+      candidate_id: "boundary_safety",
+      strategy: "boundary_safety",
+      gate: { ok: false, quality_score: 0.72, violations: ["too_few_actionable_tasks"] }
+    },
+    {
+      candidate_id: "evidence_trace",
+      strategy: "evidence_trace",
+      gate: { ok: true, quality_score: 1, violations: [] }
+    },
+    {
+      candidate_id: "replay_verification",
+      strategy: "replay_verification",
+      gate: { ok: false, quality_score: 0.975, violations: ["too_many_weak_tasks"] }
+    }
+  ];
+  const result = buildL2L3SelectionAuditReport({
+    l2Report: l2ReportFixture([
+      makeL2Item({
+        sourceId: "multi-candidate-001",
+        gateOk: true,
+        quality: 1,
+        candidates,
+        winnerCandidateId: "evidence_trace",
+        winnerStrategy: "evidence_trace"
+      })
+    ]),
+    batchSize: 50,
+    now: new Date("2026-05-17T12:00:00Z")
+  });
+
+  assert.equal(result.summary.candidate_count, 3);
+  assert.equal(result.summary.winner_selected_count, 1);
+  assert.equal(result.summary.candidate_best_found_count, 1);
+  assert.equal(result.summary.candidate_best_found_rate, 1);
+  assert.equal(result.summary.pool_counts.green, 1);
+  assert.equal(result.decisions[0].winner_candidate_id, "evidence_trace");
+  assert.equal(result.decisions[0].candidate_count, 3);
+  assert.equal(result.decisions[0].l4_forward, true);
 });
 
 test("L2/L3 selection audit creates green yellow red pools and red spot checks", () => {

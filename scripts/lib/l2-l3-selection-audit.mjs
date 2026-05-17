@@ -131,6 +131,10 @@ export function classifyL2L3PoolDecision(item, {
     weakTaskCount,
     specificityHits,
     provider_error: providerError,
+    candidate_selection: item?.candidate_selection ?? null,
+    candidate_count: Array.isArray(item?.candidates) ? item.candidates.length : null,
+    winner_candidate_id: item?.winner_candidate_id ?? null,
+    winner_strategy: item?.winner_strategy ?? null,
     draft_title: item?.draft?.title ?? null,
     evidence_refs: item?.packet?.evidence_refs ?? item?.draft?.evidence_refs ?? [],
     safety_counters: {
@@ -190,6 +194,13 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
   const redSpotCheckCount = decisions.filter((decision) => decision.l4_spot_check).length;
   const highQualityFailedCount = decisions.filter((decision) => decision.pool === "yellow").length;
   const sampleCount = decisions.length;
+  const candidateSelections = decisions
+    .map((decision) => decision.candidate_selection)
+    .filter((selection) => selection && Array.isArray(selection.candidate_quality_scores));
+  const candidateBestFoundCount = candidateSelections.filter((selection) => {
+    const best = Math.max(...selection.candidate_quality_scores);
+    return selection.winner_quality_score === best;
+  }).length;
   const avgQualityScore = sampleCount
     ? Math.round(1000 * decisions.reduce((sum, decision) => sum + decision.quality_score, 0) / sampleCount) / 1000
     : 0;
@@ -203,6 +214,13 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
     hard_gate_pass_count: poolCounts.green,
     hard_gate_fail_count: sampleCount - poolCounts.green,
     hard_gate_pass_rate: roundRate(poolCounts.green, sampleCount),
+    requested_candidate_count: l2Report?.summary?.requested_candidate_count ?? null,
+    candidate_count: l2Report?.summary?.candidate_count ?? null,
+    winner_selected_count: l2Report?.summary?.winner_selected_count ?? null,
+    expected_candidate_count_met: l2Report?.summary?.expected_candidate_count_met ?? null,
+    expected_candidate_count_miss: l2Report?.summary?.expected_candidate_count_miss ?? null,
+    candidate_best_found_count: candidateSelections.length ? candidateBestFoundCount : null,
+    candidate_best_found_rate: candidateSelections.length ? roundRate(candidateBestFoundCount, candidateSelections.length) : null,
     l4_forward_count: l4ForwardCount,
     red_spot_check_count: redSpotCheckCount,
     possible_false_reject_count: highQualityFailedCount,
@@ -369,6 +387,10 @@ export function renderL2L3SelectionAuditMarkdown(result) {
     `- green: ${result.summary.pool_counts.green}`,
     `- yellow: ${result.summary.pool_counts.yellow}`,
     `- red: ${result.summary.pool_counts.red}`,
+    `- requested_candidate_count: ${result.summary.requested_candidate_count ?? "n/a"}`,
+    `- candidate_count: ${result.summary.candidate_count ?? "n/a"}`,
+    `- winner_selected_count: ${result.summary.winner_selected_count ?? "n/a"}`,
+    `- candidate_best_found_count: ${result.summary.candidate_best_found_count ?? "n/a"}`,
     `- l4_forward_count: ${result.summary.l4_forward_count}`,
     `- red_spot_check_count: ${result.summary.red_spot_check_count}`,
     `- possible_false_reject_count: ${result.summary.possible_false_reject_count}`,

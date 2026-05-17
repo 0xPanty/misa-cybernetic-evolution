@@ -16,6 +16,25 @@ The command reads an existing L2 report. It does not call an LLM, execute work
 orders, write memory, write Zilliz, create embeddings, change route/winner, or
 touch VPS.
 
+## L2 Candidate Winners
+
+L2 can optionally ask one provider call to return several draft candidates for
+the same sample:
+
+```bash
+npm run external:llm-work-order -- --candidate-count 3
+```
+
+The local L2 gate scores each returned candidate and selects one local
+`winner_candidate_id` for the sample. This is only candidate selection inside
+the L2 draft report. It is not route authority, production winner authority, or
+work-order execution.
+
+L3 reads the selected L2 winner through the normal top-level `draft` and `gate`
+fields, then preserves `candidate_count`, `winner_candidate_id`, and
+`winner_strategy` in the pool ledger for L4 review. Losers stay in the L2
+`loser_ledger` as evidence.
+
 ## Pools
 
 - `green`: the hard gate passed. Forward to L4.

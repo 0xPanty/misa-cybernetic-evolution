@@ -8,6 +8,8 @@ export const DEFAULT_LLM_DRAFT_MODEL = "qwen2.5:14b";
 export const DEFAULT_LLM_DRAFT_PROVIDER = "mock";
 export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
 export const DEFAULT_HERMES_DELEGATE_TIMEOUT_MS = 180000;
+export const DEFAULT_LLM_DRAFT_CANDIDATE_COUNT = 1;
+export const MAX_LLM_DRAFT_CANDIDATE_COUNT = 5;
 
 const REQUIRED_FORBIDDEN_SCOPE = Object.freeze([
   "do_not_change_route",
@@ -78,6 +80,29 @@ const TASK_FIELD_PATTERNS = Object.freeze([
   /信号|字段|状态|权限|边界|路由|胜者|发布|内存|证据|白名单/
 ]);
 
+const MULTI_CANDIDATE_STRATEGIES = Object.freeze([
+  {
+    id: "boundary_safety",
+    focus: "safety boundary, no-write authority, route/winner/memory/Zilliz/embedding blocks"
+  },
+  {
+    id: "evidence_trace",
+    focus: "source_id, evidence_refs, observed signals, exact files/tests, and field-level traceability"
+  },
+  {
+    id: "replay_verification",
+    focus: "local verification commands, acceptance criteria, stop condition, and replayable failure signals"
+  },
+  {
+    id: "compact_handoff",
+    focus: "short handoff clarity for the later primary agent or L4 reviewer"
+  },
+  {
+    id: "risk_counterexample",
+    focus: "counterexample checks, low-quality traps, and false-positive prevention"
+  }
+]);
+
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? new Date("2026-05-16T05:00:00.000Z").toISOString() : date.toISOString();
@@ -96,6 +121,22 @@ function uniqueStrings(values = []) {
     .filter((value) => value !== null && value !== undefined)
     .map((value) => String(value).trim())
     .filter(Boolean))];
+}
+
+function normalizeCandidateCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
+  return Math.min(MAX_LLM_DRAFT_CANDIDATE_COUNT, Math.max(1, Math.floor(count)));
+}
+
+function candidateStrategies(candidateCount) {
+  return MULTI_CANDIDATE_STRATEGIES
+    .slice(0, normalizeCandidateCount(candidateCount))
+    .map((strategy, index) => ({
+      candidate_id: strategy.id,
+      focus: strategy.focus,
+      ordinal: index + 1
+    }));
 }
 
 async function readJson(filePath) {
@@ -305,7 +346,9 @@ export function buildLlmWorkOrderDraftingPackets({
   });
 }
 
-function promptForPacket(packet, { previousFailure } = {}) {
+function promptForPacket(packet, { previousFailure, candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT } = {}) {
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const strategies = candidateStrategies(requestedCandidateCount);
   const compactPacket = {
     source_id: packet.source_id,
     source_kind: packet.record.source_kind,
@@ -335,24 +378,10 @@ function promptForPacket(packet, { previousFailure } = {}) {
   };
 
   const retryText = previousFailure
-    ? `\n上一次输出没有过 gate，失败原因：${previousFailure.violations.join(", ")}。\n必须修正后再输出。\n`
+    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.\n`
     : "";
 
-  return `你是 Misa/Codex 的工程工单生成器。只输出 JSON，不要解释。${retryText}
-
-目标：把模板化 work_order_draft 改成具体、可执行、可验收的工程工单草稿。
-
-硬边界：
-- 只生成草稿，不执行。
-- 不允许改 route 或 winner。
-- 不允许写 memory、Zilliz、embedding。
-- 不允许调用外部 API。
-- 不允许碰 VPS。
-- 不允许 push GitHub。
-- 不允许发布公开内容。
-
-输出必须是这个 JSON 形状：
-{
+  const singleReturnShape = `{
   "title": string,
   "problem": string,
   "evidence_refs": string[],
@@ -363,28 +392,66 @@ function promptForPacket(packet, { previousFailure } = {}) {
   "risk_notes": string[],
   "stop_condition": string,
   "llm_notes": string
-}
+}`;
 
-质量要求：
-- title 不能是 Explain external trajectory signal 这种模板标题。
-- concrete_tasks 至少 4 条，每条必须带一个具体锚点：文件路径、source_id、信号名、evidence ref、字段名或测试名。
-- 每条 concrete_tasks 尽量写成：在 <文件或测试> 中，检查 <source_id/信号/字段> 是否保持 <明确期望结果>。
-- 不要只写“审查/验证/确保某逻辑”。必须说清楚检查哪个字段、哪个信号、失败时说明什么。
-- 不要用“相关测试”“符合预期”“正确实施”“覆盖情况”当任务结尾；要写出具体期望，比如 route_change_allowed=false 或 authority=suggestion_only。
-- verification_commands 只能从 allowed_verification_commands 里原样选择，禁止编命令。
-- evidence_refs 必须完整保留输入中的 evidence_refs，禁止编造。
-- forbidden_scope 必须完整包含 required_forbidden_scope。
-- 不要写“团队认可”“制定方案”“优化流程”这种空话，除非同时点名具体文件或测试。
-- 不要要求真实发帖、真实写库、真实部署。
+  const multiReturnShape = `{
+  "candidates": [
+    {
+      "candidate_id": string,
+      "strategy": string,
+      "title": string,
+      "problem": string,
+      "evidence_refs": string[],
+      "concrete_tasks": string[],
+      "acceptance_criteria": string[],
+      "verification_commands": string[],
+      "forbidden_scope": string[],
+      "risk_notes": string[],
+      "stop_condition": string,
+      "llm_notes": string
+    }
+  ]
+}`;
 
-坏任务例子：
-- "审查 scripts/lib/perception-sidecar.mjs 文件中的公共边界处理逻辑。"
+  return `You are an engineering work-order drafter. Return JSON only, with no explanation.${retryText}
 
-好任务例子：
-- "在 scripts/lib/perception-sidecar.mjs 中追踪 source_id=farcaster-reply-audit-007，确认 readout_family=safety_boundary_pressure 只生成 suggestion_only/no_write 输出，不改变 route、winner、memory。"
-- "在 test/external-trajectory-online-shadow-contract.test.mjs 中补看 route_hint=policy 的断言，期望 execution_policy.route_change_allowed=false 且 persistent_memory_write_allowed=false。"
+Goal: turn the template work_order_draft into a concrete, executable, and reviewable engineering work-order draft for a later primary agent or L4 reviewer.
+This is an internal agent-facing draft, not a final user-facing response.
 
-输入：
+Hard boundaries:
+- Draft only. Do not execute anything.
+- Do not change route or winner authority.
+- Do not write memory, Zilliz, or embeddings.
+- Do not call external APIs.
+- Do not touch VPS.
+- Do not push GitHub.
+- Do not publish public content.
+
+${requestedCandidateCount > 1
+    ? `Output exactly this JSON shape with exactly ${requestedCandidateCount} candidates:
+${multiReturnShape}
+
+Candidate strategy requirements:
+${strategies.map((item) => `- ${item.candidate_id}: ${item.focus}`).join("\n")}
+- Candidates must be meaningfully different. Do not return the same tasks with only wording changes.
+- Each candidate must independently satisfy every quality requirement below.`
+    : `Output exactly this JSON shape:
+${singleReturnShape}`}
+
+Quality requirements:
+- Keep the title specific; do not reuse a template title such as "Explain external trajectory signal".
+- concrete_tasks must contain at least 4 engineering review tasks.
+- Every concrete task must include a concrete anchor: file path, source_id, signal name, evidence ref, field name, or test name.
+- Prefer this shape: "In <file/test>, check <source_id/signal/field>; expected result is <specific false/no-write/suggestion-only/pass condition>."
+- Do not merely write "review", "verify", "ensure", or "audit" a broad logic path. Name the exact field, signal, and pass condition.
+- Do not end a task with vague phrases like "related tests", "as expected", "correct implementation", or "coverage". Use concrete expectations such as route_change_allowed=false or authority=suggestion_only.
+- verification_commands must be copied exactly from allowed_verification_commands. Do not invent commands.
+- evidence_refs must preserve every input evidence_refs item. Do not invent refs.
+- forbidden_scope must include every required_forbidden_scope item.
+- Avoid vague work like "team approval", "make a plan", or "optimize the process" unless the same sentence names a concrete file or test.
+- Do not request real posting, real database writes, real deployment, or live execution.
+
+Input:
 ${JSON.stringify(compactPacket, null, 2)}
 `;
 }
@@ -454,7 +521,10 @@ export function buildHermesDelegateDefaultArgs({
   return args;
 }
 
-export function buildHermesDelegateAuditPacket(packet) {
+export function buildHermesDelegateAuditPacket(packet, {
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
+} = {}) {
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
   return {
     schema_version: "misa.external_trajectory_l2_audit_packet.v1",
     mode: "hermes-delegate-observe-only",
@@ -508,13 +578,20 @@ export function buildHermesDelegateAuditPacket(packet) {
       required_forbidden_scope: packet.output_contract.required_forbidden_scope,
       min_concrete_tasks: 4,
       weak_task_count_must_be: 0,
-      verification_commands_must_be_whitelisted: true
+      verification_commands_must_be_whitelisted: true,
+      requested_candidate_count: requestedCandidateCount,
+      candidate_strategies: candidateStrategies(requestedCandidateCount)
     }
   };
 }
 
-function promptForHermesDelegate(packet, { previousFailure } = {}) {
-  const auditPacket = buildHermesDelegateAuditPacket(packet);
+function promptForHermesDelegate(packet, {
+  previousFailure,
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
+} = {}) {
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const auditPacket = buildHermesDelegateAuditPacket(packet, { candidateCount: requestedCandidateCount });
+  const strategies = candidateStrategies(requestedCandidateCount);
   const retryText = previousFailure
     ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.\n`
     : "";
@@ -534,12 +611,37 @@ Quality target:
 - verification_commands must be copied exactly from source.allowed_verification_commands.
 - evidence_refs must preserve every source.evidence_refs item and must not invent new refs.
 - The result should be useful to an engineer reviewing production quality, not a policy summary.
+${requestedCandidateCount > 1
+    ? `- Return exactly ${requestedCandidateCount} meaningfully different candidates in the requested candidates array.
+- Use these candidate strategies:
+${strategies.map((item) => `  - ${item.candidate_id}: ${item.focus}`).join("\n")}
+- Every candidate must independently satisfy the quality target.`
+    : ""}
 
 AuditPacket:
 ${JSON.stringify(auditPacket, null, 2)}
 
 Return shape:
-{
+${requestedCandidateCount > 1
+    ? `{
+  "candidates": [
+    {
+      "candidate_id": string,
+      "strategy": string,
+      "title": string,
+      "problem": string,
+      "evidence_refs": string[],
+      "concrete_tasks": string[],
+      "acceptance_criteria": string[],
+      "verification_commands": string[],
+      "forbidden_scope": string[],
+      "risk_notes": string[],
+      "stop_condition": string,
+      "llm_notes": string
+    }
+  ]
+}`
+    : `{
   "title": string,
   "problem": string,
   "evidence_refs": string[],
@@ -550,7 +652,7 @@ Return shape:
   "risk_notes": string[],
   "stop_condition": string,
   "llm_notes": string
-}`;
+}`}`;
 }
 
 async function runHermesDelegateCommand({
@@ -635,10 +737,12 @@ async function callHermesDelegate({
   hermesProvider,
   hermesModel,
   timeoutMs,
-  previousFailure
+  previousFailure,
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
 }) {
-  const auditPacket = buildHermesDelegateAuditPacket(packet);
-  const prompt = promptForHermesDelegate(packet, { previousFailure });
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const auditPacket = buildHermesDelegateAuditPacket(packet, { candidateCount: requestedCandidateCount });
+  const prompt = promptForHermesDelegate(packet, { previousFailure, candidateCount: requestedCandidateCount });
   const effectiveCommand = command ?? hermesDelegateCommandFromEnv();
   const configuredArgs = args ?? hermesDelegateArgsFromEnv();
   const effectiveArgs = configuredArgs
@@ -788,11 +892,25 @@ async function callDraftProvider({
   ollamaTimeoutMs,
   prompt,
   hermesDelegateOptions = {},
-  previousFailure
+  previousFailure,
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
 }) {
   if (provider === "mock") {
+    const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+    const draft = deterministicDraftForPacket(packet);
+    const raw = requestedCandidateCount > 1
+      ? JSON.stringify({
+        candidates: candidateStrategies(requestedCandidateCount).map((strategy) => ({
+          candidate_id: strategy.candidate_id,
+          strategy: strategy.candidate_id,
+          ...draft,
+          title: `${draft.title} (${strategy.candidate_id})`,
+          llm_notes: `${draft.llm_notes} Mock candidate focus: ${strategy.focus}`
+        }))
+      })
+      : JSON.stringify(draft);
     return {
-      raw: JSON.stringify(deterministicDraftForPacket(packet)),
+      raw,
       llm_api_calls: 0,
       provider_error: null
     };
@@ -801,7 +919,7 @@ async function callDraftProvider({
     try {
       return {
         raw: await callOllama({
-          prompt: promptForPacket(packet, { previousFailure }),
+          prompt: promptForPacket(packet, { previousFailure, candidateCount }),
           model,
           endpoint: ollamaEndpoint,
           timeoutMs: ollamaTimeoutMs
@@ -828,7 +946,8 @@ async function callDraftProvider({
           hermesProvider: hermesDelegateOptions.provider,
           hermesModel: hermesDelegateOptions.model,
           timeoutMs: hermesDelegateOptions.timeoutMs ?? DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
-          previousFailure
+          previousFailure,
+          candidateCount
         }),
         llm_api_calls: 1,
         provider_error: null
@@ -846,7 +965,7 @@ async function callDraftProvider({
       return {
         raw: await provider({
           packet,
-          prompt: prompt ?? promptForPacket(packet, { previousFailure }),
+          prompt: prompt ?? promptForPacket(packet, { previousFailure, candidateCount }),
           previousFailure
         }),
         llm_api_calls: 1,
@@ -1008,6 +1127,70 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
   };
 }
 
+function extractCandidateDrafts(parsed, requestedCandidateCount) {
+  if (!parsed || typeof parsed !== "object") return [];
+  const requested = normalizeCandidateCount(requestedCandidateCount);
+  const rawCandidates = Array.isArray(parsed.candidates)
+    ? parsed.candidates
+    : Array.isArray(parsed.drafts)
+      ? parsed.drafts
+      : [parsed];
+  return rawCandidates
+    .filter((draft) => draft && typeof draft === "object")
+    .slice(0, requested)
+    .map((draft, index) => ({
+      candidate_id: String(draft.candidate_id ?? draft.id ?? candidateStrategies(requested)[index]?.candidate_id ?? `candidate_${index + 1}`),
+      strategy: String(draft.strategy ?? candidateStrategies(requested)[index]?.candidate_id ?? `candidate_${index + 1}`),
+      draft
+    }));
+}
+
+function compareCandidateResults(left, right) {
+  const leftGate = left.gate ?? {};
+  const rightGate = right.gate ?? {};
+  if (Boolean(leftGate.ok) !== Boolean(rightGate.ok)) return leftGate.ok ? -1 : 1;
+  if ((leftGate.quality_score ?? 0) !== (rightGate.quality_score ?? 0)) {
+    return (rightGate.quality_score ?? 0) - (leftGate.quality_score ?? 0);
+  }
+  const leftChecks = leftGate.checks ?? {};
+  const rightChecks = rightGate.checks ?? {};
+  if ((leftChecks.weakTaskCount ?? 0) !== (rightChecks.weakTaskCount ?? 0)) {
+    return (leftChecks.weakTaskCount ?? 0) - (rightChecks.weakTaskCount ?? 0);
+  }
+  if ((leftChecks.actionableTaskCount ?? 0) !== (rightChecks.actionableTaskCount ?? 0)) {
+    return (rightChecks.actionableTaskCount ?? 0) - (leftChecks.actionableTaskCount ?? 0);
+  }
+  if ((leftChecks.specificityHits ?? 0) !== (rightChecks.specificityHits ?? 0)) {
+    return (rightChecks.specificityHits ?? 0) - (leftChecks.specificityHits ?? 0);
+  }
+  return (left.index ?? 0) - (right.index ?? 0);
+}
+
+function selectBestCandidate(candidateResults) {
+  return [...candidateResults].sort(compareCandidateResults)[0] ?? null;
+}
+
+function summarizeCandidateSelection({ candidateResults, winner, requestedCandidateCount }) {
+  const candidateCount = candidateResults.length;
+  const qualityScores = candidateResults.map((candidate) => candidate.gate.quality_score);
+  const bestQuality = winner?.gate?.quality_score ?? 0;
+  const passed = candidateResults.filter((candidate) => candidate.gate.ok).length;
+  return {
+    requested_candidate_count: normalizeCandidateCount(requestedCandidateCount),
+    returned_candidate_count: candidateCount,
+    expected_candidate_count_met: candidateCount >= normalizeCandidateCount(requestedCandidateCount),
+    winner_candidate_id: winner?.candidate_id ?? null,
+    winner_strategy: winner?.strategy ?? null,
+    winner_quality_score: bestQuality,
+    candidate_quality_scores: qualityScores,
+    candidate_passed_gate_count: passed,
+    candidate_failed_gate_count: candidateCount - passed,
+    avg_candidate_quality_score: candidateCount
+      ? Math.round(1000 * qualityScores.reduce((sum, score) => sum + score, 0) / candidateCount) / 1000
+      : 0
+  };
+}
+
 async function draftOnePacket({
   packet,
   repoRoot,
@@ -1020,8 +1203,10 @@ async function draftOnePacket({
   hermesDelegateProvider,
   hermesDelegateModel,
   hermesDelegateTimeoutMs,
-  repairAttempts
+  repairAttempts,
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
 }) {
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
   let previousFailure = null;
   let raw = "";
   let draft = null;
@@ -1029,6 +1214,14 @@ async function draftOnePacket({
   let llmApiCalls = 0;
   let gate = null;
   let providerError = null;
+  let parsed = null;
+  let candidates = [];
+  let winner = null;
+  let candidateSelection = summarizeCandidateSelection({
+    candidateResults: [],
+    winner: null,
+    requestedCandidateCount
+  });
 
   for (let attempt = 0; attempt <= repairAttempts; attempt += 1) {
     const providerResult = await callDraftProvider({
@@ -1047,7 +1240,8 @@ async function draftOnePacket({
           timeoutMs: hermesDelegateTimeoutMs
         }
         : undefined,
-      previousFailure
+      previousFailure,
+      candidateCount: requestedCandidateCount
     });
     raw = providerResult.raw;
     llmApiCalls += providerResult.llm_api_calls;
@@ -1056,16 +1250,40 @@ async function draftOnePacket({
       draft = null;
       parseOk = false;
       gate = gateLlmWorkOrderDraft({ packet, draft, parseOk, providerError });
+      candidates = [];
+      winner = null;
+      candidateSelection = summarizeCandidateSelection({
+        candidateResults: [],
+        winner: null,
+        requestedCandidateCount
+      });
       break;
     }
     try {
-      draft = JSON.parse(stripJson(raw));
+      parsed = JSON.parse(stripJson(raw));
       parseOk = true;
     } catch {
-      draft = null;
+      parsed = null;
       parseOk = false;
     }
-    gate = gateLlmWorkOrderDraft({ packet, draft, parseOk });
+    const candidateDrafts = parseOk ? extractCandidateDrafts(parsed, requestedCandidateCount) : [];
+    candidates = candidateDrafts.map((candidate, index) => ({
+      candidate_id: candidate.candidate_id,
+      strategy: candidate.strategy,
+      index,
+      draft: candidate.draft,
+      gate: gateLlmWorkOrderDraft({ packet, draft: candidate.draft, parseOk })
+    }));
+    winner = selectBestCandidate(candidates);
+    draft = winner?.draft ?? null;
+    gate = winner
+      ? winner.gate
+      : gateLlmWorkOrderDraft({ packet, draft: null, parseOk });
+    candidateSelection = summarizeCandidateSelection({
+      candidateResults: candidates,
+      winner,
+      requestedCandidateCount
+    });
     if (gate.ok) break;
     previousFailure = gate;
   }
@@ -1075,6 +1293,7 @@ async function draftOnePacket({
     model,
     provider: typeof provider === "string" ? provider : "custom",
     llm_api_calls: llmApiCalls,
+    candidate_selection: candidateSelection,
     packet: {
       source_class: packet.context.source_class,
       readout_family: packet.record.readout_family,
@@ -1087,6 +1306,23 @@ async function draftOnePacket({
       allowed_verification_commands: packet.allowed_verification_commands
     },
     draft,
+    winner_candidate_id: winner?.candidate_id ?? null,
+    winner_strategy: winner?.strategy ?? null,
+    candidates: candidates.map((candidate) => ({
+      candidate_id: candidate.candidate_id,
+      strategy: candidate.strategy,
+      draft: candidate.draft,
+      gate: candidate.gate
+    })),
+    loser_ledger: candidates
+      .filter((candidate) => candidate.candidate_id !== winner?.candidate_id)
+      .map((candidate) => ({
+        candidate_id: candidate.candidate_id,
+        strategy: candidate.strategy,
+        quality_score: candidate.gate.quality_score,
+        ok: candidate.gate.ok,
+        violations: candidate.gate.violations
+      })),
     raw_response: raw,
     provider_error: providerError,
     gate
@@ -1110,8 +1346,10 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   hermesDelegateModel,
   hermesDelegateTimeoutMs = DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
   repairAttempts = 1,
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
   now = new Date()
 } = {}) {
+  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
   const report = onlineShadowReport
     ?? (onlineShadowReportPath
       ? await readJson(resolvePath(repoRoot, onlineShadowReportPath))
@@ -1141,10 +1379,16 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       hermesDelegateProvider,
       hermesDelegateModel,
       hermesDelegateTimeoutMs,
-      repairAttempts
+      repairAttempts,
+      candidateCount: requestedCandidateCount
     }));
   }
   const llmApiCalls = results.reduce((count, result) => count + result.llm_api_calls, 0);
+  const allCandidates = results.flatMap((result) => result.candidates ?? []);
+  const candidateQualitySum = allCandidates.reduce((sum, candidate) => sum + candidate.gate.quality_score, 0);
+  const expectedCandidateCountMet = results.filter((result) => (
+    result.candidate_selection?.expected_candidate_count_met
+  )).length;
 
   return {
     schema_version: "misa.external_trajectory_llm_work_order_draft.v1",
@@ -1155,13 +1399,28 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       online_shadow_report_path: onlineShadowReportPath ?? null,
       perception_digest_path: digestPath,
       source_ids: sourceIds,
-      max_samples: maxSamples
+      max_samples: maxSamples,
+      requested_candidate_count: requestedCandidateCount
     },
     model,
     provider: typeof provider === "string" ? provider : "custom",
+    delegate: {
+      provider: hermesDelegateProvider ?? null,
+      model: hermesDelegateModel ?? null
+    },
     summary: {
       sample_count: results.length,
       draft_count: results.filter((result) => result.draft).length,
+      requested_candidate_count: requestedCandidateCount,
+      candidate_count: allCandidates.length,
+      expected_candidate_count_met: expectedCandidateCountMet,
+      expected_candidate_count_miss: results.length - expectedCandidateCountMet,
+      winner_selected_count: results.filter((result) => result.winner_candidate_id).length,
+      candidate_passed_gate_count: allCandidates.filter((candidate) => candidate.gate.ok).length,
+      candidate_failed_gate_count: allCandidates.filter((candidate) => !candidate.gate.ok).length,
+      avg_candidate_quality_score: allCandidates.length
+        ? Math.round(1000 * candidateQualitySum / allCandidates.length) / 1000
+        : 0,
       passed_gate_count: results.filter((result) => result.gate.ok).length,
       failed_gate_count: results.filter((result) => !result.gate.ok).length,
       provider_error_count: results.filter((result) => result.provider_error).length,
@@ -1209,7 +1468,12 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
     `- created_at: ${result.created_at}`,
     `- provider: ${result.provider}`,
     `- model: ${result.model}`,
+    `- hermes_delegate_provider: ${result.delegate?.provider ?? "none"}`,
+    `- hermes_delegate_model: ${result.delegate?.model ?? "none"}`,
     `- sample_count: ${result.summary.sample_count}`,
+    `- requested_candidate_count: ${result.summary.requested_candidate_count}`,
+    `- candidate_count: ${result.summary.candidate_count}`,
+    `- winner_selected_count: ${result.summary.winner_selected_count}`,
     `- passed_gate_count: ${result.summary.passed_gate_count}`,
     `- failed_gate_count: ${result.summary.failed_gate_count}`,
     `- avg_quality_score: ${result.summary.avg_quality_score}`,
@@ -1223,6 +1487,9 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
       "",
       `- gate_ok: ${item.gate.ok}`,
       `- quality_score: ${item.gate.quality_score}`,
+      `- candidates: ${item.candidates?.length ?? 0}`,
+      `- winner_candidate_id: ${item.winner_candidate_id ?? "none"}`,
+      `- winner_strategy: ${item.winner_strategy ?? "none"}`,
       `- violations: ${item.gate.violations.join(", ") || "none"}`,
       `- provider_error: ${item.provider_error?.code ?? "none"}`,
       `- title: ${item.draft?.title ?? "PARSE_FAILED"}`,

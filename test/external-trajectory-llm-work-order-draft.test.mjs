@@ -359,6 +359,89 @@ test("LLM work-order draft report passes with context-specific mock provider", a
   )));
 });
 
+test("LLM work-order draft report can select the best of three candidates from one call", async () => {
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: async ({ packet }) => {
+      const fileA = packet.context.relevant_files[0];
+      const fileB = packet.context.relevant_files[1] ?? fileA;
+      const signal = packet.record.observed_signals[0];
+      const goodDraft = (candidateId, taskSuffix = "") => ({
+        candidate_id: candidateId,
+        strategy: candidateId,
+        title: `${candidateId} ${packet.source_id} observe-only audit`,
+        problem: `${packet.source_id} carries ${signal}; keep L2 output as a no-write draft for L4 review.`,
+        evidence_refs: [...packet.workOrder.evidence_refs],
+        concrete_tasks: [
+          `In ${fileA}, check source_id=${packet.source_id} field=execution_policy.route_change_allowed; expected result is false and winner_change_allowed=false.${taskSuffix}`,
+          `In ${fileB}, check signal=${signal} field=persistent_memory_write_allowed; expected result is false with zilliz_write_allowed=false.${taskSuffix}`,
+          `In ${fileA}, check evidence_ref=${packet.workOrder.evidence_refs[0]} field=authority; expected result is suggestion_only and not execution authority.${taskSuffix}`,
+          `In ${fileB}, check allowed_verification_commands for ${packet.source_id}; expected result is only whitelisted local commands and no VPS/GitHub/public publish action.${taskSuffix}`
+        ],
+        acceptance_criteria: [
+          `${packet.source_id} preserves every evidence ref and keeps route_change_allowed=false.`,
+          "The draft remains observe-only and does not request memory, Zilliz, embedding, VPS, GitHub, public publish, or external API effects."
+        ],
+        verification_commands: ["npm test", "npm run precheck"],
+        forbidden_scope: [
+          "do_not_change_route",
+          "do_not_change_winner",
+          "do_not_write_memory",
+          "do_not_write_zilliz",
+          "do_not_create_embeddings",
+          "do_not_call_external_api",
+          "do_not_touch_vps",
+          "do_not_push_github",
+          "do_not_publish_publicly"
+        ],
+        risk_notes: [
+          `${signal} is review pressure only.`,
+          "Candidate selection is local scoring only, not route or winner authority."
+        ],
+        stop_condition: "Stop after L2 candidate scoring; do not execute the work order.",
+        llm_notes: `${candidateId} fixture candidate.`
+      });
+      return JSON.stringify({
+        candidates: [
+          {
+            candidate_id: "boundary_safety",
+            strategy: "boundary_safety",
+            title: "Weak generic draft",
+            problem: "Review the thing.",
+            evidence_refs: [...packet.workOrder.evidence_refs],
+            concrete_tasks: ["review logic", "check tests", "improve process", "discuss with team"],
+            acceptance_criteria: ["looks good", "team approves"],
+            verification_commands: ["./fake.sh", "npm test"],
+            forbidden_scope: [],
+            risk_notes: [],
+            stop_condition: "stop",
+            llm_notes: "bad fixture"
+          },
+          goodDraft("evidence_trace"),
+          goodDraft("replay_verification", " Confirm the replayable expected result is explicit.")
+        ]
+      });
+    },
+    candidateCount: 3,
+    repairAttempts: 0,
+    maxSamples: 1,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(result.summary.sample_count, 1);
+  assert.equal(result.summary.llm_api_calls, 1);
+  assert.equal(result.summary.requested_candidate_count, 3);
+  assert.equal(result.summary.candidate_count, 3);
+  assert.equal(result.summary.winner_selected_count, 1);
+  assert.equal(result.results[0].candidates.length, 3);
+  assert.equal(result.results[0].winner_candidate_id, "evidence_trace");
+  assert.equal(result.results[0].gate.ok, true);
+  assert.equal(result.results[0].loser_ledger.length, 2);
+  assert.ok(result.results[0].loser_ledger.some((item) => item.candidate_id === "boundary_safety"));
+});
+
 test("Hermes delegate provider passes through a local JSON bridge stub", async () => {
   const stubPath = await writeHermesDelegateStub(passingHermesDelegateStub);
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({

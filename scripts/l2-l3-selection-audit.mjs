@@ -80,6 +80,12 @@ if (hasArg("json")) {
   console.log(`green=${result.summary.pool_counts.green}`);
   console.log(`yellow=${result.summary.pool_counts.yellow}`);
   console.log(`red=${result.summary.pool_counts.red}`);
+  if (result.summary.candidate_count !== null && result.summary.candidate_count !== undefined) {
+    console.log(`requested_candidate_count=${result.summary.requested_candidate_count}`);
+    console.log(`candidate_count=${result.summary.candidate_count}`);
+    console.log(`winner_selected=${result.summary.winner_selected_count}`);
+    console.log(`candidate_best_found=${result.summary.candidate_best_found_count}`);
+  }
   console.log(`l4_forward=${result.summary.l4_forward_count}`);
   console.log(`red_spot_check=${result.summary.red_spot_check_count}`);
   console.log(`possible_false_reject=${result.summary.possible_false_reject_count}`);
