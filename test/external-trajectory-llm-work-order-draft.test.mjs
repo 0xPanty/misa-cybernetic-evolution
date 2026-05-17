@@ -285,6 +285,55 @@ test("LLM work-order gate treats mandatory human-in-the-loop as an explicit expe
   assert.equal(gate.checks.weakTaskCount, 0);
 });
 
+test("LLM work-order gate recognizes project-specific state labels as expectations", () => {
+  const [packet] = buildLlmWorkOrderDraftingPackets({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"]
+  });
+  const draft = {
+    title: "Audit shadow-public-memory-risk-001 public posting boundary",
+    problem: "shadow-public-memory-risk-001 must keep public posting and memory pressure in local shadow review.",
+    evidence_refs: [...packet.workOrder.evidence_refs],
+    concrete_tasks: [
+      "In scripts/lib/external-trajectory-online-shadow-contract.mjs, check source_id shadow-public-memory-risk-001 for the publication_allowed field; expected result is false.",
+      "In test/external-trajectory-online-shadow-contract.test.mjs, check the farcaster_public_memory_risk signal; expected result is a draft_no_write status with no state mutation.",
+      "In test/fixtures/perception/shadow-sources/01-public-memory-risk.json, check the explicit_user_boundary field; expected result is a safety_boundary_pressure classification.",
+      "In test/curiosity-signal-gate.test.mjs, check source_id shadow-public-memory-risk-001; expected result is successful gating of the public_posting_boundary signal."
+    ],
+    acceptance_criteria: [
+      "All project-specific expected state labels are recognized as concrete outcomes.",
+      "No route, winner, memory, Zilliz, embedding, VPS, GitHub, public publish, or external API effects are requested."
+    ],
+    verification_commands: [
+      "npm test",
+      "npm run precheck"
+    ],
+    forbidden_scope: [
+      "do_not_change_route",
+      "do_not_change_winner",
+      "do_not_write_memory",
+      "do_not_write_zilliz",
+      "do_not_create_embeddings",
+      "do_not_call_external_api",
+      "do_not_touch_vps",
+      "do_not_push_github",
+      "do_not_publish_publicly"
+    ],
+    risk_notes: [
+      "draft_no_write and safety_boundary_pressure are concrete project states.",
+      "successful gating is tied to public_posting_boundary, not a generic success claim."
+    ],
+    stop_condition: "Stop after local shadow review; do not execute the work order.",
+    llm_notes: "Fixture mirrors real Hermes L2 state-label wording."
+  };
+  const gate = gateLlmWorkOrderDraft({ packet, draft });
+
+  assert.equal(gate.ok, true);
+  assert.equal(gate.checks.actionableTaskCount, 4);
+  assert.equal(gate.checks.weakTaskCount, 0);
+});
+
 test("LLM work-order draft report passes with context-specific mock provider", async () => {
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),

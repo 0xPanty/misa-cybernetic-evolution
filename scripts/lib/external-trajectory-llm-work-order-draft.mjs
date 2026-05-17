@@ -68,6 +68,7 @@ const HERMES_PROVIDER_ERROR_PATTERNS = Object.freeze([
 
 const TASK_EXPECTATION_PATTERNS = Object.freeze([
   /must|mandatory|required|only|preserve|remain|keep|blocked|false|zero|reject|pass|fail|contains|equals|does not|do not|unauthorized|human-in-the-loop/i,
+  /draft_no_write|suggestion_only|classification|successful gating|no[-\s](?:write|publish|state mutation)|side-effects|restricted/i,
   /必须|只能|仅|保留|保持|阻止|拒绝|通过|失败|包含|等于|不得|不允许|不会|不写|不改|不执行/
 ]);
 
