@@ -33,6 +33,52 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.summary.winner_count, result.summary.tournament_count);
   assert.ok(result.summary.rejected_variant_count >= result.summary.tournament_count);
   assert.equal(result.summary.experience_ledger_count, result.experience_ledger.length);
+  assert.equal(result.loser_review_context.mode, "loser-review-context");
+  assert.equal(result.loser_review_context.safety.hard_filter_allowed, false);
+  assert.equal(result.loser_review_context.safety.changes_winner, false);
+  assert.equal(result.loser_review_context.safety.changes_route, false);
+  assert.equal(result.loser_review_context.safety.writes_memory, false);
+  assert.equal(result.loser_review_context.safety.embedding_created, false);
+  assert.equal(result.loser_review_context.safety.llm_api_calls, 0);
+  assert.equal(result.loser_review_context.deployment_readiness.status, "release_candidate_shadow_advisory");
+  assert.equal(result.loser_review_context.deployment_readiness.runtime_profile, "shadow_advisory");
+  assert.equal(result.loser_review_context.deployment_readiness.safe_to_consume, true);
+  assert.deepEqual(result.loser_review_context.deployment_readiness.release_blockers, []);
+  assert.equal(result.loser_review_context.deployment_readiness.operational_limits.active_recall_top_k <= 12, true);
+  assert.equal(result.loser_review_context.deployment_readiness.operational_limits.active_counterexample_pack <= 5, true);
+  assert.equal(result.loser_review_context.deployment_readiness.operational_limits.llm_api_call_budget, 0);
+  assert.equal(result.loser_review_context.deployment_readiness.operational_limits.zilliz_write_budget, 0);
+  assert.ok(result.loser_review_context.deployment_readiness.blocked_surfaces.includes("candidate_hard_filter"));
+  assert.ok(result.loser_review_context.deployment_readiness.blocked_surfaces.includes("zilliz_write"));
+  assert.ok(result.loser_review_context.deployment_readiness.kill_switch.env.includes("MISA_LOSER_REVIEW_CONTEXT=0"));
+  assert.equal(result.loser_review_context.deployment_readiness.rollback.data_migration_required, false);
+  assert.deepEqual(result.loser_review_context.capabilities_landed, [
+    "winner_loser_vector_prototype_recall",
+    "route_specific_loser_index",
+    "top_k_diversified_counterexample_packing",
+    "winner_loser_rehabilitation_joint_recall",
+    "loser_reservoir_prototype_compression",
+    "weak_model_perturbation_harness_zero_call",
+    "strong_model_high_dispute_sampling_plan_zero_call",
+    "l3_l4_consumption_plan"
+  ]);
+  assert.equal(result.loser_review_context.summary.tournament_count, result.summary.tournament_count);
+  assert.equal(result.loser_review_context.summary.prototype_count > result.summary.tournament_count, true);
+  assert.equal(result.loser_review_context.route_specific_loser_index.length > 0, true);
+  assert.equal(result.loser_review_context.prototype_reservoir.length > 0, true);
+  assert.equal(result.loser_review_context.tournaments.every((review) => (
+    review.recall.backend === "local-token-prototype-recall-v1"
+      && review.recall.embedding_created === false
+      && review.recall.zilliz_written === false
+      && review.diversified_counterexample_pack.items.length > 0
+      && review.weak_model_perturbation.model_api_calls === 0
+      && review.strong_model_sampling.llm_api_calls === 0
+      && review.l3_l4_consumption.l3_gate.may_change_winner === false
+      && review.l3_l4_consumption.l3_gate.may_filter_candidate === false
+      && review.l3_l4_consumption.l4_context.final_judgment_retained_by_l4 === true
+      && review.l3_l4_consumption.l4_context.may_change_route === false
+      && review.l3_l4_consumption.l4_context.may_write_memory === false
+  )), true);
   assert.ok(result.experience_ledger.length >= result.summary.rejected_variant_count);
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "damping_or_case_evidence"));
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "non_winning_experience"));
@@ -41,6 +87,7 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.ok(result.experience_ledger.some((item) => item.loser_class === "promising" || item.loser_class === "weak"));
   assert.equal(result.experience_ledger.filter((item) => item.source === "tournament_variant").every((item) => (
     item.candidate_pool_effect
+      && item.failure_type
       && item.selection_hint
       && item.candidate_pool_authority === "advisory_pressure_only"
       && item.hard_filter_allowed === false
@@ -49,6 +96,13 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
       && item.review_path
       && item.review_trigger
       && item.reactivation_conditions.length > 0
+      && item.rehabilitation_record?.authority === "advisory_reentry_only"
+      && item.rehabilitation_record?.record_required_before_pressure_change === true
+      && item.observed_at
+      && item.last_triggered_at
+      && Number.isInteger(item.source_count)
+      && typeof item.decay_weight === "number"
+      && typeof item.confidence === "number"
       && item.contrast?.winner_variant_id
   )), true);
   assert.equal(result.safety.production_authority, false);
@@ -94,25 +148,56 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.ok(unsafeLosers.length >= 1);
     assert.equal(unsafeLosers.every((loser) => (
       loser.candidate_pool_effect === "strong_suppression"
+        && loser.failure_type === "safety_boundary"
         && loser.candidate_pool_authority === "advisory_pressure_only"
         && loser.candidate_pool_action === "retain_with_strong_pressure"
         && loser.hard_filter_allowed === false
         && loser.agent_review_required === true
         && loser.l4_review_required === true
         && loser.reactivation_conditions.includes("blocked_operations_removed")
+        && loser.rehabilitation_record.status === "blocked_until_boundary_reopened"
+        && loser.rehabilitation_record.authority === "advisory_reentry_only"
+        && loser.observed_at === result.created_at
+        && loser.last_triggered_at === result.created_at
+        && loser.source_count === 1
+        && loser.decay_weight > 0
+        && loser.confidence > 0
         && loser.contrast.winner_variant_id === tournament.winner.variant_id
     )), true);
     assert.equal(nonUnsafeLosers.every((loser) => (
       loser.candidate_pool_effect !== "strong_suppression"
+        && loser.failure_type !== "safety_boundary"
         && loser.candidate_pool_authority === "advisory_pressure_only"
         && loser.hard_filter_allowed === false
         && loser.agent_review_required === true
         && loser.reactivation_conditions.length > 0
+        && loser.rehabilitation_record.authority === "advisory_reentry_only"
+        && loser.rehabilitation_record.record_required_before_pressure_change === true
+        && loser.observed_at === result.created_at
+        && loser.last_triggered_at === result.created_at
+        && loser.source_count === 1
         && loser.contrast.winner_strategy === tournament.winner.strategy
     )), true);
   }
 
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("loser review context fails closed for unsupported runtime profiles", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    loserRuntimeProfile: "live_hard_filter"
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.loser_review_context.ok, false);
+  assert.equal(result.loser_review_context.deployment_readiness.status, "blocked");
+  assert.equal(result.loser_review_context.deployment_readiness.safe_to_consume, false);
+  assert.ok(result.loser_review_context.deployment_readiness.release_blockers.includes("unsupported_runtime_profile:live_hard_filter"));
+  assert.ok(result.violations.includes("loser_review_context_not_release_candidate"));
+  assert.equal(result.loser_review_context.safety.hard_filter_allowed, false);
+  assert.equal(result.loser_review_context.safety.changes_winner, false);
+  assert.equal(result.loser_review_context.safety.changes_route, false);
+  assert.equal(result.loser_review_context.safety.llm_api_calls, 0);
 });
 
 test("v0.17 tournament gate can compare source-backed VPS samples without LLM calls", async () => {

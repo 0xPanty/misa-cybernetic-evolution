@@ -43,16 +43,71 @@ Each non-winning variant now carries a small contrast record:
 This keeps the useful learning signal from losers without letting the ledger
 own route, winner, memory, skill, or production authority.
 
+The ledger now separates two things that used to be mixed together:
+
+- `failure_type`: why the variant lost, such as `safety_boundary`,
+  `quality_inferior`, `evidence_deficit`, `context_mismatch`,
+  `overfit_or_holdout_regression`, or `cost_or_operational_risk`;
+- `candidate_pool_effect`: what the system should do with that evidence,
+  such as strong review pressure, evidence-before-reentry, or contextual
+  alternative.
+
+This means a similar future candidate can be reviewed against the actual failure
+reason instead of being treated as "loser-looking" in one big bucket.
+
+Each loser also carries a `rehabilitation_record`. It does not pardon the loser
+automatically. It records what new evidence must exist before pressure can be
+lowered or the candidate can re-enter review. Time fields (`observed_at`,
+`last_triggered_at`, `source_count`, `decay_weight`, and `confidence`) make the
+pressure replayable and decay-aware without giving it hard-filter authority.
+
 Every loser entry now states this boundary directly:
 
 ```text
 candidate_pool_authority = advisory_pressure_only
 hard_filter_allowed = false
 agent_review_required = true
+rehabilitation_record.authority = advisory_reentry_only
 ```
 
 Plain version: a loser match raises pressure and asks the agent to check the
 candidate. It does not become a one-vote veto.
+
+## Loser Review Context
+
+The gate now emits `loser_review_context` as the place where the later review
+loop consumes loser evidence. It lands the remaining Pro-review items without
+giving them decision authority:
+
+- local token prototype recall for winner, loser, and rehabilitation examples;
+- route-specific loser indexes so one route does not poison another route;
+- top-k diversified counterexample packs for L4 instead of repeated loser spam;
+- joint winner/loser/rehabilitation recall so "how it was rehabilitated" stays
+  visible beside "why it failed";
+- prototype reservoir compression so the loser ledger can keep representatives
+  instead of turning into an endless list;
+- deterministic weak-perturbation checks with zero model calls;
+- high-dispute strong-review sampling targets with zero model calls by default;
+- an L3/L4 consumption plan that turns pressure into review requirements, not
+  candidate filtering.
+
+Plain version: this is the "how to use the loser evidence" packet. It can tell
+L3 to ask for proof and L4 to compare counterexamples. It still cannot change
+the winner, route, memory, production state, Zilliz, or public channels.
+
+The deployable profile is `shadow_advisory`. That profile is intentionally
+boring:
+
+- `top_k` is capped at 12 and each counterexample pack is capped at 5;
+- the reservoir is capped at 24 prototype representatives;
+- API, LLM, embedding, Zilliz, VPS, and public-write budgets are all zero;
+- unsupported runtime profiles fail closed and make the gate non-releaseable;
+- the kill switch is `MISA_LOSER_REVIEW_CONTEXT=0`;
+- rollback does not need data migration because winners, tournaments, and the
+  experience ledger do not depend on the loser context.
+
+Plain version: this can be shipped as a shadow advisory feature. If someone
+tries to turn it into live hard filtering, the gate blocks that configuration.
 
 ## Loser Pressure Quant
 
@@ -188,6 +243,13 @@ npm --silent run evolution:tournament:misa -- --json
 
 - every winner remains `local_draft_report_only`;
 - `experience_ledger` is populated with local comparison evidence;
+- every loser records a separate `failure_type` and advisory
+  `candidate_pool_effect`;
+- every loser records a `rehabilitation_record` and time/decay metadata before
+  any future pressure change;
+- `loser_review_context` includes route indexes, prototype recall, diversified
+  counterexamples, weak perturbation checks, strong-review sampling targets, and
+  L3/L4 consumption plans;
 - `publication_allowed=false`;
 - `production_authority=false`;
 - `llm_route_decision_allowed=false`;

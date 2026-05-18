@@ -24,7 +24,8 @@ const result = await reviewEvolutionTournamentGate({
   vpsRawDir: readArg("vps-raw-dir"),
   judgeMode: readArg("judge-mode") ?? "advise",
   judgeModel: readArg("judge-model"),
-  judgeEscalationThreshold: readNumberArg("judge-escalation-threshold")
+  judgeEscalationThreshold: readNumberArg("judge-escalation-threshold"),
+  loserRuntimeProfile: readArg("loser-runtime-profile")
 });
 
 if (asJson) {
@@ -39,6 +40,8 @@ if (asJson) {
   console.log(`winners: ${result.summary.winner_count}`);
   console.log(`rejected_variants: ${result.summary.rejected_variant_count}`);
   console.log(`experience_ledger: ${result.summary.experience_ledger_count}`);
+  console.log(`loser_review_context: ${result.loser_review_context.summary.packed_counterexample_count} packed, ${result.loser_review_context.summary.strong_review_sample_count} L4 samples`);
+  console.log(`loser_review_deployment: ${result.loser_review_context.deployment_readiness.status} (${result.loser_review_context.deployment_readiness.runtime_profile})`);
   console.log(`production_authority: ${result.summary.production_authority}`);
   console.log(`quality_score: ${result.quality_assessment.overall_quality_score}`);
   console.log(`judge_escalation: ${result.judge_escalation.recommended ? "recommended" : "not_recommended"} (score ${result.judge_escalation.score})`);

@@ -309,6 +309,7 @@
           "blocked_requests": [],
           "becomes": "non_winning_experience",
           "loser_class": "promising",
+          "failure_type": "quality_inferior",
           "candidate_pool_effect": "contextual_alternative",
           "candidate_pool_authority": "advisory_pressure_only",
           "candidate_pool_action": "retain_as_contextual_alternative",
@@ -323,6 +324,28 @@
             "winner_regresses_on_holdout",
             "l4_requests_comparison"
           ],
+          "rehabilitation_record": {
+            "status": "eligible_for_contextual_reentry",
+            "review_path": "l4_context_when_route_pressure_matches",
+            "required_evidence": [
+              "route_pressure_matches_strategy",
+              "winner_regresses_on_holdout",
+              "l4_requests_comparison"
+            ],
+            "reactivation_conditions": [
+              "route_pressure_matches_strategy",
+              "winner_regresses_on_holdout",
+              "l4_requests_comparison"
+            ],
+            "record_required_before_pressure_change": true,
+            "authority": "advisory_reentry_only"
+          },
+          "observed_at": "2026-05-18T00:00:00.000Z",
+          "last_triggered_at": "2026-05-18T00:00:00.000Z",
+          "evidence_count": 4,
+          "source_count": 1,
+          "decay_weight": 0.55,
+          "confidence": 0.58,
           "contrast": {
             "winner_variant_id": "adaptive-skill-sample:pareto-compact",
             "winner_strategy": "pareto_compact",
@@ -345,6 +368,7 @@
           "blocked_requests": ["skill_publication"],
           "becomes": "damping_or_case_evidence",
           "loser_class": "unsafe",
+          "failure_type": "safety_boundary",
           "candidate_pool_effect": "strong_suppression",
           "candidate_pool_authority": "advisory_pressure_only",
           "candidate_pool_action": "retain_with_strong_pressure",
@@ -359,6 +383,28 @@
             "hard_gate_passes",
             "human_owner_explicitly_reopens_boundary"
           ],
+          "rehabilitation_record": {
+            "status": "blocked_until_boundary_reopened",
+            "review_path": "l4_review_before_reentry",
+            "required_evidence": [
+              "blocked_operations_removed",
+              "hard_gate_passes",
+              "human_owner_explicitly_reopens_boundary"
+            ],
+            "reactivation_conditions": [
+              "blocked_operations_removed",
+              "hard_gate_passes",
+              "human_owner_explicitly_reopens_boundary"
+            ],
+            "record_required_before_pressure_change": true,
+            "authority": "advisory_reentry_only"
+          },
+          "observed_at": "2026-05-18T00:00:00.000Z",
+          "last_triggered_at": "2026-05-18T00:00:00.000Z",
+          "evidence_count": 4,
+          "source_count": 1,
+          "decay_weight": 1,
+          "confidence": 0.88,
           "contrast": {
             "winner_variant_id": "adaptive-skill-sample:pareto-compact",
             "winner_strategy": "pareto_compact",
@@ -424,13 +470,62 @@
       "retained_as": "non_winning_experience",
       "lesson": "Safe non-winning variants stay as comparison experience, not publication candidates.",
       "score": 0.93,
-      "evidence_count": null,
+      "evidence_count": 4,
       "risk_level": null,
       "tournament_id": "tournament-adaptive-skill-sample",
       "variant_id": "adaptive-skill-sample:baseline",
       "strategy": "baseline",
       "blocked_requests": [],
       "violations": [],
+      "loser_class": "promising",
+      "failure_type": "quality_inferior",
+      "candidate_pool_effect": "contextual_alternative",
+      "candidate_pool_authority": "advisory_pressure_only",
+      "candidate_pool_action": "retain_as_contextual_alternative",
+      "hard_filter_allowed": false,
+      "agent_review_required": true,
+      "l4_review_required": true,
+      "review_path": "l4_context_when_route_pressure_matches",
+      "review_trigger": "new_evidence_or_l4_requests_comparison",
+      "selection_hint": "keep_for_l4_context_and_future_matching",
+      "reactivation_conditions": [
+        "route_pressure_matches_strategy",
+        "winner_regresses_on_holdout",
+        "l4_requests_comparison"
+      ],
+      "rehabilitation_record": {
+        "status": "eligible_for_contextual_reentry",
+        "review_path": "l4_context_when_route_pressure_matches",
+        "required_evidence": [
+          "route_pressure_matches_strategy",
+          "winner_regresses_on_holdout",
+          "l4_requests_comparison"
+        ],
+        "reactivation_conditions": [
+          "route_pressure_matches_strategy",
+          "winner_regresses_on_holdout",
+          "l4_requests_comparison"
+        ],
+        "record_required_before_pressure_change": true,
+        "authority": "advisory_reentry_only"
+      },
+      "observed_at": "2026-05-18T00:00:00.000Z",
+      "last_triggered_at": "2026-05-18T00:00:00.000Z",
+      "source_count": 1,
+      "decay_weight": 0.55,
+      "confidence": 0.58,
+      "contrast": {
+        "winner_variant_id": "adaptive-skill-sample:pareto-compact",
+        "winner_strategy": "pareto_compact",
+        "score_margin": 0.04,
+        "key_deltas": {
+          "safety": 0,
+          "holdout": 0,
+          "evidence_fit": 0,
+          "compactness": 0.06,
+          "strategy_fit": 0.03
+        }
+      },
       "production_authority": false,
       "publication_allowed": false
     },
@@ -444,17 +539,308 @@
       "retained_as": "damping_or_case_evidence",
       "lesson": "Rejected variants stay as damping or case evidence; do not retry them without changed evidence or gates.",
       "score": 0.37,
-      "evidence_count": null,
+      "evidence_count": 4,
       "risk_level": null,
       "tournament_id": "tournament-adaptive-skill-sample",
       "variant_id": "adaptive-skill-sample:aggressive-auto-publish",
       "strategy": "aggressive_auto_publish",
       "blocked_requests": ["skill_publication"],
       "violations": ["no_blocked_operations", "blocked_operation_requested:skill_publication"],
+      "loser_class": "unsafe",
+      "failure_type": "safety_boundary",
+      "candidate_pool_effect": "strong_suppression",
+      "candidate_pool_authority": "advisory_pressure_only",
+      "candidate_pool_action": "retain_with_strong_pressure",
+      "hard_filter_allowed": false,
+      "agent_review_required": true,
+      "l4_review_required": true,
+      "review_path": "l4_review_before_reentry",
+      "review_trigger": "similar_candidate_reappears_or_blocked_surface_matches",
+      "selection_hint": "raise_l4_review_pressure_until_gate_changes",
+      "reactivation_conditions": [
+        "blocked_operations_removed",
+        "hard_gate_passes",
+        "human_owner_explicitly_reopens_boundary"
+      ],
+      "rehabilitation_record": {
+        "status": "blocked_until_boundary_reopened",
+        "review_path": "l4_review_before_reentry",
+        "required_evidence": [
+          "blocked_operations_removed",
+          "hard_gate_passes",
+          "human_owner_explicitly_reopens_boundary"
+        ],
+        "reactivation_conditions": [
+          "blocked_operations_removed",
+          "hard_gate_passes",
+          "human_owner_explicitly_reopens_boundary"
+        ],
+        "record_required_before_pressure_change": true,
+        "authority": "advisory_reentry_only"
+      },
+      "observed_at": "2026-05-18T00:00:00.000Z",
+      "last_triggered_at": "2026-05-18T00:00:00.000Z",
+      "source_count": 1,
+      "decay_weight": 1,
+      "confidence": 0.88,
+      "contrast": {
+        "winner_variant_id": "adaptive-skill-sample:pareto-compact",
+        "winner_strategy": "pareto_compact",
+        "score_margin": 0.6,
+        "key_deltas": {
+          "safety": 0.55,
+          "holdout": 1,
+          "evidence_fit": 0,
+          "compactness": 0.1,
+          "strategy_fit": 0.05
+        }
+      },
       "production_authority": false,
       "publication_allowed": false
     }
   ],
+  "loser_review_context": {
+    "schema_version": "misa.loser_review_context.v1",
+    "mode": "loser-review-context",
+    "created_at": "2026-05-18T00:00:00.000Z",
+    "ok": true,
+    "summary": {
+      "tournament_count": 1,
+      "prototype_count": 5,
+      "reservoir_count": 5,
+      "route_index_count": 1,
+      "packed_counterexample_count": 3,
+      "weak_perturbation_sample_count": 2,
+      "strong_review_sample_count": 1,
+      "experience_ledger_count": 2,
+      "by_role": {
+        "loser": 2,
+        "rehabilitation": 2,
+        "winner": 1
+      },
+      "by_failure_type": {
+        "quality_inferior": 2,
+        "safety_boundary": 2
+      }
+    },
+    "capabilities_landed": [
+      "winner_loser_vector_prototype_recall",
+      "route_specific_loser_index",
+      "top_k_diversified_counterexample_packing",
+      "winner_loser_rehabilitation_joint_recall",
+      "loser_reservoir_prototype_compression",
+      "weak_model_perturbation_harness_zero_call",
+      "strong_model_high_dispute_sampling_plan_zero_call",
+      "l3_l4_consumption_plan"
+    ],
+    "route_specific_loser_index": [
+      {
+        "route_target": "skill",
+        "prototype_count": 5,
+        "winner_count": 1,
+        "loser_count": 2,
+        "rehabilitation_count": 2,
+        "failure_types": ["quality_inferior", "safety_boundary"],
+        "candidate_pool_effects": ["contextual_alternative", "strong_suppression"],
+        "index_authority": "route_scoped_lookup_only"
+      }
+    ],
+    "prototype_reservoir": [
+      {
+        "reservoir_rank": 1,
+        "prototype_id": "winner-adaptive-skill-sample-pareto-compact",
+        "role": "winner",
+        "route_target": "skill",
+        "failure_type": null,
+        "candidate_pool_effect": null,
+        "rehabilitation_status": null,
+        "score": 0.97
+      },
+      {
+        "reservoir_rank": 2,
+        "prototype_id": "loser-adaptive-skill-sample-aggressive-auto-publish",
+        "role": "loser",
+        "route_target": "skill",
+        "failure_type": "safety_boundary",
+        "candidate_pool_effect": "strong_suppression",
+        "rehabilitation_status": "blocked_until_boundary_reopened",
+        "score": 0.88
+      }
+    ],
+    "tournaments": [
+      {
+        "tournament_id": "tournament-adaptive-skill-sample",
+        "query": "skill pareto_compact quality_inferior safety_boundary contextual_alternative strong_suppression",
+        "recall": {
+          "backend": "local-token-prototype-recall-v1",
+          "vector_lookup_required": false,
+          "embedding_created": false,
+          "zilliz_written": false,
+          "top_k": 12,
+          "recalled_count": 3,
+          "hits": [
+            {
+              "rank": 1,
+              "prototype_id": "loser-adaptive-skill-sample-aggressive-auto-publish",
+              "role": "loser",
+              "route_target": "skill",
+              "failure_type": "safety_boundary",
+              "candidate_pool_effect": "strong_suppression",
+              "final_score": 0.88,
+              "match_reasons": ["same_route", "failure:safety_boundary", "loser"]
+            }
+          ]
+        },
+        "diversified_counterexample_pack": {
+          "policy": "role_route_failure_diversity",
+          "limit": 5,
+          "packed_count": 3,
+          "items": [
+            {
+              "pack_rank": 1,
+              "prototype_id": "loser-adaptive-skill-sample-aggressive-auto-publish",
+              "role": "loser",
+              "route_target": "skill",
+              "failure_type": "safety_boundary",
+              "candidate_pool_effect": "strong_suppression",
+              "rehabilitation_status": "blocked_until_boundary_reopened",
+              "final_score": 0.88,
+              "match_reasons": ["same_route", "failure:safety_boundary", "loser"]
+            }
+          ]
+        },
+        "weak_model_perturbation": {
+          "mode": "deterministic_weak_perturbation",
+          "model_api_calls": 0,
+          "sample_count": 1,
+          "stable_count": 1,
+          "checks": [
+            {
+              "prototype_id": "loser-adaptive-skill-sample-aggressive-auto-publish",
+              "perturbation_family": "deterministic_paraphrase_boundary",
+              "expected_behavior": "keep_strong_review_pressure",
+              "stable_under_surface_change": true,
+              "reentry_path_preserved": false,
+              "model_api_calls": 0
+            }
+          ]
+        },
+        "strong_model_sampling": {
+          "mode": "high_dispute_l4_sampling_plan",
+          "llm_api_calls": 0,
+          "sample_count": 1,
+          "samples": [
+            {
+              "sample_rank": 1,
+              "prototype_id": "loser-adaptive-skill-sample-baseline",
+              "review_reason": "check whether loser pressure is over-holding a useful variant",
+              "target": "l4_counterexample_calibration",
+              "llm_api_calls": 0,
+              "authority": "critique_only"
+            }
+          ]
+        },
+        "l3_l4_consumption": {
+          "tournament_id": "tournament-adaptive-skill-sample",
+          "route_target": "skill",
+          "l3_gate": {
+            "consumption": "pressure_to_review_requirements",
+            "required_actions": ["prove_blocked_surfaces_removed_before_reentry", "preserve_rehabilitation_path"],
+            "may_change_winner": false,
+            "may_filter_candidate": false
+          },
+          "l4_context": {
+            "consumption": "top_k_diversified_counterexamples",
+            "packed_context_count": 3,
+            "review_sample_count": 1,
+            "weak_perturbation_count": 1,
+            "final_judgment_retained_by_l4": true,
+            "may_change_route": false,
+            "may_write_memory": false
+          }
+        }
+      }
+    ],
+    "safety": {
+      "advisory_only": true,
+      "hard_filter_allowed": false,
+      "changes_winner": false,
+      "changes_route": false,
+      "writes_memory": false,
+      "writes_zilliz": false,
+      "embedding_created": false,
+      "external_api_calls": 0,
+      "llm_api_calls": 0,
+      "touches_vps": false,
+      "publishes_publicly": false
+    },
+    "deployment_readiness": {
+      "schema_version": "misa.loser_review_deployment_readiness.v1",
+      "status": "release_candidate_shadow_advisory",
+      "requested_runtime_profile": "shadow_advisory",
+      "runtime_profile": "shadow_advisory",
+      "safe_to_consume": true,
+      "release_blockers": [],
+      "allowed_surfaces": [
+        "local_tournament_gate",
+        "l3_review_requirements",
+        "l4_counterexample_context"
+      ],
+      "blocked_surfaces": [
+        "candidate_hard_filter",
+        "winner_change",
+        "route_change",
+        "memory_write",
+        "zilliz_write",
+        "embedding_provider_call",
+        "llm_provider_call",
+        "vps_mutation",
+        "public_publish"
+      ],
+      "feature_flags": {
+        "enable_context": "MISA_LOSER_REVIEW_CONTEXT=1",
+        "hard_filter": "MISA_LOSER_HARD_FILTER=0",
+        "vector_write": "MISA_LOSER_VECTOR_WRITE=0",
+        "model_calls": "MISA_LOSER_MODEL_CALLS=0"
+      },
+      "kill_switch": {
+        "env": "MISA_LOSER_REVIEW_CONTEXT=0",
+        "behavior": "disable downstream consumption of loser_review_context; tournament winners and routes stay unchanged"
+      },
+      "rollback": {
+        "strategy": "disable_context_consumption_or_revert_loser_review_context_field",
+        "state_to_recover": "winner_queue, tournaments, and experience_ledger are independent of loser_review_context",
+        "data_migration_required": false
+      },
+      "operational_limits": {
+        "max_recall_top_k": 12,
+        "active_recall_top_k": 12,
+        "max_counterexample_pack": 5,
+        "active_counterexample_pack": 5,
+        "max_reservoir_items": 24,
+        "active_reservoir_items": 24,
+        "external_api_call_budget": 0,
+        "llm_api_call_budget": 0,
+        "zilliz_write_budget": 0
+      },
+      "health_checks": [
+        "npm run validate:schemas",
+        "node --test --test-concurrency=1 test/evolution-tournament.test.mjs",
+        "npm test",
+        "npm run precheck"
+      ],
+      "canary_plan": {
+        "mode": "observe_only",
+        "compare_against": "existing_tournament_gate_without_context_consumption",
+        "rollback_trigger": "any nonzero live effect, winner change, route change, provider call, or schema violation"
+      }
+    },
+    "warnings": [
+      "Prototype recall is local token recall only; it is not semantic authority.",
+      "L3 may convert loser pressure into review requirements, but it cannot filter candidates.",
+      "L4 receives packed context and sampling targets; final judgment stays outside this advisory layer."
+    ]
+  },
   "control_boundary": {
     "optimizer_role": "candidate_layer_only",
     "route_owner": "qianxuesen",

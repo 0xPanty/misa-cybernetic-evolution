@@ -6,6 +6,7 @@ import {
   runOptionalJudge
 } from "./evolution-tournament-judge.mjs";
 import { buildTournamentExperienceLedger } from "./evolution-tournament-ledger.mjs";
+import { buildLoserReviewContext } from "./evolution-tournament-loser-context.mjs";
 import { buildQualityAssessment } from "./evolution-tournament-quality.mjs";
 import { buildTournament } from "./evolution-tournament-scoring.mjs";
 import {
@@ -258,17 +259,24 @@ export async function reviewEvolutionTournamentGate({
   judgeApiKey,
   judgeBaseUrl,
   judgeEscalationThreshold,
+  loserRuntimeProfile,
   llmJudge
 } = {}) {
   const preflight = sourceDir || vpsRawDir
     ? await evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir })
     : await evaluateMisaEvolution({ repoRoot });
   const candidates = reportableCandidates(preflight);
-  const tournaments = candidates.map(buildTournament);
+  const tournaments = candidates.map((candidate) => buildTournament(candidate, { now }));
   const variantList = tournaments.flatMap((tournament) => tournament.variants);
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
   const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments });
+  const loserReviewContext = buildLoserReviewContext({
+    tournaments,
+    experienceLedger,
+    now,
+    runtimeProfile: loserRuntimeProfile ?? "shadow_advisory"
+  });
   const warnings = [
     "Tournament winners are draft recommendations only; they do not publish Skills, write memory, update prompts, evolve code, or touch VPS.",
     "The current scorer is deterministic_proxy_v1, not an LLM judge. Future GEPA-style model calls must remain optional and offline."
@@ -334,6 +342,7 @@ export async function reviewEvolutionTournamentGate({
       retained_as: "damping_or_case_evidence"
     })),
     experience_ledger: experienceLedger,
+    loser_review_context: loserReviewContext,
     control_boundary: {
       optimizer_role: "candidate_layer_only",
       route_owner: "qianxuesen",

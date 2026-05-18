@@ -369,6 +369,52 @@ function buildLoserContrast(winner, variant) {
   };
 }
 
+function loserFailureType({ winner, variant, contrast, hardRejected }) {
+  const blockedRequests = variant.constraints?.blocked_requests ?? [];
+  if (hardRejected || blockedRequests.length > 0) return "safety_boundary";
+
+  if ((contrast.key_deltas.holdout ?? 0) >= 0.2) return "overfit_or_holdout_regression";
+  if ((contrast.key_deltas.evidence_fit ?? 0) >= 0.2) return "evidence_deficit";
+  if ((contrast.key_deltas.compactness ?? 0) >= 0.2) return "cost_or_operational_risk";
+  if (
+    variant.scores.strategy_fit >= winner.scores.strategy_fit
+    || variant.scores.novelty > winner.scores.novelty
+  ) {
+    return "context_mismatch";
+  }
+
+  return "quality_inferior";
+}
+
+function loserMemoryEvidence({ candidate, loserClass, observedAt }) {
+  const weights = {
+    unsafe: { decay_weight: 1, confidence: 0.88 },
+    weak: { decay_weight: 0.72, confidence: 0.66 },
+    promising: { decay_weight: 0.55, confidence: 0.58 }
+  };
+  const selected = weights[loserClass] ?? weights.weak;
+
+  return {
+    observed_at: observedAt,
+    last_triggered_at: observedAt,
+    evidence_count: candidate.evidence?.evidence_count ?? 0,
+    source_count: 1,
+    decay_weight: selected.decay_weight,
+    confidence: selected.confidence
+  };
+}
+
+function rehabilitationRecord({ status, reviewPath, reactivationConditions, requiredEvidence }) {
+  return {
+    status,
+    review_path: reviewPath,
+    required_evidence: requiredEvidence,
+    reactivation_conditions: reactivationConditions,
+    record_required_before_pressure_change: true,
+    authority: "advisory_reentry_only"
+  };
+}
+
 function loserPoolControl({ action, reviewPath, trigger }) {
   return {
     candidate_pool_authority: "advisory_pressure_only",
@@ -381,27 +427,43 @@ function loserPoolControl({ action, reviewPath, trigger }) {
   };
 }
 
-function classifyLoserAgainstWinner(winner, variant) {
+function classifyLoserAgainstWinner(winner, variant, { candidate, observedAt }) {
   const blockedRequests = variant.constraints?.blocked_requests ?? [];
   const violations = variant.constraints?.violations ?? [];
   const contrast = buildLoserContrast(winner, variant);
   const hardRejected = !variant.constraints?.hard_gate_passed || blockedRequests.length > 0;
+  const failureType = loserFailureType({ winner, variant, contrast, hardRejected });
 
   if (hardRejected) {
+    const loserClass = "unsafe";
+    const reactivationConditions = [
+      "blocked_operations_removed",
+      "hard_gate_passes",
+      "human_owner_explicitly_reopens_boundary"
+    ];
+    const reviewPath = "l4_review_before_reentry";
     return {
-      loser_class: "unsafe",
+      loser_class: loserClass,
+      failure_type: failureType,
       candidate_pool_effect: "strong_suppression",
       selection_hint: "raise_l4_review_pressure_until_gate_changes",
       ...loserPoolControl({
         action: "retain_with_strong_pressure",
-        reviewPath: "l4_review_before_reentry",
+        reviewPath,
         trigger: "similar_candidate_reappears_or_blocked_surface_matches"
       }),
-      reactivation_conditions: [
-        "blocked_operations_removed",
-        "hard_gate_passes",
-        "human_owner_explicitly_reopens_boundary"
-      ],
+      reactivation_conditions: reactivationConditions,
+      rehabilitation_record: rehabilitationRecord({
+        status: "blocked_until_boundary_reopened",
+        reviewPath,
+        reactivationConditions,
+        requiredEvidence: [
+          "blocked_operations_removed",
+          "hard_gate_passes",
+          "human_owner_explicitly_reopens_boundary"
+        ]
+      }),
+      ...loserMemoryEvidence({ candidate, loserClass, observedAt }),
       contrast,
       rationale: violations.length > 0
         ? `Hard gate failed: ${violations.join(", ")}.`
@@ -417,20 +479,35 @@ function classifyLoserAgainstWinner(winner, variant) {
   );
 
   if (closeEnough || hasUsefulSpecialty) {
+    const loserClass = "promising";
+    const reactivationConditions = [
+      "route_pressure_matches_strategy",
+      "winner_regresses_on_holdout",
+      "l4_requests_comparison"
+    ];
+    const reviewPath = "l4_context_when_route_pressure_matches";
     return {
-      loser_class: "promising",
+      loser_class: loserClass,
+      failure_type: failureType,
       candidate_pool_effect: "contextual_alternative",
       selection_hint: "keep_for_l4_context_and_future_matching",
       ...loserPoolControl({
         action: "retain_as_contextual_alternative",
-        reviewPath: "l4_context_when_route_pressure_matches",
+        reviewPath,
         trigger: "new_evidence_or_l4_requests_comparison"
       }),
-      reactivation_conditions: [
-        "route_pressure_matches_strategy",
-        "winner_regresses_on_holdout",
-        "l4_requests_comparison"
-      ],
+      reactivation_conditions: reactivationConditions,
+      rehabilitation_record: rehabilitationRecord({
+        status: "eligible_for_contextual_reentry",
+        reviewPath,
+        reactivationConditions,
+        requiredEvidence: [
+          "route_pressure_matches_strategy",
+          "winner_regresses_on_holdout",
+          "l4_requests_comparison"
+        ]
+      }),
+      ...loserMemoryEvidence({ candidate, loserClass, observedAt }),
       contrast,
       rationale: closeEnough
         ? "Safe loser with a close score; keep as comparison context."
@@ -438,20 +515,35 @@ function classifyLoserAgainstWinner(winner, variant) {
     };
   }
 
+  const loserClass = "weak";
+  const reactivationConditions = [
+    "new_source_evidence",
+    "better_verification_trace",
+    "changed_route_pressure"
+  ];
+  const reviewPath = "agent_evidence_check_before_reentry";
   return {
-    loser_class: "weak",
+    loser_class: loserClass,
+    failure_type: failureType,
     candidate_pool_effect: "evidence_required_before_reentry",
     selection_hint: "request_evidence_before_reentry",
     ...loserPoolControl({
       action: "hold_until_new_evidence",
-      reviewPath: "agent_evidence_check_before_reentry",
+      reviewPath,
       trigger: "similar_candidate_reappears_without_new_trace"
     }),
-    reactivation_conditions: [
-      "new_source_evidence",
-      "better_verification_trace",
-      "changed_route_pressure"
-    ],
+    reactivation_conditions: reactivationConditions,
+    rehabilitation_record: rehabilitationRecord({
+      status: "pending_new_evidence",
+      reviewPath,
+      reactivationConditions,
+      requiredEvidence: [
+        "new_source_evidence",
+        "better_verification_trace",
+        "changed_route_pressure"
+      ]
+    }),
+    ...loserMemoryEvidence({ candidate, loserClass, observedAt }),
     contrast,
     rationale: "Safe loser, but materially weaker than the winner on this source."
   };
@@ -468,7 +560,8 @@ function chooseWinner(scoredVariants) {
   ))[0];
 }
 
-export function buildTournament(candidate) {
+export function buildTournament(candidate, { now = new Date() } = {}) {
+  const observedAt = now.toISOString();
   const evalCases = buildEvalCases(candidate);
   const rawVariants = buildVariants(candidate).slice(0, MAX_VARIANTS_PER_CANDIDATE);
   const scored = rawVariants.map((variant) => ({
@@ -481,7 +574,10 @@ export function buildTournament(candidate) {
   const loserRecords = variants
     .filter((variant) => variant.variant_id !== winner.variant_id)
     .map((variant) => {
-      const loserIntelligence = classifyLoserAgainstWinner(winnerVariant, variant);
+      const loserIntelligence = classifyLoserAgainstWinner(winnerVariant, variant, {
+        candidate,
+        observedAt
+      });
       return {
         variant_id: variant.variant_id,
         status: variant.tournament_status,

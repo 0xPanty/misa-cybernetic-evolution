@@ -56,6 +56,7 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "winner_queue",
     "rejected_variant_ledger",
     "experience_ledger",
+    "loser_review_context",
     "control_boundary",
     "safety",
     "quality_assessment",
