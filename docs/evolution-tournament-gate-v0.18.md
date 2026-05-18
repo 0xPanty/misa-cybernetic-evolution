@@ -25,6 +25,49 @@ The tournament now also emits `experience_ledger`. This is not a memory write.
 It is a local shadow ledger for source-backed preflight entries, safe
 non-winning variants, and rejected unsafe variants.
 
+## Loser Contrast Ledger
+
+Losers are not treated as a blacklist or hard filter.
+
+Each non-winning variant now carries a small contrast record:
+
+- `unsafe`: failed a hard gate or requested a blocked operation. Keep it as a
+  strong pressure signal, require L4 review before any similar shape re-enters,
+  and do not let the loser record delete candidates by itself.
+- `weak`: safe, but materially weaker than the winner. Do not retry without new
+  evidence, a better trace, or changed route pressure; hold it for agent
+  evidence checking rather than throwing it away.
+- `promising`: safe and close, or useful in a narrower context. Keep it for L4
+  comparison and future matching.
+
+This keeps the useful learning signal from losers without letting the ledger
+own route, winner, memory, skill, or production authority.
+
+Every loser entry now states this boundary directly:
+
+```text
+candidate_pool_authority = advisory_pressure_only
+hard_filter_allowed = false
+agent_review_required = true
+```
+
+Plain version: a loser match raises pressure and asks the agent to check the
+candidate. It does not become a one-vote veto.
+
+## Loser Pressure Quant
+
+`npm run loser:pressure` and `npm run loser:matrix` stress-test whether loser
+contrast stays useful after many related samples accumulate.
+
+The pressure lane treats any local model as a sample generator only. It does not
+let a model judge winners or write memory. The first matrix report recommends
+`weak_gate_stricter_v1` as the long-run calibration candidate because it improves
+weak-loser evidence gating without increasing unsafe leakage, false suppression,
+or promising-loser loss.
+
+See `docs/loser-pressure-quant-v0.26.md` for the current report pointers and
+decision.
+
 ## Route Strategy Fit
 
 Each variant score now includes `strategy_fit`.

@@ -149,6 +149,8 @@ Two rules matter most:
 | Daily signal rollup | `npm run rollup:misa` | local queue and report only |
 | Candidate preflight | `npm run evolution:evaluate:misa` | report queue only |
 | Evolution tournament | `npm run evolution:tournament:misa` | local draft winner only |
+| Loser pressure quant | `npm run loser:pressure -- --target-samples=1000` | local loser-memory pressure report; model can generate samples only |
+| Loser pressure matrix | `npm run loser:matrix -- --target-samples=1000` | multi-scenario parameter sweep for accumulated loser evidence |
 | Memory-layer comparison | `npm run memory-layer:misa` | compares broad vs minimal L3 |
 | Local skill export | `npm run export-skills:misa` | writes draft files, does not install Skills |
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |

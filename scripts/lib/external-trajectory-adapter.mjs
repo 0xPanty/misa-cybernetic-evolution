@@ -425,8 +425,23 @@ function atBenchRecord({ item, index, group, filePath, datasetRoot, baselineComm
 }
 
 async function adaptAtBench({ datasetRoot, maxPerDataset, baselineCommit, samplingProfile }) {
-  const filePath = path.join(datasetRoot, "atbench", "ATBench500", "test.json");
-  if (!await fileExists(filePath)) {
+  const sources = [
+    { group: "ATBench", filePath: path.join(datasetRoot, "atbench", "ATBench", "test.json") },
+    { group: "ATBench500", filePath: path.join(datasetRoot, "atbench", "ATBench500", "test.json") }
+  ];
+  const rows = [];
+  for (const source of sources) {
+    if (!await fileExists(source.filePath)) continue;
+    const sourceRows = await readJson(source.filePath);
+    rows.push(...sourceRows.map((item, index) => ({
+      id: `${source.group}:${item.id ?? item.conv_id ?? index}`,
+      item,
+      index,
+      group: source.group,
+      filePath: source.filePath
+    })));
+  }
+  if (rows.length === 0) {
     return {
       records: [],
       issues: [issue({
@@ -438,19 +453,18 @@ async function adaptAtBench({ datasetRoot, maxPerDataset, baselineCommit, sampli
       })]
     };
   }
-  const rows = await readJson(filePath);
   const selectedRows = sampleRows(
     rows,
     maxPerDataset,
     samplingProfile,
-    ({ item }) => `label:${String(item.label)}`
+    ({ item }) => `group:${item.group}:label:${String(item.item.label)}`
   );
   const records = selectedRows
     .map(({ item, index }) => atBenchRecord({
-      item,
-      index,
-      group: "ATBench500",
-      filePath,
+      item: item.item,
+      index: item.index ?? index,
+      group: item.group,
+      filePath: item.filePath,
       datasetRoot,
       baselineCommit
     }));

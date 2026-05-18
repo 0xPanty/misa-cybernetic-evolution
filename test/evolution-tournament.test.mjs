@@ -24,6 +24,7 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.tournament_policy.route_owner, "qianxuesen");
   assert.equal(result.tournament_policy.candidate_generation, "multi_variant_local");
   assert.equal(result.tournament_policy.winner_surface, "draft_recommendation_only");
+  assert.equal(result.tournament_policy.loser_policy, "advisory_pressure_only_no_hard_filter");
   assert.equal(result.control_boundary.optimizer_role, "candidate_layer_only");
   assert.equal(result.control_boundary.llm_route_decision_allowed, false);
   assert.equal(result.control_boundary.automatic_promotion_allowed, false);
@@ -36,6 +37,20 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "damping_or_case_evidence"));
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "non_winning_experience"));
   assert.equal(result.experience_ledger.every((item) => item.production_authority === false && item.publication_allowed === false), true);
+  assert.ok(result.experience_ledger.some((item) => item.loser_class === "unsafe"));
+  assert.ok(result.experience_ledger.some((item) => item.loser_class === "promising" || item.loser_class === "weak"));
+  assert.equal(result.experience_ledger.filter((item) => item.source === "tournament_variant").every((item) => (
+    item.candidate_pool_effect
+      && item.selection_hint
+      && item.candidate_pool_authority === "advisory_pressure_only"
+      && item.hard_filter_allowed === false
+      && item.agent_review_required === true
+      && item.candidate_pool_action
+      && item.review_path
+      && item.review_trigger
+      && item.reactivation_conditions.length > 0
+      && item.contrast?.winner_variant_id
+  )), true);
   assert.equal(result.safety.production_authority, false);
   assert.equal(result.safety.publication_allowed, false);
   assert.equal(result.safety.automatic_write_allowed, false);
@@ -73,6 +88,28 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.deepEqual(Object.keys(winner.scores), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.variant_score_keys);
     assert.equal(typeof winner.scores.strategy_fit, "number");
     assert.equal(Object.values(winner.safety.live_effects).some(Boolean), false);
+
+    const unsafeLosers = tournament.loser_ledger.filter((loser) => loser.loser_class === "unsafe");
+    const nonUnsafeLosers = tournament.loser_ledger.filter((loser) => loser.loser_class !== "unsafe");
+    assert.ok(unsafeLosers.length >= 1);
+    assert.equal(unsafeLosers.every((loser) => (
+      loser.candidate_pool_effect === "strong_suppression"
+        && loser.candidate_pool_authority === "advisory_pressure_only"
+        && loser.candidate_pool_action === "retain_with_strong_pressure"
+        && loser.hard_filter_allowed === false
+        && loser.agent_review_required === true
+        && loser.l4_review_required === true
+        && loser.reactivation_conditions.includes("blocked_operations_removed")
+        && loser.contrast.winner_variant_id === tournament.winner.variant_id
+    )), true);
+    assert.equal(nonUnsafeLosers.every((loser) => (
+      loser.candidate_pool_effect !== "strong_suppression"
+        && loser.candidate_pool_authority === "advisory_pressure_only"
+        && loser.hard_filter_allowed === false
+        && loser.agent_review_required === true
+        && loser.reactivation_conditions.length > 0
+        && loser.contrast.winner_strategy === tournament.winner.strategy
+    )), true);
   }
 
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);

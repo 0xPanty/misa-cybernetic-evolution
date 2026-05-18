@@ -350,6 +350,113 @@ function annotatePareto(scoredVariants, winnerId) {
   });
 }
 
+function scoreDelta(winner, variant, key) {
+  return round((winner.scores?.[key] ?? 0) - (variant.scores?.[key] ?? 0));
+}
+
+function buildLoserContrast(winner, variant) {
+  return {
+    winner_variant_id: winner.variant_id,
+    winner_strategy: winner.strategy,
+    score_margin: scoreDelta(winner, variant, "composite"),
+    key_deltas: {
+      safety: scoreDelta(winner, variant, "safety"),
+      holdout: scoreDelta(winner, variant, "holdout"),
+      evidence_fit: scoreDelta(winner, variant, "evidence_fit"),
+      compactness: scoreDelta(winner, variant, "compactness"),
+      strategy_fit: scoreDelta(winner, variant, "strategy_fit")
+    }
+  };
+}
+
+function loserPoolControl({ action, reviewPath, trigger }) {
+  return {
+    candidate_pool_authority: "advisory_pressure_only",
+    candidate_pool_action: action,
+    hard_filter_allowed: false,
+    agent_review_required: true,
+    l4_review_required: reviewPath.includes("l4"),
+    review_path: reviewPath,
+    review_trigger: trigger
+  };
+}
+
+function classifyLoserAgainstWinner(winner, variant) {
+  const blockedRequests = variant.constraints?.blocked_requests ?? [];
+  const violations = variant.constraints?.violations ?? [];
+  const contrast = buildLoserContrast(winner, variant);
+  const hardRejected = !variant.constraints?.hard_gate_passed || blockedRequests.length > 0;
+
+  if (hardRejected) {
+    return {
+      loser_class: "unsafe",
+      candidate_pool_effect: "strong_suppression",
+      selection_hint: "raise_l4_review_pressure_until_gate_changes",
+      ...loserPoolControl({
+        action: "retain_with_strong_pressure",
+        reviewPath: "l4_review_before_reentry",
+        trigger: "similar_candidate_reappears_or_blocked_surface_matches"
+      }),
+      reactivation_conditions: [
+        "blocked_operations_removed",
+        "hard_gate_passes",
+        "human_owner_explicitly_reopens_boundary"
+      ],
+      contrast,
+      rationale: violations.length > 0
+        ? `Hard gate failed: ${violations.join(", ")}.`
+        : "Hard gate failed."
+    };
+  }
+
+  const closeEnough = contrast.score_margin <= 0.06;
+  const hasUsefulSpecialty = contrast.score_margin <= 0.12 && (
+    variant.scores.strategy_fit >= winner.scores.strategy_fit
+      || variant.scores.novelty > winner.scores.novelty
+      || variant.scores.compactness > winner.scores.compactness
+  );
+
+  if (closeEnough || hasUsefulSpecialty) {
+    return {
+      loser_class: "promising",
+      candidate_pool_effect: "contextual_alternative",
+      selection_hint: "keep_for_l4_context_and_future_matching",
+      ...loserPoolControl({
+        action: "retain_as_contextual_alternative",
+        reviewPath: "l4_context_when_route_pressure_matches",
+        trigger: "new_evidence_or_l4_requests_comparison"
+      }),
+      reactivation_conditions: [
+        "route_pressure_matches_strategy",
+        "winner_regresses_on_holdout",
+        "l4_requests_comparison"
+      ],
+      contrast,
+      rationale: closeEnough
+        ? "Safe loser with a close score; keep as comparison context."
+        : "Safe loser has a useful specialty even though it did not win this route."
+    };
+  }
+
+  return {
+    loser_class: "weak",
+    candidate_pool_effect: "evidence_required_before_reentry",
+    selection_hint: "request_evidence_before_reentry",
+    ...loserPoolControl({
+      action: "hold_until_new_evidence",
+      reviewPath: "agent_evidence_check_before_reentry",
+      trigger: "similar_candidate_reappears_without_new_trace"
+    }),
+    reactivation_conditions: [
+      "new_source_evidence",
+      "better_verification_trace",
+      "changed_route_pressure"
+    ],
+    contrast,
+    rationale: "Safe loser, but materially weaker than the winner on this source."
+  };
+}
+
 function chooseWinner(scoredVariants) {
   const eligible = scoredVariants.filter((variant) => variant.constraints.hard_gate_passed);
   const pool = eligible.length > 0 ? eligible : scoredVariants;
@@ -370,16 +477,21 @@ export function buildTournament(candidate) {
   }));
   const winner = chooseWinner(scored);
   const variants = annotatePareto(scored, winner.variant_id);
+  const winnerVariant = variants.find((variant) => variant.variant_id === winner.variant_id) ?? winner;
   const loserRecords = variants
     .filter((variant) => variant.variant_id !== winner.variant_id)
-    .map((variant) => ({
-      variant_id: variant.variant_id,
-      status: variant.tournament_status,
-      reason: variant.pareto.reason,
-      route_target: variant.route_target,
-      blocked_requests: variant.constraints.blocked_requests,
-      becomes: variant.tournament_status === "rejected" ? "damping_or_case_evidence" : "non_winning_experience"
-    }));
+    .map((variant) => {
+      const loserIntelligence = classifyLoserAgainstWinner(winnerVariant, variant);
+      return {
+        variant_id: variant.variant_id,
+        status: variant.tournament_status,
+        reason: variant.pareto.reason,
+        route_target: variant.route_target,
+        blocked_requests: variant.constraints.blocked_requests,
+        becomes: variant.tournament_status === "rejected" ? "damping_or_case_evidence" : "non_winning_experience",
+        ...loserIntelligence
+      };
+    });
 
   return {
     tournament_id: `tournament-${candidate.candidate_id}`,

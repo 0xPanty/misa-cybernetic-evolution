@@ -312,7 +312,7 @@ export async function reviewEvolutionTournamentGate({
       scorer: "deterministic_proxy_v1",
       max_variants_per_candidate: MAX_VARIANTS_PER_CANDIDATE,
       winner_surface: "draft_recommendation_only",
-      loser_policy: "experience_ledger_or_damping",
+      loser_policy: "advisory_pressure_only_no_hard_filter",
       production_effect: "blocked"
     },
     summary: {

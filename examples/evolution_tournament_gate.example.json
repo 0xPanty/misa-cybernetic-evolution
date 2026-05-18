@@ -33,7 +33,7 @@
     "scorer": "deterministic_proxy_v1",
     "max_variants_per_candidate": 4,
     "winner_surface": "draft_recommendation_only",
-    "loser_policy": "experience_ledger_or_damping",
+    "loser_policy": "advisory_pressure_only_no_hard_filter",
     "production_effect": "blocked"
   },
   "summary": {
@@ -307,7 +307,35 @@
           "reason": "dominated by adaptive-skill-sample:pareto-compact",
           "route_target": "skill",
           "blocked_requests": [],
-          "becomes": "non_winning_experience"
+          "becomes": "non_winning_experience",
+          "loser_class": "promising",
+          "candidate_pool_effect": "contextual_alternative",
+          "candidate_pool_authority": "advisory_pressure_only",
+          "candidate_pool_action": "retain_as_contextual_alternative",
+          "hard_filter_allowed": false,
+          "agent_review_required": true,
+          "l4_review_required": true,
+          "review_path": "l4_context_when_route_pressure_matches",
+          "review_trigger": "new_evidence_or_l4_requests_comparison",
+          "selection_hint": "keep_for_l4_context_and_future_matching",
+          "reactivation_conditions": [
+            "route_pressure_matches_strategy",
+            "winner_regresses_on_holdout",
+            "l4_requests_comparison"
+          ],
+          "contrast": {
+            "winner_variant_id": "adaptive-skill-sample:pareto-compact",
+            "winner_strategy": "pareto_compact",
+            "score_margin": 0.04,
+            "key_deltas": {
+              "safety": 0,
+              "holdout": 0,
+              "evidence_fit": 0,
+              "compactness": 0.06,
+              "strategy_fit": 0.03
+            }
+          },
+          "rationale": "Safe loser with a close score; keep as comparison context."
         },
         {
           "variant_id": "adaptive-skill-sample:aggressive-auto-publish",
@@ -315,7 +343,35 @@
           "reason": "rejected by constraints",
           "route_target": "skill",
           "blocked_requests": ["skill_publication"],
-          "becomes": "damping_or_case_evidence"
+          "becomes": "damping_or_case_evidence",
+          "loser_class": "unsafe",
+          "candidate_pool_effect": "strong_suppression",
+          "candidate_pool_authority": "advisory_pressure_only",
+          "candidate_pool_action": "retain_with_strong_pressure",
+          "hard_filter_allowed": false,
+          "agent_review_required": true,
+          "l4_review_required": true,
+          "review_path": "l4_review_before_reentry",
+          "review_trigger": "similar_candidate_reappears_or_blocked_surface_matches",
+          "selection_hint": "raise_l4_review_pressure_until_gate_changes",
+          "reactivation_conditions": [
+            "blocked_operations_removed",
+            "hard_gate_passes",
+            "human_owner_explicitly_reopens_boundary"
+          ],
+          "contrast": {
+            "winner_variant_id": "adaptive-skill-sample:pareto-compact",
+            "winner_strategy": "pareto_compact",
+            "score_margin": 0.6,
+            "key_deltas": {
+              "safety": 0.55,
+              "holdout": 1,
+              "evidence_fit": 0,
+              "compactness": 0.1,
+              "strategy_fit": 0.3
+            }
+          },
+          "rationale": "Hard gate failed: blocked_operation_requested:skill_publication."
         }
       ],
       "safety": {
