@@ -129,6 +129,10 @@ function normalizeCandidateCount(value) {
   return Math.min(MAX_LLM_DRAFT_CANDIDATE_COUNT, Math.max(1, Math.floor(count)));
 }
 
+function candidateModeForCount(count) {
+  return normalizeCandidateCount(count) <= 1 ? "light_single_default" : "explicit_candidate_recheck";
+}
+
 function candidateStrategies(candidateCount) {
   return MULTI_CANDIDATE_STRATEGIES
     .slice(0, normalizeCandidateCount(candidateCount))
@@ -1350,6 +1354,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   now = new Date()
 } = {}) {
   const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const candidateMode = candidateModeForCount(requestedCandidateCount);
   const report = onlineShadowReport
     ?? (onlineShadowReportPath
       ? await readJson(resolvePath(repoRoot, onlineShadowReportPath))
@@ -1400,7 +1405,9 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       perception_digest_path: digestPath,
       source_ids: sourceIds,
       max_samples: maxSamples,
-      requested_candidate_count: requestedCandidateCount
+      requested_candidate_count: requestedCandidateCount,
+      candidate_mode: candidateMode,
+      default_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
     },
     model,
     provider: typeof provider === "string" ? provider : "custom",
@@ -1411,6 +1418,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
     summary: {
       sample_count: results.length,
       draft_count: results.filter((result) => result.draft).length,
+      candidate_mode: candidateMode,
       requested_candidate_count: requestedCandidateCount,
       candidate_count: allCandidates.length,
       expected_candidate_count_met: expectedCandidateCountMet,
@@ -1471,6 +1479,7 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
     `- hermes_delegate_provider: ${result.delegate?.provider ?? "none"}`,
     `- hermes_delegate_model: ${result.delegate?.model ?? "none"}`,
     `- sample_count: ${result.summary.sample_count}`,
+    `- candidate_mode: ${result.summary.candidate_mode}`,
     `- requested_candidate_count: ${result.summary.requested_candidate_count}`,
     `- candidate_count: ${result.summary.candidate_count}`,
     `- winner_selected_count: ${result.summary.winner_selected_count}`,

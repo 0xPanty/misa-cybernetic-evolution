@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 import { test } from "node:test";
 import { buildExternalTrajectoryOnlineShadowContractReport } from "../scripts/lib/external-trajectory-online-shadow-contract.mjs";
 import {
@@ -11,6 +13,8 @@ import {
   buildLlmWorkOrderDraftingPackets,
   gateLlmWorkOrderDraft
 } from "../scripts/lib/external-trajectory-llm-work-order-draft.mjs";
+
+const execFileAsync = promisify(execFile);
 
 function perceptionDigestFixture() {
   return {
@@ -440,6 +444,43 @@ test("LLM work-order draft report can select the best of three candidates from o
   assert.equal(result.results[0].gate.ok, true);
   assert.equal(result.results[0].loser_ledger.length, 2);
   assert.ok(result.results[0].loser_ledger.some((item) => item.candidate_id === "boundary_safety"));
+});
+
+test("LLM work-order CLI candidate-recheck switch requests two candidates", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-l2-recheck-cli-"));
+  try {
+    const reportPath = path.join(tempRoot, "online-shadow.json");
+    const outDir = path.join(tempRoot, "out");
+    await fs.writeFile(reportPath, JSON.stringify(onlineShadowFixture(), null, 2), "utf8");
+
+    const { stdout } = await execFileAsync(process.execPath, [
+      "scripts/external-trajectory-llm-work-order-draft.mjs",
+      "--online-shadow-report",
+      reportPath,
+      "--source-ids",
+      "shadow-public-memory-risk-001",
+      "--provider",
+      "mock",
+      "--candidate-recheck",
+      "--max-samples",
+      "1",
+      "--out-dir",
+      outDir
+    ], {
+      cwd: process.cwd(),
+      maxBuffer: 1024 * 1024 * 5
+    });
+
+    assert.match(stdout, /candidate_mode=explicit_candidate_recheck/);
+    assert.match(stdout, /requested_candidate_count=2/);
+
+    const json = JSON.parse(await fs.readFile(path.join(outDir, "external-trajectory-llm-work-order-draft.json"), "utf8"));
+    assert.equal(json.summary.candidate_mode, "explicit_candidate_recheck");
+    assert.equal(json.summary.requested_candidate_count, 2);
+    assert.equal(json.results[0].candidates.length, 2);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test("Hermes delegate provider passes through a local JSON bridge stub", async () => {

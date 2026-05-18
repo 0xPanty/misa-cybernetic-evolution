@@ -218,6 +218,12 @@ test("L2/L3 selection audit creates green yellow red pools and red spot checks",
   assert.equal(result.safety.changes_route, false);
   assert.ok(result.decisions.find((decision) => decision.source_id === "red-low-action").l4_spot_check);
   assert.ok(result.l4_handoff.preview.some((item) => item.source_id === "yellow-high-score"));
+  assert.equal(result.candidate_recheck.policy.default_mode, "light_single_default");
+  assert.equal(result.candidate_recheck.policy.default_candidate_count, 1);
+  assert.equal(result.candidate_recheck.policy.recheck_candidate_count, 2);
+  assert.ok(result.candidate_recheck.recommended_source_ids.includes("yellow-high-score"));
+  assert.ok(result.candidate_recheck.recommended_source_ids.includes("red-low-action"));
+  assert.equal(result.candidate_recheck.recommended.find((item) => item.source_id === "red-low-action").reason, "red_spot_check");
 });
 
 test("L2/L3 selection audit marks 50-sample batches ready for self-review", () => {
@@ -267,10 +273,13 @@ test("L2/L3 selection audit writes local ledger artifacts", async () => {
 
     assert.equal(quality.summary.pool_counts.green, 1);
     assert.equal(quality.summary.pool_counts.yellow, 1);
+    assert.equal(quality.candidate_recheck.policy.default_mode, "light_single_default");
     assert.equal(manifest.sample_count, 2);
     assert.equal(poolLines.length, 2);
     assert.equal(l4Review, "");
     assert.match(markdown, /# L2\/L3 Selection Audit/);
+    assert.match(markdown, /## Candidate Recheck/);
+    assert.match(markdown, /external:llm-work-order:recheck/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

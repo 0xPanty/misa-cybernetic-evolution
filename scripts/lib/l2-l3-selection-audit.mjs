@@ -12,6 +12,16 @@ export const DEFAULT_L2_L3_SELECTION_THRESHOLDS = Object.freeze({
   l4_preview_limit: 5
 });
 
+export const DEFAULT_CANDIDATE_RECHECK_POLICY = Object.freeze({
+  default_mode: "light_single_default",
+  default_candidate_count: 1,
+  recheck_mode: "explicit_candidate_recheck",
+  recheck_candidate_count: 2,
+  switch_flag: "--candidate-recheck",
+  default_enabled: false,
+  near_yellow_quality_margin: 0.025
+});
+
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? new Date("2026-05-17T12:00:00.000Z").toISOString() : date.toISOString();
@@ -67,6 +77,51 @@ function decisionReasonText(decision) {
     return "red pool sample selected for periodic L4 spot check";
   }
   return "hard gate failed below yellow threshold; hold for audit lookup";
+}
+
+function candidateRecheckReason(decision, thresholds, policy) {
+  if (decision.pool === "yellow") return "yellow_possible_false_reject";
+  if (decision.l4_spot_check) return "red_spot_check";
+  if (
+    decision.pool === "red"
+    && !decision.provider_error
+    && decision.quality_score >= thresholds.yellow_quality_min - policy.near_yellow_quality_margin
+  ) {
+    return "near_yellow_threshold_red";
+  }
+  return null;
+}
+
+function buildCandidateRecheck({ decisions, thresholds }) {
+  const policy = DEFAULT_CANDIDATE_RECHECK_POLICY;
+  const recommended = decisions
+    .map((decision) => {
+      const reason = candidateRecheckReason(decision, thresholds, policy);
+      if (!reason) return null;
+      return {
+        source_id: decision.source_id,
+        pool: decision.pool,
+        reason,
+        quality_score: decision.quality_score,
+        actionableTaskCount: decision.actionableTaskCount,
+        weakTaskCount: decision.weakTaskCount,
+        violations: decision.violations,
+        command_hint: `npm run external:llm-work-order:recheck -- --source-ids ${decision.source_id}`
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => (
+      left.pool.localeCompare(right.pool)
+      || right.quality_score - left.quality_score
+      || left.source_id.localeCompare(right.source_id)
+    ));
+
+  return {
+    policy,
+    recommended_count: recommended.length,
+    recommended_source_ids: recommended.map((item) => item.source_id),
+    recommended
+  };
 }
 
 export function classifyL2L3PoolDecision(item, {
@@ -293,6 +348,10 @@ export function buildL2L3SelectionAuditReport({
     thresholds: effectiveThresholds,
     batchSize
   });
+  const candidateRecheck = buildCandidateRecheck({
+    decisions,
+    thresholds: effectiveThresholds
+  });
 
   return {
     schema_version: "misa.l2_l3_selection_audit.v1",
@@ -307,6 +366,7 @@ export function buildL2L3SelectionAuditReport({
     },
     thresholds: effectiveThresholds,
     summary,
+    candidate_recheck: candidateRecheck,
     l4_handoff: {
       policy: "green_and_yellow_forward_red_spot_check",
       summary_only_by_default: true,
@@ -405,6 +465,23 @@ export function renderL2L3SelectionAuditMarkdown(result) {
     "- green: hard gate passed; forward to L4.",
     "- yellow: high-quality hard-gate failure; forward to L4 as false-reject check.",
     "- red: hold for audit lookup, with deterministic spot checks.",
+    "",
+    "## Candidate Recheck",
+    "",
+    `- default_mode: ${result.candidate_recheck.policy.default_mode}`,
+    `- default_candidate_count: ${result.candidate_recheck.policy.default_candidate_count}`,
+    `- switch: ${result.candidate_recheck.policy.switch_flag}`,
+    `- recheck_mode: ${result.candidate_recheck.policy.recheck_mode}`,
+    `- recheck_candidate_count: ${result.candidate_recheck.policy.recheck_candidate_count}`,
+    `- recommended_count: ${result.candidate_recheck.recommended_count}`,
+    "",
+    ...(
+      result.candidate_recheck.recommended.length
+        ? result.candidate_recheck.recommended.map((item) => (
+          `- ${item.source_id}: pool=${item.pool}, reason=${item.reason}, quality=${item.quality_score}, command=${item.command_hint}`
+        ))
+        : ["- none"]
+    ),
     "",
     "## Violations",
     "",

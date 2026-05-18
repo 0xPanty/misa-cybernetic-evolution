@@ -39,6 +39,7 @@ const dryRun = hasArg("dry-run") || hasArg("no-write");
 const maxSamples = readArg("max-samples");
 const repairAttempts = readArg("repair-attempts");
 const candidateCount = readArg("candidate-count");
+const candidateRecheck = hasArg("candidate-recheck");
 const ollamaTimeoutMs = readArg("ollama-timeout-ms");
 const hermesDelegateTimeoutMs = readArg("hermes-delegate-timeout-ms");
 
@@ -57,7 +58,7 @@ let result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
   hermesDelegateModel: readArg("hermes-delegate-model") ?? undefined,
   hermesDelegateTimeoutMs: hermesDelegateTimeoutMs ? Number(hermesDelegateTimeoutMs) : undefined,
   repairAttempts: repairAttempts ? Number(repairAttempts) : undefined,
-  candidateCount: candidateCount ? Number(candidateCount) : undefined,
+  candidateCount: candidateCount ? Number(candidateCount) : (candidateRecheck ? 2 : undefined),
   now
 });
 
@@ -78,6 +79,7 @@ if (hasArg("json")) {
   console.log(`provider=${result.provider}`);
   console.log(`model=${result.model}`);
   console.log(`samples=${result.summary.sample_count}`);
+  console.log(`candidate_mode=${result.summary.candidate_mode}`);
   console.log(`requested_candidate_count=${result.summary.requested_candidate_count}`);
   console.log(`candidate_count=${result.summary.candidate_count}`);
   console.log(`winner_selected=${result.summary.winner_selected_count}`);
