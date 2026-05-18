@@ -15,6 +15,7 @@
     "review_hints",
     "repair_ticket_drafts",
     "work_order_drafts",
+    "l1_signal_profile_quantification",
     "summary",
     "safety",
     "checks",
@@ -181,6 +182,7 @@
       "type": "array",
       "items": { "$ref": "#/$defs/work_order_draft" }
     },
+    "l1_signal_profile_quantification": { "$ref": "#/$defs/l1_signal_profile_quantification" },
     "summary": {
       "type": "object",
       "additionalProperties": false,
@@ -191,6 +193,11 @@
         "repair_ticket_draft_count",
         "work_order_draft_count",
         "high_review_value_count",
+        "l1_l2_eligible_count",
+        "l1_single_count",
+        "l1_recheck_recommended_count",
+        "l1_multi_pool_recommended_count",
+        "l1_suppressed_count",
         "allowed_output_count",
         "blocked_effect_count",
         "route_authority_count",
@@ -210,6 +217,11 @@
         "repair_ticket_draft_count": { "type": "integer", "minimum": 0 },
         "work_order_draft_count": { "type": "integer", "minimum": 0 },
         "high_review_value_count": { "type": "integer", "minimum": 0 },
+        "l1_l2_eligible_count": { "type": "integer", "minimum": 0 },
+        "l1_single_count": { "type": "integer", "minimum": 0 },
+        "l1_recheck_recommended_count": { "type": "integer", "minimum": 0 },
+        "l1_multi_pool_recommended_count": { "type": "integer", "minimum": 0 },
+        "l1_suppressed_count": { "type": "integer", "minimum": 0 },
         "allowed_output_count": { "type": "integer", "minimum": 4 },
         "blocked_effect_count": { "type": "integer", "minimum": 1 },
         "route_authority_count": { "type": "integer", "const": 0 },
@@ -330,6 +342,7 @@
         "primary_route_pressure",
         "suggested_priority",
         "readout_family",
+        "l1_signal_profile",
         "external_trajectory_readout",
         "holdout_fields",
         "authority_closure"
@@ -345,6 +358,7 @@
         "primary_route_pressure": { "type": "string" },
         "suggested_priority": { "type": "integer", "minimum": 0, "maximum": 100 },
         "readout_family": { "type": "string" },
+        "l1_signal_profile": { "$ref": "#/$defs/l1_signal_profile" },
         "external_trajectory_readout": {
           "type": "object",
           "additionalProperties": false,
@@ -376,6 +390,171 @@
           }
         },
         "authority_closure": { "$ref": "#/$defs/authority_closure" }
+      }
+    },
+    "dimension_hits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "l2_eligible",
+        "dedupe_pool",
+        "strategy_axes",
+        "risk_level",
+        "novelty_repeat",
+        "evidence_density",
+        "uncertainty_conflict"
+      ],
+      "properties": {
+        "l2_eligible": { "type": "boolean" },
+        "dedupe_pool": { "type": "boolean" },
+        "strategy_axes": { "type": "boolean" },
+        "risk_level": { "type": "boolean" },
+        "novelty_repeat": { "type": "boolean" },
+        "evidence_density": { "type": "boolean" },
+        "uncertainty_conflict": { "type": "boolean" }
+      }
+    },
+    "l1_signal_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "source_id",
+        "advice_only",
+        "l2_eligible",
+        "l2_candidate_mode",
+        "l2_candidate_count_hint",
+        "l2_eligibility_reasons",
+        "suppress_reasons",
+        "pool_group_id",
+        "canonical_source_id",
+        "dedupe_status",
+        "signal_family",
+        "risk_level",
+        "route_hint",
+        "priority_score",
+        "novelty_status",
+        "repeat_count",
+        "evidence_refs",
+        "new_evidence_refs",
+        "evidence_density",
+        "missing_evidence",
+        "strategy_axes",
+        "uncertainty_level",
+        "conflict_signals",
+        "dimension_hits"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.l1_signal_profile.v1" },
+        "source_id": { "type": "string" },
+        "advice_only": { "type": "boolean", "const": true },
+        "l2_eligible": { "type": "boolean" },
+        "l2_candidate_mode": { "type": "string", "enum": ["single", "recheck", "multi_pool", "suppress"] },
+        "l2_candidate_count_hint": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "l2_eligibility_reasons": { "$ref": "#/$defs/string_array" },
+        "suppress_reasons": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "pool_group_id": { "type": "string" },
+        "canonical_source_id": { "type": "string" },
+        "dedupe_status": { "type": "string", "enum": ["unique", "canonical", "duplicate", "suppressed_repeat"] },
+        "signal_family": { "type": "string" },
+        "risk_level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "route_hint": { "type": "string" },
+        "priority_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "novelty_status": { "type": "string" },
+        "repeat_count": { "type": "integer", "minimum": 0 },
+        "evidence_refs": { "$ref": "#/$defs/string_array" },
+        "new_evidence_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "evidence_density": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "missing_evidence": { "type": "boolean" },
+        "strategy_axes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "strict_safety_boundary",
+              "damping_repair",
+              "workflow_generalization",
+              "research_gap",
+              "evidence_trace",
+              "source_dedupe_pool",
+              "counterexample_check"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "uncertainty_level": { "type": "string", "enum": ["low", "medium", "high"] },
+        "conflict_signals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "dimension_hits": { "$ref": "#/$defs/dimension_hits" }
+      }
+    },
+    "l1_signal_profile_quantification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "advice_only",
+        "total_records",
+        "l2_eligible_count",
+        "suppressed_count",
+        "single_count",
+        "recheck_count",
+        "multi_pool_count",
+        "dimensions"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.l1_signal_profile_quantification.v1" },
+        "advice_only": { "type": "boolean", "const": true },
+        "total_records": { "type": "integer", "minimum": 0 },
+        "l2_eligible_count": { "type": "integer", "minimum": 0 },
+        "suppressed_count": { "type": "integer", "minimum": 0 },
+        "single_count": { "type": "integer", "minimum": 0 },
+        "recheck_count": { "type": "integer", "minimum": 0 },
+        "multi_pool_count": { "type": "integer", "minimum": 0 },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dimension",
+              "hypothesis",
+              "hit_count",
+              "hit_rate",
+              "eligible_count",
+              "suppressed_count",
+              "single_count",
+              "recheck_count",
+              "multi_pool_count",
+              "avg_priority_score",
+              "verdict"
+            ],
+            "properties": {
+              "dimension": { "type": "string" },
+              "hypothesis": { "type": "string" },
+              "hit_count": { "type": "integer", "minimum": 0 },
+              "hit_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+              "eligible_count": { "type": "integer", "minimum": 0 },
+              "suppressed_count": { "type": "integer", "minimum": 0 },
+              "single_count": { "type": "integer", "minimum": 0 },
+              "recheck_count": { "type": "integer", "minimum": 0 },
+              "multi_pool_count": { "type": "integer", "minimum": 0 },
+              "avg_priority_score": { "type": "number", "minimum": 0, "maximum": 100 },
+              "verdict": { "type": "string" }
+            }
+          }
+        }
       }
     },
     "review_hint": {
@@ -450,6 +629,8 @@
         "source_id",
         "evidence_refs",
         "route_hint",
+        "l1_candidate_mode",
+        "l1_candidate_count_hint",
         "review_tasks",
         "non_goals",
         "authority",
@@ -464,6 +645,8 @@
         "source_id": { "type": "string" },
         "evidence_refs": { "$ref": "#/$defs/string_array" },
         "route_hint": { "type": "string" },
+        "l1_candidate_mode": { "type": "string", "enum": ["single", "recheck", "multi_pool", "suppress"] },
+        "l1_candidate_count_hint": { "type": "integer", "minimum": 0, "maximum": 2 },
         "review_tasks": { "$ref": "#/$defs/string_array" },
         "non_goals": { "$ref": "#/$defs/string_array" },
         "authority": { "type": "string", "const": "suggestion_only" },

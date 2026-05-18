@@ -45,6 +45,21 @@ const ROUTE_TIEBREAK_ORDER = Object.freeze([
   "memory",
   "ignore"
 ]);
+const LEVEL_RANK = Object.freeze({
+  low: 1,
+  medium: 2,
+  high: 3,
+  critical: 4
+});
+const L1_DIMENSION_HYPOTHESES = Object.freeze({
+  l2_eligible: "reduce low-value L2 calls without dropping high-value signals",
+  dedupe_pool: "merge repeated sources into a pool instead of drafting duplicate work orders",
+  strategy_axes: "give multi-candidate L2 runs distinct branches instead of wording variants",
+  risk_level: "send safety and reliability pressure to the right review mode",
+  novelty_repeat: "promote recurrence and new evidence while suppressing already handled repeats",
+  evidence_density: "reserve recheck or multi-pool for sources with enough evidence",
+  uncertainty_conflict: "trigger recheck when route, risk, or evidence signals disagree"
+});
 
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -97,6 +112,260 @@ function sourceLevel(source) {
   return "low";
 }
 
+function strongestLevel(levels = []) {
+  return uniqueStrings(levels)
+    .sort((left, right) => (LEVEL_RANK[right] ?? 0) - (LEVEL_RANK[left] ?? 0))[0] ?? "low";
+}
+
+function sourceHintLevels(digest, sourceId, kind) {
+  return (digest?.[kind] ?? [])
+    .filter((hint) => hint.source_id === sourceId)
+    .map((hint) => hint.level ?? "medium");
+}
+
+function fingerprintFor(source, digest) {
+  return (digest.signal_fingerprints ?? []).find((fingerprint) => (
+    fingerprint.fingerprint_id === source.signal_fingerprint_id
+    || (fingerprint.source_ids ?? []).includes(source.source_id)
+  )) ?? null;
+}
+
+function duplicateClusterFor(source, digest) {
+  return (digest.duplicate_clusters ?? []).find((cluster) => (
+    (cluster.source_ids ?? []).includes(source.source_id)
+  )) ?? null;
+}
+
+function riskLevelFor(source, digest) {
+  const signals = new Set(source.observed_signals ?? []);
+  const levels = [
+    sourceLevel(source),
+    ...sourceHintLevels(digest, source.source_id, "risk_hints")
+  ];
+  if (primaryRoute(source.route_pressure) === "policy") levels.push("high");
+  if (signals.has("public_posting_boundary")
+    || signals.has("farcaster_public_memory_risk")
+    || signals.has("explicit_user_boundary")) {
+    levels.push("critical");
+  }
+  if (signals.has("repeated_failure_pattern")) levels.push("high");
+  return strongestLevel(levels);
+}
+
+function activeRoutes(routePressure = {}) {
+  const rank = (route) => {
+    const index = ROUTE_TIEBREAK_ORDER.indexOf(route);
+    return index >= 0 ? index : ROUTE_TIEBREAK_ORDER.length;
+  };
+  return Object.entries(routePressure)
+    .filter(([, count]) => Number(count) > 0)
+    .map(([route]) => route)
+    .sort((left, right) => (
+      rank(left) - rank(right)
+      || left.localeCompare(right)
+    ));
+}
+
+function evidenceDensityFor(evidenceRefs = []) {
+  if (evidenceRefs.length >= 3) return "high";
+  if (evidenceRefs.length >= 2) return "medium";
+  if (evidenceRefs.length === 1) return "low";
+  return "none";
+}
+
+function noveltyStatusFor(fingerprint) {
+  if (!fingerprint) return "unknown";
+  if (fingerprint.ledger_status === "new_signal") return "new";
+  if (fingerprint.ledger_status === "seen_with_new_evidence") return "new_evidence";
+  if (fingerprint.ledger_status === "recurring_after_fix") return "recurring_after_fix";
+  if (fingerprint.ledger_status === "already_processed") return "already_processed";
+  if (fingerprint.ledger_status === "seen_open") return "seen_open";
+  return fingerprint.ledger_status ?? "unknown";
+}
+
+function dedupeStatusFor({ source, duplicateCluster, fingerprint, canonicalSourceId }) {
+  if (fingerprint?.ledger_status === "already_processed" && !(fingerprint.new_evidence_refs ?? []).length) {
+    return "suppressed_repeat";
+  }
+  if (!duplicateCluster) return "unique";
+  return source.source_id === canonicalSourceId ? "canonical" : "duplicate";
+}
+
+function conflictSignalsFor({ source, route, routes, riskLevel, fingerprint, duplicateCluster }) {
+  const signals = new Set(source.observed_signals ?? []);
+  const conflicts = [];
+  if (routes.length > 1) conflicts.push("multiple_route_pressure");
+  if ((signals.has("public_posting_boundary") || signals.has("explicit_user_boundary")) && route !== "policy") {
+    conflicts.push("boundary_signal_not_policy_route");
+  }
+  if (signals.has("repeated_failure_pattern") && !["damping", "case"].includes(route)) {
+    conflicts.push("repeated_failure_not_damping_or_case_route");
+  }
+  if (["high", "critical"].includes(riskLevel) && (source.suggested_priority ?? 0) < 80) {
+    conflicts.push("high_risk_low_priority");
+  }
+  if (duplicateCluster && !fingerprint) conflicts.push("duplicate_pool_without_fingerprint");
+  return uniqueStrings(conflicts);
+}
+
+function strategyAxesFor({ source, route, riskLevel, evidenceRefs, newEvidenceRefs, duplicateCluster, conflictSignals }) {
+  const signals = new Set(source.observed_signals ?? []);
+  const axes = [];
+  if (route === "policy"
+    || signals.has("public_posting_boundary")
+    || signals.has("farcaster_public_memory_risk")
+    || signals.has("explicit_user_boundary")
+    || ["high", "critical"].includes(riskLevel)) {
+    axes.push("strict_safety_boundary");
+  }
+  if (route === "damping"
+    || signals.has("repeated_failure_pattern")
+    || signals.has("single_failure")
+    || signals.has("test_regression")) {
+    axes.push("damping_repair");
+  }
+  if (source.source_kind === "custom_workflow"
+    || signals.has("human_review_requested")
+    || signals.has("test_regression")) {
+    axes.push("workflow_generalization");
+  }
+  if (route === "case" || signals.has("research_needed") || signals.has("knowledge_gap")) {
+    axes.push("research_gap");
+  }
+  if (evidenceRefs.length >= 2 || newEvidenceRefs.length > 0) axes.push("evidence_trace");
+  if (duplicateCluster) axes.push("source_dedupe_pool");
+  if (conflictSignals.length > 0) axes.push("counterexample_check");
+  return uniqueStrings(axes);
+}
+
+function uncertaintyLevelFor({ conflictSignals, evidenceDensity, routes }) {
+  if (conflictSignals.length >= 2 || evidenceDensity === "none") return "high";
+  if (conflictSignals.length === 1 || routes.length > 1 || evidenceDensity === "low") return "medium";
+  return "low";
+}
+
+function l2CandidateModeFor({ eligible, dedupeStatus, riskLevel, uncertaintyLevel, strategyAxes, repeatCount }) {
+  if (!eligible) return "suppress";
+  if (dedupeStatus === "canonical" || strategyAxes.includes("source_dedupe_pool")) return "multi_pool";
+  if (["critical"].includes(riskLevel) || uncertaintyLevel === "high" || repeatCount >= 3) return "recheck";
+  if (riskLevel === "high" && strategyAxes.length >= 2) return "recheck";
+  return "single";
+}
+
+function l2EligibilityReasonsFor({ source, route, riskLevel, dedupeStatus, evidenceDensity, newEvidenceRefs, repeatCount }) {
+  const reasons = [];
+  if ((source.suggested_priority ?? 0) >= 80) reasons.push("priority_ge_80");
+  if (["policy", "damping", "case"].includes(route)) reasons.push(`route_${route}`);
+  if (["high", "critical"].includes(riskLevel)) reasons.push(`risk_${riskLevel}`);
+  if (["medium", "high"].includes(evidenceDensity)) reasons.push(`evidence_${evidenceDensity}`);
+  if (newEvidenceRefs.length) reasons.push("new_evidence");
+  if (repeatCount > 1) reasons.push("repeat_signal");
+  if (dedupeStatus === "canonical") reasons.push("canonical_duplicate_pool");
+  return uniqueStrings(reasons);
+}
+
+function l1DimensionHits(profile) {
+  return {
+    l2_eligible: profile.l2_eligible,
+    dedupe_pool: profile.dedupe_status !== "unique",
+    strategy_axes: profile.strategy_axes.length >= 2,
+    risk_level: ["high", "critical"].includes(profile.risk_level),
+    novelty_repeat: profile.novelty_status !== "unknown"
+      || profile.repeat_count > 1
+      || profile.new_evidence_refs.length > 0,
+    evidence_density: ["medium", "high"].includes(profile.evidence_density),
+    uncertainty_conflict: profile.uncertainty_level !== "low"
+      || profile.conflict_signals.length > 0
+  };
+}
+
+function buildL1SignalProfile(source, digest) {
+  const route = primaryRoute(source.route_pressure);
+  const routes = activeRoutes(source.route_pressure);
+  const fingerprint = fingerprintFor(source, digest);
+  const duplicateCluster = duplicateClusterFor(source, digest);
+  const canonicalSourceId = duplicateCluster?.source_ids?.[0] ?? source.source_id;
+  const evidenceRefs = uniqueStrings(source.source_refs);
+  const newEvidenceRefs = uniqueStrings(fingerprint?.new_evidence_refs ?? []);
+  const riskLevel = riskLevelFor(source, digest);
+  const repeatCount = Number(fingerprint?.seen_count ?? (duplicateCluster?.source_ids?.length ?? 1));
+  const dedupeStatus = dedupeStatusFor({ source, duplicateCluster, fingerprint, canonicalSourceId });
+  const evidenceDensity = evidenceDensityFor(evidenceRefs);
+  const conflictSignals = conflictSignalsFor({
+    source,
+    route,
+    routes,
+    riskLevel,
+    fingerprint,
+    duplicateCluster
+  });
+  const strategyAxes = strategyAxesFor({
+    source,
+    route,
+    riskLevel,
+    evidenceRefs,
+    newEvidenceRefs,
+    duplicateCluster,
+    conflictSignals
+  });
+  const suppressReasons = [];
+  if (dedupeStatus === "duplicate") suppressReasons.push("duplicate_covered_by_canonical_source");
+  if (dedupeStatus === "suppressed_repeat") suppressReasons.push("already_processed_without_new_evidence");
+  if (evidenceDensity === "none") suppressReasons.push("missing_evidence_refs");
+
+  const eligibilityReasons = l2EligibilityReasonsFor({
+    source,
+    route,
+    riskLevel,
+    dedupeStatus,
+    evidenceDensity,
+    newEvidenceRefs,
+    repeatCount
+  });
+  const eligible = suppressReasons.length === 0 && eligibilityReasons.length > 0;
+  const uncertaintyLevel = uncertaintyLevelFor({ conflictSignals, evidenceDensity, routes });
+  const mode = l2CandidateModeFor({
+    eligible,
+    dedupeStatus,
+    riskLevel,
+    uncertaintyLevel,
+    strategyAxes,
+    repeatCount
+  });
+  const profile = {
+    schema_version: "misa.l1_signal_profile.v1",
+    source_id: source.source_id,
+    advice_only: true,
+    l2_eligible: eligible,
+    l2_candidate_mode: mode,
+    l2_candidate_count_hint: mode === "suppress" ? 0 : (mode === "single" ? 1 : 2),
+    l2_eligibility_reasons: eligibilityReasons,
+    suppress_reasons: uniqueStrings(suppressReasons),
+    pool_group_id: duplicateCluster?.cluster_id
+      ?? fingerprint?.fingerprint_id
+      ?? `source:${stableSlug(source.source_id)}`,
+    canonical_source_id: canonicalSourceId,
+    dedupe_status: dedupeStatus,
+    signal_family: fingerprint?.signal_family ?? readoutFamilyFor(source),
+    risk_level: riskLevel,
+    route_hint: route,
+    priority_score: Number(fingerprint?.priority ?? source.suggested_priority ?? 0),
+    novelty_status: noveltyStatusFor(fingerprint),
+    repeat_count: repeatCount,
+    evidence_refs: evidenceRefs,
+    new_evidence_refs: newEvidenceRefs,
+    evidence_density: evidenceDensity,
+    missing_evidence: evidenceRefs.length === 0,
+    strategy_axes: strategyAxes,
+    uncertainty_level: uncertaintyLevel,
+    conflict_signals: conflictSignals
+  };
+  return {
+    ...profile,
+    dimension_hits: l1DimensionHits(profile)
+  };
+}
+
 function severityFor(source) {
   const level = sourceLevel(source);
   if (level === "critical") return "P1";
@@ -141,10 +410,11 @@ function holdoutFieldsFor(source) {
   };
 }
 
-function buildReadoutRecords(sourceRefs) {
+function buildReadoutRecords(sourceRefs, digest) {
   return sourceRefs.map((source) => {
     const route = primaryRoute(source.route_pressure);
     const family = readoutFamilyFor(source);
+    const l1SignalProfile = buildL1SignalProfile(source, digest);
     return {
       record_id: `online-shadow-${stableSlug(source.source_id)}`,
       source_id: source.source_id,
@@ -156,6 +426,7 @@ function buildReadoutRecords(sourceRefs) {
       primary_route_pressure: route,
       suggested_priority: source.suggested_priority ?? 0,
       readout_family: family,
+      l1_signal_profile: l1SignalProfile,
       external_trajectory_readout: {
         admission: "observe_only",
         target: "external_trajectory_readout",
@@ -192,25 +463,21 @@ function buildReviewHints(digest) {
   ];
 }
 
-function highValueSources(sourceRefs) {
-  return sourceRefs.filter((source) => (
-    (source.suggested_priority ?? 0) >= 80
-    || ["policy", "damping"].includes(primaryRoute(source.route_pressure))
-  ));
+function l2EligibleRecords(readoutRecords) {
+  return readoutRecords.filter((record) => record.l1_signal_profile?.l2_eligible === true);
 }
 
-function buildRepairTicketDrafts(sourceRefs) {
-  return highValueSources(sourceRefs).map((source) => {
-    const route = primaryRoute(source.route_pressure);
+function buildRepairTicketDrafts(readoutRecords) {
+  return l2EligibleRecords(readoutRecords).map((record) => {
     return {
-      ticket_id: `external-trajectory-ticket-${stableSlug(source.source_id)}`,
-      title: `Review ${readoutFamilyFor(source)} from ${source.source_kind}`,
-      severity: severityFor(source),
+      ticket_id: `external-trajectory-ticket-${stableSlug(record.source_id)}`,
+      title: `Review ${record.readout_family} from ${record.source_kind}`,
+      severity: severityFor(record),
       status: "draft_no_write",
-      source_id: source.source_id,
-      source_kind: source.source_kind,
-      evidence_refs: uniqueStrings(source.source_refs),
-      route_hint: route,
+      source_id: record.source_id,
+      source_kind: record.source_kind,
+      evidence_refs: record.l1_signal_profile.evidence_refs,
+      route_hint: record.primary_route_pressure,
       problem_statement: "A real signal should be reviewed as external trajectory evidence without changing live routing, winner selection, or memory.",
       suggested_next_review: "Compare the signal against shadow-only readout and decide whether it belongs in future sanitized holdout data.",
       acceptance_hint: "Reviewer can explain the signal, trace evidence refs, and keep all production authority disabled.",
@@ -220,16 +487,18 @@ function buildRepairTicketDrafts(sourceRefs) {
   });
 }
 
-function buildWorkOrderDrafts(sourceRefs) {
-  return highValueSources(sourceRefs).map((source) => ({
-    work_order_id: `external-trajectory-work-order-${stableSlug(source.source_id)}`,
-    title: `Explain external trajectory signal ${source.source_id}`,
+function buildWorkOrderDrafts(readoutRecords) {
+  return l2EligibleRecords(readoutRecords).map((record) => ({
+    work_order_id: `external-trajectory-work-order-${stableSlug(record.source_id)}`,
+    title: `Explain external trajectory signal ${record.source_id}`,
     category: "external_trajectory_review",
     status: "draft_no_write",
     suggested_executor: "primary_agent_review",
-    source_id: source.source_id,
-    evidence_refs: uniqueStrings(source.source_refs),
-    route_hint: primaryRoute(source.route_pressure),
+    source_id: record.source_id,
+    evidence_refs: record.l1_signal_profile.evidence_refs,
+    route_hint: record.primary_route_pressure,
+    l1_candidate_mode: record.l1_signal_profile.l2_candidate_mode,
+    l1_candidate_count_hint: record.l1_signal_profile.l2_candidate_count_hint,
     review_tasks: [
       "summarize the observed signal in sanitized form",
       "state whether it is safety, outcome, noise, or holdout evidence",
@@ -322,12 +591,67 @@ function buildContract() {
   };
 }
 
+function averagePriority(records) {
+  if (!records.length) return 0;
+  return Math.round(1000 * records.reduce((sum, record) => (
+    sum + Number(record.l1_signal_profile?.priority_score ?? record.suggested_priority ?? 0)
+  ), 0) / records.length) / 1000;
+}
+
+function dimensionVerdict({ dimension, records, hitRecords }) {
+  if (!hitRecords.length) return "no_current_hit";
+  const eligible = hitRecords.filter((record) => record.l1_signal_profile.l2_eligible).length;
+  const advancedMode = hitRecords.filter((record) => (
+    ["recheck", "multi_pool"].includes(record.l1_signal_profile.l2_candidate_mode)
+  )).length;
+  const suppressed = hitRecords.filter((record) => record.l1_signal_profile.l2_candidate_mode === "suppress").length;
+  if (dimension === "dedupe_pool" && suppressed > 0) return "useful_for_duplicate_suppression";
+  if (advancedMode > 0) return "useful_for_recheck_or_multi_pool";
+  if (eligible > 0) return "useful_for_l2_selection";
+  if (hitRecords.length === records.length) return "too_broad_watch";
+  return "watch_with_more_samples";
+}
+
+function buildL1SignalProfileQuantification(readoutRecords) {
+  const dimensions = Object.entries(L1_DIMENSION_HYPOTHESES).map(([dimension, hypothesis]) => {
+    const hitRecords = readoutRecords.filter((record) => (
+      record.l1_signal_profile?.dimension_hits?.[dimension] === true
+    ));
+    return {
+      dimension,
+      hypothesis,
+      hit_count: hitRecords.length,
+      hit_rate: readoutRecords.length ? Math.round(1000 * hitRecords.length / readoutRecords.length) / 1000 : 0,
+      eligible_count: hitRecords.filter((record) => record.l1_signal_profile.l2_eligible).length,
+      suppressed_count: hitRecords.filter((record) => record.l1_signal_profile.l2_candidate_mode === "suppress").length,
+      single_count: hitRecords.filter((record) => record.l1_signal_profile.l2_candidate_mode === "single").length,
+      recheck_count: hitRecords.filter((record) => record.l1_signal_profile.l2_candidate_mode === "recheck").length,
+      multi_pool_count: hitRecords.filter((record) => record.l1_signal_profile.l2_candidate_mode === "multi_pool").length,
+      avg_priority_score: averagePriority(hitRecords),
+      verdict: dimensionVerdict({ dimension, records: readoutRecords, hitRecords })
+    };
+  });
+
+  return {
+    schema_version: "misa.l1_signal_profile_quantification.v1",
+    advice_only: true,
+    total_records: readoutRecords.length,
+    l2_eligible_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_eligible).length,
+    suppressed_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_candidate_mode === "suppress").length,
+    single_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_candidate_mode === "single").length,
+    recheck_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_candidate_mode === "recheck").length,
+    multi_pool_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_candidate_mode === "multi_pool").length,
+    dimensions
+  };
+}
+
 function buildSummary({
   sourceRefs,
   readoutRecords,
   reviewHints,
   repairTicketDrafts,
-  workOrderDrafts
+  workOrderDrafts,
+  l1SignalProfileQuantification
 }) {
   return {
     source_count: sourceRefs.length,
@@ -335,7 +659,12 @@ function buildSummary({
     review_hint_count: reviewHints.length,
     repair_ticket_draft_count: repairTicketDrafts.length,
     work_order_draft_count: workOrderDrafts.length,
-    high_review_value_count: highValueSources(sourceRefs).length,
+    high_review_value_count: l2EligibleRecords(readoutRecords).length,
+    l1_l2_eligible_count: l1SignalProfileQuantification.l2_eligible_count,
+    l1_single_count: l1SignalProfileQuantification.single_count,
+    l1_recheck_recommended_count: l1SignalProfileQuantification.recheck_count,
+    l1_multi_pool_recommended_count: l1SignalProfileQuantification.multi_pool_count,
+    l1_suppressed_count: l1SignalProfileQuantification.suppressed_count,
     allowed_output_count: ALLOWED_OUTPUTS.length,
     blocked_effect_count: BLOCKED_EFFECTS.length,
     route_authority_count: 0,
@@ -435,6 +764,18 @@ function buildChecks({
       safety
     },
     {
+      name: "L1 signal profiles stay advice-only and gate L2 drafts",
+      ok: readoutRecords.every((record) => record.l1_signal_profile?.advice_only === true)
+        && repairTicketDrafts.every((ticket) => (
+          readoutRecords.find((record) => record.source_id === ticket.source_id)?.l1_signal_profile?.l2_eligible === true
+        ))
+        && workOrderDrafts.every((order) => (
+          readoutRecords.find((record) => record.source_id === order.source_id)?.l1_signal_profile?.l2_eligible === true
+        )),
+      eligible_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_eligible).length,
+      suppressed_count: readoutRecords.filter((record) => record.l1_signal_profile?.l2_candidate_mode === "suppress").length
+    },
+    {
       name: "full-perception holdout fields are explicit future gates",
       ok: FULL_PERCEPTION_HOLDOUT_FIELDS.every((field) => (
         contract.full_perception_holdout_fields.some((item) => item.field === field)
@@ -459,17 +800,19 @@ export function buildExternalTrajectoryOnlineShadowContractReport({
 
   const sourceRefs = perceptionDigest.source_refs ?? [];
   const contract = buildContract();
-  const readoutRecords = buildReadoutRecords(sourceRefs);
+  const readoutRecords = buildReadoutRecords(sourceRefs, perceptionDigest);
   const reviewHints = buildReviewHints(perceptionDigest);
-  const repairTicketDrafts = buildRepairTicketDrafts(sourceRefs);
-  const workOrderDrafts = buildWorkOrderDrafts(sourceRefs);
+  const repairTicketDrafts = buildRepairTicketDrafts(readoutRecords);
+  const workOrderDrafts = buildWorkOrderDrafts(readoutRecords);
+  const l1SignalProfileQuantification = buildL1SignalProfileQuantification(readoutRecords);
   const safety = buildSafety();
   const summary = buildSummary({
     sourceRefs,
     readoutRecords,
     reviewHints,
     repairTicketDrafts,
-    workOrderDrafts
+    workOrderDrafts,
+    l1SignalProfileQuantification
   });
   const checks = buildChecks({
     digest: perceptionDigest,
@@ -498,6 +841,7 @@ export function buildExternalTrajectoryOnlineShadowContractReport({
     review_hints: reviewHints,
     repair_ticket_drafts: repairTicketDrafts,
     work_order_drafts: workOrderDrafts,
+    l1_signal_profile_quantification: l1SignalProfileQuantification,
     summary,
     safety,
     checks,
@@ -539,6 +883,8 @@ export function renderExternalTrajectoryOnlineShadowContractMarkdown(result) {
     `- review_hint_count: ${result.summary.review_hint_count}`,
     `- repair_ticket_draft_count: ${result.summary.repair_ticket_draft_count}`,
     `- work_order_draft_count: ${result.summary.work_order_draft_count}`,
+    `- l1_l2_eligible_count: ${result.summary.l1_l2_eligible_count}`,
+    `- l1_single/recheck/multi_pool/suppressed: ${result.summary.l1_single_count}/${result.summary.l1_recheck_recommended_count}/${result.summary.l1_multi_pool_recommended_count}/${result.summary.l1_suppressed_count}`,
     "",
     "## Contract",
     "",
@@ -553,8 +899,18 @@ export function renderExternalTrajectoryOnlineShadowContractMarkdown(result) {
 
   for (const record of result.online_shadow_records) {
     lines.push(
-      `- ${record.record_id}: family=${record.readout_family}, route=${record.primary_route_pressure}, priority=${record.suggested_priority}, authority=${record.external_trajectory_readout.authority}`
+      `- ${record.record_id}: family=${record.readout_family}, route=${record.primary_route_pressure}, priority=${record.suggested_priority}, l1_mode=${record.l1_signal_profile.l2_candidate_mode}, l1_axes=${record.l1_signal_profile.strategy_axes.join(",") || "none"}, authority=${record.external_trajectory_readout.authority}`
     );
+  }
+
+  lines.push("", "## L1 Signal Profile Quantification", "");
+  lines.push(
+    `- total_records: ${result.l1_signal_profile_quantification.total_records}`,
+    `- l2_eligible_count: ${result.l1_signal_profile_quantification.l2_eligible_count}`,
+    `- suppressed_count: ${result.l1_signal_profile_quantification.suppressed_count}`
+  );
+  for (const item of result.l1_signal_profile_quantification.dimensions) {
+    lines.push(`- ${item.dimension}: hits=${item.hit_count}, eligible=${item.eligible_count}, single=${item.single_count}, recheck=${item.recheck_count}, multi_pool=${item.multi_pool_count}, suppressed=${item.suppressed_count}, avg_priority=${item.avg_priority_score}, verdict=${item.verdict}`);
   }
 
   lines.push("", "## Review Hints", "");

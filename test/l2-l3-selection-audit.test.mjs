@@ -24,7 +24,9 @@ function makeL2Item({
   providerError = null,
   candidates = null,
   winnerCandidateId = null,
-  winnerStrategy = null
+  winnerStrategy = null,
+  l1SignalProfile = null,
+  l3Feedback = null
 }) {
   return {
     source_id: sourceId,
@@ -34,8 +36,10 @@ function makeL2Item({
     packet: {
       evidence_refs: [`ref:${sourceId}`],
       readout_family: "safety_boundary_pressure",
-      route_hint: "policy"
+      route_hint: "policy",
+      l1_signal_profile: l1SignalProfile
     },
+    l3_feedback: l3Feedback,
     candidate_selection: candidates ? {
       requested_candidate_count: 3,
       returned_candidate_count: candidates.length,
@@ -67,6 +71,51 @@ function makeL2Item({
         specificityHits: 8,
         providerError
       }
+    }
+  };
+}
+
+function l1Profile({
+  sourceId,
+  mode = "single",
+  risk = "high",
+  axes = ["strict_safety_boundary"],
+  hits = {}
+}) {
+  return {
+    schema_version: "misa.l1_signal_profile.v1",
+    source_id: sourceId,
+    advice_only: true,
+    l2_eligible: mode !== "suppress",
+    l2_candidate_mode: mode,
+    l2_candidate_count_hint: mode === "single" ? 1 : (mode === "suppress" ? 0 : 2),
+    l2_eligibility_reasons: mode === "suppress" ? [] : ["risk_high"],
+    suppress_reasons: mode === "suppress" ? ["duplicate_covered_by_canonical_source"] : [],
+    pool_group_id: `pool:${sourceId}`,
+    canonical_source_id: sourceId,
+    dedupe_status: mode === "multi_pool" ? "canonical" : "unique",
+    signal_family: "public_boundary",
+    risk_level: risk,
+    route_hint: "policy",
+    priority_score: risk === "critical" ? 100 : 85,
+    novelty_status: "new",
+    repeat_count: mode === "multi_pool" ? 2 : 1,
+    evidence_refs: [`ref:${sourceId}`],
+    new_evidence_refs: [`ref:${sourceId}`],
+    evidence_density: "low",
+    missing_evidence: false,
+    strategy_axes: axes,
+    uncertainty_level: mode === "recheck" ? "high" : "low",
+    conflict_signals: mode === "recheck" ? ["multiple_route_pressure"] : [],
+    dimension_hits: {
+      l2_eligible: mode !== "suppress",
+      dedupe_pool: mode === "multi_pool" || mode === "suppress",
+      strategy_axes: axes.length >= 2,
+      risk_level: ["high", "critical"].includes(risk),
+      novelty_repeat: true,
+      evidence_density: false,
+      uncertainty_conflict: mode === "recheck",
+      ...hits
     }
   };
 }
@@ -139,11 +188,75 @@ test("L2/L3 pool classifier forwards green and yellow but holds red", () => {
 
   assert.equal(green.pool, "green");
   assert.equal(green.l4_forward, true);
+  assert.equal(green.l1_signal_profile, null);
   assert.equal(yellow.pool, "yellow");
   assert.equal(yellow.l4_forward, true);
   assert.ok(yellow.reason_codes.includes("possible_false_reject"));
   assert.equal(red.pool, "red");
   assert.equal(red.l4_forward, false);
+});
+
+test("L2/L3 selection audit quantifies L1 signal dimensions against L2 quality", () => {
+  const l2Report = l2ReportFixture([
+    makeL2Item({
+      sourceId: "l1-recheck-green",
+      gateOk: true,
+      quality: 1,
+      actionable: 5,
+      l1SignalProfile: l1Profile({
+        sourceId: "l1-recheck-green",
+        mode: "recheck",
+        risk: "critical",
+        axes: ["strict_safety_boundary", "counterexample_check"],
+        hits: { uncertainty_conflict: true }
+      })
+    }),
+    makeL2Item({
+      sourceId: "l1-multipool-yellow",
+      gateOk: false,
+      quality: 0.975,
+      actionable: 4,
+      weak: 1,
+      violations: ["too_many_weak_tasks"],
+      l1SignalProfile: l1Profile({
+        sourceId: "l1-multipool-yellow",
+        mode: "multi_pool",
+        axes: ["damping_repair", "source_dedupe_pool"],
+        hits: { dedupe_pool: true, strategy_axes: true }
+      })
+    }),
+    makeL2Item({
+      sourceId: "l1-single-red",
+      gateOk: false,
+      quality: 0.7,
+      actionable: 2,
+      weak: 2,
+      violations: ["too_few_actionable_tasks"],
+      l1SignalProfile: l1Profile({
+        sourceId: "l1-single-red",
+        mode: "single",
+        axes: ["strict_safety_boundary"]
+      })
+    })
+  ]);
+  const result = buildL2L3SelectionAuditReport({
+    l2Report,
+    batchSize: 50,
+    thresholds: { red_spot_check_min: 1, red_spot_check_max: 1 },
+    now: new Date("2026-05-17T12:00:00Z")
+  });
+  const strategyAxes = result.l1_signal_dimension_metrics.dimensions.find((item) => item.dimension === "strategy_axes");
+  const riskLevel = result.l1_signal_dimension_metrics.dimensions.find((item) => item.dimension === "risk_level");
+
+  assert.equal(result.l1_signal_dimension_metrics.with_l1_profile_count, 3);
+  assert.equal(strategyAxes.sample_count, 2);
+  assert.equal(strategyAxes.pool_counts.green, 1);
+  assert.equal(strategyAxes.pool_counts.yellow, 1);
+  assert.equal(strategyAxes.recheck_or_multi_pool_count, 2);
+  assert.equal(strategyAxes.verdict, "positive_for_candidate_pool");
+  assert.equal(riskLevel.sample_count, 3);
+  assert.equal(result.decisions[0].l1_candidate_mode, "recheck");
+  assert.ok(result.decisions[0].l1_strategy_axes.includes("counterexample_check"));
 });
 
 test("L2/L3 selection audit uses the L2-selected candidate winner", () => {
@@ -194,7 +307,20 @@ test("L2/L3 selection audit creates green yellow red pools and red spot checks",
     makeL2Item({ sourceId: "green-strong", gateOk: true, quality: 1, actionable: 5 }),
     makeL2Item({ sourceId: "green-borderline", gateOk: true, quality: 0.82, actionable: 4 }),
     makeL2Item({ sourceId: "yellow-high-score", gateOk: false, quality: 0.975, actionable: 4, weak: 1, violations: ["too_many_weak_tasks"] }),
-    makeL2Item({ sourceId: "red-low-action", gateOk: false, quality: 0.89, actionable: 3, weak: 2, violations: ["too_few_actionable_tasks"] }),
+    makeL2Item({
+      sourceId: "red-low-action",
+      gateOk: false,
+      quality: 0.89,
+      actionable: 3,
+      weak: 2,
+      violations: ["too_few_actionable_tasks"],
+      l3Feedback: {
+        final_status: "exhausted_no_value",
+        total_draft_runs: 2,
+        max_draft_runs: 2,
+        rechecked: true
+      }
+    }),
     makeL2Item({ sourceId: "red-provider", gateOk: false, quality: 0, actionable: 0, weak: 0, violations: ["provider_call_failed"], providerError: { code: "provider_error" } })
   ]);
   const result = buildL2L3SelectionAuditReport({
@@ -209,6 +335,7 @@ test("L2/L3 selection audit creates green yellow red pools and red spot checks",
   assert.equal(result.summary.batch_status, "accumulating");
   assert.equal(result.summary.samples_until_next_periodic_review, 45);
   assert.deepEqual(result.summary.pool_counts, { green: 2, yellow: 1, red: 2 });
+  assert.equal(result.summary.l3_feedback_counts.exhausted_no_value, 1);
   assert.equal(result.summary.l4_forward_count, 3);
   assert.equal(result.summary.possible_false_reject_count, 1);
   assert.equal(result.summary.low_quality_pass_count, 1);
@@ -217,6 +344,7 @@ test("L2/L3 selection audit creates green yellow red pools and red spot checks",
   assert.equal(result.safety.writes_memory, false);
   assert.equal(result.safety.changes_route, false);
   assert.ok(result.decisions.find((decision) => decision.source_id === "red-low-action").l4_spot_check);
+  assert.ok(result.decisions.find((decision) => decision.source_id === "red-low-action").reason_codes.includes("l3_feedback:exhausted_no_value"));
   assert.ok(result.l4_handoff.preview.some((item) => item.source_id === "yellow-high-score"));
   assert.equal(result.candidate_recheck.policy.default_mode, "light_single_default");
   assert.equal(result.candidate_recheck.policy.default_candidate_count, 1);

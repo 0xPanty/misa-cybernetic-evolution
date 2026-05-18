@@ -52,6 +52,16 @@ function perceptionDigestFixture() {
         signal_fingerprint_id: "signal:damping:provider-timeout",
         suggested_priority: 75,
         authority: "hint_only"
+      },
+      {
+        source_id: "provider-timeout-repeat-003",
+        source_kind: "runtime_failure",
+        source_refs: ["runtime:failure:timeout:003"],
+        observed_signals: ["repeated_failure_pattern"],
+        route_pressure: { damping: 1 },
+        signal_fingerprint_id: "signal:damping:provider-timeout",
+        suggested_priority: 70,
+        authority: "hint_only"
       }
     ],
     risk_hints: [
@@ -77,8 +87,63 @@ function perceptionDigestFixture() {
       }
     ],
     trace_continuity_hints: [],
+    duplicate_clusters: [
+      {
+        cluster_id: "cluster-provider-timeout-repeat",
+        source_ids: ["provider-timeout-repeat-002", "provider-timeout-repeat-003"],
+        similarity: 0.96,
+        reason: "same provider timeout pattern across adjacent runtime refs",
+        authority: "hint_only"
+      }
+    ],
+    signal_fingerprints: [
+      {
+        fingerprint_id: "signal:policy:farcaster:public-boundary",
+        source_ids: ["farcaster-public-boundary-001"],
+        source_kind: "farcaster_audit",
+        route: "policy",
+        signal_family: "public_boundary",
+        observed_signals: [
+          "public_posting_boundary",
+          "farcaster_public_memory_risk",
+          "explicit_user_boundary"
+        ],
+        source_refs: ["farcaster:audit:reply:001"],
+        base_priority: 100,
+        priority: 100,
+        ledger_status: "new_signal",
+        handled_status: "not_seen",
+        handled_result: "none",
+        seen_count: 1,
+        new_evidence_refs: ["farcaster:audit:reply:001"],
+        priority_adjustment: 0,
+        recommended_action: "send_to_qianxuesen",
+        status_reason: "new boundary signal",
+        authority: "hint_only"
+      },
+      {
+        fingerprint_id: "signal:damping:provider-timeout",
+        source_ids: ["provider-timeout-repeat-002", "provider-timeout-repeat-003"],
+        source_kind: "runtime_failure",
+        route: "damping",
+        signal_family: "provider_timeout",
+        observed_signals: ["repeated_failure_pattern"],
+        source_refs: ["runtime:failure:timeout:002", "runtime:failure:timeout:003"],
+        base_priority: 75,
+        priority: 82,
+        ledger_status: "seen_with_new_evidence",
+        handled_status: "open",
+        handled_result: "none",
+        seen_count: 3,
+        new_evidence_refs: ["runtime:failure:timeout:003"],
+        priority_adjustment: 7,
+        recommended_action: "send_to_qianxuesen",
+        status_reason: "repeat with new evidence",
+        authority: "hint_only"
+      }
+    ],
     summary: {
-      source_count: 2
+      source_count: 3
     }
   };
 }
@@ -92,12 +157,23 @@ test("external trajectory online shadow contract keeps real signals observe-only
 
   assert.equal(result.mode, "external-trajectory-online-observe-shadow-contract");
   assert.equal(result.ok, true);
-  assert.equal(result.input.source_count, 2);
-  assert.equal(result.summary.readout_record_count, 2);
+  assert.equal(result.input.source_count, 3);
+  assert.equal(result.summary.readout_record_count, 3);
   assert.equal(result.summary.review_hint_count, 2);
   assert.equal(result.summary.repair_ticket_draft_count, 2);
   assert.equal(result.summary.work_order_draft_count, 2);
+  assert.equal(result.summary.l1_l2_eligible_count, 2);
+  assert.equal(result.summary.l1_recheck_recommended_count, 1);
+  assert.equal(result.summary.l1_multi_pool_recommended_count, 1);
+  assert.equal(result.summary.l1_suppressed_count, 1);
   assert.equal(result.online_shadow_records[0].readout_family, "safety_boundary_pressure");
+  assert.equal(result.online_shadow_records[0].l1_signal_profile.l2_candidate_mode, "recheck");
+  assert.equal(result.online_shadow_records[1].l1_signal_profile.l2_candidate_mode, "multi_pool");
+  assert.equal(result.online_shadow_records[2].l1_signal_profile.l2_candidate_mode, "suppress");
+  assert.equal(result.online_shadow_records[2].l1_signal_profile.dedupe_status, "duplicate");
+  assert.equal(result.online_shadow_records[2].l1_signal_profile.canonical_source_id, "provider-timeout-repeat-002");
+  assert.ok(result.l1_signal_profile_quantification.dimensions.find((item) => item.dimension === "dedupe_pool").suppressed_count >= 1);
+  assert.ok(result.l1_signal_profile_quantification.dimensions.find((item) => item.dimension === "strategy_axes").multi_pool_count >= 1);
   assert.equal(result.online_shadow_records[0].external_trajectory_readout.authority, "hint_only");
   assert.equal(result.online_shadow_records[0].holdout_fields.status, "available");
   assert.equal(result.online_shadow_records[1].holdout_fields.status, "planned_required_when_full_perception_is_available");

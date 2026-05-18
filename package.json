@@ -46,6 +46,7 @@
     "external:llm-work-order:recheck": "node scripts/external-trajectory-llm-work-order-draft.mjs --candidate-recheck",
     "selection-audit:review": "node scripts/l2-l3-selection-audit.mjs",
     "selection-audit:compare": "node scripts/l2-l3-quantitative-comparison.mjs",
+    "selection-audit:gate-intercepts": "node scripts/l2-gate-intercept-analysis.mjs",
     "external:generic-adapter": "node examples/external-trajectory-online-shadow/generic-workflow-adapter/adapter.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",

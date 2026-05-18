@@ -94,6 +94,65 @@ function onlineShadowFixture() {
   });
 }
 
+function goodProviderDraft(packet, note = "good") {
+  const fileA = packet.context.relevant_files[0];
+  const fileB = packet.context.relevant_files[1] ?? fileA;
+  const signal = packet.record.observed_signals[0];
+  return {
+    title: `${note} ${packet.source_id} observe-only L2 audit`,
+    problem: `${packet.source_id} carries ${signal}; keep the L2 draft no-write and useful for L3 review.`,
+    evidence_refs: [...packet.workOrder.evidence_refs],
+    concrete_tasks: [
+      `In ${fileA}, check source_id=${packet.source_id} field=execution_policy.route_change_allowed; expected result is false and winner_change_allowed=false.`,
+      `In ${fileB}, check signal=${signal} field=persistent_memory_write_allowed; expected result is false and zilliz_write_allowed=false.`,
+      `In ${fileA}, check evidence_ref=${packet.workOrder.evidence_refs[0]} field=authority; expected result is suggestion_only, not execution authority.`,
+      `In ${fileB}, check allowed_verification_commands for ${packet.source_id}; expected result is only whitelisted local commands and no VPS/GitHub/public publish action.`
+    ],
+    acceptance_criteria: [
+      `${packet.source_id} preserves every evidence ref and keeps route_change_allowed=false.`,
+      "The draft remains observe-only and does not request memory, Zilliz, embedding, VPS, GitHub, public publish, or external API effects."
+    ],
+    verification_commands: ["npm test", "npm run precheck"],
+    forbidden_scope: [
+      "do_not_change_route",
+      "do_not_change_winner",
+      "do_not_write_memory",
+      "do_not_write_zilliz",
+      "do_not_create_embeddings",
+      "do_not_call_external_api",
+      "do_not_touch_vps",
+      "do_not_push_github",
+      "do_not_publish_publicly"
+    ],
+    risk_notes: [
+      `${signal} is review pressure only.`,
+      "L3 feedback may select this draft, but still must not execute it."
+    ],
+    stop_condition: "Stop after L2 candidate scoring; do not execute the work order.",
+    llm_notes: `${note} fixture candidate.`
+  };
+}
+
+function badProviderDraft(packet) {
+  return {
+    title: "Explain external trajectory signal",
+    problem: "Review the issue.",
+    evidence_refs: [...packet.workOrder.evidence_refs],
+    concrete_tasks: [
+      "Review the logic",
+      "Check tests",
+      "Improve the process",
+      "Discuss with the team"
+    ],
+    acceptance_criteria: ["Looks good"],
+    verification_commands: ["./fake.sh", "npm test"],
+    forbidden_scope: [],
+    risk_notes: [],
+    stop_condition: "Fix it",
+    llm_notes: "bad fixture"
+  };
+}
+
 async function writeHermesDelegateStub(body) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "misa-hermes-delegate-stub-"));
   const stubPath = path.join(dir, "delegate-stub.mjs");
@@ -151,6 +210,8 @@ test("LLM work-order packets include context anchors and command whitelist", () 
 
   assert.equal(packets.length, 1);
   assert.equal(packets[0].context.source_class, "public_boundary");
+  assert.equal(packets[0].record.l1_signal_profile.l2_candidate_mode, "recheck");
+  assert.ok(packets[0].record.l1_signal_profile.strategy_axes.includes("strict_safety_boundary"));
   assert.ok(packets[0].context.context_anchors.includes("public_posting_boundary"));
   assert.ok(packets[0].context.relevant_files.includes("test/curiosity-signal-gate.test.mjs"));
   assert.ok(packets[0].allowed_verification_commands.includes("npm test"));
@@ -175,6 +236,9 @@ test("Hermes delegate audit packet is no-context observe-only", () => {
   assert.equal(auditPacket.execution_policy.zilliz_write_allowed, false);
   assert.equal(auditPacket.execution_policy.embedding_creation_allowed, false);
   assert.equal(auditPacket.execution_policy.execute_work_order, false);
+  assert.equal(auditPacket.source.l1_signal_hint.l2_candidate_mode, "recheck");
+  assert.equal(auditPacket.source.l1_signal_hint.role, "branch_hint_only");
+  assert.equal(auditPacket.source.l1_signal_hint.dimension_hits, undefined);
 });
 
 test("Hermes delegate defaults to one-shot no-rules delegation args", () => {
@@ -363,6 +427,39 @@ test("LLM work-order draft report passes with context-specific mock provider", a
   )));
 });
 
+test("LLM work-order draft report keeps L1 recheck as a hint while L2 starts light single", async () => {
+  const fixture = onlineShadowFixture();
+  fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_mode = "recheck";
+  fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_count_hint = 2;
+  fixture.online_shadow_records[1].l1_signal_profile.l2_candidate_mode = "single";
+  fixture.online_shadow_records[1].l1_signal_profile.l2_candidate_count_hint = 1;
+
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: fixture,
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001", "custom-ci-failure-001"],
+    provider: "mock",
+    repairAttempts: 0,
+    maxSamples: 2,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(result.summary.candidate_count_policy, "l3_feedback_dynamic");
+  assert.deepEqual(result.summary.requested_candidate_count_histogram, { 1: 2 });
+  assert.equal(result.summary.requested_candidate_count, 1);
+  assert.equal(result.summary.candidate_count, 2);
+  assert.equal(result.summary.l1_dynamic_recheck_count, 0);
+  assert.equal(result.summary.l1_recheck_hint_count, 1);
+  assert.equal(result.summary.light_single_count, 2);
+  assert.equal(result.results[0].candidate_selection.requested_candidate_count, 1);
+  assert.equal(result.results[0].candidates.length, 1);
+  assert.equal(result.results[0].candidate_count_decision.trigger, "initial_light_single");
+  assert.equal(result.results[0].candidate_count_decision.l1_candidate_mode, "recheck");
+  assert.equal(result.results[1].candidate_selection.requested_candidate_count, 1);
+  assert.equal(result.results[1].candidates.length, 1);
+  assert.equal(result.results[1].candidate_count_decision.trigger, "initial_light_single");
+});
+
 test("LLM work-order draft report can select the best of three candidates from one call", async () => {
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),
@@ -444,6 +541,60 @@ test("LLM work-order draft report can select the best of three candidates from o
   assert.equal(result.results[0].gate.ok, true);
   assert.equal(result.results[0].loser_ledger.length, 2);
   assert.ok(result.results[0].loser_ledger.some((item) => item.candidate_id === "boundary_safety"));
+});
+
+test("LLM work-order draft report lets L3 feedback trigger one light-single recheck", async () => {
+  let calls = 0;
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: async ({ packet }) => {
+      calls += 1;
+      return JSON.stringify(calls === 1
+        ? badProviderDraft(packet)
+        : goodProviderDraft(packet, "rechecked"));
+    },
+    repairAttempts: 1,
+    maxSamples: 1,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.summary.llm_api_calls, 2);
+  assert.equal(result.summary.l3_recheck_triggered_count, 1);
+  assert.equal(result.summary.l3_accepted_after_recheck_count, 1);
+  assert.equal(result.summary.l3_exhausted_no_value_count, 0);
+  assert.equal(result.results[0].gate.ok, true);
+  assert.equal(result.results[0].l3_feedback.final_status, "accepted_after_l3_recheck");
+  assert.equal(result.results[0].l3_feedback.total_draft_runs, 2);
+  assert.equal(result.results[0].l3_feedback.max_draft_runs, 2);
+});
+
+test("LLM work-order draft report stops after two L3-gated runs with no value", async () => {
+  let calls = 0;
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"],
+    provider: async ({ packet }) => {
+      calls += 1;
+      return JSON.stringify(badProviderDraft(packet));
+    },
+    repairAttempts: 5,
+    maxSamples: 1,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.llm_api_calls, 2);
+  assert.equal(result.summary.l3_recheck_triggered_count, 1);
+  assert.equal(result.summary.l3_exhausted_no_value_count, 1);
+  assert.equal(result.results[0].gate.ok, false);
+  assert.equal(result.results[0].l3_feedback.final_status, "exhausted_no_value");
+  assert.equal(result.results[0].l3_feedback.no_value_after_recheck, true);
+  assert.equal(result.results[0].l3_feedback.total_draft_runs, 2);
 });
 
 test("LLM work-order CLI candidate-recheck switch requests two candidates", async () => {

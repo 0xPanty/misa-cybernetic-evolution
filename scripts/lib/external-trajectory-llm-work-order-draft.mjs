@@ -68,6 +68,11 @@ const HERMES_PROVIDER_ERROR_PATTERNS = Object.freeze([
   /Traceback \(most recent call last\)/i
 ]);
 
+const SOFT_GATE_VIOLATIONS = Object.freeze([
+  "too_many_weak_tasks",
+  "too_few_acceptance_criteria"
+]);
+
 const TASK_EXPECTATION_PATTERNS = Object.freeze([
   /must|mandatory|required|only|preserve|remain|keep|blocked|false|zero|reject|pass|fail|contains|equals|does not|do not|unauthorized|human-in-the-loop/i,
   /draft_no_write|suggestion_only|classification|successful gating|no[-\s](?:write|publish|state mutation)|side-effects|restricted/i,
@@ -131,6 +136,49 @@ function normalizeCandidateCount(value) {
 
 function candidateModeForCount(count) {
   return normalizeCandidateCount(count) <= 1 ? "light_single_default" : "explicit_candidate_recheck";
+}
+
+function countHistogram(values) {
+  return Object.fromEntries([...values]
+    .map((value) => String(value))
+    .sort((left, right) => Number(left) - Number(right))
+    .map((value) => [value, values.filter((item) => String(item) === value).length]));
+}
+
+function l1TriggeredCandidateCount(profile) {
+  if (!profile) return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
+  const hint = normalizeCandidateCount(profile.l2_candidate_count_hint);
+  const mode = String(profile.l2_candidate_mode ?? "");
+  const uncertainty = String(profile.uncertainty_level ?? "");
+  const conflictCount = Array.isArray(profile.conflict_signals) ? profile.conflict_signals.length : 0;
+  const highRiskAmbiguous = profile.risk_level === "high"
+    && (uncertainty === "medium" || uncertainty === "high" || conflictCount > 0);
+  if (mode === "recheck" || mode === "multi_pool") return Math.max(2, hint);
+  if (hint > 1 && highRiskAmbiguous) return hint;
+  return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
+}
+
+function candidateCountDecisionForPacket(packet, { explicitCandidateCount = null } = {}) {
+  if (explicitCandidateCount !== null && explicitCandidateCount !== undefined) {
+    const requested = normalizeCandidateCount(explicitCandidateCount);
+    return {
+      policy: "explicit",
+      trigger: requested > 1 ? "explicit_recheck" : "explicit_light_single",
+      requested_candidate_count: requested,
+      candidate_mode: candidateModeForCount(requested),
+      reason: "caller provided candidateCount"
+    };
+  }
+  const profile = packet.record.l1_signal_profile ?? null;
+  const l1Mode = profile?.l2_candidate_mode ?? null;
+  return {
+    policy: "l3_feedback_dynamic",
+    trigger: "initial_light_single",
+    requested_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
+    candidate_mode: "light_single_default",
+    l1_candidate_mode: l1Mode,
+    reason: "L2 starts with light_single; L3 gate may trigger one light_single recheck after seeing the draft"
+  };
 }
 
 function candidateStrategies(candidateCount) {
@@ -350,6 +398,20 @@ export function buildLlmWorkOrderDraftingPackets({
   });
 }
 
+function l1SignalHintFor(profile) {
+  if (!profile) return null;
+  return {
+    role: "branch_hint_only",
+    l2_candidate_mode: profile.l2_candidate_mode ?? null,
+    l2_candidate_count_hint: profile.l2_candidate_count_hint ?? null,
+    strategy_axes: profile.strategy_axes ?? [],
+    risk_level: profile.risk_level ?? null,
+    uncertainty_level: profile.uncertainty_level ?? null,
+    conflict_signals: profile.conflict_signals ?? [],
+    evidence_density: profile.evidence_density ?? null
+  };
+}
+
 function promptForPacket(packet, { previousFailure, candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT } = {}) {
   const requestedCandidateCount = normalizeCandidateCount(candidateCount);
   const strategies = candidateStrategies(requestedCandidateCount);
@@ -362,6 +424,7 @@ function promptForPacket(packet, { previousFailure, candidateCount = DEFAULT_LLM
     priority: packet.record.suggested_priority,
     observed_signals: packet.record.observed_signals,
     evidence_refs: packet.workOrder.evidence_refs,
+    l1_signal_hint: l1SignalHintFor(packet.record.l1_signal_profile),
     review_hints: packet.reviewHints.map((hint) => ({
       kind: hint.kind,
       level: hint.level,
@@ -443,6 +506,7 @@ ${strategies.map((item) => `- ${item.candidate_id}: ${item.focus}`).join("\n")}
 ${singleReturnShape}`}
 
 Quality requirements:
+- l1_signal_hint is only a short branch hint. Use it to choose the review angle; do not copy it as a separate task.
 - Keep the title specific; do not reuse a template title such as "Explain external trajectory signal".
 - concrete_tasks must contain at least 4 engineering review tasks.
 - Every concrete task must include a concrete anchor: file path, source_id, signal name, evidence ref, field name, or test name.
@@ -564,6 +628,7 @@ export function buildHermesDelegateAuditPacket(packet, {
       priority: packet.record.suggested_priority,
       observed_signals: packet.record.observed_signals ?? [],
       evidence_refs: packet.workOrder.evidence_refs ?? [],
+      l1_signal_hint: l1SignalHintFor(packet.record.l1_signal_profile),
       source_class: packet.context.source_class,
       relevant_files: packet.context.relevant_files,
       context_anchors: packet.context.context_anchors,
@@ -606,6 +671,7 @@ Do not use any chat history, memory, Zilliz, embeddings, route/winner authority,
 Only use the AuditPacket below. Return JSON only, with exactly the draft shape requested by output_contract.${retryText}
 
 Quality target:
+- source.l1_signal_hint is only a short branch hint. Use it to choose the review angle; do not copy it as a separate task.
 - Do not reuse the current_template_work_order title.
 - Write a specific title that names source_id and the boundary being audited.
 - concrete_tasks must contain exactly 4-6 engineering review tasks.
@@ -1045,6 +1111,51 @@ function actionableTaskDetails(draft, packet) {
   });
 }
 
+function softenNearPassViolations({ violations, qualityScore, checks }) {
+  const hardViolations = [];
+  const softViolations = [];
+  const warningCodes = [];
+  const softOnly = violations.every((violation) => SOFT_GATE_VIOLATIONS.includes(violation));
+
+  for (const violation of violations) {
+    if (
+      violation === "too_many_weak_tasks"
+      && softOnly
+      && qualityScore >= 0.975
+      && checks.actionableTaskCount >= 4
+      && checks.weakTaskCount === 1
+    ) {
+      softViolations.push(violation);
+      warningCodes.push("near_pass_single_weak_task");
+      continue;
+    }
+    if (
+      violation === "too_few_acceptance_criteria"
+      && softOnly
+      && qualityScore >= 0.975
+      && checks.actionableTaskCount >= 4
+      && checks.weakTaskCount === 0
+      && checks.acceptanceCount === 1
+    ) {
+      softViolations.push(violation);
+      warningCodes.push("near_pass_acceptance_light");
+      continue;
+    }
+    hardViolations.push(violation);
+  }
+
+  return {
+    hardViolations,
+    softViolations,
+    warningCodes,
+    gateClass: hardViolations.length
+      ? "hard_fail"
+      : softViolations.length
+        ? "near_pass"
+        : "pass"
+  };
+}
+
 export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerError = null } = {}) {
   const violations = [];
   const refs = packet?.workOrder?.evidence_refs ?? [];
@@ -1107,27 +1218,36 @@ export function gateLlmWorkOrderDraft({ packet, draft, parseOk = true, providerE
   )) / 1000;
 
   if (quality_score < 0.74) violations.push("quality_score_below_threshold");
+  const checks = {
+    parseOk,
+    concreteTaskCount: draft?.concrete_tasks?.length ?? 0,
+    acceptanceCount: draft?.acceptance_criteria?.length ?? 0,
+    verificationCommandCount: draft?.verification_commands?.length ?? 0,
+    preservedRefs: refs.filter((ref) => draft?.evidence_refs?.includes(ref)).length,
+    requiredRefs: refs.length,
+    whitelistedCommands: (draft?.verification_commands ?? [])
+      .filter((command) => packet.allowed_verification_commands.includes(command)).length,
+    specificityHits,
+    genericTaskCount: vagueTaskCount,
+    actionableTaskCount,
+    weakTaskCount,
+    taskActionability: actionability,
+    providerError
+  };
+  const gateTriage = softenNearPassViolations({
+    violations,
+    qualityScore: quality_score,
+    checks
+  });
 
   return {
-    ok: violations.length === 0,
-    violations,
+    ok: gateTriage.hardViolations.length === 0,
+    violations: gateTriage.hardViolations,
+    soft_violations: gateTriage.softViolations,
+    warning_codes: gateTriage.warningCodes,
+    gate_class: gateTriage.gateClass,
     quality_score,
-    checks: {
-      parseOk,
-      concreteTaskCount: draft?.concrete_tasks?.length ?? 0,
-      acceptanceCount: draft?.acceptance_criteria?.length ?? 0,
-      verificationCommandCount: draft?.verification_commands?.length ?? 0,
-      preservedRefs: refs.filter((ref) => draft?.evidence_refs?.includes(ref)).length,
-      requiredRefs: refs.length,
-      whitelistedCommands: (draft?.verification_commands ?? [])
-        .filter((command) => packet.allowed_verification_commands.includes(command)).length,
-      specificityHits,
-      genericTaskCount: vagueTaskCount,
-      actionableTaskCount,
-      weakTaskCount,
-      taskActionability: actionability,
-      providerError
-    }
+    checks
   };
 }
 
@@ -1170,8 +1290,27 @@ function compareCandidateResults(left, right) {
   return (left.index ?? 0) - (right.index ?? 0);
 }
 
+function materiallyBeatsBaseline(candidate, baseline) {
+  if (!baseline) return true;
+  const candidateGate = candidate.gate ?? {};
+  const baselineGate = baseline.gate ?? {};
+  if (candidateGate.ok && !baselineGate.ok) return true;
+  const qualityDelta = Number(candidateGate.quality_score ?? 0) - Number(baselineGate.quality_score ?? 0);
+  if (qualityDelta >= 0.05) return true;
+  const candidateChecks = candidateGate.checks ?? {};
+  const baselineChecks = baselineGate.checks ?? {};
+  const fewerWeakTasks = Number(candidateChecks.weakTaskCount ?? 0) < Number(baselineChecks.weakTaskCount ?? 0);
+  const moreActionableTasks = Number(candidateChecks.actionableTaskCount ?? 0) > Number(baselineChecks.actionableTaskCount ?? 0);
+  return qualityDelta >= 0.02 && (fewerWeakTasks || moreActionableTasks);
+}
+
 function selectBestCandidate(candidateResults) {
-  return [...candidateResults].sort(compareCandidateResults)[0] ?? null;
+  const baseline = candidateResults[0] ?? null;
+  const best = [...candidateResults].sort(compareCandidateResults)[0] ?? null;
+  if (best && baseline && best !== baseline && !materiallyBeatsBaseline(best, baseline)) {
+    return baseline;
+  }
+  return best;
 }
 
 function summarizeCandidateSelection({ candidateResults, winner, requestedCandidateCount }) {
@@ -1195,6 +1334,27 @@ function summarizeCandidateSelection({ candidateResults, winner, requestedCandid
   };
 }
 
+function l3ReviewableHardFail(gate) {
+  const checks = gate?.checks ?? {};
+  return gate?.gate_class === "hard_fail"
+    && Number(gate?.quality_score ?? 0) >= 0.9
+    && Number(checks.actionableTaskCount ?? 0) >= 4
+    && !checks.providerError;
+}
+
+function l3FeedbackStatus({ gate, providerError, draftRuns, maxDraftRuns }) {
+  if (providerError) return "provider_error_failed_closed";
+  if (gate?.ok) {
+    return draftRuns > 1 ? "accepted_after_l3_recheck" : "accepted_first_try";
+  }
+  if (draftRuns >= maxDraftRuns) {
+    return l3ReviewableHardFail(gate)
+      ? "exhausted_reviewable_hard_fail"
+      : "exhausted_no_value";
+  }
+  return "l3_recheck_pending";
+}
+
 async function draftOnePacket({
   packet,
   repoRoot,
@@ -1208,9 +1368,11 @@ async function draftOnePacket({
   hermesDelegateModel,
   hermesDelegateTimeoutMs,
   repairAttempts,
-  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
+  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
+  candidateCountDecision = null
 }) {
   const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const maxDraftRuns = Math.min(2, Math.max(1, Number(repairAttempts ?? 0) + 1));
   let previousFailure = null;
   let raw = "";
   let draft = null;
@@ -1221,13 +1383,14 @@ async function draftOnePacket({
   let parsed = null;
   let candidates = [];
   let winner = null;
+  const l3FeedbackAttempts = [];
   let candidateSelection = summarizeCandidateSelection({
     candidateResults: [],
     winner: null,
     requestedCandidateCount
   });
 
-  for (let attempt = 0; attempt <= repairAttempts; attempt += 1) {
+  for (let attempt = 0; attempt < maxDraftRuns; attempt += 1) {
     const providerResult = await callDraftProvider({
       packet,
       provider,
@@ -1261,6 +1424,20 @@ async function draftOnePacket({
         winner: null,
         requestedCandidateCount
       });
+      l3FeedbackAttempts.push({
+        run_number: attempt + 1,
+        trigger: attempt === 0 ? "initial_light_single" : "l3_recheck",
+        candidate_count: 0,
+        provider_error: providerError.code ?? "provider_error",
+        gate_ok: gate.ok,
+        gate_class: gate.gate_class,
+        quality_score: gate.quality_score,
+        violations: gate.violations,
+        soft_violations: gate.soft_violations,
+        warning_codes: gate.warning_codes,
+        actionableTaskCount: gate.checks.actionableTaskCount,
+        weakTaskCount: gate.checks.weakTaskCount
+      });
       break;
     }
     try {
@@ -1288,15 +1465,47 @@ async function draftOnePacket({
       winner,
       requestedCandidateCount
     });
+    l3FeedbackAttempts.push({
+      run_number: attempt + 1,
+      trigger: attempt === 0 ? "initial_light_single" : "l3_recheck",
+      candidate_count: candidates.length,
+      provider_error: null,
+      gate_ok: gate.ok,
+      gate_class: gate.gate_class,
+      quality_score: gate.quality_score,
+      violations: gate.violations,
+      soft_violations: gate.soft_violations,
+      warning_codes: gate.warning_codes,
+      actionableTaskCount: gate.checks.actionableTaskCount,
+      weakTaskCount: gate.checks.weakTaskCount
+    });
     if (gate.ok) break;
+    if (attempt + 1 >= maxDraftRuns) break;
     previousFailure = gate;
   }
+  const finalL3FeedbackStatus = l3FeedbackStatus({
+    gate,
+    providerError,
+    draftRuns: l3FeedbackAttempts.length,
+    maxDraftRuns
+  });
 
   return {
     source_id: packet.source_id,
     model,
     provider: typeof provider === "string" ? provider : "custom",
     llm_api_calls: llmApiCalls,
+    candidate_count_decision: candidateCountDecision,
+    l3_feedback: {
+      policy: "l3_gate_drives_one_light_single_recheck",
+      max_draft_runs: maxDraftRuns,
+      total_draft_runs: l3FeedbackAttempts.length,
+      rechecked: l3FeedbackAttempts.length > 1,
+      final_status: finalL3FeedbackStatus,
+      final_gate_class: gate?.gate_class ?? "unknown",
+      no_value_after_recheck: finalL3FeedbackStatus === "exhausted_no_value",
+      attempts: l3FeedbackAttempts
+    },
     candidate_selection: candidateSelection,
     packet: {
       source_class: packet.context.source_class,
@@ -1306,6 +1515,7 @@ async function draftOnePacket({
       priority: packet.record.suggested_priority,
       observed_signals: packet.record.observed_signals,
       evidence_refs: packet.workOrder.evidence_refs,
+      l1_signal_profile: packet.record.l1_signal_profile ?? null,
       relevant_files: packet.context.relevant_files,
       allowed_verification_commands: packet.allowed_verification_commands
     },
@@ -1350,11 +1560,12 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   hermesDelegateModel,
   hermesDelegateTimeoutMs = DEFAULT_HERMES_DELEGATE_TIMEOUT_MS,
   repairAttempts = 1,
-  candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
+  candidateCount,
   now = new Date()
 } = {}) {
-  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
-  const candidateMode = candidateModeForCount(requestedCandidateCount);
+  const explicitCandidateCount = candidateCount === undefined || candidateCount === null
+    ? null
+    : normalizeCandidateCount(candidateCount);
   const report = onlineShadowReport
     ?? (onlineShadowReportPath
       ? await readJson(resolvePath(repoRoot, onlineShadowReportPath))
@@ -1372,6 +1583,7 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   });
   const results = [];
   for (const packet of packets) {
+    const candidateDecision = candidateCountDecisionForPacket(packet, { explicitCandidateCount });
     results.push(await draftOnePacket({
       packet,
       repoRoot,
@@ -1385,9 +1597,20 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       hermesDelegateModel,
       hermesDelegateTimeoutMs,
       repairAttempts,
-      candidateCount: requestedCandidateCount
+      candidateCount: candidateDecision.requested_candidate_count,
+      candidateCountDecision: candidateDecision
     }));
   }
+  const requestedCandidateCounts = results.map((result) => (
+    result.candidate_selection?.requested_candidate_count ?? DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
+  ));
+  const maxRequestedCandidateCount = requestedCandidateCounts.length
+    ? Math.max(...requestedCandidateCounts)
+    : DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
+  const candidatePolicy = explicitCandidateCount === null ? "l3_feedback_dynamic" : "explicit";
+  const candidateMode = candidatePolicy === "l3_feedback_dynamic"
+    ? "light_single_default"
+    : candidateModeForCount(maxRequestedCandidateCount);
   const llmApiCalls = results.reduce((count, result) => count + result.llm_api_calls, 0);
   const allCandidates = results.flatMap((result) => result.candidates ?? []);
   const candidateQualitySum = allCandidates.reduce((sum, candidate) => sum + candidate.gate.quality_score, 0);
@@ -1405,7 +1628,9 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       perception_digest_path: digestPath,
       source_ids: sourceIds,
       max_samples: maxSamples,
-      requested_candidate_count: requestedCandidateCount,
+      candidate_count_policy: candidatePolicy,
+      requested_candidate_count: maxRequestedCandidateCount,
+      requested_candidate_count_histogram: countHistogram(requestedCandidateCounts),
       candidate_mode: candidateMode,
       default_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
     },
@@ -1418,8 +1643,20 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
     summary: {
       sample_count: results.length,
       draft_count: results.filter((result) => result.draft).length,
+      candidate_count_policy: candidatePolicy,
       candidate_mode: candidateMode,
-      requested_candidate_count: requestedCandidateCount,
+      requested_candidate_count: maxRequestedCandidateCount,
+      requested_candidate_count_histogram: countHistogram(requestedCandidateCounts),
+      l1_dynamic_recheck_count: results.filter((result) => (
+        result.candidate_count_decision?.policy === "l1_dynamic"
+          && Number(result.candidate_count_decision?.requested_candidate_count ?? 1) > 1
+      )).length,
+      l1_recheck_hint_count: results.filter((result) => (
+        ["recheck", "multi_pool"].includes(result.packet?.l1_signal_profile?.l2_candidate_mode)
+      )).length,
+      light_single_count: results.filter((result) => (
+        Number(result.candidate_selection?.requested_candidate_count ?? 1) <= 1
+      )).length,
       candidate_count: allCandidates.length,
       expected_candidate_count_met: expectedCandidateCountMet,
       expected_candidate_count_miss: results.length - expectedCandidateCountMet,
@@ -1431,6 +1668,22 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
         : 0,
       passed_gate_count: results.filter((result) => result.gate.ok).length,
       failed_gate_count: results.filter((result) => !result.gate.ok).length,
+      l3_total_draft_runs: results.reduce((sum, result) => (
+        sum + Number(result.l3_feedback?.total_draft_runs ?? 0)
+      ), 0),
+      l3_recheck_triggered_count: results.filter((result) => result.l3_feedback?.rechecked).length,
+      l3_accepted_first_try_count: results.filter((result) => (
+        result.l3_feedback?.final_status === "accepted_first_try"
+      )).length,
+      l3_accepted_after_recheck_count: results.filter((result) => (
+        result.l3_feedback?.final_status === "accepted_after_l3_recheck"
+      )).length,
+      l3_exhausted_reviewable_hard_fail_count: results.filter((result) => (
+        result.l3_feedback?.final_status === "exhausted_reviewable_hard_fail"
+      )).length,
+      l3_exhausted_no_value_count: results.filter((result) => (
+        result.l3_feedback?.final_status === "exhausted_no_value"
+      )).length,
       provider_error_count: results.filter((result) => result.provider_error).length,
       avg_quality_score: results.length
         ? Math.round(1000 * results.reduce((sum, result) => sum + result.gate.quality_score, 0) / results.length) / 1000
@@ -1479,12 +1732,21 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
     `- hermes_delegate_provider: ${result.delegate?.provider ?? "none"}`,
     `- hermes_delegate_model: ${result.delegate?.model ?? "none"}`,
     `- sample_count: ${result.summary.sample_count}`,
+    `- candidate_count_policy: ${result.summary.candidate_count_policy}`,
     `- candidate_mode: ${result.summary.candidate_mode}`,
     `- requested_candidate_count: ${result.summary.requested_candidate_count}`,
+    `- requested_candidate_count_histogram: ${JSON.stringify(result.summary.requested_candidate_count_histogram ?? {})}`,
+    `- l1_dynamic_recheck_count: ${result.summary.l1_dynamic_recheck_count}`,
+    `- l1_recheck_hint_count: ${result.summary.l1_recheck_hint_count}`,
+    `- light_single_count: ${result.summary.light_single_count}`,
     `- candidate_count: ${result.summary.candidate_count}`,
     `- winner_selected_count: ${result.summary.winner_selected_count}`,
     `- passed_gate_count: ${result.summary.passed_gate_count}`,
     `- failed_gate_count: ${result.summary.failed_gate_count}`,
+    `- l3_total_draft_runs: ${result.summary.l3_total_draft_runs}`,
+    `- l3_recheck_triggered_count: ${result.summary.l3_recheck_triggered_count}`,
+    `- l3_accepted_after_recheck_count: ${result.summary.l3_accepted_after_recheck_count}`,
+    `- l3_exhausted_no_value_count: ${result.summary.l3_exhausted_no_value_count}`,
     `- avg_quality_score: ${result.summary.avg_quality_score}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
     ""
@@ -1496,6 +1758,9 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
       "",
       `- gate_ok: ${item.gate.ok}`,
       `- quality_score: ${item.gate.quality_score}`,
+      `- candidate_count_decision: ${item.candidate_count_decision?.trigger ?? "unknown"}`,
+      `- l3_feedback_status: ${item.l3_feedback?.final_status ?? "unknown"}`,
+      `- l3_draft_runs: ${item.l3_feedback?.total_draft_runs ?? 0}/${item.l3_feedback?.max_draft_runs ?? 0}`,
       `- candidates: ${item.candidates?.length ?? 0}`,
       `- winner_candidate_id: ${item.winner_candidate_id ?? "none"}`,
       `- winner_strategy: ${item.winner_strategy ?? "none"}`,

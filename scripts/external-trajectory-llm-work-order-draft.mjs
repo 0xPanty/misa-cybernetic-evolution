@@ -79,8 +79,12 @@ if (hasArg("json")) {
   console.log(`provider=${result.provider}`);
   console.log(`model=${result.model}`);
   console.log(`samples=${result.summary.sample_count}`);
+  console.log(`candidate_count_policy=${result.summary.candidate_count_policy}`);
   console.log(`candidate_mode=${result.summary.candidate_mode}`);
   console.log(`requested_candidate_count=${result.summary.requested_candidate_count}`);
+  console.log(`requested_candidate_count_histogram=${JSON.stringify(result.summary.requested_candidate_count_histogram ?? {})}`);
+  console.log(`l1_dynamic_recheck=${result.summary.l1_dynamic_recheck_count}`);
+  console.log(`light_single=${result.summary.light_single_count}`);
   console.log(`candidate_count=${result.summary.candidate_count}`);
   console.log(`winner_selected=${result.summary.winner_selected_count}`);
   console.log(`passed_gate=${result.summary.passed_gate_count}`);
@@ -93,7 +97,8 @@ if (hasArg("json")) {
   for (const item of result.results) {
     const providerError = item.provider_error ? ` provider_error=${item.provider_error.code}` : "";
     const candidateText = item.candidates?.length ? ` candidates=${item.candidates.length} winner=${item.winner_candidate_id}` : "";
-    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score}${candidateText}${providerError} title=${item.draft?.title ?? "PARSE_FAILED"}`);
+    const decisionText = item.candidate_count_decision ? ` decision=${item.candidate_count_decision.trigger}` : "";
+    console.log(`- ${item.source_id} ok=${item.gate.ok} quality=${item.gate.quality_score}${decisionText}${candidateText}${providerError} title=${item.draft?.title ?? "PARSE_FAILED"}`);
   }
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);

@@ -22,6 +22,16 @@ export const DEFAULT_CANDIDATE_RECHECK_POLICY = Object.freeze({
   near_yellow_quality_margin: 0.025
 });
 
+const L1_DIMENSION_HYPOTHESES = Object.freeze({
+  l2_eligible: "reduce low-value L2 calls without dropping high-value signals",
+  dedupe_pool: "merge repeated sources into a pool instead of drafting duplicate work orders",
+  strategy_axes: "give multi-candidate L2 runs distinct branches instead of wording variants",
+  risk_level: "send safety and reliability pressure to the right review mode",
+  novelty_repeat: "promote recurrence and new evidence while suppressing already handled repeats",
+  evidence_density: "reserve recheck or multi-pool for sources with enough evidence",
+  uncertainty_conflict: "trigger recheck when route, risk, or evidence signals disagree"
+});
+
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   return Number.isNaN(date.getTime()) ? new Date("2026-05-17T12:00:00.000Z").toISOString() : date.toISOString();
@@ -134,7 +144,12 @@ export function classifyL2L3PoolDecision(item, {
   const weakTaskCount = Number(checks.weakTaskCount ?? 0);
   const specificityHits = Number(checks.specificityHits ?? 0);
   const violations = Array.isArray(item?.gate?.violations) ? item.gate.violations : [];
+  const softViolations = Array.isArray(item?.gate?.soft_violations) ? item.gate.soft_violations : [];
+  const warningCodes = Array.isArray(item?.gate?.warning_codes) ? item.gate.warning_codes : [];
+  const gateClass = item?.gate?.gate_class ?? (item?.gate?.ok ? "pass" : "hard_fail");
   const providerError = providerErrorCode(item);
+  const l1SignalProfile = item?.packet?.l1_signal_profile ?? null;
+  const l3Feedback = item?.l3_feedback ?? null;
   const gateOk = Boolean(item?.gate?.ok);
   const highQualityFailedGate = !gateOk
     && !providerError
@@ -168,6 +183,15 @@ export function classifyL2L3PoolDecision(item, {
   for (const violation of violations) {
     reasonCodes.push(`violation:${violation}`);
   }
+  for (const violation of softViolations) {
+    reasonCodes.push(`soft_violation:${violation}`);
+  }
+  for (const warning of warningCodes) {
+    reasonCodes.push(`warning:${warning}`);
+  }
+  if (l3Feedback?.final_status) {
+    reasonCodes.push(`l3_feedback:${l3Feedback.final_status}`);
+  }
 
   return {
     schema_version: "misa.l2_l3_pool_decision.v1",
@@ -180,8 +204,11 @@ export function classifyL2L3PoolDecision(item, {
     reason_codes: [...new Set(reasonCodes)],
     decision_reason: null,
     gate_ok: gateOk,
+    gate_class: gateClass,
     quality_score: qualityScore,
     violations,
+    soft_violations: softViolations,
+    warning_codes: warningCodes,
     actionableTaskCount,
     weakTaskCount,
     specificityHits,
@@ -192,6 +219,12 @@ export function classifyL2L3PoolDecision(item, {
     winner_strategy: item?.winner_strategy ?? null,
     draft_title: item?.draft?.title ?? null,
     evidence_refs: item?.packet?.evidence_refs ?? item?.draft?.evidence_refs ?? [],
+    l1_signal_profile: l1SignalProfile,
+    l1_candidate_mode: l1SignalProfile?.l2_candidate_mode ?? null,
+    l1_strategy_axes: l1SignalProfile?.strategy_axes ?? [],
+    l1_dimension_hits: l1SignalProfile?.dimension_hits ?? null,
+    l3_feedback: l3Feedback,
+    l3_feedback_status: l3Feedback?.final_status ?? null,
     safety_counters: {
       memory_writes: 0,
       zilliz_writes: 0,
@@ -236,9 +269,21 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
     red: decisions.filter((decision) => decision.pool === "red").length
   };
   const violationCounts = {};
+  const softViolationCounts = {};
+  const warningCounts = {};
+  const l3FeedbackCounts = {};
   for (const decision of decisions) {
     for (const violation of decision.violations) {
       violationCounts[violation] = (violationCounts[violation] ?? 0) + 1;
+    }
+    for (const violation of decision.soft_violations ?? []) {
+      softViolationCounts[violation] = (softViolationCounts[violation] ?? 0) + 1;
+    }
+    for (const warning of decision.warning_codes ?? []) {
+      warningCounts[warning] = (warningCounts[warning] ?? 0) + 1;
+    }
+    if (decision.l3_feedback_status) {
+      l3FeedbackCounts[decision.l3_feedback_status] = (l3FeedbackCounts[decision.l3_feedback_status] ?? 0) + 1;
     }
   }
   const providerErrorCounts = countBy(
@@ -286,6 +331,9 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
     provider_error_counts: sortedObject(providerErrorCounts),
     avg_quality_score: avgQualityScore,
     violation_counts: sortedObject(violationCounts),
+    soft_violation_counts: sortedObject(softViolationCounts),
+    warning_counts: sortedObject(warningCounts),
+    l3_feedback_counts: sortedObject(l3FeedbackCounts),
     llm_api_calls: l2Report?.summary?.llm_api_calls ?? decisions.length,
     memory_writes: l2Report?.summary?.memory_writes ?? 0,
     zilliz_writes: l2Report?.summary?.zilliz_writes ?? 0,
@@ -295,6 +343,56 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
     vps_touches: l2Report?.summary?.vps_touches ?? 0,
     github_pushes: l2Report?.summary?.github_pushes ?? 0,
     public_publishes: l2Report?.summary?.public_publishes ?? 0
+  };
+}
+
+function average(values) {
+  return values.length
+    ? Math.round(1000 * values.reduce((sum, value) => sum + Number(value), 0) / values.length) / 1000
+    : 0;
+}
+
+function l1DimensionVerdict({ decisions, hitDecisions }) {
+  if (!hitDecisions.length) return "no_current_l2_sample";
+  const greenYellow = hitDecisions.filter((decision) => decision.pool === "green" || decision.pool === "yellow").length;
+  const advancedMode = hitDecisions.filter((decision) => (
+    ["recheck", "multi_pool"].includes(decision.l1_candidate_mode)
+  )).length;
+  const avgQuality = average(hitDecisions.map((decision) => decision.quality_score));
+  if (greenYellow > 0 && advancedMode > 0) return "positive_for_candidate_pool";
+  if (greenYellow > 0 && avgQuality >= 0.9) return "positive_for_l2_input";
+  if (greenYellow === 0 && decisions.length >= 10) return "not_yet_proven_watch";
+  return "needs_more_samples";
+}
+
+function buildL1SignalDimensionMetrics(decisions) {
+  return {
+    schema_version: "misa.l1_signal_dimension_metrics.v1",
+    sample_count: decisions.length,
+    with_l1_profile_count: decisions.filter((decision) => decision.l1_signal_profile).length,
+    dimensions: Object.entries(L1_DIMENSION_HYPOTHESES).map(([dimension, hypothesis]) => {
+      const hitDecisions = decisions.filter((decision) => decision.l1_dimension_hits?.[dimension] === true);
+      const poolCounts = {
+        green: hitDecisions.filter((decision) => decision.pool === "green").length,
+        yellow: hitDecisions.filter((decision) => decision.pool === "yellow").length,
+        red: hitDecisions.filter((decision) => decision.pool === "red").length
+      };
+      return {
+        dimension,
+        hypothesis,
+        sample_count: hitDecisions.length,
+        hit_rate: roundRate(hitDecisions.length, decisions.length),
+        pool_counts: poolCounts,
+        l4_forward_count: hitDecisions.filter((decision) => decision.l4_forward).length,
+        recheck_or_multi_pool_count: hitDecisions.filter((decision) => (
+          ["recheck", "multi_pool"].includes(decision.l1_candidate_mode)
+        )).length,
+        avg_quality_score: average(hitDecisions.map((decision) => decision.quality_score)),
+        avg_weak_task_count: average(hitDecisions.map((decision) => decision.weakTaskCount)),
+        provider_error_count: hitDecisions.filter((decision) => decision.provider_error).length,
+        verdict: l1DimensionVerdict({ decisions, hitDecisions })
+      };
+    })
   };
 }
 
@@ -352,6 +450,7 @@ export function buildL2L3SelectionAuditReport({
     decisions,
     thresholds: effectiveThresholds
   });
+  const l1SignalDimensionMetrics = buildL1SignalDimensionMetrics(decisions);
 
   return {
     schema_version: "misa.l2_l3_selection_audit.v1",
@@ -367,6 +466,7 @@ export function buildL2L3SelectionAuditReport({
     thresholds: effectiveThresholds,
     summary,
     candidate_recheck: candidateRecheck,
+    l1_signal_dimension_metrics: l1SignalDimensionMetrics,
     l4_handoff: {
       policy: "green_and_yellow_forward_red_spot_check",
       summary_only_by_default: true,
@@ -389,7 +489,8 @@ export function buildL2L3SelectionAuditReport({
         "How many yellow pool items were hard-gate false rejects?",
         "Did red spot checks find missed useful suggestions?",
         "Which gate violation most often causes false rejection?",
-        "Did L4 override the hard gate, and should the gate be tuned?"
+        "Did L4 override the hard gate, and should the gate be tuned?",
+        "Which L1 dimensions produce better L2 drafts, recheck recommendations, or useful duplicate suppression?"
       ]
     },
     safety: {
@@ -483,9 +584,24 @@ export function renderL2L3SelectionAuditMarkdown(result) {
         : ["- none"]
     ),
     "",
+    "## L1 Signal Dimension Metrics",
+    "",
+    `- with_l1_profile_count: ${result.l1_signal_dimension_metrics.with_l1_profile_count}`,
+    ...result.l1_signal_dimension_metrics.dimensions.map((item) => (
+      `- ${item.dimension}: samples=${item.sample_count}, green/yellow/red=${item.pool_counts.green}/${item.pool_counts.yellow}/${item.pool_counts.red}, recheck_or_multi=${item.recheck_or_multi_pool_count}, avg_quality=${item.avg_quality_score}, avg_weak=${item.avg_weak_task_count}, verdict=${item.verdict}`
+    )),
+    "",
     "## Violations",
     "",
     ...Object.entries(result.summary.violation_counts).map(([key, count]) => `- ${key}: ${count}`),
+    "",
+    "## L3 Feedback",
+    "",
+    ...(
+      Object.keys(result.summary.l3_feedback_counts ?? {}).length
+        ? Object.entries(result.summary.l3_feedback_counts).map(([key, count]) => `- ${key}: ${count}`)
+        : ["- none"]
+    ),
     "",
     "## L4 Preview",
     ""
