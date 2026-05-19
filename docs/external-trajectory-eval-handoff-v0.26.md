@@ -3154,3 +3154,596 @@ Next-window recovery phrase:
 
 当前结论：L1 已经从标签变成真实控制输入；真实 10 条 Gemini Flash 跑完后，调用数 12 -> 11，但质量没有提升，green 10 -> 9，红样本是 PyPSA__linopy-79。下一步不要再堆 L4 LLM 审判，先修 L3 repair prompt / gate，让 hard_fail 重跑不要重复同样弱任务。
 ```
+
+## L3 Feedback Loop Implementation Addendum 2026-05-19
+
+This window implemented the first low-risk feedback-loop step inspired by the
+minimal ReAct loop review. It does not enable automatic L1 policy mutation.
+
+What changed:
+
+```text
+L3 failed gate -> task-level repair observation -> next L2 repair prompt
+L3 exhausted repair -> suggestion-only L1 feedback record
+```
+
+The new L3 repair observation records:
+
+```text
+- violations
+- actionableTaskCount / weakTaskCount
+- passing task indices
+- rewrite task indices
+- missing anchor types per failed task
+- repair rules for the next L2 attempt
+```
+
+The L1 feedback record is deliberately suggestion-only. It may recommend:
+
+```text
+- candidate_count for a future run
+- a more conservative handoff_floor
+- repair_prompt_mode=task_level_l3_observation
+```
+
+It does not automatically change:
+
+```text
+- L1 thresholds
+- global L2 prompt defaults
+- gate weights
+- route/winner authority
+- runtime handoff authority
+```
+
+Files changed:
+
+```text
+scripts/lib/external-trajectory-llm-work-order-draft.mjs
+scripts/lib/l2-l3-selection-audit.mjs
+test/external-trajectory-llm-work-order-draft.test.mjs
+docs/l2-l3-selection-audit-v0.30.md
+docs/external-trajectory-eval-handoff-v0.26.md
+```
+
+Initial verification in this window was intentionally limited:
+
+```text
+node --check scripts/lib/external-trajectory-llm-work-order-draft.mjs
+node --check scripts/lib/l2-l3-selection-audit.mjs
+node --check test/external-trajectory-llm-work-order-draft.test.mjs
+=> syntax pass
+```
+
+Later local verification in the same window:
+
+```text
+npm test
+=> 181 tests / 180 pass / 0 fail / 1 skipped
+
+npm run precheck
+=> pass
+=> static 4/4, contracts 103/103, current-line 25/25,
+   bridges 21/21, smoke 12/12
+
+No real LLM, no VPS, no GitHub push.
+```
+
+Local sample quant run:
+
+```text
+Run path:
+runs/l3-feedback-local-quant-20260519-131531/
+
+Input:
+7 existing local online-shadow artifacts from
+runs/external-trajectory-online-shadow/2026-05-16T-full-local-perception-digests/
+
+Pipeline:
+L2 mock work-order draft -> L3 selection audit -> L4 mock handoff review
+
+Summary:
+input_count=7
+total_l2_samples=22
+total_l2_passed=22
+total_l2_failed=0
+total_llm_api_calls=0
+total_l3_green=22
+total_l3_yellow=0
+total_l3_red=0
+total_l4_samples=22
+total_l4_accept=22
+total_l4_no_context_executable=22
+total_l1_feedback_suggestion=0
+```
+
+Extended local history-report quant run:
+
+```text
+Run path:
+runs/l3-feedback-local-history-quant-2026-05-19T05-43-20-746Z/
+
+Input:
+10 existing local online-shadow-report*.json files under runs/
+
+Coverage:
+distinct_source_count=20
+total_l2_samples=200
+PyPSA__linopy-79 covered in 10 reports
+
+Pipeline:
+L2 mock work-order draft -> L3 selection audit -> L4 mock handoff review
+
+Summary:
+total_l2_failed=0
+total_llm_api_calls=0
+total_l3_green=200
+total_l3_yellow=0
+total_l3_red=0
+total_l4_samples=200
+total_l4_accept=200
+total_l4_no_context_executable=200
+total_l1_feedback_suggestion=0
+```
+
+Interpretation:
+
+```text
+The normal local/mock path is still clean after the feedback-loop change.
+The quant runs did not exercise PyPSA-style real-model red repair behavior
+because the mock provider returns ideal drafts. The negative repair behavior is
+covered by unit tests, and PyPSA is covered in the extended local history run,
+but real repair quality still requires the later 10-sample Gemini Flash rerun.
+```
+
+Real 10-sample Gemini Flash VPS rerun:
+
+```text
+Run path pulled locally:
+runs/l3-feedback-real-gemini-vps-2026-05-19T14-01-57/
+
+Remote temp path:
+/tmp/misa-l3-feedback-real-gemini-20260519-140157/
+
+Input:
+runs/l2-l3-l1-signal-count2-20/2026-05-18-real-gemini-flash/online-shadow-report.sample20.l1.json
+
+Provider:
+hermes-delegate novai/gemini-3-flash-preview
+
+Boundary:
+Temporary /tmp run on VPS only.
+Local current worktree snapshot was uploaded to the temp repo.
+No production service changes.
+No memory writes.
+No Zilliz writes.
+No embeddings.
+No route/winner changes.
+No GitHub push.
+No public publish.
+```
+
+Rerun summary:
+
+```text
+l2_exit=1
+l3_exit=0
+l4_exit=0
+
+requested_candidate_count_histogram={"1":8,"2":2}
+l1_control_followed_count=10
+l1_policy_violation_count=0
+llm_api_calls=12
+
+L2 passed_gate=8
+L2 failed_gate=2
+L3 green=8
+L3 yellow=1
+L3 red=1
+avg_quality_score=0.966
+
+L1 feedback suggestions=2
+candidate_count upgrade suggestions=2
+handoff_floor upgrade suggestions=1
+```
+
+PyPSA result:
+
+```text
+swe-rebench-openhands:PyPSA__linopy-79
+pool=green
+gate_class=near_pass
+quality_score=0.975
+l3_feedback_status=accepted_first_try
+repeated_failure_shape=false
+llm_api_calls=1
+```
+
+Interpretation:
+
+```text
+The PyPSA red sample from the previous L1-control run is fixed in this rerun.
+It no longer repeats the hard_fail shape.
+
+This is not an overall quality lift for the full 10-sample batch:
+- previous L1-control run: green=9, yellow=0, red=1, avg_quality=0.987, calls=11
+- this rerun: green=8, yellow=1, red=1, avg_quality=0.966, calls=12
+
+The failure moved:
+- numpy__numpydoc-101 is now red with repeated failure shape
+- alexgolec__tda-api-37 is yellow/reviewable and produced suggestion-only L1 feedback
+
+The new feedback loop is doing useful accounting:
+L3 repair observations reached the real L2 repair prompt, and exhausted repairs
+now produce suggestion-only L1 feedback. But it is not enough yet to call this
+a stable quality improvement.
+```
+
+L3 gate diagnosis after the VPS rerun:
+
+```text
+The repair loop did reach the real model.
+The problem was narrower: L3's actionability gate did not recognize several
+clear no-effect expectation phrases returned by Gemini.
+
+Examples that humans can understand but the old gate under-counted:
+- "without triggering a memory-write request"
+- "suppression of all memory-write requests and Zilliz updates"
+- "empty write-set for Zilliz collection updates and embedding generation calls"
+- "enforcement of a single candidate count"
+
+So numpy__numpydoc-101 and alexgolec__tda-api-37 were mostly false rejects from
+the gate vocabulary, not proof that the L3 feedback idea failed.
+```
+
+Fix applied:
+
+```text
+scripts/lib/external-trajectory-llm-work-order-draft.mjs
+- broadened concrete expectation recognition for no-effect wording
+- added field recognition for candidate_count / l2_candidate_mode / write-set /
+  shadow contract / embedding generation wording
+
+test/external-trajectory-llm-work-order-draft.test.mjs
+- added a regression test for concrete no-effect expectation wording
+```
+
+Re-gate of the pulled real Gemini outputs after the fix:
+
+```text
+Artifact:
+runs/l3-feedback-real-gemini-vps-2026-05-19T14-01-57/output/regate-after-expectation-pattern-fix.json
+
+No model calls.
+Same pulled real Gemini drafts.
+
+old_pass=8
+old_fail=2
+old_avg_quality=0.966
+
+new_pass=10
+new_fail=0
+new_avg_quality=0.995
+llm_api_calls=0
+```
+
+Historical gate-intercept replay after the fix:
+
+```text
+Artifact:
+runs/l2-gate-intercept-analysis/2026-05-19-after-expectation-pattern-fix/gate-intercept-analysis.json
+
+No model calls.
+Local replay over existing historical L2 reports.
+
+l2_report_count=136
+raw_result_count=1551
+deduped_result_count=360
+unique_source_count=36
+
+Old gate:
+pass=189
+blocked=171
+
+New gate:
+pass=205
+near_pass=81
+hard_fail=74
+
+Updated pools:
+green=286
+yellow=4
+red=70
+
+old_blocked_near_pass_count=79
+old_blocked_pass_count=31
+old_blocked_hard_fail_count=61
+old_blocked_salvageable_rate_pct=64.3
+old_blocked_strong_quality_rate_pct=66.7
+avg_old_blocked_quality_score=0.935
+verdict=old_hard_gate_was_too_strict_for_near_pass_work_orders
+```
+
+Interpretation:
+
+```text
+The old hard gate was too strict for this corpus. It blocked 171 historical
+outputs, and 64.3% of those blocked outputs were salvageable after replay.
+
+The fix is not simply relaxing the gate:
+- 74 items still classify as hard_fail
+- 70 items still stay red
+- command whitelist, context anchors, acceptance criteria, and task
+  actionability still block bad work orders
+
+So the useful change is narrower:
+the gate now accepts concrete no-effect wording when the work order still names
+files/tests, source/evidence refs, fields/boundaries, and expected results.
+It does not accept vague policy summaries as executable work orders.
+```
+
+Still not changed in this window:
+
+```text
+- no GitHub push
+- no production/service changes
+```
+
+Next work:
+
+```text
+1. If live model confirmation is needed, rerun the same 10 Gemini samples with
+   the updated gate and compare against the pulled VPS run.
+2. Decide whether L1 should shadow-promote repeated medium-risk
+   damping/evidence_trace failures from single candidate to candidate_count=2.
+3. Treat automatic L1 threshold/prompt/handoff mutation as a later shadow
+   experiment, not as enabled behavior.
+```
+
+Next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution L3->L2/L1 反馈闭环。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L3 Feedback Loop Implementation Addendum 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+当前本地只落地低风险闭环：L3 task-level observation 反哺 L2 repair prompt，并产出 suggestion-only L1 feedback；没有自动改 L1 阈值、没有自动升级正式 handoff floor。已跑本地全量测试、precheck、7 份 online-shadow artifact 的 22 条 mock L2/L3/L4 量化、10 份历史 online-shadow-report 的 200 条 mock L2/L3/L4 量化，以及 VPS 真实 10 条 Gemini Flash 复跑。真实复跑已拉回 runs/l3-feedback-real-gemini-vps-2026-05-19T14-01-57/。PyPSA__linopy-79 已从红转绿。随后发现 numpy__numpydoc-101 和 alexgolec__tda-api-37 多数是 L3 gate 词表误判：旧 gate 不认 "without triggering"、"suppression"、"empty write-set"、"enforcement" 等明确 no-effect 预期。已修 gate 词表并重判同一批真实输出：old_pass=8/10 -> new_pass=10/10，new_avg_quality=0.995，llm_api_calls=0。没有 push、没有生产服务变化。下一步若继续真实验证，再跑一轮 10 条 Gemini，确认新 gate 在 live L2 生成链里稳定。
+已额外跑历史 L2 gate-intercept replay：136 份历史 L2 report、1551 条 raw result、360 条去重结果；旧 gate blocked=171，新 gate pass=205 / near_pass=81 / hard_fail=74，updated pools green=286 / yellow=4 / red=70；旧 blocked 里 64.3% 是可救回的 near-pass/pass，说明旧 gate 偏硬，但新 gate 仍保留 70 个 red，不是简单放水。
+```
+
+### L1 Alpha Simulation Addendum 2026-05-19
+
+Purpose:
+
+```text
+Find cheap local alpha before spending new Gemini calls:
+- which samples deserve candidate_count=2
+- which samples deserve a more conservative handoff floor
+- which fixed probe set should be reused for live Gemini comparison
+```
+
+New local command:
+
+```bash
+npm run selection-audit:l1-alpha -- \
+  --adaptation-report runs/l1-alpha-simulation/2026-05-19-swe-stratified500/adapt/external-trajectory-adaptation.json \
+  --out-dir runs/l1-alpha-simulation/2026-05-19-swe-stratified500/l1-alpha
+```
+
+Source intake:
+
+```text
+Dataset root:
+F:\misa-agent-datasets\agent-trajectories
+
+Dataset:
+swe-rebench-openhands
+
+Sidecar:
+sanitized-trajectories.stratified-500.jsonl
+
+Adapter output:
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/adapt/external-trajectory-adaptation.json
+
+Adapter result:
+samples=500
+issue_count=500
+adopted=249
+rejected=251
+safety_regressions=0
+llm_api_calls=0
+```
+
+L1 alpha result:
+
+```text
+Artifact:
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/l1-alpha/l1-alpha-simulation.json
+
+sample_count=500
+l2_eligible_count=500
+l1_mode_counts={"recheck":244,"single":256}
+candidate_count_hint_counts={"1":256,"2":244}
+risk_level_counts={"high":244,"medium":256}
+uncertainty_level_counts={"low":256,"medium":244}
+evidence_density_counts={"high":500}
+simulated_handoff_floor_counts={"no_context_agent":256,"primary_agent":244}
+llm_api_calls=0
+external_api_calls=0
+```
+
+Interpretation:
+
+```text
+candidate_count=2 has signal, but it should not become the global default.
+It belongs to L1 recheck / high-risk ambiguous samples.
+
+primary_agent handoff has signal, but it should not replace no_context_agent
+for every sample. It belongs to the high-risk safety-boundary subset.
+
+The useful split is:
+- cheap single/no_context path for 256 lower-risk samples
+- candidate_count=2/primary_agent path for 244 higher-risk samples
+```
+
+Fixed Gemini probe set:
+
+```text
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/l1-alpha/l1-alpha-simulation.md
+
+selected_source_ids=15
+
+The probe set deliberately mixes:
+- high-risk recheck / policy-or-safety samples
+- light single damping-noise samples
+- resolved=false damping samples
+- primary_agent floor samples
+```
+
+Local mock L2/L3 probe over the fixed 15:
+
+```text
+Artifact:
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/probe-mock-l2-selected15/external-trajectory-llm-work-order-draft.json
+
+No real model calls.
+
+samples=15
+candidate_count_policy=l1_control
+candidate_mode=l1_controlled_mixed
+requested_candidate_count_histogram={"1":9,"2":6}
+l1_dynamic_recheck_count=6
+light_single_count=9
+l1_handoff_floor_counts={"primary_agent":6,"no_context_agent":9}
+candidate_count=21
+winner_selected=15
+passed_gate=15
+failed_gate=0
+avg_quality_score=1
+llm_api_calls=0
+```
+
+Regression coverage added:
+
+```text
+test/l1-alpha-simulation.test.mjs
+
+The test proves the new L1 alpha CLI can:
+- separate high-risk candidate_count=2 pressure from normal single-candidate work
+- separate conservative handoff pressure from no-context handoff
+- keep llm_api_calls=0
+- avoid VPS/GitHub/production side effects
+```
+
+Verification:
+
+```text
+node --test test/l1-alpha-simulation.test.mjs
+PASS
+
+npm test
+tests=183
+pass=182
+fail=0
+skipped=1
+
+npm run precheck
+PASS
+
+git diff --check
+PASS, with Windows LF->CRLF warnings only
+```
+
+Current judgment:
+
+```text
+The alpha path is useful and not overbuilt yet.
+It is still a shadow analysis tool: it does not mutate L1 thresholds, prompts,
+gate weights, handoff authority, or runtime behavior.
+
+Next proof step:
+Run real Gemini on the same fixed 15 probe source_ids and compare against this
+local mock baseline plus the earlier real 10-sample run.
+```
+
+Live Gemini A/B verification on the fixed 15 probe set:
+
+```text
+Local pulled artifact:
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/real-gemini-vps-ab/comparison.json
+
+Remote temp path:
+/tmp/misa-20260519-l1-alpha-gemini15
+
+Provider:
+hermes-delegate novai/gemini-3-flash-preview
+
+No production/service changes.
+No memory writes.
+No Zilliz writes.
+No embeddings.
+No route/winner changes.
+No GitHub push.
+```
+
+A/B result:
+
+```text
+A: all candidate_count=1
+samples=15
+candidate_count=15
+passed_gate=14
+failed_gate=1
+avg_quality_score=0.986
+llm_api_calls=19
+l3_recheck_triggered_count=4
+l3_accepted_after_recheck_count=3
+l3_exhausted_no_value_count=1
+failure=swe-rebench-openhands:numpy__numpydoc-101
+
+B: L1-controlled mixed routing
+samples=15
+requested_candidate_count_histogram={"1":9,"2":6}
+candidate_count=21
+passed_gate=15
+failed_gate=0
+avg_quality_score=0.992
+llm_api_calls=15
+l3_recheck_triggered_count=0
+l3_exhausted_no_value_count=0
+```
+
+Delta:
+
+```text
+B - A:
+avg_quality_score=+0.006
+failed_gate_count=-1
+llm_api_calls=-4
+candidate_count=+6
+```
+
+Interpretation:
+
+```text
+This fixed 15-probe real Gemini run supports the L1 alpha:
+L1-controlled mixed routing beat the all-single baseline. It removed the numpy
+red sample, raised average quality, and used fewer API calls despite asking for
+two candidates on six higher-risk samples.
+
+The call-count improvement happened because all-single triggered repair reruns:
+4 L3 rechecks, 3 accepted after recheck, and 1 exhausted failure. The L1 mixed
+run passed first try for every sample.
+
+This is useful evidence, but still scoped:
+- it validates this fixed 15-probe set;
+- it does not yet prove the rule across the whole 500 sample corpus;
+- it still does not enable automatic L1 threshold or handoff mutation.
+```
+
+Updated next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution L1/L2/L3 反馈闭环。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L1 Alpha Simulation Addendum 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+当前本地已经完成两条不花 LLM 的校准：1）历史 L2 gate-intercept replay 证明旧 gate 误杀偏多，新 gate 更准；2）SWE-rebench stratified-500 经过 adapter -> L1 alpha simulation，得到 256 条 single/no_context 和 244 条 recheck/primary_agent，并固定 15 条 Gemini probe。mock L2/L3 跑这 15 条：samples=15，candidate_count_histogram={"1":9,"2":6}，passed_gate=15，failed_gate=0，llm_api_calls=0。新增 test/l1-alpha-simulation.test.mjs，npm test/precheck 均通过。还没有 push、没有 commit、没有新 Gemini 调用、没有 VPS/生产变化。下一步若继续验证，用同一批 15 条 source_id 跑真实 Gemini，对比质量和调用数。
+已在 VPS /tmp 跑完同一批 15 条真实 Gemini A/B：A=all candidate_count=1，pass=14/15，fail=1，avg_quality=0.986，llm_api_calls=19，失败是 numpy__numpydoc-101；B=L1-controlled mixed，candidate_count_histogram={"1":9,"2":6}，pass=15/15，fail=0，avg_quality=0.992，llm_api_calls=15。结果已拉回 runs/l1-alpha-simulation/2026-05-19-swe-stratified500/real-gemini-vps-ab/。结论：这批固定 probe 上，L1 分流 alpha 成立，但仍是 shadow 证据，不自动改 L1 阈值或 handoff 权限。
+```

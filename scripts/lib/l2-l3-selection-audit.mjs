@@ -188,6 +188,7 @@ export function classifyL2L3PoolDecision(item, {
   const l1PolicyViolations = l1PolicyViolationsForItem(item, l1Control, candidateDecision);
   const l1ControlFollowed = l1Control ? l1PolicyViolations.length === 0 : null;
   const l3Feedback = item?.l3_feedback ?? null;
+  const l1FeedbackSuggestion = item?.l1_feedback_suggestion ?? l3Feedback?.l1_feedback_suggestion ?? null;
   const gateOk = Boolean(item?.gate?.ok);
   const suppressed = Boolean(item?.suppressed || gateClass === "suppressed" || candidateDecision?.skip_l2);
 
@@ -238,6 +239,7 @@ export function classifyL2L3PoolDecision(item, {
       l1_handoff_floor: l1Control?.handoff_floor ?? null,
       l1_control_followed: l1ControlFollowed,
       l1_policy_violations: l1PolicyViolations,
+      l1_feedback_suggestion: l1FeedbackSuggestion,
       l3_feedback: l3Feedback,
       l3_feedback_status: l3Feedback?.final_status ?? null,
       safety_counters: {
@@ -328,6 +330,7 @@ export function classifyL2L3PoolDecision(item, {
     l1_handoff_floor: l1Control?.handoff_floor ?? null,
     l1_control_followed: l1ControlFollowed,
     l1_policy_violations: l1PolicyViolations,
+    l1_feedback_suggestion: l1FeedbackSuggestion,
     l3_feedback: l3Feedback,
     l3_feedback_status: l3Feedback?.final_status ?? null,
     safety_counters: {
@@ -451,6 +454,13 @@ function summarizeDecisions({ decisions, l2Report, thresholds, batchSize }) {
       (violation) => violation
     )),
     l1_handoff_floor_counts: sortedObject(l1HandoffFloorCounts),
+    l1_feedback_suggestion_count: decisions.filter((decision) => decision.l1_feedback_suggestion).length,
+    l1_feedback_candidate_count_upgrade_count: decisions.filter((decision) => (
+      decision.l1_feedback_suggestion?.suggestion?.candidate_count
+    )).length,
+    l1_feedback_handoff_floor_upgrade_count: decisions.filter((decision) => (
+      decision.l1_feedback_suggestion?.suggestion?.handoff_floor
+    )).length,
     avg_quality_score: avgQualityScore,
     violation_counts: sortedObject(violationCounts),
     soft_violation_counts: sortedObject(softViolationCounts),
@@ -684,6 +694,9 @@ export function renderL2L3SelectionAuditMarkdown(result) {
     `- l1_control_followed_count: ${result.summary.l1_control_followed_count}`,
     `- l1_policy_violation_count: ${result.summary.l1_policy_violation_count}`,
     `- l1_handoff_floor_counts: ${JSON.stringify(result.summary.l1_handoff_floor_counts ?? {})}`,
+    `- l1_feedback_suggestion_count: ${result.summary.l1_feedback_suggestion_count}`,
+    `- l1_feedback_candidate_count_upgrade_count: ${result.summary.l1_feedback_candidate_count_upgrade_count}`,
+    `- l1_feedback_handoff_floor_upgrade_count: ${result.summary.l1_feedback_handoff_floor_upgrade_count}`,
     `- avg_quality_score: ${result.summary.avg_quality_score}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
     `- memory_writes/zilliz_writes/embedding_creations: ${result.summary.memory_writes}/${result.summary.zilliz_writes}/${result.summary.embedding_creations}`,
@@ -744,7 +757,10 @@ export function renderL2L3SelectionAuditMarkdown(result) {
   }
   lines.push("", "## Decisions", "");
   for (const decision of result.decisions) {
-    lines.push(`- ${decision.source_id}: pool=${decision.pool}, l4=${decision.l4_review_mode}, quality=${decision.quality_score}, reason=${decision.reason_codes.join(", ")}`);
+    const l1Feedback = decision.l1_feedback_suggestion
+      ? `, l1_feedback=${JSON.stringify(decision.l1_feedback_suggestion.suggestion)}`
+      : "";
+    lines.push(`- ${decision.source_id}: pool=${decision.pool}, l4=${decision.l4_review_mode}, quality=${decision.quality_score}${l1Feedback}, reason=${decision.reason_codes.join(", ")}`);
   }
   return `${lines.join("\n")}\n`;
 }

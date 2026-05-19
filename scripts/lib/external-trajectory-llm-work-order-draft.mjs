@@ -76,12 +76,16 @@ const SOFT_GATE_VIOLATIONS = Object.freeze([
 const TASK_EXPECTATION_PATTERNS = Object.freeze([
   /must|mandatory|required|only|preserve|remain|keep|blocked|false|zero|reject|pass|fail|contains|equals|does not|do not|unauthorized|human-in-the-loop/i,
   /draft_no_write|suggestion_only|classification|successful gating|no[-\s](?:write|publish|state mutation)|side-effects|restricted/i,
+  /without\s+(?:triggering|creating|writing|modifying|changing|calling|touching|publishing|executing|impacting)/i,
+  /suppression|suppressed|prevents?|blocks?|enforcement|enforced|empty\s+write-set|write-set\s+(?:is\s+)?empty/i,
+  /not\s+(?:the\s+)?primary|not\s+execution|no\s+(?:active\s+)?write|no\s+external\s+effects?|no\s+memory|no\s+Zilliz|no\s+embedding/i,
   /必须|只能|仅|保留|保持|阻止|拒绝|通过|失败|包含|等于|不得|不允许|不会|不写|不改|不执行/
 ]);
 
 const TASK_FIELD_PATTERNS = Object.freeze([
   /source_id|readout_family|route_hint|status|authority|execution_policy|forbidden_scope|allowed_verification_commands/i,
   /route|winner|memory|Zilliz|embedding|llm_api_calls|external_api_calls|persistent_memory|publication/i,
+  /candidate_count|candidate count|l2_candidate_mode|write-set|write set|shadow buffer|shadow contract|primary execution memory|state updates|collection updates|embedding generation/i,
   /信号|字段|状态|权限|边界|路由|胜者|发布|内存|证据|白名单/
 ]);
 
@@ -107,6 +111,8 @@ const MULTI_CANDIDATE_STRATEGIES = Object.freeze([
     focus: "counterexample checks, low-quality traps, and false-positive prevention"
   }
 ]);
+
+const L3_REPAIR_TARGET_ACTIONABLE_TASKS = 4;
 
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -150,6 +156,70 @@ function countHistogram(values) {
     .map((value) => String(value))
     .sort((left, right) => Number(left) - Number(right))
     .map((value) => [value, values.filter((item) => String(item) === value).length]));
+}
+
+function missingAnchorTypesForTask(detail = {}) {
+  const missing = [];
+  if (!detail.hasFileOrTest) missing.push("file_or_test");
+  if (!detail.hasSourceOrRef) missing.push("source_or_evidence_ref");
+  if (!detail.hasSignal) missing.push("signal_or_task_focus");
+  if (!detail.hasField) missing.push("field_or_boundary");
+  if (!detail.hasExpectation) missing.push("explicit_expected_result");
+  return missing;
+}
+
+export function buildL3RepairObservation(gate) {
+  if (!gate || gate.ok) return null;
+  const checks = gate.checks ?? {};
+  const taskDetails = Array.isArray(checks.taskActionability) ? checks.taskActionability : [];
+  const failedTasks = taskDetails
+    .map((detail, index) => ({
+      task_index: index + 1,
+      task: detail.task,
+      missing_anchor_types: missingAnchorTypesForTask(detail),
+      anchor_status: {
+        has_file_or_test: Boolean(detail.hasFileOrTest),
+        has_source_or_evidence_ref: Boolean(detail.hasSourceOrRef),
+        has_signal_or_task_focus: Boolean(detail.hasSignal),
+        has_field_or_boundary: Boolean(detail.hasField),
+        has_explicit_expected_result: Boolean(detail.hasExpectation)
+      }
+    }))
+    .filter((_, index) => taskDetails[index]?.actionable !== true);
+  const passingTaskIndices = taskDetails
+    .map((detail, index) => (detail.actionable ? index + 1 : null))
+    .filter(Boolean);
+  const actionableTaskCount = Number(checks.actionableTaskCount ?? 0);
+  const weakTaskCount = Number(checks.weakTaskCount ?? 0);
+  return {
+    schema_version: "misa.l3_repair_observation.v1",
+    gate_class: gate.gate_class ?? "unknown",
+    quality_score: Number(gate.quality_score ?? 0),
+    violations: gate.violations ?? [],
+    soft_violations: gate.soft_violations ?? [],
+    warning_codes: gate.warning_codes ?? [],
+    counts: {
+      actionableTaskCount,
+      weakTaskCount,
+      target_actionableTaskCount: L3_REPAIR_TARGET_ACTIONABLE_TASKS,
+      required_new_actionable_tasks: Math.max(0, L3_REPAIR_TARGET_ACTIONABLE_TASKS - actionableTaskCount)
+    },
+    passing_task_indices: passingTaskIndices,
+    rewrite_task_indices: failedTasks.map((task) => task.task_index),
+    failed_tasks: failedTasks,
+    repair_rules: [
+      "Preserve passing tasks unless they conflict with required boundaries.",
+      "Rewrite every failed task so it names a file/test target, source_id or evidence_ref, field/signal/boundary, and explicit expected result.",
+      "Do not answer with a policy summary; produce an engineer-executable work-order draft.",
+      "Do not add live execution, memory, Zilliz, embedding, VPS, GitHub, public posting, route, or winner effects."
+    ]
+  };
+}
+
+function renderL3RepairObservation(gate) {
+  const observation = buildL3RepairObservation(gate);
+  if (!observation) return "";
+  return `\nL3 repair observation from the previous draft:\n${JSON.stringify(observation, null, 2)}\nUse this observation like tool feedback: keep the passing tasks if safe, rewrite the failed tasks, and do not repeat the same weak task shape.\n`;
 }
 
 function l1TriggeredCandidateCount(profile) {
@@ -535,7 +605,7 @@ function promptForPacket(packet, { previousFailure, candidateCount = DEFAULT_LLM
   };
 
   const retryText = previousFailure
-    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.\n`
+    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.${renderL3RepairObservation(previousFailure)}\n`
     : "";
 
   const singleReturnShape = `{
@@ -752,7 +822,7 @@ function promptForHermesDelegate(packet, {
   const auditPacket = buildHermesDelegateAuditPacket(packet, { candidateCount: requestedCandidateCount });
   const strategies = candidateStrategies(requestedCandidateCount);
   const retryText = previousFailure
-    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.\n`
+    ? `\nPrevious output failed the local gate: ${previousFailure.violations.join(", ")}. Return a corrected JSON object only.${renderL3RepairObservation(previousFailure)}\n`
     : "";
 
   return `You are a fresh Hermes L2 no-context audit sub-agent.
@@ -1445,6 +1515,84 @@ function l3FeedbackStatus({ gate, providerError, draftRuns, maxDraftRuns }) {
   return "l3_recheck_pending";
 }
 
+function sameFailureShape(left, right) {
+  if (!left || !right) return false;
+  const leftViolations = [...(left.violations ?? [])].sort().join("|");
+  const rightViolations = [...(right.violations ?? [])].sort().join("|");
+  return left.gate_class === right.gate_class
+    && leftViolations === rightViolations
+    && Number(left.actionableTaskCount ?? -1) === Number(right.actionableTaskCount ?? -2)
+    && Number(left.weakTaskCount ?? -1) === Number(right.weakTaskCount ?? -2);
+}
+
+function repeatedFailureShape(attempts) {
+  if (!Array.isArray(attempts) || attempts.length < 2) return false;
+  return sameFailureShape(attempts[attempts.length - 2], attempts[attempts.length - 1]);
+}
+
+function nextConservativeHandoffFloor(floor) {
+  if (floor === "no_context_agent") return "primary_agent";
+  if (floor === "primary_agent") return "human_owner";
+  return null;
+}
+
+function buildL1FeedbackSuggestion({
+  packet,
+  candidateCountDecision,
+  gate,
+  attempts,
+  finalStatus
+}) {
+  if (!gate || gate.ok || !["exhausted_no_value", "exhausted_reviewable_hard_fail"].includes(finalStatus)) {
+    return null;
+  }
+  const checks = gate.checks ?? {};
+  const repeated = repeatedFailureShape(attempts);
+  const currentCandidateCount = Number(candidateCountDecision?.requested_candidate_count ?? 1);
+  const currentHandoffFloor = candidateCountDecision?.l1_control?.handoff_floor ?? "unknown";
+  const suggestedCandidateCount = currentCandidateCount < 2 ? 2 : null;
+  const suggestedHandoffFloor = repeated ? nextConservativeHandoffFloor(currentHandoffFloor) : null;
+  const violations = gate.violations ?? [];
+  if (!suggestedCandidateCount && !suggestedHandoffFloor && !violations.length) return null;
+
+  const profile = packet.record.l1_signal_profile ?? {};
+  const reasonCodes = [];
+  if (suggestedCandidateCount) reasonCodes.push("single_candidate_failed_l3_recheck");
+  if (suggestedHandoffFloor) reasonCodes.push("repeated_failure_shape_conservative_handoff_floor");
+  for (const violation of violations) reasonCodes.push(`l3_violation:${violation}`);
+
+  return {
+    schema_version: "misa.l1_feedback_suggestion.v1",
+    authority: "suggestion_only",
+    source_id: packet.source_id,
+    match: {
+      signal_family: profile.signal_family ?? null,
+      strategy_axes: profile.strategy_axes ?? [],
+      risk_level: profile.risk_level ?? null,
+      evidence_density: profile.evidence_density ?? null,
+      uncertainty_level: profile.uncertainty_level ?? null,
+      route_hint: packet.workOrder.route_hint ?? profile.route_hint ?? null,
+      l1_candidate_mode: profile.l2_candidate_mode ?? null
+    },
+    observed_l3_result: {
+      final_status: finalStatus,
+      repeated_failure_shape: repeated,
+      gate_class: gate.gate_class ?? null,
+      quality_score: gate.quality_score ?? null,
+      violations,
+      actionableTaskCount: Number(checks.actionableTaskCount ?? 0),
+      weakTaskCount: Number(checks.weakTaskCount ?? 0)
+    },
+    suggestion: {
+      candidate_count: suggestedCandidateCount,
+      handoff_floor: suggestedHandoffFloor,
+      repair_prompt_mode: "task_level_l3_observation"
+    },
+    reason_codes: [...new Set(reasonCodes)],
+    promotion_boundary: "record-only feedback; do not auto-mutate L1 thresholds, global prompts, gate weights, or runtime authority"
+  };
+}
+
 async function draftOnePacket({
   packet,
   repoRoot,
@@ -1607,7 +1755,8 @@ async function draftOnePacket({
         soft_violations: gate.soft_violations,
         warning_codes: gate.warning_codes,
         actionableTaskCount: gate.checks.actionableTaskCount,
-        weakTaskCount: gate.checks.weakTaskCount
+        weakTaskCount: gate.checks.weakTaskCount,
+        repair_observation: buildL3RepairObservation(gate)
       });
       break;
     }
@@ -1648,7 +1797,8 @@ async function draftOnePacket({
       soft_violations: gate.soft_violations,
       warning_codes: gate.warning_codes,
       actionableTaskCount: gate.checks.actionableTaskCount,
-      weakTaskCount: gate.checks.weakTaskCount
+      weakTaskCount: gate.checks.weakTaskCount,
+      repair_observation: buildL3RepairObservation(gate)
     });
     if (gate.ok) break;
     if (attempt + 1 >= maxDraftRuns) break;
@@ -1659,6 +1809,13 @@ async function draftOnePacket({
     providerError,
     draftRuns: l3FeedbackAttempts.length,
     maxDraftRuns
+  });
+  const l1FeedbackSuggestion = buildL1FeedbackSuggestion({
+    packet,
+    candidateCountDecision,
+    gate,
+    attempts: l3FeedbackAttempts,
+    finalStatus: finalL3FeedbackStatus
   });
 
   return {
@@ -1675,8 +1832,11 @@ async function draftOnePacket({
       final_status: finalL3FeedbackStatus,
       final_gate_class: gate?.gate_class ?? "unknown",
       no_value_after_recheck: finalL3FeedbackStatus === "exhausted_no_value",
+      repeated_failure_shape: repeatedFailureShape(l3FeedbackAttempts),
+      l1_feedback_suggestion: l1FeedbackSuggestion,
       attempts: l3FeedbackAttempts
     },
+    l1_feedback_suggestion: l1FeedbackSuggestion,
     candidate_selection: candidateSelection,
     packet: {
       source_class: packet.context.source_class,
@@ -1863,6 +2023,16 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       l3_exhausted_no_value_count: results.filter((result) => (
         result.l3_feedback?.final_status === "exhausted_no_value"
       )).length,
+      l3_repeated_failure_shape_count: results.filter((result) => (
+        result.l3_feedback?.repeated_failure_shape
+      )).length,
+      l1_feedback_suggestion_count: results.filter((result) => result.l1_feedback_suggestion).length,
+      l1_feedback_candidate_count_upgrade_count: results.filter((result) => (
+        result.l1_feedback_suggestion?.suggestion?.candidate_count
+      )).length,
+      l1_feedback_handoff_floor_upgrade_count: results.filter((result) => (
+        result.l1_feedback_suggestion?.suggestion?.handoff_floor
+      )).length,
       provider_error_count: results.filter((result) => result.provider_error).length,
       avg_quality_score: generatedResults.length
         ? Math.round(1000 * generatedResults.reduce((sum, result) => sum + result.gate.quality_score, 0) / generatedResults.length) / 1000
@@ -1928,6 +2098,10 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
     `- l3_recheck_triggered_count: ${result.summary.l3_recheck_triggered_count}`,
     `- l3_accepted_after_recheck_count: ${result.summary.l3_accepted_after_recheck_count}`,
     `- l3_exhausted_no_value_count: ${result.summary.l3_exhausted_no_value_count}`,
+    `- l3_repeated_failure_shape_count: ${result.summary.l3_repeated_failure_shape_count}`,
+    `- l1_feedback_suggestion_count: ${result.summary.l1_feedback_suggestion_count}`,
+    `- l1_feedback_candidate_count_upgrade_count: ${result.summary.l1_feedback_candidate_count_upgrade_count}`,
+    `- l1_feedback_handoff_floor_upgrade_count: ${result.summary.l1_feedback_handoff_floor_upgrade_count}`,
     `- avg_quality_score: ${result.summary.avg_quality_score}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
     ""
@@ -1944,6 +2118,8 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
       `- l1_handoff_floor: ${item.candidate_count_decision?.l1_control?.handoff_floor ?? "unknown"}`,
       `- l3_feedback_status: ${item.l3_feedback?.final_status ?? "unknown"}`,
       `- l3_draft_runs: ${item.l3_feedback?.total_draft_runs ?? 0}/${item.l3_feedback?.max_draft_runs ?? 0}`,
+      `- l3_repeated_failure_shape: ${Boolean(item.l3_feedback?.repeated_failure_shape)}`,
+      `- l1_feedback_suggestion: ${item.l1_feedback_suggestion ? JSON.stringify(item.l1_feedback_suggestion.suggestion) : "none"}`,
       `- candidates: ${item.candidates?.length ?? 0}`,
       `- winner_candidate_id: ${item.winner_candidate_id ?? "none"}`,
       `- winner_strategy: ${item.winner_strategy ?? "none"}`,

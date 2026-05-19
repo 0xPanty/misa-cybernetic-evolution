@@ -11,6 +11,7 @@ import {
   buildHermesDelegateAuditPacket,
   buildExternalTrajectoryLlmWorkOrderDraftReport,
   buildLlmWorkOrderDraftingPackets,
+  buildL3RepairObservation,
   gateLlmWorkOrderDraft
 } from "../scripts/lib/external-trajectory-llm-work-order-draft.mjs";
 
@@ -402,6 +403,72 @@ test("LLM work-order gate recognizes project-specific state labels as expectatio
   assert.equal(gate.checks.weakTaskCount, 0);
 });
 
+test("LLM work-order gate recognizes concrete no-effect expectation wording", () => {
+  const [packet] = buildLlmWorkOrderDraftingPackets({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["custom-ci-failure-001"]
+  });
+  const signal = packet.record.observed_signals[0];
+  const draft = {
+    title: "Audit custom-ci-failure-001 damping and no-effect boundary",
+    problem: "custom-ci-failure-001 must stay in observe-only review with no route, winner, memory, or embedding effects.",
+    evidence_refs: [...packet.workOrder.evidence_refs],
+    concrete_tasks: [
+      `In scripts/lib/perception-sidecar.mjs, check signal=${signal} for ${packet.source_id}; expected result is correct classification without triggering a memory-write request.`,
+      `In test/curiosity-signal-gate.test.mjs, check ${signal} gate logic for ${packet.source_id}; expected result is suppression of all memory-write requests and Zilliz updates.`,
+      `In test/governance.test.mjs, check the no-context-auditor role boundary for ${packet.source_id}; expected result is an empty write-set for Zilliz collection updates and embedding generation calls.`,
+      `In test/external-trajectory-online-shadow-contract.test.mjs, check l2_candidate_mode and candidate_count for ${packet.source_id}; expected result is enforcement of a single candidate count in the shadow contract.`
+    ],
+    acceptance_criteria: [
+      `${packet.source_id} keeps every evidence ref and no effect request reaches route, winner, memory, Zilliz, or embeddings.`,
+      "No task asks for live execution or persistent writes."
+    ],
+    verification_commands: [
+      "npm test",
+      "npm run precheck"
+    ],
+    forbidden_scope: [
+      "do_not_change_route",
+      "do_not_change_winner",
+      "do_not_write_memory",
+      "do_not_write_zilliz",
+      "do_not_create_embeddings",
+      "do_not_call_external_api",
+      "do_not_touch_vps",
+      "do_not_push_github",
+      "do_not_publish_publicly"
+    ],
+    risk_notes: [
+      "The wording names concrete no-effect outcomes, not vague success.",
+      "The gate should not force only false/zero vocabulary when equivalent no-effect phrasing is present."
+    ],
+    stop_condition: "Stop after local gate validation; do not execute the work order.",
+    llm_notes: "Fixture mirrors real Gemini wording from the VPS rerun."
+  };
+  const gate = gateLlmWorkOrderDraft({ packet, draft });
+
+  assert.equal(gate.ok, true);
+  assert.equal(gate.checks.actionableTaskCount, 4);
+  assert.equal(gate.checks.weakTaskCount, 0);
+});
+
+test("L3 repair observation names failed task anchors for the next repair prompt", () => {
+  const [packet] = buildLlmWorkOrderDraftingPackets({
+    onlineShadowReport: onlineShadowFixture(),
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001"]
+  });
+  const gate = gateLlmWorkOrderDraft({ packet, draft: badProviderDraft(packet) });
+  const observation = buildL3RepairObservation(gate);
+
+  assert.equal(observation.schema_version, "misa.l3_repair_observation.v1");
+  assert.ok(observation.violations.includes("too_few_actionable_tasks"));
+  assert.ok(observation.rewrite_task_indices.length >= 1);
+  assert.ok(observation.failed_tasks[0].missing_anchor_types.includes("file_or_test"));
+  assert.equal(observation.counts.target_actionableTaskCount, 4);
+});
+
 test("LLM work-order draft report passes with context-specific mock provider", async () => {
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),
@@ -580,12 +647,20 @@ test("LLM work-order draft report can select the best of three candidates from o
 
 test("LLM work-order draft report lets L3 feedback trigger one light-single recheck", async () => {
   let calls = 0;
+  const prompts = [];
   const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
     onlineShadowReport: onlineShadowFixture(),
     perceptionDigestPath: "test-fixture-digest",
     sourceIds: ["shadow-public-memory-risk-001"],
-    provider: async ({ packet }) => {
+    provider: async ({ packet, prompt, previousFailure }) => {
       calls += 1;
+      prompts.push(prompt);
+      if (calls === 2) {
+        assert.ok(previousFailure);
+        assert.match(prompt, /L3 repair observation/);
+        assert.match(prompt, /rewrite_task_indices/);
+        assert.match(prompt, /missing_anchor_types/);
+      }
       return JSON.stringify(calls === 1
         ? badProviderDraft(packet)
         : goodProviderDraft(packet, "rechecked"));
@@ -596,6 +671,7 @@ test("LLM work-order draft report lets L3 feedback trigger one light-single rech
   });
 
   assert.equal(calls, 2);
+  assert.doesNotMatch(prompts[0], /L3 repair observation/);
   assert.equal(result.summary.llm_api_calls, 2);
   assert.equal(result.summary.l3_recheck_triggered_count, 1);
   assert.equal(result.summary.l3_accepted_after_recheck_count, 1);
@@ -604,6 +680,7 @@ test("LLM work-order draft report lets L3 feedback trigger one light-single rech
   assert.equal(result.results[0].l3_feedback.final_status, "accepted_after_l3_recheck");
   assert.equal(result.results[0].l3_feedback.total_draft_runs, 2);
   assert.equal(result.results[0].l3_feedback.max_draft_runs, 2);
+  assert.equal(result.results[0].l3_feedback.attempts[0].repair_observation.schema_version, "misa.l3_repair_observation.v1");
 });
 
 test("LLM work-order draft report stops after two L3-gated runs with no value", async () => {
@@ -626,9 +703,16 @@ test("LLM work-order draft report stops after two L3-gated runs with no value", 
   assert.equal(result.summary.llm_api_calls, 2);
   assert.equal(result.summary.l3_recheck_triggered_count, 1);
   assert.equal(result.summary.l3_exhausted_no_value_count, 1);
+  assert.equal(result.summary.l3_repeated_failure_shape_count, 1);
+  assert.equal(result.summary.l1_feedback_suggestion_count, 1);
+  assert.equal(result.summary.l1_feedback_candidate_count_upgrade_count, 0);
+  assert.equal(result.summary.l1_feedback_handoff_floor_upgrade_count, 0);
   assert.equal(result.results[0].gate.ok, false);
   assert.equal(result.results[0].l3_feedback.final_status, "exhausted_no_value");
   assert.equal(result.results[0].l3_feedback.no_value_after_recheck, true);
+  assert.equal(result.results[0].l3_feedback.repeated_failure_shape, true);
+  assert.equal(result.results[0].l1_feedback_suggestion.authority, "suggestion_only");
+  assert.equal(result.results[0].l1_feedback_suggestion.suggestion.repair_prompt_mode, "task_level_l3_observation");
   assert.equal(result.results[0].l3_feedback.total_draft_runs, 2);
 });
 

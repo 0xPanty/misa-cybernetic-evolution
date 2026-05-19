@@ -60,6 +60,66 @@ L3 also writes `candidate_recheck` hints. Recheck is recommended for yellow
 items, deterministic red spot checks, and red items close to the yellow quality
 threshold. The hint is a review aid, not an automatic rerun.
 
+## L3 Feedback Back To L1/L2
+
+L3 now treats a failed draft as an engineering observation, not only as a pool
+label. When a draft fails the local gate, L3 can record a repair observation
+with:
+
+- gate violations;
+- actionable and weak task counts;
+- task indices that passed;
+- task indices that must be rewritten;
+- missing anchor types such as source/evidence ref, field/boundary, signal, or
+  explicit expected result.
+
+The next L2 repair prompt receives that observation directly. This borrows the
+ReAct-style feedback loop, but keeps it inside the work-order drafting boundary:
+
+```text
+L2 draft -> L3 gate observation -> next L2 repair prompt
+```
+
+The L3 actionability gate should count concrete no-effect expectations even
+when the model does not use the exact words `false` or `zero`. The gate accepts
+phrasing such as:
+
+- `without triggering a memory-write request`;
+- `suppression of memory-write requests and Zilliz updates`;
+- `empty write-set`;
+- `enforcement of candidate_count` or `l2_candidate_mode`.
+
+This keeps the gate strict about concrete file/source/field/expected-result
+anchors while avoiding false rejects caused by overly narrow wording.
+
+The 2026-05-19 historical replay checked this change against the existing L2
+corpus without model calls:
+
+```text
+runs/l2-gate-intercept-analysis/2026-05-19-after-expectation-pattern-fix/
+
+l2_report_count=136
+deduped_result_count=360
+old blocked=171
+new pass=205
+new near_pass=81
+new hard_fail=74
+updated pools: green=286, yellow=4, red=70
+old_blocked_salvageable_rate_pct=64.3
+verdict=old_hard_gate_was_too_strict_for_near_pass_work_orders
+```
+
+The intended reading is: accept equivalent concrete no-effect wording, but do
+not accept vague work orders. The gate still blocks non-whitelisted commands,
+thin context anchors, weak acceptance criteria, and too few actionable tasks.
+
+If L3 exhausts the allowed repair pass, the result may also carry an
+`l1_feedback_suggestion`. This is suggestion-only feedback for the next policy
+review. It can recommend a next-run candidate count, a more conservative
+handoff floor, or `repair_prompt_mode=task_level_l3_observation`, but it does
+not mutate L1 thresholds, global prompts, gate weights, runtime authority, or
+production behavior.
+
 ## Pools
 
 - `green`: the hard gate passed. Forward to L4.
@@ -137,6 +197,92 @@ default-version decision explicit:
 Until L4 labels exist, the calibration is proxy-only. Real L4 rates require
 later labels such as green acceptance, yellow overturn, and red false-negative
 results.
+
+## L1 Alpha Simulation
+
+Use the L1 alpha simulation when the question is about routing value before
+spending L2 model calls:
+
+```bash
+npm run selection-audit:l1-alpha -- \
+  --adaptation-report runs/l1-alpha-simulation/2026-05-19-swe-stratified500/adapt/external-trajectory-adaptation.json \
+  --out-dir runs/l1-alpha-simulation/2026-05-19-swe-stratified500/l1-alpha
+```
+
+This command reads an existing external-trajectory adaptation report, builds a
+local perception digest, runs the online shadow L1 contract, and writes:
+
+- `l1-alpha-simulation.json`
+- `l1-alpha-simulation.md`
+- `online-shadow-report.json`
+- `perception-digest.json`
+- `online-shadow-report.md`
+
+It does not call an LLM, touch VPS, push GitHub, write memory, write Zilliz, or
+create embeddings. Its job is to choose a cheap fixed probe set before live L2
+validation.
+
+Current 2026-05-19 SWE-rebench stratified-500 readout:
+
+```text
+sample_count=500
+l2_eligible_count=500
+l1_mode_counts={"recheck":244,"single":256}
+candidate_count_hint_counts={"1":256,"2":244}
+risk_level_counts={"high":244,"medium":256}
+simulated_handoff_floor_counts={"no_context_agent":256,"primary_agent":244}
+```
+
+The decision from this readout is conservative:
+
+- keep `candidate_count=1` as the cheap path;
+- use `candidate_count=2` for L1 recheck / high-risk ambiguous samples;
+- keep `no_context_agent` for lower-risk single samples;
+- use `primary_agent` floor for high-risk safety-boundary samples.
+
+The fixed 15-sample probe was then replayed through mock L2/L3:
+
+```text
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/probe-mock-l2-selected15/external-trajectory-llm-work-order-draft.json
+
+samples=15
+requested_candidate_count_histogram={"1":9,"2":6}
+l1_handoff_floor_counts={"primary_agent":6,"no_context_agent":9}
+passed_gate=15
+failed_gate=0
+llm_api_calls=0
+```
+
+This is a local baseline only. The next live-model proof should reuse the same
+15 source ids and compare real Gemini output quality plus call count against
+this local baseline and the earlier 10-sample Gemini run.
+
+The 2026-05-19 live Gemini A/B did reuse that fixed 15-sample probe:
+
+```text
+runs/l1-alpha-simulation/2026-05-19-swe-stratified500/real-gemini-vps-ab/comparison.json
+
+A all candidate_count=1:
+passed_gate=14
+failed_gate=1
+avg_quality_score=0.986
+llm_api_calls=19
+l3_recheck_triggered_count=4
+failed_source=swe-rebench-openhands:numpy__numpydoc-101
+
+B L1-controlled mixed:
+requested_candidate_count_histogram={"1":9,"2":6}
+passed_gate=15
+failed_gate=0
+avg_quality_score=0.992
+llm_api_calls=15
+l3_recheck_triggered_count=0
+```
+
+For this fixed probe set, L1-controlled mixed routing beat the all-single
+baseline: one fewer failed gate, slightly higher average quality, and four fewer
+API calls because it avoided repair reruns. This is evidence for the alpha, not
+permission to mutate L1 thresholds or handoff authority automatically.
 
 ## L4 No-Context Review
 

@@ -48,6 +48,7 @@
     "selection-audit:l4-review": "node scripts/l4-work-order-review.mjs",
     "selection-audit:compare": "node scripts/l2-l3-quantitative-comparison.mjs",
     "selection-audit:gate-intercepts": "node scripts/l2-gate-intercept-analysis.mjs",
+    "selection-audit:l1-alpha": "node scripts/l1-alpha-simulation.mjs",
     "external:generic-adapter": "node examples/external-trajectory-online-shadow/generic-workflow-adapter/adapter.mjs",
     "vector-memory:classify": "node scripts/vector-memory-storage.mjs",
     "vector-memory:rank": "node scripts/vector-retrieval-ranker.mjs",
