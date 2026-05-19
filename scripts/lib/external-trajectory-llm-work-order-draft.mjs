@@ -134,7 +134,14 @@ function normalizeCandidateCount(value) {
   return Math.min(MAX_LLM_DRAFT_CANDIDATE_COUNT, Math.max(1, Math.floor(count)));
 }
 
+function normalizeL1CandidateCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
+  return Math.min(MAX_LLM_DRAFT_CANDIDATE_COUNT, Math.max(0, Math.floor(count)));
+}
+
 function candidateModeForCount(count) {
+  if (Number(count) <= 0) return "suppressed";
   return normalizeCandidateCount(count) <= 1 ? "light_single_default" : "explicit_candidate_recheck";
 }
 
@@ -147,18 +154,87 @@ function countHistogram(values) {
 
 function l1TriggeredCandidateCount(profile) {
   if (!profile) return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
-  const hint = normalizeCandidateCount(profile.l2_candidate_count_hint);
+  const hint = normalizeL1CandidateCount(profile.l2_candidate_count_hint);
   const mode = String(profile.l2_candidate_mode ?? "");
   const uncertainty = String(profile.uncertainty_level ?? "");
   const conflictCount = Array.isArray(profile.conflict_signals) ? profile.conflict_signals.length : 0;
   const highRiskAmbiguous = profile.risk_level === "high"
     && (uncertainty === "medium" || uncertainty === "high" || conflictCount > 0);
+  if (mode === "suppress" || profile.l2_eligible === false) return 0;
   if (mode === "recheck" || mode === "multi_pool") return Math.max(2, hint);
   if (hint > 1 && highRiskAmbiguous) return hint;
   return DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
 }
 
+function l1RiskBand(profile) {
+  const risk = String(profile?.risk_level ?? "low");
+  if (risk === "critical") return "critical";
+  if (risk === "high") return "high";
+  if (risk === "medium") return "medium";
+  return "low";
+}
+
+function l1HandoffFloorFor({ profile, packet, reasons }) {
+  const signals = new Set(packet?.record?.observed_signals ?? []);
+  const axisText = (profile?.strategy_axes ?? []).join(" ");
+  const signalText = [...signals].join(" ");
+  const routeHint = String(packet?.workOrder?.route_hint ?? profile?.route_hint ?? "");
+  const text = `${axisText} ${signalText} ${routeHint}`.toLowerCase();
+  const credentialOrLive = /credential|secret|signer|public_publish|publish|send|live_action|production_write/.test(text);
+  const durableBoundary = /public|memory|zilliz|embedding|vps|github|route|winner/.test(text);
+  if (credentialOrLive || l1RiskBand(profile) === "critical") {
+    reasons.push("l1_handoff_floor_human_owner");
+    return "human_owner";
+  }
+  if (durableBoundary || l1RiskBand(profile) === "high") {
+    reasons.push("l1_handoff_floor_primary_agent");
+    return "primary_agent";
+  }
+  return "no_context_agent";
+}
+
+function l1ControlDecisionForPacket(packet) {
+  const profile = packet?.record?.l1_signal_profile ?? null;
+  const reasons = [];
+  const mode = String(profile?.l2_candidate_mode ?? "single");
+  const suppressReasons = uniqueStrings(profile?.suppress_reasons ?? []);
+  const candidateHint = l1TriggeredCandidateCount(profile);
+  const generateL2 = Boolean(!profile || (
+    profile.l2_eligible !== false
+    && mode !== "suppress"
+    && suppressReasons.length === 0
+    && candidateHint > 0
+  ));
+  if (!generateL2) {
+    reasons.push(...(suppressReasons.length ? suppressReasons : ["l1_suppressed"]));
+    return {
+      schema_version: "misa.l1_control_decision.v1",
+      generate_l2: false,
+      candidate_count: 0,
+      handoff_floor: "none",
+      risk_band: l1RiskBand(profile),
+      reasons: uniqueStrings(reasons)
+    };
+  }
+  if (mode === "recheck" || mode === "multi_pool") reasons.push(`l1_mode_${mode}`);
+  if (candidateHint > 1) reasons.push("l1_candidate_count_hint");
+  if (profile?.uncertainty_level === "high") reasons.push("l1_high_uncertainty");
+  if ((profile?.conflict_signals ?? []).length) reasons.push("l1_conflict_signals");
+  const handoffFloor = l1HandoffFloorFor({ profile, packet, reasons });
+  return {
+    schema_version: "misa.l1_control_decision.v1",
+    generate_l2: true,
+    candidate_count: Math.max(1, candidateHint),
+    handoff_floor: handoffFloor,
+    risk_band: l1RiskBand(profile),
+    reasons: uniqueStrings(reasons.length ? reasons : ["l1_default_light_single"])
+  };
+}
+
 function candidateCountDecisionForPacket(packet, { explicitCandidateCount = null } = {}) {
+  const profile = packet.record.l1_signal_profile ?? null;
+  const l1Mode = profile?.l2_candidate_mode ?? null;
+  const l1Control = l1ControlDecisionForPacket(packet);
   if (explicitCandidateCount !== null && explicitCandidateCount !== undefined) {
     const requested = normalizeCandidateCount(explicitCandidateCount);
     return {
@@ -166,18 +242,32 @@ function candidateCountDecisionForPacket(packet, { explicitCandidateCount = null
       trigger: requested > 1 ? "explicit_recheck" : "explicit_light_single",
       requested_candidate_count: requested,
       candidate_mode: candidateModeForCount(requested),
+      l1_candidate_mode: l1Mode,
+      l1_control: l1Control,
       reason: "caller provided candidateCount"
     };
   }
-  const profile = packet.record.l1_signal_profile ?? null;
-  const l1Mode = profile?.l2_candidate_mode ?? null;
+  if (!l1Control.generate_l2) {
+    return {
+      policy: "l1_control",
+      trigger: "l1_suppress",
+      requested_candidate_count: 0,
+      candidate_mode: "suppressed",
+      l1_candidate_mode: l1Mode,
+      l1_control: l1Control,
+      skip_l2: true,
+      reason: "L1 suppressed L2 generation before any provider call"
+    };
+  }
+  const requested = normalizeCandidateCount(l1Control.candidate_count);
   return {
-    policy: "l3_feedback_dynamic",
-    trigger: "initial_light_single",
-    requested_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
-    candidate_mode: "light_single_default",
+    policy: "l1_control",
+    trigger: requested > 1 ? "l1_multi_candidate" : "l1_light_single",
+    requested_candidate_count: requested,
+    candidate_mode: candidateModeForCount(requested),
     l1_candidate_mode: l1Mode,
-    reason: "L2 starts with light_single; L3 gate may trigger one light_single recheck after seeing the draft"
+    l1_control: l1Control,
+    reason: "L1 controls L2 generation cost and review strength before L3 feedback"
   };
 }
 
@@ -524,7 +614,7 @@ ${JSON.stringify(compactPacket, null, 2)}
 `;
 }
 
-function stripJson(text) {
+export function stripJson(text) {
   const trimmed = String(text || "").trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const body = fenced ? fenced[1].trim() : trimmed;
@@ -534,7 +624,7 @@ function stripJson(text) {
   return body;
 }
 
-function serializeProviderError(error) {
+export function serializeProviderError(error) {
   const cause = error?.cause;
   return {
     name: error?.name ?? "Error",
@@ -543,7 +633,7 @@ function serializeProviderError(error) {
   };
 }
 
-function parseJsonArray(value) {
+export function parseJsonArray(value) {
   if (!value) return null;
   try {
     const parsed = JSON.parse(value);
@@ -553,27 +643,27 @@ function parseJsonArray(value) {
   }
 }
 
-function replaceArgPlaceholders(args, replacements) {
+export function replaceArgPlaceholders(args, replacements) {
   return (args ?? []).map((arg) => String(arg)
     .replaceAll("{prompt}", replacements.prompt)
     .replaceAll("{audit_packet_json}", JSON.stringify(replacements.auditPacket)));
 }
 
-function hermesDelegateCommandFromEnv() {
+export function hermesDelegateCommandFromEnv() {
   if (process.env.HERMES_DELEGATE_COMMAND) return process.env.HERMES_DELEGATE_COMMAND;
   if (fsSync.existsSync("/root/.local/bin/hermes")) return "/root/.local/bin/hermes";
   return "hermes";
 }
 
-function hermesDelegateArgsFromEnv() {
+export function hermesDelegateArgsFromEnv() {
   return parseJsonArray(process.env.HERMES_DELEGATE_ARGS_JSON);
 }
 
-function hermesDelegateProviderFromEnv() {
+export function hermesDelegateProviderFromEnv() {
   return process.env.HERMES_DELEGATE_PROVIDER || null;
 }
 
-function hermesDelegateModelFromEnv() {
+export function hermesDelegateModelFromEnv() {
   return process.env.HERMES_DELEGATE_MODEL || null;
 }
 
@@ -725,7 +815,7 @@ ${requestedCandidateCount > 1
 }`}`;
 }
 
-async function runHermesDelegateCommand({
+export async function runHermesDelegateCommand({
   command,
   args,
   stdinPayload,
@@ -1371,7 +1461,9 @@ async function draftOnePacket({
   candidateCount = DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
   candidateCountDecision = null
 }) {
-  const requestedCandidateCount = normalizeCandidateCount(candidateCount);
+  const requestedCandidateCount = candidateCountDecision?.skip_l2
+    ? 0
+    : normalizeCandidateCount(candidateCount);
   const maxDraftRuns = Math.min(2, Math.max(1, Number(repairAttempts ?? 0) + 1));
   let previousFailure = null;
   let raw = "";
@@ -1387,8 +1479,87 @@ async function draftOnePacket({
   let candidateSelection = summarizeCandidateSelection({
     candidateResults: [],
     winner: null,
-    requestedCandidateCount
+    requestedCandidateCount: requestedCandidateCount || 1
   });
+
+  if (candidateCountDecision?.skip_l2) {
+    gate = {
+      ok: true,
+      violations: [],
+      soft_violations: [],
+      warning_codes: ["l1_suppressed_before_l2"],
+      gate_class: "suppressed",
+      quality_score: 0,
+      checks: {
+        parseOk: true,
+        concreteTaskCount: 0,
+        acceptanceCount: 0,
+        verificationCommandCount: 0,
+        preservedRefs: 0,
+        requiredRefs: packet?.workOrder?.evidence_refs?.length ?? 0,
+        whitelistedCommands: 0,
+        specificityHits: 0,
+        genericTaskCount: 0,
+        actionableTaskCount: 0,
+        weakTaskCount: 0,
+        taskActionability: [],
+        providerError: null
+      }
+    };
+    candidateSelection = {
+      requested_candidate_count: 0,
+      returned_candidate_count: 0,
+      expected_candidate_count_met: true,
+      winner_candidate_id: null,
+      winner_strategy: null,
+      winner_quality_score: 0,
+      candidate_quality_scores: [],
+      candidate_passed_gate_count: 0,
+      candidate_failed_gate_count: 0,
+      avg_candidate_quality_score: 0
+    };
+    return {
+      source_id: packet.source_id,
+      model,
+      provider: typeof provider === "string" ? provider : "custom",
+      llm_api_calls: 0,
+      suppressed: true,
+      candidate_count_decision: candidateCountDecision,
+      l3_feedback: {
+        policy: "l1_control_suppressed_before_l2",
+        max_draft_runs: 0,
+        total_draft_runs: 0,
+        rechecked: false,
+        final_status: "l1_suppressed_no_draft",
+        final_gate_class: "suppressed",
+        no_value_after_recheck: false,
+        attempts: []
+      },
+      candidate_selection: candidateSelection,
+      packet: {
+        source_class: packet.context.source_class,
+        readout_family: packet.record.readout_family,
+        route_hint: packet.workOrder.route_hint,
+        severity: packet.ticket?.severity ?? null,
+        priority: packet.record.suggested_priority,
+        observed_signals: packet.record.observed_signals,
+        evidence_refs: packet.workOrder.evidence_refs,
+        l1_signal_profile: packet.record.l1_signal_profile ?? null,
+        l1_control: candidateCountDecision.l1_control ?? null,
+        relevant_files: packet.context.relevant_files,
+        allowed_verification_commands: packet.allowed_verification_commands
+      },
+      draft: null,
+      winner_candidate_id: null,
+      winner_strategy: null,
+      candidates: [],
+      loser_ledger: [],
+      raw_response: "",
+      parsed_response: null,
+      gate,
+      provider_error: null
+    };
+  }
 
   for (let attempt = 0; attempt < maxDraftRuns; attempt += 1) {
     const providerResult = await callDraftProvider({
@@ -1516,6 +1687,7 @@ async function draftOnePacket({
       observed_signals: packet.record.observed_signals,
       evidence_refs: packet.workOrder.evidence_refs,
       l1_signal_profile: packet.record.l1_signal_profile ?? null,
+      l1_control: candidateCountDecision?.l1_control ?? null,
       relevant_files: packet.context.relevant_files,
       allowed_verification_commands: packet.allowed_verification_commands
     },
@@ -1607,21 +1779,25 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
   const maxRequestedCandidateCount = requestedCandidateCounts.length
     ? Math.max(...requestedCandidateCounts)
     : DEFAULT_LLM_DRAFT_CANDIDATE_COUNT;
-  const candidatePolicy = explicitCandidateCount === null ? "l3_feedback_dynamic" : "explicit";
-  const candidateMode = candidatePolicy === "l3_feedback_dynamic"
-    ? "light_single_default"
+  const candidatePolicy = explicitCandidateCount === null ? "l1_control" : "explicit";
+  const candidateMode = candidatePolicy === "l1_control"
+    ? (maxRequestedCandidateCount > 1 ? "l1_controlled_mixed" : "light_single_default")
     : candidateModeForCount(maxRequestedCandidateCount);
   const llmApiCalls = results.reduce((count, result) => count + result.llm_api_calls, 0);
   const allCandidates = results.flatMap((result) => result.candidates ?? []);
+  const generatedResults = results.filter((result) => !result.suppressed);
   const candidateQualitySum = allCandidates.reduce((sum, candidate) => sum + candidate.gate.quality_score, 0);
   const expectedCandidateCountMet = results.filter((result) => (
     result.candidate_selection?.expected_candidate_count_met
   )).length;
+  const handoffFloors = results.map((result) => (
+    result.candidate_count_decision?.l1_control?.handoff_floor ?? "unknown"
+  ));
 
   return {
     schema_version: "misa.external_trajectory_llm_work_order_draft.v1",
     mode: "external-trajectory-llm-work-order-draft",
-    ok: results.every((result) => result.gate.ok),
+    ok: results.every((result) => result.suppressed || result.gate.ok),
     created_at: asIsoDate(now),
     input: {
       online_shadow_report_path: onlineShadowReportPath ?? null,
@@ -1632,7 +1808,8 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       requested_candidate_count: maxRequestedCandidateCount,
       requested_candidate_count_histogram: countHistogram(requestedCandidateCounts),
       candidate_mode: candidateMode,
-      default_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT
+      default_candidate_count: DEFAULT_LLM_DRAFT_CANDIDATE_COUNT,
+      l1_control_enabled: explicitCandidateCount === null
     },
     model,
     provider: typeof provider === "string" ? provider : "custom",
@@ -1648,14 +1825,16 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       requested_candidate_count: maxRequestedCandidateCount,
       requested_candidate_count_histogram: countHistogram(requestedCandidateCounts),
       l1_dynamic_recheck_count: results.filter((result) => (
-        result.candidate_count_decision?.policy === "l1_dynamic"
+        result.candidate_count_decision?.policy === "l1_control"
           && Number(result.candidate_count_decision?.requested_candidate_count ?? 1) > 1
       )).length,
+      l1_suppressed_count: results.filter((result) => result.suppressed).length,
+      l1_handoff_floor_counts: countHistogram(handoffFloors),
       l1_recheck_hint_count: results.filter((result) => (
         ["recheck", "multi_pool"].includes(result.packet?.l1_signal_profile?.l2_candidate_mode)
       )).length,
       light_single_count: results.filter((result) => (
-        Number(result.candidate_selection?.requested_candidate_count ?? 1) <= 1
+        !result.suppressed && Number(result.candidate_selection?.requested_candidate_count ?? 1) <= 1
       )).length,
       candidate_count: allCandidates.length,
       expected_candidate_count_met: expectedCandidateCountMet,
@@ -1666,8 +1845,8 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
       avg_candidate_quality_score: allCandidates.length
         ? Math.round(1000 * candidateQualitySum / allCandidates.length) / 1000
         : 0,
-      passed_gate_count: results.filter((result) => result.gate.ok).length,
-      failed_gate_count: results.filter((result) => !result.gate.ok).length,
+      passed_gate_count: generatedResults.filter((result) => result.gate.ok).length,
+      failed_gate_count: generatedResults.filter((result) => !result.gate.ok).length,
       l3_total_draft_runs: results.reduce((sum, result) => (
         sum + Number(result.l3_feedback?.total_draft_runs ?? 0)
       ), 0),
@@ -1685,8 +1864,8 @@ export async function buildExternalTrajectoryLlmWorkOrderDraftReport({
         result.l3_feedback?.final_status === "exhausted_no_value"
       )).length,
       provider_error_count: results.filter((result) => result.provider_error).length,
-      avg_quality_score: results.length
-        ? Math.round(1000 * results.reduce((sum, result) => sum + result.gate.quality_score, 0) / results.length) / 1000
+      avg_quality_score: generatedResults.length
+        ? Math.round(1000 * generatedResults.reduce((sum, result) => sum + result.gate.quality_score, 0) / generatedResults.length) / 1000
         : 0,
       llm_api_calls: llmApiCalls,
       external_api_calls: provider === "ollama" ? 0 : 0,
@@ -1737,6 +1916,8 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
     `- requested_candidate_count: ${result.summary.requested_candidate_count}`,
     `- requested_candidate_count_histogram: ${JSON.stringify(result.summary.requested_candidate_count_histogram ?? {})}`,
     `- l1_dynamic_recheck_count: ${result.summary.l1_dynamic_recheck_count}`,
+    `- l1_suppressed_count: ${result.summary.l1_suppressed_count}`,
+    `- l1_handoff_floor_counts: ${JSON.stringify(result.summary.l1_handoff_floor_counts ?? {})}`,
     `- l1_recheck_hint_count: ${result.summary.l1_recheck_hint_count}`,
     `- light_single_count: ${result.summary.light_single_count}`,
     `- candidate_count: ${result.summary.candidate_count}`,
@@ -1758,7 +1939,9 @@ export function renderLlmWorkOrderDraftMarkdown(result) {
       "",
       `- gate_ok: ${item.gate.ok}`,
       `- quality_score: ${item.gate.quality_score}`,
+      `- suppressed: ${Boolean(item.suppressed)}`,
       `- candidate_count_decision: ${item.candidate_count_decision?.trigger ?? "unknown"}`,
+      `- l1_handoff_floor: ${item.candidate_count_decision?.l1_control?.handoff_floor ?? "unknown"}`,
       `- l3_feedback_status: ${item.l3_feedback?.final_status ?? "unknown"}`,
       `- l3_draft_runs: ${item.l3_feedback?.total_draft_runs ?? 0}/${item.l3_feedback?.max_draft_runs ?? 0}`,
       `- candidates: ${item.candidates?.length ?? 0}`,

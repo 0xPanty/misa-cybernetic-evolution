@@ -26,18 +26,24 @@ function makeL2Item({
   winnerCandidateId = null,
   winnerStrategy = null,
   l1SignalProfile = null,
-  l3Feedback = null
+  l1Control = null,
+  candidateCountDecision = null,
+  l3Feedback = null,
+  suppressed = false
 }) {
   return {
     source_id: sourceId,
     provider: "hermes-delegate",
     model: "gemini-3-flash-preview",
-    llm_api_calls: providerError ? 1 : 1,
+    llm_api_calls: suppressed ? 0 : (providerError ? 1 : 1),
+    suppressed,
+    candidate_count_decision: candidateCountDecision,
     packet: {
       evidence_refs: [`ref:${sourceId}`],
       readout_family: "safety_boundary_pressure",
       route_hint: "policy",
-      l1_signal_profile: l1SignalProfile
+      l1_signal_profile: l1SignalProfile,
+      l1_control: l1Control
     },
     l3_feedback: l3Feedback,
     candidate_selection: candidates ? {
@@ -52,10 +58,10 @@ function makeL2Item({
       candidate_failed_gate_count: candidates.filter((candidate) => !candidate.gate.ok).length,
       avg_candidate_quality_score: candidates.reduce((sum, candidate) => sum + candidate.gate.quality_score, 0) / candidates.length
     } : null,
-    candidates,
+    candidates: suppressed ? [] : candidates,
     winner_candidate_id: winnerCandidateId,
     winner_strategy: winnerStrategy,
-    draft: providerError ? null : {
+    draft: providerError || suppressed ? null : {
       title: `${sourceId} L2 audit`,
       evidence_refs: [`ref:${sourceId}`],
       concrete_tasks: Array.from({ length: actionable + weak }, (_, index) => `task-${index + 1}`)
@@ -64,6 +70,8 @@ function makeL2Item({
     gate: {
       ok: gateOk,
       violations,
+      warning_codes: suppressed ? ["l1_suppressed_before_l2"] : [],
+      gate_class: suppressed ? "suppressed" : (gateOk ? "pass" : "hard_fail"),
       quality_score: quality,
       checks: {
         actionableTaskCount: actionable,
@@ -141,7 +149,7 @@ function l2ReportFixture(results) {
       failed_gate_count: results.filter((item) => !item.gate.ok).length,
       provider_error_count: results.filter((item) => item.provider_error).length,
       avg_quality_score: 0.9,
-      llm_api_calls: results.length,
+      llm_api_calls: results.reduce((sum, item) => sum + Number(item.llm_api_calls ?? 0), 0),
       memory_writes: 0,
       zilliz_writes: 0,
       embedding_creations: 0,
@@ -194,6 +202,69 @@ test("L2/L3 pool classifier forwards green and yellow but holds red", () => {
   assert.ok(yellow.reason_codes.includes("possible_false_reject"));
   assert.equal(red.pool, "red");
   assert.equal(red.l4_forward, false);
+});
+
+test("L2/L3 selection audit preserves L1-suppressed sources without forwarding them", () => {
+  const profile = l1Profile({
+    sourceId: "l1-suppressed-001",
+    mode: "suppress"
+  });
+  const l1Control = {
+    schema_version: "misa.l1_control_decision.v1",
+    generate_l2: false,
+    candidate_count: 0,
+    handoff_floor: "none",
+    risk_band: "high",
+    reasons: ["duplicate_covered_by_canonical_source"]
+  };
+  const suppressedItem = makeL2Item({
+    sourceId: "l1-suppressed-001",
+    gateOk: true,
+    quality: 0,
+    actionable: 0,
+    l1SignalProfile: profile,
+    l1Control,
+    candidateCountDecision: {
+      policy: "l1_control",
+      trigger: "l1_suppress",
+      requested_candidate_count: 0,
+      candidate_mode: "suppressed",
+      l1_control: l1Control,
+      skip_l2: true
+    },
+    suppressed: true,
+    l3Feedback: {
+      final_status: "l1_suppressed_no_draft"
+    }
+  });
+
+  const decision = classifyL2L3PoolDecision(suppressedItem);
+  assert.equal(decision.pool, "suppressed");
+  assert.equal(decision.l4_forward, false);
+  assert.equal(decision.l4_review_mode, "l1_suppressed_no_handoff");
+  assert.equal(decision.l1_control_followed, true);
+  assert.ok(decision.reason_codes.includes("l1_suppressed_before_l2"));
+
+  const result = buildL2L3SelectionAuditReport({
+    l2Report: l2ReportFixture([
+      suppressedItem,
+      makeL2Item({
+        sourceId: "green-002",
+        gateOk: true,
+        quality: 1
+      })
+    ]),
+    batchSize: 2,
+    now: new Date("2026-05-17T12:00:00Z")
+  });
+
+  assert.deepEqual(result.summary.pool_counts, { green: 1, yellow: 0, red: 0 });
+  assert.equal(result.summary.suppressed_count, 1);
+  assert.equal(result.summary.active_sample_count, 1);
+  assert.equal(result.summary.hard_gate_fail_count, 0);
+  assert.equal(result.summary.l4_forward_count, 1);
+  assert.equal(result.summary.llm_api_calls, 1);
+  assert.equal(result.summary.l1_handoff_floor_counts.none, 1);
 });
 
 test("L2/L3 selection audit quantifies L1 signal dimensions against L2 quality", () => {

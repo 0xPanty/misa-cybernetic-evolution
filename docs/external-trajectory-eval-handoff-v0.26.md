@@ -2997,3 +2997,160 @@ Next-window recovery phrase:
 
 下一步如果继续，只做 full-perception 后 source_project/repo/time/task_family 独立 holdout 接入规划或 fresh larger samples 证据，不要扩参数 sweep，不升 alpha gate。
 ```
+
+## L1 Control and L4 Handoff Closeout 2026-05-19
+
+This closeout updates the L2/L3 selection audit lane after the L4 review
+discussion and the real 10-sample Gemini Flash check.
+
+Behavior changed in this window:
+
+```text
+L1 is no longer only carried as a label.
+Before L2 calls a provider, L1 now decides:
+- whether to generate L2 at all;
+- whether the sample asks for 1 or 2 candidates;
+- the minimum handoff floor: no_context_agent, primary_agent, or human_owner.
+
+L3 now records whether L1 control was followed:
+- l1_control_followed_count
+- l1_policy_violation_count
+- l1_handoff_floor_counts
+- suppressed_count
+```
+
+Why this direction:
+
+```text
+The useful loop is not "add one more LLM judge".
+The useful loop is:
+
+L1 signal -> L2 cost / branch decision -> L3 quality evidence -> later prompt,
+gate, or threshold tuning.
+
+L4 should stay narrow: a no-context handoff gate / executor selector. It should
+not become a second L3 quality court by default. A real L4 LLM review can still
+be run as an experiment, but it is not the main control loop.
+```
+
+Files changed:
+
+```text
+scripts/lib/external-trajectory-llm-work-order-draft.mjs
+scripts/lib/l2-l3-selection-audit.mjs
+scripts/l4-work-order-review.mjs
+scripts/lib/l4-work-order-review.mjs
+test/external-trajectory-llm-work-order-draft.test.mjs
+test/l2-l3-selection-audit.test.mjs
+test/l4-work-order-review.test.mjs
+docs/l2-l3-selection-audit-v0.30.md
+package.json
+scripts/lib/precheck-shared.mjs
+```
+
+Verification before closeout:
+
+```text
+node --test --test-concurrency=1 test/external-trajectory-llm-work-order-draft.test.mjs test/l2-l3-selection-audit.test.mjs test/l4-work-order-review.test.mjs
+=> 27 pass / 0 fail
+
+git diff --check
+=> pass
+
+npm run precheck
+=> pass
+
+npm test
+=> 179 pass / 0 fail / 1 skipped
+```
+
+Real 10-sample Gemini Flash run:
+
+```text
+Run path:
+runs/l1-control-10/2026-05-19-real-gemini-flash/vps-output/
+
+Provider:
+hermes-delegate novai/gemini-3-flash-preview
+
+Boundary:
+Temporary /tmp run on VPS only.
+No production service changes.
+No memory writes.
+No Zilliz writes.
+No embeddings.
+No route/winner changes.
+No GitHub push.
+No public publish.
+```
+
+Comparison against the previous 915c10d real 10-sample Gemini Flash run:
+
+```text
+old baseline:
+candidate_count_policy=l3_feedback_dynamic
+requested_candidate_count_histogram={"1":10}
+green=10
+yellow=0
+red=0
+avg_quality_score=0.990
+llm_api_calls=12
+l3_recheck_triggered_count=2
+
+new L1 control run:
+candidate_count_policy=l1_control
+requested_candidate_count_histogram={"1":8,"2":2}
+l1_dynamic_recheck_count=2
+l1_suppressed_count=0
+l1_handoff_floor_counts={"primary_agent":2,"no_context_agent":8}
+green=9
+yellow=0
+red=1
+avg_quality_score=0.987
+llm_api_calls=11
+l1_control_followed_count=10
+l1_policy_violation_count=0
+```
+
+Plain interpretation:
+
+```text
+This did not prove a quality lift. The old run was already near ceiling.
+
+It did prove that L1 now actually controls the L2 branch:
+- 2 samples were upgraded to two candidates before L3 feedback;
+- 8 samples stayed light-single;
+- L3 confirmed all 10 L1 decisions were followed;
+- total LLM calls dropped from 12 to 11.
+
+The one red sample was:
+swe-rebench-openhands:PyPSA__linopy-79
+
+Important detail:
+PyPSA failed the first L2 attempt in the old run too. The old L3 repair fixed
+it on the second attempt. This new run retried once but still got the same
+hard-fail shape: too_few_actionable_tasks + too_many_weak_tasks. So the next
+fix is the L3 repair prompt / gate behavior, not another L4 judge.
+```
+
+Next work:
+
+```text
+1. Inspect PyPSA__linopy-79 in the new L2/L3 reports.
+2. Tune the L3 repair prompt so a hard fail cannot repeat the same weak shape.
+3. Keep L4 as a handoff gate / executor selector, not a default second LLM
+   quality court.
+4. Rerun the same 10-sample real Gemini Flash check after the L3 repair tweak.
+5. Only call the result "quality improvement" if green rate, avg score, or
+   repair success improves without increasing side effects or wasted calls.
+```
+
+Next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution L1/L2/L3/L4 收口。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L1 Control and L4 Handoff Closeout 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+用 git status/log 对齐本地状态。
+
+当前结论：L1 已经从标签变成真实控制输入；真实 10 条 Gemini Flash 跑完后，调用数 12 -> 11，但质量没有提升，green 10 -> 9，红样本是 PyPSA__linopy-79。下一步不要再堆 L4 LLM 审判，先修 L3 repair prompt / gate，让 hard_fail 重跑不要重复同样弱任务。
+```

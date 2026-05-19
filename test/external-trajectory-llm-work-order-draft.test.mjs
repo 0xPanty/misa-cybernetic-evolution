@@ -427,7 +427,7 @@ test("LLM work-order draft report passes with context-specific mock provider", a
   )));
 });
 
-test("LLM work-order draft report keeps L1 recheck as a hint while L2 starts light single", async () => {
+test("LLM work-order draft report lets L1 control candidate count before L3 feedback", async () => {
   const fixture = onlineShadowFixture();
   fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_mode = "recheck";
   fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_count_hint = 2;
@@ -444,20 +444,55 @@ test("LLM work-order draft report keeps L1 recheck as a hint while L2 starts lig
     now: new Date("2026-05-16T05:00:00Z")
   });
 
-  assert.equal(result.summary.candidate_count_policy, "l3_feedback_dynamic");
-  assert.deepEqual(result.summary.requested_candidate_count_histogram, { 1: 2 });
-  assert.equal(result.summary.requested_candidate_count, 1);
-  assert.equal(result.summary.candidate_count, 2);
-  assert.equal(result.summary.l1_dynamic_recheck_count, 0);
+  assert.equal(result.summary.candidate_count_policy, "l1_control");
+  assert.deepEqual(result.summary.requested_candidate_count_histogram, { 1: 1, 2: 1 });
+  assert.equal(result.summary.requested_candidate_count, 2);
+  assert.equal(result.summary.candidate_count, 3);
+  assert.equal(result.summary.l1_dynamic_recheck_count, 1);
   assert.equal(result.summary.l1_recheck_hint_count, 1);
-  assert.equal(result.summary.light_single_count, 2);
-  assert.equal(result.results[0].candidate_selection.requested_candidate_count, 1);
-  assert.equal(result.results[0].candidates.length, 1);
-  assert.equal(result.results[0].candidate_count_decision.trigger, "initial_light_single");
+  assert.equal(result.summary.light_single_count, 1);
+  assert.equal(result.results[0].candidate_selection.requested_candidate_count, 2);
+  assert.equal(result.results[0].candidates.length, 2);
+  assert.equal(result.results[0].candidate_count_decision.trigger, "l1_multi_candidate");
   assert.equal(result.results[0].candidate_count_decision.l1_candidate_mode, "recheck");
+  assert.equal(result.results[0].candidate_count_decision.l1_control.candidate_count, 2);
+  assert.equal(result.results[0].candidate_count_decision.l1_control.handoff_floor, "human_owner");
   assert.equal(result.results[1].candidate_selection.requested_candidate_count, 1);
   assert.equal(result.results[1].candidates.length, 1);
-  assert.equal(result.results[1].candidate_count_decision.trigger, "initial_light_single");
+  assert.equal(result.results[1].candidate_count_decision.trigger, "l1_light_single");
+});
+
+test("LLM work-order draft report lets L1 suppress low-value sources before provider calls", async () => {
+  const fixture = onlineShadowFixture();
+  fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_mode = "suppress";
+  fixture.online_shadow_records[0].l1_signal_profile.l2_candidate_count_hint = 0;
+  fixture.online_shadow_records[0].l1_signal_profile.l2_eligible = false;
+  fixture.online_shadow_records[0].l1_signal_profile.suppress_reasons = ["duplicate_covered_by_canonical_source"];
+  fixture.online_shadow_records[1].l1_signal_profile.l2_candidate_mode = "single";
+  fixture.online_shadow_records[1].l1_signal_profile.l2_candidate_count_hint = 1;
+
+  const result = await buildExternalTrajectoryLlmWorkOrderDraftReport({
+    onlineShadowReport: fixture,
+    perceptionDigestPath: "test-fixture-digest",
+    sourceIds: ["shadow-public-memory-risk-001", "custom-ci-failure-001"],
+    provider: "mock",
+    repairAttempts: 0,
+    maxSamples: 2,
+    now: new Date("2026-05-16T05:00:00Z")
+  });
+
+  assert.equal(result.summary.sample_count, 2);
+  assert.equal(result.summary.draft_count, 1);
+  assert.deepEqual(result.summary.requested_candidate_count_histogram, { 0: 1, 1: 1 });
+  assert.equal(result.summary.l1_suppressed_count, 1);
+  assert.equal(result.summary.llm_api_calls, 0);
+  assert.equal(result.results[0].suppressed, true);
+  assert.equal(result.results[0].llm_api_calls, 0);
+  assert.equal(result.results[0].candidate_count_decision.trigger, "l1_suppress");
+  assert.equal(result.results[0].candidate_selection.requested_candidate_count, 0);
+  assert.deepEqual(result.results[0].candidates, []);
+  assert.equal(result.results[1].suppressed, undefined);
+  assert.equal(result.results[1].candidate_count_decision.trigger, "l1_light_single");
 });
 
 test("LLM work-order draft report can select the best of three candidates from one call", async () => {
