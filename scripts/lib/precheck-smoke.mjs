@@ -4,6 +4,7 @@ import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { reviewGenericAgentContextDensity } from "./genericagent-density.mjs";
 import { simulateMisaLearning } from "./learning-loop.mjs";
 import { reviewMemoryLayerComparison } from "./memory-layer.mjs";
+import { reviewOuterLoop } from "./outer-loop-review.mjs";
 import { reviewRepairTickets } from "./repair-ticket.mjs";
 import { validateJsonData } from "./schema-validation.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
@@ -211,6 +212,30 @@ export async function runSmokePrecheck({ repoRoot }) {
     schemaRel: "schemas/stability-indicator.schema.json",
     data: stability,
     name: "validate stability monitor review"
+  }));
+
+  const outerLoop = reviewOuterLoop({
+    now: new Date("2026-05-21T00:00:00Z")
+  });
+  checks.push(smokeCheck("Misa outer-loop review check", outerLoop.ok, {
+    mode: outerLoop.mode,
+    recommendations: outerLoop.summary.recommendation_count,
+    actionableRecommendations: outerLoop.summary.actionable_recommendation_count,
+    setpointCandidates: outerLoop.summary.setpoint_adjustment_candidate_count,
+    routeRecalibrationCandidates: outerLoop.summary.route_recalibration_candidate_count,
+    metricRegistryCandidates: outerLoop.summary.metric_registry_expansion_candidate_count,
+    productionAuthority: outerLoop.safety.production_authority,
+    routePredicateMutated: outerLoop.safety.route_predicate_mutated,
+    metricRegistryMutated: outerLoop.safety.metric_registry_mutated,
+    setpointMutated: outerLoop.safety.setpoint_mutated,
+    llmApiCalls: outerLoop.safety.llm_api_calls,
+    violations: outerLoop.violations
+  }));
+  checks.push(await phasedValidation({
+    repoRoot,
+    schemaRel: "schemas/outer-loop-review.schema.json",
+    data: outerLoop,
+    name: "validate outer-loop review"
   }));
 
   const memoryLayer = await reviewMemoryLayerComparison({ repoRoot });

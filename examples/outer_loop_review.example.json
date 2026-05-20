@@ -1,0 +1,228 @@
+{
+  "schema_version": "misa.outer_loop_review.v1",
+  "mode": "outer-loop-review",
+  "ok": true,
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "review_window": {
+    "kind": "days",
+    "value": 7,
+    "started_at": "2026-05-14T00:00:00.000Z",
+    "ended_at": "2026-05-21T00:00:00.000Z"
+  },
+  "summary": {
+    "recommendation_count": 5,
+    "actionable_recommendation_count": 4,
+    "setpoint_adjustment_candidate_count": 2,
+    "route_recalibration_candidate_count": 1,
+    "metric_registry_expansion_candidate_count": 1,
+    "no_change_count": 1,
+    "route_counts": {
+      "skill": 1,
+      "memory": 2,
+      "case": 2
+    },
+    "metric_ids": [
+      "mail_triage.tool_selection_failure_rate",
+      "memory.pollution_rate",
+      "provider.timeout_rate",
+      "skill.replay_pass_rate"
+    ],
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "recommendations": [
+    {
+      "recommendation_id": "outer-skill.replay_pass_rate-setpoint_adjustment_candidate",
+      "recommendation_type": "setpoint_adjustment_candidate",
+      "status": "candidate",
+      "target_surface": "setpoint",
+      "metric_id": "skill.replay_pass_rate",
+      "route_target": "skill",
+      "reason": "Metric stayed outside tolerance without enough movement toward the registered setpoint.",
+      "authority": "human_review_required_before_mutation",
+      "proposed_mutation": {
+        "changes_setpoint": false,
+        "changes_route_predicate": false,
+        "changes_metric_registry": false,
+        "touches_production": false
+      },
+      "evidence": {
+        "plant_state_component": "skills.replay_pass_rate",
+        "direction": "maximize",
+        "target_value": 0.92,
+        "tolerance": 0.03,
+        "sample_count": 3,
+        "first_value": 0.78,
+        "latest_value": 0.8,
+        "average_value": 0.79,
+        "first_distance_to_target": 0.14,
+        "latest_distance_to_target": 0.12,
+        "improvement": 0.02
+      }
+    },
+    {
+      "recommendation_id": "outer-memory.pollution_rate-no_change",
+      "recommendation_type": "no_change",
+      "status": "no_change",
+      "target_surface": "setpoint",
+      "metric_id": "memory.pollution_rate",
+      "route_target": "memory",
+      "reason": "Metric trend is within tolerance or moving toward the registered setpoint.",
+      "authority": "human_review_required_before_mutation",
+      "proposed_mutation": {
+        "changes_setpoint": false,
+        "changes_route_predicate": false,
+        "changes_metric_registry": false,
+        "touches_production": false
+      },
+      "evidence": {
+        "plant_state_component": "memory.pollution_rate",
+        "direction": "minimize",
+        "target_value": 0.02,
+        "tolerance": 0.01,
+        "sample_count": 3,
+        "first_value": 0.042,
+        "latest_value": 0.028,
+        "average_value": 0.035,
+        "first_distance_to_target": 0.022,
+        "latest_distance_to_target": 0.008,
+        "improvement": 0.014
+      }
+    },
+    {
+      "recommendation_id": "outer-provider.timeout_rate-setpoint_adjustment_candidate",
+      "recommendation_type": "setpoint_adjustment_candidate",
+      "status": "candidate",
+      "target_surface": "setpoint",
+      "metric_id": "provider.timeout_rate",
+      "route_target": "case",
+      "reason": "Metric stayed outside tolerance without enough movement toward the registered setpoint.",
+      "authority": "human_review_required_before_mutation",
+      "proposed_mutation": {
+        "changes_setpoint": false,
+        "changes_route_predicate": false,
+        "changes_metric_registry": false,
+        "touches_production": false
+      },
+      "evidence": {
+        "plant_state_component": "providers.timeout_rate",
+        "direction": "minimize",
+        "target_value": 0.05,
+        "tolerance": 0.02,
+        "sample_count": 3,
+        "first_value": 0.09,
+        "latest_value": 0.11,
+        "average_value": 0.098,
+        "first_distance_to_target": 0.04,
+        "latest_distance_to_target": 0.06,
+        "improvement": -0.02
+      }
+    },
+    {
+      "recommendation_id": "outer-memory-route-recalibration",
+      "recommendation_type": "route_recalibration_candidate",
+      "status": "candidate",
+      "target_surface": "route_criteria",
+      "metric_id": "memory.pollution_rate",
+      "route_target": "memory",
+      "reason": "Route outcomes crossed the slow-loop recalibration threshold.",
+      "authority": "human_review_required_before_mutation",
+      "proposed_mutation": {
+        "changes_setpoint": false,
+        "changes_route_predicate": false,
+        "changes_metric_registry": false,
+        "touches_production": false
+      },
+      "evidence": {
+        "evaluated_count": 8,
+        "rejected_count": 2,
+        "rejection_rate": 0.25,
+        "rejection_rate_threshold": 0.45,
+        "post_deploy_count": 4,
+        "confirmed_negative_count": 2,
+        "post_deploy_negative_rate": 0.5,
+        "post_deploy_negative_rate_threshold": 0.4
+      }
+    },
+    {
+      "recommendation_id": "outer-mail_triage.tool_selection_failure_rate-metric-registry",
+      "recommendation_type": "metric_registry_expansion_candidate",
+      "status": "candidate",
+      "target_surface": "metric_registry",
+      "metric_id": "mail_triage.tool_selection_failure_rate",
+      "route_target": "case",
+      "reason": "Mail triage actuator checks can pass while tool-selection failures remain unmeasured.",
+      "authority": "human_review_required_before_mutation",
+      "proposed_mutation": {
+        "changes_setpoint": false,
+        "changes_route_predicate": false,
+        "changes_metric_registry": false,
+        "touches_production": false
+      },
+      "evidence": {
+        "plant_state_component": "mail_triage.tool_selection_failure_rate",
+        "observed_signal": "tool_selection_failure",
+        "evidence_count": 4
+      }
+    }
+  ],
+  "control_hierarchy": {
+    "inner": {
+      "loop_id": "inner",
+      "label": "fast actuator and output guard",
+      "timescale": "milliseconds_to_seconds",
+      "authority": "block_or_allow_single_local_action",
+      "commands": [
+        "governance dry-run checks",
+        "redaction gates",
+        "control contract actuator budget checks"
+      ],
+      "may_mutate_route_predicates": false,
+      "may_mutate_metric_registry": false,
+      "may_mutate_production": false
+    },
+    "middle": {
+      "loop_id": "middle",
+      "label": "candidate evaluation and post-deploy feedback",
+      "timescale": "hours_to_days",
+      "authority": "rank_candidates_and_measure_landed_effects",
+      "commands": [
+        "npm run evolution:evaluate:misa",
+        "npm run evolution:tournament:misa",
+        "npm run post-deploy:measure",
+        "npm run stability:monitor"
+      ],
+      "may_mutate_route_predicates": false,
+      "may_mutate_metric_registry": false,
+      "may_mutate_production": false
+    },
+    "outer": {
+      "loop_id": "outer",
+      "label": "slow setpoint and route-criteria review",
+      "timescale": "weeks_to_months",
+      "authority": "recommend_human_review_for_control_contract_changes",
+      "commands": [
+        "npm run outer-loop:review",
+        "npm run calibrate:current-line",
+        "npm run health:qianxuesen",
+        "npm run precheck"
+      ],
+      "may_mutate_route_predicates": false,
+      "may_mutate_metric_registry": false,
+      "may_mutate_production": false
+    }
+  },
+  "safety": {
+    "production_authority": false,
+    "route_predicate_mutated": false,
+    "metric_registry_mutated": false,
+    "setpoint_mutated": false,
+    "writes_persistent_memory": false,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "warnings": [
+    "Outer-loop candidates are recommendations only; human review is required before changing setpoints, route predicates, or metric registry entries."
+  ],
+  "violations": []
+}

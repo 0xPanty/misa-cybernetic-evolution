@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/outer-loop-review.schema.json",
+  "title": "OuterLoopReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "review_window",
+    "summary",
+    "recommendations",
+    "control_hierarchy",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.outer_loop_review.v1" },
+    "mode": { "type": "string", "const": "outer-loop-review" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "review_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value", "started_at", "ended_at"],
+      "properties": {
+        "kind": { "type": "string", "const": "days" },
+        "value": { "type": "integer", "minimum": 1 },
+        "started_at": { "type": "string", "format": "date-time" },
+        "ended_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_count",
+        "actionable_recommendation_count",
+        "setpoint_adjustment_candidate_count",
+        "route_recalibration_candidate_count",
+        "metric_registry_expansion_candidate_count",
+        "no_change_count",
+        "route_counts",
+        "metric_ids",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "recommendation_count": { "type": "integer", "minimum": 0 },
+        "actionable_recommendation_count": { "type": "integer", "minimum": 0 },
+        "setpoint_adjustment_candidate_count": { "type": "integer", "minimum": 0 },
+        "route_recalibration_candidate_count": { "type": "integer", "minimum": 0 },
+        "metric_registry_expansion_candidate_count": { "type": "integer", "minimum": 0 },
+        "no_change_count": { "type": "integer", "minimum": 0 },
+        "route_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "metric_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recommendation" }
+    },
+    "control_hierarchy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inner", "middle", "outer"],
+      "properties": {
+        "inner": { "$ref": "#/$defs/control_loop" },
+        "middle": { "$ref": "#/$defs/control_loop" },
+        "outer": { "$ref": "#/$defs/control_loop" }
+      }
+    },
+    "safety": { "$ref": "#/$defs/safety" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation_id",
+        "recommendation_type",
+        "status",
+        "target_surface",
+        "metric_id",
+        "route_target",
+        "reason",
+        "authority",
+        "proposed_mutation",
+        "evidence"
+      ],
+      "properties": {
+        "recommendation_id": { "type": "string", "minLength": 1 },
+        "recommendation_type": {
+          "type": "string",
+          "enum": [
+            "setpoint_adjustment_candidate",
+            "route_recalibration_candidate",
+            "metric_registry_expansion_candidate",
+            "no_change"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["candidate", "no_change"]
+        },
+        "target_surface": {
+          "type": "string",
+          "enum": ["setpoint", "route_criteria", "metric_registry"]
+        },
+        "metric_id": { "type": ["string", "null"], "minLength": 1 },
+        "route_target": { "type": ["string", "null"], "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "authority": {
+          "type": "string",
+          "const": "human_review_required_before_mutation"
+        },
+        "proposed_mutation": { "$ref": "#/$defs/proposed_mutation" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "proposed_mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "changes_setpoint",
+        "changes_route_predicate",
+        "changes_metric_registry",
+        "touches_production"
+      ],
+      "properties": {
+        "changes_setpoint": { "type": "boolean", "const": false },
+        "changes_route_predicate": { "type": "boolean", "const": false },
+        "changes_metric_registry": { "type": "boolean", "const": false },
+        "touches_production": { "type": "boolean", "const": false }
+      }
+    },
+    "control_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loop_id",
+        "label",
+        "timescale",
+        "authority",
+        "commands",
+        "may_mutate_route_predicates",
+        "may_mutate_metric_registry",
+        "may_mutate_production"
+      ],
+      "properties": {
+        "loop_id": { "type": "string", "enum": ["inner", "middle", "outer"] },
+        "label": { "type": "string", "minLength": 1 },
+        "timescale": {
+          "type": "string",
+          "enum": ["milliseconds_to_seconds", "hours_to_days", "weeks_to_months"]
+        },
+        "authority": { "type": "string", "minLength": 1 },
+        "commands": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "may_mutate_route_predicates": { "type": "boolean", "const": false },
+        "may_mutate_metric_registry": { "type": "boolean", "const": false },
+        "may_mutate_production": { "type": "boolean", "const": false }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "route_predicate_mutated",
+        "metric_registry_mutated",
+        "setpoint_mutated",
+        "writes_persistent_memory",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "route_predicate_mutated": { "type": "boolean", "const": false },
+        "metric_registry_mutated": { "type": "boolean", "const": false },
+        "setpoint_mutated": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    }
+  }
+}

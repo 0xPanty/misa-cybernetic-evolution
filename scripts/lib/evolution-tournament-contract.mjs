@@ -34,6 +34,7 @@ export const LOCAL_COMMAND_ALLOWLIST = Object.freeze([
   "npm run repair-ticket:misa",
   "npm run post-deploy:measure",
   "npm run stability:monitor",
+  "npm run outer-loop:review",
   "npm run validate:schemas",
   "npm run precheck",
   "npm test"

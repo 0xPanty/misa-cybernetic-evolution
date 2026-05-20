@@ -77,6 +77,7 @@ The safety boundary is deliberate:
 | Skill evolution changes | replay-required candidates only, no automatic skill mutation |
 | Hermes runtime adapter | observe-only hook normalization; no runtime block, memory write, or skill write |
 | Stability safe mode | monitor output only; when active, accept `damping` and `ignore` until human release |
+| Outer-loop review | recommendation only; cannot change setpoints, route predicates, or metric registry without human review |
 
 In plain terms: this sidecar can read redacted local evidence, compress it,
 route it, draft safe local artifacts, compare candidate variants, and explain
@@ -152,6 +153,7 @@ Two rules matter most:
 | Evolution tournament | `npm run evolution:tournament:misa` | local draft winner only |
 | Post-deploy measurement | `npm run post-deploy:measure` | local setpoint backtest; recommends rollback/damping but cannot execute it |
 | Stability monitor | `npm run stability:monitor` | local divergence gate; safe mode freezes promotion routes in output only |
+| Outer-loop review | `npm run outer-loop:review` | weekly slow-loop review; suggestions only, no route or metric mutation |
 | Loser pressure quant | `npm run loser:pressure -- --target-samples=1000` | local loser-memory pressure report; model can generate samples only |
 | Loser pressure matrix | `npm run loser:matrix -- --target-samples=1000` | multi-scenario parameter sweep for accumulated loser evidence |
 | Memory-layer comparison | `npm run memory-layer:misa` | compares broad vs minimal L3 |
@@ -168,7 +170,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 

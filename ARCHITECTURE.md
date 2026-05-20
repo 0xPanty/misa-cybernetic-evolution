@@ -477,7 +477,25 @@ touch VPS.
 The stability monitor contract is described in
 [docs/stability-monitor.md](./docs/stability-monitor.md).
 
-### 8.6 Vector Memory and Retrieval Lineage
+### 8.6 Control Hierarchy and Outer Loop
+
+The control plane is split into three time scales. The inner loop checks a
+single actuator or output against the current boundary. The middle loop ranks
+candidates, measures post-deploy effects, and emits safe-mode pressure. The
+outer loop reviews whether setpoints, route predicates, and metric registry
+coverage still match the plant.
+
+The outer loop is deliberately non-authoritative. It can emit
+`setpoint_adjustment_candidate`, `route_recalibration_candidate`, and
+`metric_registry_expansion_candidate` records, but it cannot apply any of those
+changes. Its schema locks `production_authority=false`,
+`route_predicate_mutated=false`, `metric_registry_mutated=false`,
+`setpoint_mutated=false`, and `llm_api_calls=0`.
+
+The hierarchy is described in
+[docs/control-hierarchy.md](./docs/control-hierarchy.md).
+
+### 8.7 Vector Memory and Retrieval Lineage
 
 Vector-memory classification is a storage plan, not a memory write. The dry-run
 records keep kind, authority, source lineage, replay keys, and retrieval hints
@@ -502,7 +520,7 @@ public distillation template locally, exposes `upsert`, `query`, `stats`, and
 LanceDB, Chroma, pgvector, or custom stores. Swapping the backend does not
 change the required `misa.local_session_distillation.v1` input shape.
 
-### 8.7 Skill Evolution Adapter
+### 8.8 Skill Evolution Adapter
 
 The skill evolution adapter turns arbitrary behavior layers into a uniform
 supervision surface. A behavior adapter reports what a skill tried to do:
@@ -530,7 +548,7 @@ The supervisor has no write authority. It does not mutate the skill, publish
 content, write memory, call providers, change route ownership, or promote a
 candidate without replay.
 
-### 8.8 Session-Distiller Review
+### 8.9 Session-Distiller Review
 
 Session-distiller review is live-adjacent but read-only. It can inspect a
 distiller summary, Zilliz manifest rows, rollback traces, and LLM artifacts, then
