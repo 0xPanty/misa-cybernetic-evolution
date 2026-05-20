@@ -436,7 +436,29 @@ rejected before any effect happens.
 The v0.18 tournament gate is described in
 [docs/evolution-tournament-gate-v0.18.md](./docs/evolution-tournament-gate-v0.18.md).
 
-### 8.4 Vector Memory and Retrieval Lineage
+### 8.4 Post-Deploy Measurement
+
+Post-deploy measurement is the output-side feedback loop. Tournament winners
+only say a candidate looked better before release; deployment tickets measure
+whether the landed candidate moved a registered setpoint afterward.
+
+Each deployment ticket binds a candidate to a metric registry entry, records
+the pre-deploy value, the post-deploy value, the measurement window, and the
+target/tolerance/direction used for deterministic classification. Results are
+`confirmed_positive`, `confirmed_negative`, `null_effect`, or `pending`.
+
+Negative results recommend rollback and damping, but the local plane never
+executes rollback. The safety lock remains `production_authority=false`,
+`rollback_executed=false`, and `llm_api_calls=0`.
+
+Historical post-deploy results are available to the tournament as advisory
+pressure only. They do not change the Qianxuesen route owner, pick winners,
+hard-filter candidates, write memory, or touch VPS.
+
+The post-deploy measurement contract is described in
+[docs/post-deploy-measurement.md](./docs/post-deploy-measurement.md).
+
+### 8.5 Vector Memory and Retrieval Lineage
 
 Vector-memory classification is a storage plan, not a memory write. The dry-run
 records keep kind, authority, source lineage, replay keys, and retrieval hints
@@ -461,7 +483,7 @@ public distillation template locally, exposes `upsert`, `query`, `stats`, and
 LanceDB, Chroma, pgvector, or custom stores. Swapping the backend does not
 change the required `misa.local_session_distillation.v1` input shape.
 
-### 8.5 Skill Evolution Adapter
+### 8.6 Skill Evolution Adapter
 
 The skill evolution adapter turns arbitrary behavior layers into a uniform
 supervision surface. A behavior adapter reports what a skill tried to do:
@@ -489,7 +511,7 @@ The supervisor has no write authority. It does not mutate the skill, publish
 content, write memory, call providers, change route ownership, or promote a
 candidate without replay.
 
-### 8.6 Session-Distiller Review
+### 8.7 Session-Distiller Review
 
 Session-distiller review is live-adjacent but read-only. It can inspect a
 distiller summary, Zilliz manifest rows, rollback traces, and LLM artifacts, then

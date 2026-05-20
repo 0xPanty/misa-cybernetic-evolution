@@ -1,0 +1,52 @@
+{
+  "schema_version": "misa.deployment_ticket.v1",
+  "deployment_id": "deploy-skill-replay-pass-rate-001",
+  "candidate_id": "adaptive-skill-sample",
+  "candidate_kind": "skill",
+  "route_target": "skill",
+  "review_route": "post_deploy_review",
+  "setpoint_metric_id": "skill.replay_pass_rate",
+  "target_value": 0.85,
+  "tolerance": 0.02,
+  "direction": "maximize",
+  "pre_deploy_value": 0.78,
+  "post_deploy_value": 0.88,
+  "measurement_window": {
+    "kind": "sessions",
+    "value": 50
+  },
+  "decision_at_window_end": "confirmed_positive",
+  "measurement": {
+    "classifier": "deterministic_distance_to_setpoint_v1",
+    "pre_distance_to_target": 0.07,
+    "post_distance_to_target": 0,
+    "delta_toward_target": 0.07,
+    "within_tolerance": true,
+    "llm_api_calls": 0
+  },
+  "rollback": {
+    "recommended": false,
+    "executed": false,
+    "authority": "human_or_production_plane_only",
+    "reason": null
+  },
+  "damping": {
+    "recommended": false,
+    "case_candidate": false,
+    "reason": null
+  },
+  "safety": {
+    "production_authority": false,
+    "publication_allowed": false,
+    "persistent_write_allowed": false,
+    "rollback_executed": false,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "evidence": [
+    {
+      "source": "local_post_deploy_window",
+      "note": "Fifty local replay sessions moved the skill replay metric closer to its registered setpoint."
+    }
+  ]
+}

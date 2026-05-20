@@ -40,6 +40,7 @@ if (asJson) {
   console.log(`winners: ${result.summary.winner_count}`);
   console.log(`rejected_variants: ${result.summary.rejected_variant_count}`);
   console.log(`experience_ledger: ${result.summary.experience_ledger_count}`);
+  console.log(`historical_post_deploy_results: ${result.summary.historical_post_deploy_result_count}`);
   console.log(`loser_review_context: ${result.loser_review_context.summary.packed_counterexample_count} packed, ${result.loser_review_context.summary.strong_review_sample_count} L4 samples`);
   console.log(`loser_review_deployment: ${result.loser_review_context.deployment_readiness.status} (${result.loser_review_context.deployment_readiness.runtime_profile})`);
   console.log(`production_authority: ${result.summary.production_authority}`);

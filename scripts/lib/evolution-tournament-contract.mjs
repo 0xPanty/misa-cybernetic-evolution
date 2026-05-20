@@ -32,6 +32,7 @@ export const LOCAL_COMMAND_ALLOWLIST = Object.freeze([
   "npm run evolution:tournament:misa",
   "npm run memory-layer:misa",
   "npm run repair-ticket:misa",
+  "npm run post-deploy:measure",
   "npm run validate:schemas",
   "npm run precheck",
   "npm test"
@@ -56,6 +57,7 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "winner_queue",
     "rejected_variant_ledger",
     "experience_ledger",
+    "historical_post_deploy_results",
     "loser_review_context",
     "control_boundary",
     "safety",
@@ -73,7 +75,8 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "vps_raw_dir",
     "optimization_candidate_count",
     "report_queue_count",
-    "tournament_candidate_count"
+    "tournament_candidate_count",
+    "historical_post_deploy_result_count"
   ]),
   tournament_policy_keys: Object.freeze([
     "route_owner",
@@ -90,6 +93,8 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "winner_count",
     "rejected_variant_count",
     "experience_ledger_count",
+    "historical_post_deploy_result_count",
+    "post_deploy_decision_counts",
     "route_counts",
     "production_authority"
   ]),

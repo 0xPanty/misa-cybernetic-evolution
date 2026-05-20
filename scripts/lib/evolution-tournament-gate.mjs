@@ -18,6 +18,7 @@ import {
   uniqueStrings
 } from "./evolution-tournament-utils.mjs";
 import { evaluateEvolutionTournamentGate } from "./evolution-tournament-validation.mjs";
+import { summarizeHistoricalPostDeployResults } from "./post-deploy-measurement.mjs";
 import {
   distillLocalMisaSources,
   loadLocalDistillationSources
@@ -260,6 +261,7 @@ export async function reviewEvolutionTournamentGate({
   judgeBaseUrl,
   judgeEscalationThreshold,
   loserRuntimeProfile,
+  historicalPostDeployResults = [],
   llmJudge
 } = {}) {
   const preflight = sourceDir || vpsRawDir
@@ -271,6 +273,7 @@ export async function reviewEvolutionTournamentGate({
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
   const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments });
+  const postDeployHistory = summarizeHistoricalPostDeployResults(historicalPostDeployResults, { now });
   const loserReviewContext = buildLoserReviewContext({
     tournaments,
     experienceLedger,
@@ -294,7 +297,8 @@ export async function reviewEvolutionTournamentGate({
       vps_raw_dir: preflight.vps_raw_dir ?? null,
       optimization_candidate_count: preflight.summary.optimization_candidate_count,
       report_queue_count: preflight.summary.report_queue_count,
-      tournament_candidate_count: candidates.length
+      tournament_candidate_count: candidates.length,
+      historical_post_deploy_result_count: postDeployHistory.summary.result_count
     },
     algorithm_adaptation: {
       source: "NousResearch/hermes-agent-self-evolution",
@@ -329,6 +333,8 @@ export async function reviewEvolutionTournamentGate({
       winner_count: winners.length,
       rejected_variant_count: rejected.length,
       experience_ledger_count: experienceLedger.length,
+      historical_post_deploy_result_count: postDeployHistory.summary.result_count,
+      post_deploy_decision_counts: postDeployHistory.summary.decision_counts,
       route_counts: countBy(tournaments, (tournament) => tournament.route_target),
       production_authority: false
     },
@@ -342,6 +348,7 @@ export async function reviewEvolutionTournamentGate({
       retained_as: "damping_or_case_evidence"
     })),
     experience_ledger: experienceLedger,
+    historical_post_deploy_results: postDeployHistory,
     loser_review_context: loserReviewContext,
     control_boundary: {
       optimizer_role: "candidate_layer_only",

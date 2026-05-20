@@ -27,6 +27,7 @@
     "rollup:misa": "node scripts/signal-rollup.mjs",
     "evolution:evaluate:misa": "node scripts/evolution-evaluator.mjs",
     "evolution:tournament:misa": "node scripts/evolution-tournament.mjs",
+    "post-deploy:measure": "node scripts/post-deploy-measurement.mjs",
     "loser:pressure": "node scripts/loser-pressure-quant.mjs",
     "loser:matrix": "node scripts/loser-pressure-matrix.mjs",
     "memory-layer:misa": "node scripts/memory-layer.mjs",

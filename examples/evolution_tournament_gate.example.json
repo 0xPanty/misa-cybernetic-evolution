@@ -10,7 +10,8 @@
     "vps_raw_dir": null,
     "optimization_candidate_count": 3,
     "report_queue_count": 1,
-    "tournament_candidate_count": 1
+    "tournament_candidate_count": 1,
+    "historical_post_deploy_result_count": 0
   },
   "algorithm_adaptation": {
     "source": "NousResearch/hermes-agent-self-evolution",
@@ -42,6 +43,8 @@
     "winner_count": 1,
     "rejected_variant_count": 1,
     "experience_ledger_count": 2,
+    "historical_post_deploy_result_count": 0,
+    "post_deploy_decision_counts": {},
     "route_counts": {
       "skill": 1
     },
@@ -599,6 +602,26 @@
       "publication_allowed": false
     }
   ],
+  "historical_post_deploy_results": {
+    "mode": "historical-post-deploy-results",
+    "summary": {
+      "result_count": 0,
+      "decision_counts": {},
+      "route_counts": {},
+      "metric_counts": {},
+      "confirmed_negative_count": 0,
+      "llm_api_calls": 0
+    },
+    "results": [],
+    "safety": {
+      "production_authority": false,
+      "publication_allowed": false,
+      "persistent_write_allowed": false,
+      "rollback_executed": false,
+      "llm_api_calls": 0,
+      "external_api_calls": 0
+    }
+  },
   "loser_review_context": {
     "schema_version": "misa.loser_review_context.v1",
     "mode": "loser-review-context",

@@ -41,6 +41,22 @@ export function evaluateEvolutionTournamentGate(result) {
   if (!Array.isArray(result.experience_ledger)) {
     violations.push("experience_ledger_must_be_array");
   }
+  const postDeployHistory = result.historical_post_deploy_results;
+  if (postDeployHistory?.safety?.production_authority !== false
+    || postDeployHistory?.safety?.llm_api_calls !== 0
+    || postDeployHistory?.safety?.external_api_calls !== 0
+    || postDeployHistory?.safety?.rollback_executed !== false) {
+    violations.push("historical_post_deploy_results_must_remain_local_measurement_only");
+  }
+  for (const item of postDeployHistory?.results ?? []) {
+    if (item.production_authority !== false || item.llm_api_calls !== 0) {
+      violations.push(`${item.deployment_id}:post_deploy_history_exceeds_authority`);
+    }
+    if (item.decision_at_window_end === "confirmed_negative"
+      && (item.rollback_recommended !== true || item.damping_recommended !== true || item.rollback_executed !== false)) {
+      violations.push(`${item.deployment_id}:negative_post_deploy_result_requires_rollback_and_damping_recommendation`);
+    }
+  }
   if (result.loser_review_context?.safety?.hard_filter_allowed !== false
     || result.loser_review_context?.safety?.changes_winner !== false
     || result.loser_review_context?.safety?.changes_route !== false
