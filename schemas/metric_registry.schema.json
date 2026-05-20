@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/metric_registry.schema.json",
+  "title": "MetricRegistry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "registry_id",
+    "plant_model_ref",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.metric_registry.v1" },
+    "registry_id": { "type": "string", "minLength": 1 },
+    "plant_model_ref": { "type": "string", "minLength": 1 },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/metric" }
+    }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "plant_state_component",
+        "measurement_kind",
+        "unit",
+        "direction",
+        "sampling_method",
+        "sampling_window",
+        "owner",
+        "description"
+      ],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "plant_state_component": { "type": "string", "minLength": 1 },
+        "measurement_kind": {
+          "type": "string",
+          "enum": ["plant_state", "sensor_quality", "guardrail", "dry_run_health"]
+        },
+        "unit": { "type": "string", "minLength": 1 },
+        "direction": {
+          "type": "string",
+          "enum": ["minimize", "maximize", "hold_within"]
+        },
+        "sampling_method": { "type": "string", "minLength": 1 },
+        "sampling_window": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

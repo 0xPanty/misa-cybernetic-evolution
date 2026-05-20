@@ -58,6 +58,8 @@ export const CORE_REQUIRED_FILES = [
   "scripts/lib/precheck-bridges.mjs",
   "scripts/lib/precheck-current-line.mjs",
   "scripts/lib/schema-validation.mjs",
+  "scripts/lib/plant-model.mjs",
+  "scripts/lib/metric-registry.mjs",
   "scripts/lib/perception-sidecar.mjs",
   "scripts/lib/perception-log-layout.mjs",
   "scripts/lib/learning-loop.mjs",
@@ -115,6 +117,7 @@ export const REFERENCE_FILES = [
 
 export const INVENTORY_FILES = [
   "docs/damping-rules.md",
+  "docs/metric-registry.md",
   "docs/misa-learning-evidence-v0.4.md",
   "docs/misa-learning-loop-v0.2.md",
   "docs/misa-learning-replay-v0.3.md",
@@ -143,6 +146,8 @@ export const INVENTORY_FILES = [
 
 export const MACHINE_CONTRACT_FILES = [
   "schemas/control_contract.schema.json",
+  "schemas/plant_model.schema.json",
+  "schemas/metric_registry.schema.json",
   "schemas/actuator-enum.json",
   "schemas/learning_event.schema.json",
   "schemas/learning_item.schema.json",
@@ -177,6 +182,8 @@ export const MACHINE_CONTRACT_FILES = [
   "schemas/damping_rules.schema.json",
   "schemas/integration_profile.schema.json",
   "examples/control_contract.example.json",
+  "examples/plant_model.example.json",
+  "examples/metric_registry.example.json",
   "examples/misa_readonly_control_contract.example.json",
   "examples/misa_readonly_integration.example.json",
   "examples/learning_event.example.json",

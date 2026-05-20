@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/plant_model.schema.json",
+  "title": "PlantModel",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plant_id",
+    "controlled_system",
+    "controller_role",
+    "state_variables",
+    "control_inputs",
+    "disturbances",
+    "outputs",
+    "safety_boundary"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.plant_model.v1" },
+    "plant_id": { "type": "string", "minLength": 1 },
+    "controlled_system": { "type": "string", "minLength": 1 },
+    "controller_role": { "type": "string", "minLength": 1 },
+    "state_variables": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/state_variable" }
+    },
+    "control_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/control_input" }
+    },
+    "disturbances": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/named_component" }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/named_component" }
+    },
+    "safety_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "default_effect_mode",
+        "forbidden_autonomy"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "default_effect_mode": {
+          "type": "string",
+          "enum": ["reference_only", "read_only_dry_run", "shadow"]
+        },
+        "forbidden_autonomy": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "named_component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "state_variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "unit",
+        "observable",
+        "default_sampling_window"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "unit": { "type": "string", "minLength": 1 },
+        "observable": { "type": "boolean" },
+        "default_sampling_window": { "type": "string", "minLength": 1 }
+      }
+    },
+    "control_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "allowed_actuators",
+        "default_authority"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "allowed_actuators": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "default_authority": {
+          "type": "string",
+          "enum": ["read_only", "draft_only", "approval_required"]
+        }
+      }
+    }
+  }
+}

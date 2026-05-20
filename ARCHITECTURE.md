@@ -6,6 +6,107 @@ Misa Cybernetic Evolution Layer is a sidecar learning plane for AI agents. It
 does not require the live assistant to route model traffic through a new proxy at
 the beginning. The initial integration is observation-only.
 
+## Plant Definition
+
+The plant is the thing this sidecar is trying to control.
+
+For this repository:
+
+```text
+Plant = Misa runtime agent + its conversation environment
+```
+
+The sidecar is not the plant. The sidecar is the controller around the plant: it
+observes redacted evidence, extracts signals, routes those signals, drafts local
+candidates, and produces reviewable work orders. It does not own live runtime
+behavior by default.
+
+The machine-readable plant model lives in:
+
+- [schemas/plant_model.schema.json](./schemas/plant_model.schema.json)
+- [examples/plant_model.example.json](./examples/plant_model.example.json)
+
+### State Vector
+
+The controlled state is intentionally small and measurable. The current model
+tracks:
+
+- memory consistency and pollution;
+- skill replay pass rate;
+- public-channel safety incident count;
+- provider timeout rate;
+- user correction rate;
+- route coverage;
+- signal extractor recall and precision;
+- dry-run live-effect count;
+- local precheck failure count.
+
+These are not vanity metrics. Each one answers a control question:
+
+- Is the agent learning from evidence or inventing memory?
+- Are skill candidates actually replaying better than the baseline?
+- Are public surfaces still blocked behind policy?
+- Are provider failures becoming known cases instead of route panic?
+- Is the sensor still seeing the signals the route table depends on?
+- Did a local check accidentally allow a live effect?
+
+### Control Inputs
+
+The control inputs are actuator-budgeted artifact changes. Every actuator in
+`schemas/actuator-enum.json` is mapped to one plant input dimension:
+
+- memory artifacts;
+- skill artifacts;
+- provider routes;
+- channel behavior;
+- session mechanics;
+- timers;
+- security policy;
+- VPS runtime;
+- vector store;
+- audit records.
+
+Most inputs are `approval_required`. The ordinary local path is still
+`draft_only` or `read_only_dry_run`.
+
+### Disturbances
+
+The model treats these as disturbances, not as things the sidecar can fully
+control:
+
+- LLM randomness;
+- provider drift;
+- user intent drift;
+- external framework updates.
+
+Those disturbances are why the sidecar measures, dampens, and asks for review
+instead of turning one sample into a permanent behavior change.
+
+### Outputs
+
+The plant outputs are:
+
+- agent-visible behavior;
+- user feedback;
+- redacted session evidence;
+- candidate route distribution.
+
+Those outputs feed the local control loop. They are evidence, not automatic
+permission to write production state.
+
+### Boundary
+
+The plant model keeps `production_authority=false`. By default this repository
+must not:
+
+- post publicly;
+- write production memory;
+- publish skills;
+- change provider routes;
+- start timers;
+- deploy to VPS;
+- let an LLM choose memory, skill, case, policy, damping, or ignore routes.
+
 ## Current Line
 
 The current package line is `0.25.0`.

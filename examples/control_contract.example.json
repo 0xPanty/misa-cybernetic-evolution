@@ -1,16 +1,23 @@
 {
   "contract_id": "cc-skill-replay-001",
-  "primary_setpoint": "Increase replay pass rate for a repeated mail-triage workflow without increasing memory pollution.",
+  "primary_setpoint": {
+    "metric_id": "skill.replay_pass_rate",
+    "target_value": 0.85,
+    "tolerance": 0.02,
+    "direction": "maximize"
+  },
+  "setpoint_narrative": "Increase replay pass rate for a repeated mail-triage workflow without increasing memory pollution.",
   "acceptance": [
     "Candidate skill passes L0 static checks.",
     "Candidate skill improves replay score over baseline on at least 3 historical tasks.",
     "No redaction or persistent-memory guardrail fails."
   ],
   "guardrail_metrics": [
-    "memory_pollution_rate",
-    "persona_drift_score",
-    "tool_error_rate",
-    "rollback_mttr"
+    "memory.pollution_rate",
+    "public_channel.safety_incident_count",
+    "provider.timeout_rate",
+    "runtime.live_effect_count",
+    "controller.precheck_failure_count"
   ],
   "sampling_plan": "Evaluate replay cases from the last 30 days of redacted task evidence.",
   "known_delays": [

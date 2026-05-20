@@ -66,6 +66,15 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+function measurableSetpoint({
+  metric_id = "skill.replay_pass_rate",
+  target_value = 0.85,
+  tolerance = 0.02,
+  direction = "maximize"
+} = {}) {
+  return { metric_id, target_value, tolerance, direction };
+}
+
 test("classifies high-risk actuators", () => {
   const classification = classifyActuators([
     "audit.write",
@@ -99,7 +108,13 @@ test("control contract actuator enum stays aligned with the manifest", async () 
 test("blocks high-risk control contract without approval", () => {
   const result = evaluateControlContract({
     contract_id: "unsafe",
-    primary_setpoint: "change production provider route",
+    primary_setpoint: measurableSetpoint({
+      metric_id: "provider.timeout_rate",
+      target_value: 0.01,
+      tolerance: 0.005,
+      direction: "minimize"
+    }),
+    setpoint_narrative: "change production provider route",
     acceptance: ["smoke test"],
     guardrail_metrics: [],
     sampling_plan: "local",
@@ -117,7 +132,8 @@ test("blocks high-risk control contract without approval", () => {
 test("rejects unknown actuator names before risk classification", () => {
   const result = evaluateControlContract({
     contract_id: "unknown-actuator",
-    primary_setpoint: "send to a channel with an unregistered actuator name",
+    primary_setpoint: measurableSetpoint(),
+    setpoint_narrative: "send to a channel with an unregistered actuator name",
     acceptance: ["smoke test"],
     guardrail_metrics: [],
     sampling_plan: "local",
@@ -136,7 +152,13 @@ test("rejects unknown actuator names before risk classification", () => {
 test("allows low-risk actuator without approval evidence", () => {
   const result = evaluateControlContract({
     contract_id: "low-risk-audit",
-    primary_setpoint: "write a local audit report only",
+    primary_setpoint: measurableSetpoint({
+      metric_id: "controller.precheck_failure_count",
+      target_value: 0,
+      tolerance: 0,
+      direction: "minimize"
+    }),
+    setpoint_narrative: "write a local audit report only",
     acceptance: ["local report exists"],
     guardrail_metrics: [],
     sampling_plan: "local",

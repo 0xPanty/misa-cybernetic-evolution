@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  loadDefaultMetricRegistry,
+  metricIds,
+  reviewMeasurableSetpoint
+} from "./metric-registry.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ACTUATOR_ENUM_PATH = path.join(__dirname, "..", "..", "schemas", "actuator-enum.json");
@@ -49,12 +54,13 @@ export function classifyActuators(actuatorBudget = []) {
   };
 }
 
-export function evaluateControlContract(contract) {
+export function evaluateControlContract(contract, { metricRegistry = loadDefaultMetricRegistry() } = {}) {
   const actuatorClassification = classifyActuators(contract?.actuator_budget ?? []);
   const { highRiskActuators, unknownActuators } = actuatorClassification;
   const violations = [];
   const warnings = [];
   const fullText = JSON.stringify(contract ?? {});
+  const registeredMetricIds = metricIds(metricRegistry);
 
   if (!contract || typeof contract !== "object") {
     return {
@@ -63,6 +69,15 @@ export function evaluateControlContract(contract) {
       violations: ["contract must be an object"],
       warnings
     };
+  }
+
+  const setpointReview = reviewMeasurableSetpoint(contract.primary_setpoint, { registry: metricRegistry });
+  violations.push(...setpointReview.violations);
+
+  for (const metricId of contract.guardrail_metrics ?? []) {
+    if (!registeredMetricIds.has(metricId)) {
+      violations.push(`guardrail metric is not registered: ${metricId}`);
+    }
   }
 
   if (unknownActuators.length > 0) {
@@ -95,6 +110,7 @@ export function evaluateControlContract(contract) {
 
   return {
     ok: violations.length === 0,
+    setpointReview,
     actuatorClassification,
     highRiskActuators,
     unknownActuators,

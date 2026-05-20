@@ -7,6 +7,7 @@
   "required": [
     "contract_id",
     "primary_setpoint",
+    "setpoint_narrative",
     "acceptance",
     "guardrail_metrics",
     "sampling_plan",
@@ -18,7 +19,21 @@
   ],
   "properties": {
     "contract_id": { "type": "string", "minLength": 1 },
-    "primary_setpoint": { "type": "string", "minLength": 1 },
+    "primary_setpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric_id", "target_value", "tolerance", "direction"],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "target_value": { "type": "number" },
+        "tolerance": { "type": "number", "minimum": 0 },
+        "direction": {
+          "type": "string",
+          "enum": ["minimize", "maximize", "hold_within"]
+        }
+      }
+    },
+    "setpoint_narrative": { "type": "string", "minLength": 1 },
     "acceptance": {
       "type": "array",
       "items": { "type": "string" },

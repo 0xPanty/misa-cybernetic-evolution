@@ -11,6 +11,7 @@ It prevents vague goals from becoming uncontrolled system modifications.
 ## Control Contract
 
 - Primary Setpoint:
+- Setpoint Narrative:
 - Acceptance:
 - Guardrail Metrics:
 - Sampling Plan:
@@ -42,13 +43,32 @@ npm run precheck
 
 ### Primary Setpoint
 
-The main variable the change should improve.
+The main variable the change should improve. This is now a measurable object,
+not free text.
+
+Required shape:
+
+```json
+{
+  "metric_id": "skill.replay_pass_rate",
+  "target_value": 0.85,
+  "tolerance": 0.02,
+  "direction": "maximize"
+}
+```
+
+`metric_id` must exist in
+[examples/metric_registry.example.json](./examples/metric_registry.example.json).
+The metric must also map to a plant state component from
+[examples/plant_model.example.json](./examples/plant_model.example.json).
+
+`setpoint_narrative` is the human explanation of the same goal.
 
 Good examples:
 
-- reduce repeated tool-selection failures for mail triage
-- increase replay pass rate for a skill from 60% to 85%
-- reduce memory pollution from unsupported preference inference
+- `skill.replay_pass_rate` target `0.85`, direction `maximize`
+- `memory.pollution_rate` target `0`, direction `minimize`
+- `public_channel.safety_incident_count` target `0`, direction `minimize`
 
 Weak examples:
 
@@ -56,7 +76,7 @@ Weak examples:
 - improve memory
 - optimize prompts
 
-For v0.2, a good Misa learning-loop setpoint is narrower:
+For local learning-loop work, a good narrative is narrower:
 
 - route repeated recovery behavior into a draft skill, not generic memory
 - hold a single transient failure as damping, not a provider-route change
@@ -75,15 +95,14 @@ The evidence that proves the setpoint was reached:
 
 ### Guardrail Metrics
 
-Metrics that must not regress:
+Metrics that must not regress. These must also be registered metric ids.
 
 - public-channel safety incidents
-- persona drift score
-- memory pollution rate
-- tool error rate
-- latency
-- cost
-- rollback MTTR
+- `memory.pollution_rate`
+- `public_channel.safety_incident_count`
+- `provider.timeout_rate`
+- `runtime.live_effect_count`
+- `controller.precheck_failure_count`
 
 ### Sampling Plan
 

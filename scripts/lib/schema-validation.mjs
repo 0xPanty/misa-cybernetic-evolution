@@ -4,6 +4,8 @@ import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
 export const SCHEMA_EXAMPLE_PAIRS = [
+  ["schemas/plant_model.schema.json", "examples/plant_model.example.json"],
+  ["schemas/metric_registry.schema.json", "examples/metric_registry.example.json"],
   ["schemas/control_contract.schema.json", "examples/control_contract.example.json"],
   ["schemas/control_contract.schema.json", "examples/misa_readonly_control_contract.example.json"],
   ["schemas/learning_event.schema.json", "examples/learning_event.example.json"],

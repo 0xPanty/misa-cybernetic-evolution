@@ -1,0 +1,115 @@
+{
+  "schema_version": "misa.metric_registry.v1",
+  "registry_id": "misa-cybernetic-core-metrics-v1",
+  "plant_model_ref": "misa-runtime-learning-plant",
+  "metrics": [
+    {
+      "metric_id": "skill.replay_pass_rate",
+      "plant_state_component": "skill.replay_pass_rate",
+      "measurement_kind": "plant_state",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Compare candidate replay results against baseline on local redacted tasks.",
+      "sampling_window": "last replay suite",
+      "owner": "evolution plane",
+      "description": "Primary skill-quality metric for measurable skill setpoints.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "memory.pollution_rate",
+      "plant_state_component": "memory.pollution_rate",
+      "measurement_kind": "guardrail",
+      "unit": "ratio",
+      "direction": "minimize",
+      "sampling_method": "Count unsupported memory candidates or writes over checked memory artifacts.",
+      "sampling_window": "last local replay batch",
+      "owner": "memory layer",
+      "description": "Guardrail against weak-evidence memory promotion.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "public_channel.safety_incident_count",
+      "plant_state_component": "public_channel.safety_incident_count",
+      "measurement_kind": "guardrail",
+      "unit": "count",
+      "direction": "minimize",
+      "sampling_method": "Count public-memory risk or public-output safety incidents in local audit evidence.",
+      "sampling_window": "session or audit batch",
+      "owner": "policy route",
+      "description": "Guardrail for public channel safety.",
+      "bounds": { "min": 0 }
+    },
+    {
+      "metric_id": "provider.timeout_rate",
+      "plant_state_component": "provider.timeout_rate",
+      "measurement_kind": "plant_state",
+      "unit": "ratio",
+      "direction": "minimize",
+      "sampling_method": "Count provider timeout events over provider calls in redacted local failure evidence.",
+      "sampling_window": "1 hour or one validation batch",
+      "owner": "case route",
+      "description": "Known-failure metric for provider stability.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "learning.route_coverage_count",
+      "plant_state_component": "learning.route_coverage_count",
+      "measurement_kind": "dry_run_health",
+      "unit": "count",
+      "direction": "maximize",
+      "sampling_method": "Count learning routes covered by current local fixtures and distilled events.",
+      "sampling_window": "current local test suite",
+      "owner": "learning loop",
+      "description": "Dry-run health metric for route coverage.",
+      "bounds": { "min": 0, "max": 6 }
+    },
+    {
+      "metric_id": "signal_extractor.recall",
+      "plant_state_component": "observation.signal_extractor_recall",
+      "measurement_kind": "sensor_quality",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Compare deterministic extractor output with hand-labeled fixture signals.",
+      "sampling_window": "examples/misa-learning fixture review",
+      "owner": "observation plane",
+      "description": "Recall of rule-based signal extraction against fixture truth.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "signal_extractor.precision",
+      "plant_state_component": "observation.signal_extractor_precision",
+      "measurement_kind": "sensor_quality",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Compare deterministic extractor output with hand-labeled fixture signals.",
+      "sampling_window": "examples/misa-learning fixture review",
+      "owner": "observation plane",
+      "description": "Precision of rule-based signal extraction against fixture truth.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "runtime.live_effect_count",
+      "plant_state_component": "runtime.live_effect_count",
+      "measurement_kind": "guardrail",
+      "unit": "count",
+      "direction": "minimize",
+      "sampling_method": "Count true live-effect flags in dry-run and shadow reports.",
+      "sampling_window": "current local check",
+      "owner": "governance plane",
+      "description": "Hard guardrail for no-production-effect claims.",
+      "bounds": { "min": 0 }
+    },
+    {
+      "metric_id": "controller.precheck_failure_count",
+      "plant_state_component": "controller.precheck_failure_count",
+      "measurement_kind": "dry_run_health",
+      "unit": "count",
+      "direction": "minimize",
+      "sampling_method": "Count failed items from npm run precheck.",
+      "sampling_window": "current precheck run",
+      "owner": "verification plane",
+      "description": "Local health metric for contract, smoke, bridge, and current-line checks.",
+      "bounds": { "min": 0 }
+    }
+  ]
+}

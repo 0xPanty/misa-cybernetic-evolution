@@ -1,0 +1,196 @@
+{
+  "schema_version": "misa.plant_model.v1",
+  "plant_id": "misa-runtime-learning-plant",
+  "controlled_system": "Misa runtime agent plus its conversation environment, observed through the local cybernetic sidecar.",
+  "controller_role": "The sidecar may observe, measure, route, draft candidates, and produce work orders. It must not publish, deploy, write production memory, or change live runtime behavior without a separate human-approved rollout.",
+  "state_variables": [
+    {
+      "id": "memory.consistency_rate",
+      "description": "Share of checked memory candidates that remain consistent with source evidence.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "last local replay batch"
+    },
+    {
+      "id": "memory.pollution_rate",
+      "description": "Rate of unsupported memory writes or memory candidates inferred from weak evidence.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "last local replay batch"
+    },
+    {
+      "id": "skill.replay_pass_rate",
+      "description": "Share of skill candidates that beat or match baseline behavior in replay.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "last replay suite"
+    },
+    {
+      "id": "public_channel.safety_incident_count",
+      "description": "Count of public-channel safety incidents or public-memory leak candidates.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "session or audit batch"
+    },
+    {
+      "id": "provider.timeout_rate",
+      "description": "Provider timeout rate observed in local or redacted failure evidence.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "1 hour or one validation batch"
+    },
+    {
+      "id": "user.correction_rate",
+      "description": "Rate of user corrections that indicate wrong route, stale facts, or bad behavior framing.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "last conversation batch"
+    },
+    {
+      "id": "learning.route_coverage_count",
+      "description": "Number of covered local learning routes among memory, skill, case, policy, damping, and ignore.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current local test suite"
+    },
+    {
+      "id": "observation.signal_extractor_recall",
+      "description": "Recall of the deterministic signal extractor against hand-labeled fixture signals.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "examples/misa-learning fixture review"
+    },
+    {
+      "id": "observation.signal_extractor_precision",
+      "description": "Precision of deterministic signal extraction against hand-labeled fixture signals.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "examples/misa-learning fixture review"
+    },
+    {
+      "id": "runtime.live_effect_count",
+      "description": "Count of live effects allowed by a dry-run or shadow result.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current local check"
+    },
+    {
+      "id": "controller.precheck_failure_count",
+      "description": "Count of failing local precheck items.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current precheck run"
+    }
+  ],
+  "control_inputs": [
+    {
+      "id": "memory_artifacts",
+      "description": "Memory reads, draft writes, and deletion requests.",
+      "allowed_actuators": ["memory.read", "memory.write", "memory.delete"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "skill_artifacts",
+      "description": "Skill drafts, installs, publications, and deprecations.",
+      "allowed_actuators": ["skill.draft", "skill.install", "skill.publish", "skill.deprecate"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "provider_routes",
+      "description": "Provider additions, removals, and route changes.",
+      "allowed_actuators": ["provider.route_change", "provider.add", "provider.remove"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "channel_behavior",
+      "description": "Private replies and public channel actions.",
+      "allowed_actuators": ["channel.private_reply", "channel.public_post"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "session_mechanics",
+      "description": "Session restart and mechanics changes.",
+      "allowed_actuators": ["session.mechanics_change", "session.restart"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "timers",
+      "description": "Background timers and scheduled jobs.",
+      "allowed_actuators": ["timer.start", "timer.stop", "timer.modify"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "security_policy",
+      "description": "Policy and redaction changes.",
+      "allowed_actuators": ["security.policy_change", "security.redaction_change"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "vps_runtime",
+      "description": "VPS deploys and runtime config changes.",
+      "allowed_actuators": ["vps.deploy", "vps.config_change"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "vector_store",
+      "description": "Vector upsert and deletion operations.",
+      "allowed_actuators": ["vector.upsert", "vector.delete"],
+      "default_authority": "approval_required"
+    },
+    {
+      "id": "audit_records",
+      "description": "Local audit and report writes.",
+      "allowed_actuators": ["audit.write"],
+      "default_authority": "draft_only"
+    }
+  ],
+  "disturbances": [
+    {
+      "id": "llm_stochasticity",
+      "description": "Model randomness or provider behavior drift."
+    },
+    {
+      "id": "provider_drift",
+      "description": "Provider timeouts, API changes, latency changes, or availability shifts."
+    },
+    {
+      "id": "user_intent_drift",
+      "description": "User preferences and project boundaries changing over time."
+    },
+    {
+      "id": "external_framework_updates",
+      "description": "Hermes, Zilliz, Farcaster, LangGraph, or other framework behavior changing under the sidecar."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "agent_visible_behavior",
+      "description": "Behavior that the user or public channels can observe."
+    },
+    {
+      "id": "user_feedback_signal",
+      "description": "User corrections, approvals, rejections, or takeover signals."
+    },
+    {
+      "id": "redacted_session_evidence",
+      "description": "Sanitized observations and source refs that can enter local replay."
+    },
+    {
+      "id": "candidate_route_distribution",
+      "description": "Distribution of local candidates across memory, skill, case, policy, damping, and ignore."
+    }
+  ],
+  "safety_boundary": {
+    "production_authority": false,
+    "default_effect_mode": "read_only_dry_run",
+    "forbidden_autonomy": [
+      "no public posting",
+      "no production memory write",
+      "no skill publication",
+      "no provider route change",
+      "no timer start",
+      "no VPS deploy",
+      "no LLM-owned route decision"
+    ]
+  }
+}
