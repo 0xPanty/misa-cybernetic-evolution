@@ -17,13 +17,52 @@ export const DEFAULT_L4_REVIEW_PROVIDER = "mock";
 export const DEFAULT_L4_REVIEW_MODEL = "work-order-reviewer";
 export const DEFAULT_L4_REVIEW_TIMEOUT_MS = 180000;
 
-const VERDICTS = new Set(["accept", "revise", "reject", "human_needed"]);
+const VERDICTS = new Set(["accept", "revise", "reject", "human_needed", "owner_needed"]);
 const KNOWN_FEEDBACK_SIGNALS = new Set([
   "policy_clean",
   "low_revision_needed",
   "policy_conflict",
   "human_review_requested"
 ]);
+const HANDOFF_TARGETS = new Set(["no_context_worker", "primary_agent", "maintainer_or_owner", "none"]);
+const EXECUTION_RISKS = new Set(["low", "medium", "high"]);
+
+const HIGH_RISK_ACTION_RULES = [
+  {
+    scope: "repository_push_or_publish",
+    pattern: /\b(push|publish)\b.*\b(git|github|gitlab|repository|repo|branch|remote|origin)\b|\b(git|github|gitlab|repository|repo|branch|remote|origin)\b.*\b(push|publish)\b/i
+  },
+  {
+    scope: "release_or_deployment",
+    pattern: /\b(release|deploy|deployment|rollout)\b/i
+  },
+  {
+    scope: "production_or_remote_runtime",
+    pattern: /\b(production|prod|live service|remote runtime|production server|remote server|live server|cloud server|cloud runtime|hosted environment)\b/i
+  },
+  {
+    scope: "persistent_memory_or_database",
+    pattern: /\b(write|upsert|insert|update|delete|persist|store|migrate)\b.*\b(memory|database|db|datastore|vector store|vector db|embedding store|index)\b|\b(memory|database|db|datastore|vector store|vector db|embedding store|index)\b.*\b(write|upsert|insert|update|delete|persist|store|migrate)\b/i
+  },
+  {
+    scope: "public_publish",
+    pattern: /\b(public post|public publish|publish publicly|tweet|cast|social post|send email|send message|notify users)\b/i
+  },
+  {
+    scope: "secrets_or_credentials",
+    pattern: /\b(secret|credential|api key|token|password|private key|oauth|auth key)\b/i
+  },
+  {
+    scope: "permission_or_access_change",
+    pattern: /\b(permission|access control|role|acl|chmod|chown|grant|revoke)\b/i
+  },
+  {
+    scope: "destructive_delete",
+    pattern: /\b(delete|remove|drop|truncate|wipe|purge|destroy)\b.*\b(data|database|db|record|row|table|collection|bucket|index|persistent|production|remote)\b|\b(data|database|db|record|row|table|collection|bucket|index|persistent|production|remote)\b.*\b(delete|remove|drop|truncate|wipe|purge|destroy)\b/i
+  }
+];
+
+const NEGATED_SIDE_EFFECT_PATTERN = /\b(do not|don't|never|without|no|avoid|forbid|forbidden|must not|should not|not allowed|disallow|read-only|readonly|observe-only|review-only|dry-run|dry run|no-write|no write|non-executable|does not|will not|must remain)\b/i;
 
 function asIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -93,6 +132,19 @@ function resultStatusForVerdict(verdict) {
   return "blocked";
 }
 
+function defaultHandoffTargetForVerdict(verdict) {
+  if (verdict === "accept") return "no_context_worker";
+  if (verdict === "revise") return "primary_agent";
+  if (verdict === "reject") return "none";
+  return "maintainer_or_owner";
+}
+
+function defaultExecutionRiskForVerdict(verdict) {
+  if (verdict === "accept") return "low";
+  if (verdict === "revise") return "medium";
+  return "high";
+}
+
 function compactWorkOrder(draft) {
   if (!draft) return null;
   return {
@@ -105,6 +157,45 @@ function compactWorkOrder(draft) {
     forbidden_scope: draft.forbidden_scope ?? [],
     risk_notes: draft.risk_notes ?? [],
     stop_condition: draft.stop_condition ?? null
+  };
+}
+
+function workOrderReviewTextLines(workOrder = {}) {
+  return [
+    workOrder.title,
+    workOrder.problem,
+    ...(workOrder.concrete_tasks ?? []),
+    ...(workOrder.acceptance_criteria ?? []),
+    ...(workOrder.verification_commands ?? []),
+    ...(workOrder.risk_notes ?? []),
+    workOrder.stop_condition
+  ]
+    .filter((value) => value !== null && value !== undefined)
+    .flatMap((value) => String(value).split(/\r?\n/))
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function detectHighRiskAuthorizationNeeds(workOrder = {}) {
+  const requestedScopes = new Set();
+  const evidence = [];
+  for (const line of workOrderReviewTextLines(workOrder)) {
+    if (NEGATED_SIDE_EFFECT_PATTERN.test(line)) continue;
+    for (const rule of HIGH_RISK_ACTION_RULES) {
+      if (rule.pattern.test(line)) {
+        requestedScopes.add(rule.scope);
+        if (evidence.length < 8) evidence.push({ scope: rule.scope, text: line });
+      }
+    }
+  }
+  const authorizationScopes = [...requestedScopes].sort();
+  return {
+    requires_user_authorization: authorizationScopes.length > 0,
+    authorization_reason: authorizationScopes.length
+      ? "work_order_requests_high_risk_external_or_persistent_side_effects"
+      : null,
+    authorization_scopes: authorizationScopes,
+    authorization_evidence: evidence
   };
 }
 
@@ -207,7 +298,8 @@ export function buildL4WorkOrderReviewPacket({ l2Item, l3Decision, l2Report, l3R
       accept_means: "self-contained, concrete, safe, and execution-ready without parent chat or memory",
       revise_means: "useful but missing context, expected result, file/test anchor, or boundary wording",
       reject_means: "not actionable or unsafe as an execution handoff",
-      human_needed_means: "requires owner/project context that this packet does not contain"
+      human_needed_means: "requires owner/project context that this packet does not contain",
+      owner_needed_means: "requests high-risk external, persistent, public, credential, permission, or destructive effects that need explicit maintainer/user authorization"
     }
   };
 }
@@ -223,6 +315,7 @@ Judge the work order as a handoff artifact:
 - revise if it is mostly useful but lacks a concrete file/test anchor, source/evidence anchor, expected result, command boundary, or stop condition.
 - reject if it is generic, unsafe, or not actionable.
 - human_needed if the work order depends on owner/project context missing from the packet.
+- owner_needed if the work order asks for repository push/publish, release/deploy, production or remote runtime changes, persistent memory/database/vector-store writes, public publishing, secrets/credentials, permission changes, or destructive deletes without explicit user authorization in this packet.
 - feedback_signals must use only these existing signals: policy_clean, low_revision_needed, policy_conflict, human_review_requested.
 
 L4ReviewPacket:
@@ -230,14 +323,21 @@ ${JSON.stringify(packet, null, 2)}
 
 Return shape:
 {
-  "verdict": "accept" | "revise" | "reject" | "human_needed",
+  "verdict": "accept" | "revise" | "reject" | "human_needed" | "owner_needed",
+  "handoff_target": "no_context_worker" | "primary_agent" | "maintainer_or_owner" | "none",
   "execution_readiness_score": number,
   "can_execute_without_parent_context": boolean,
+  "requires_user_authorization": boolean,
+  "authorization_reason": string | null,
+  "authorization_scopes": string[],
   "blocking_reasons": string[],
   "context_gaps": string[],
+  "execution_risk": "low" | "medium" | "high",
   "task_specificity_notes": string[],
   "feedback_signals": string[],
   "recommended_next_step": string,
+  "recommendation_only": true,
+  "executes_work_order": false,
   "llm_notes": string
 }`;
 }
@@ -286,7 +386,31 @@ function deterministicReviewForPacket(packet) {
   const actionableCount = Number(gate.actionableTaskCount ?? 0);
   const hasStop = Boolean(workOrder.stop_condition);
   const safeForbiddenScope = Array.isArray(workOrder.forbidden_scope)
-    && workOrder.forbidden_scope.some((item) => /do_not_write_memory|do_not_touch_vps|do_not_push_github|do_not_publish_publicly/.test(String(item)));
+    && workOrder.forbidden_scope.some((item) => /do_not_write_memory|do_not_write_persistent_memory|do_not_write_persistent_state|do_not_write_database|do_not_write_vector_store|do_not_touch_vps|do_not_touch_production|do_not_touch_remote_runtime|do_not_push_github|do_not_push_repository|do_not_publish_repository|do_not_publish_publicly|do_not_public_publish/i.test(String(item)));
+  const authorization = detectHighRiskAuthorizationNeeds(workOrder);
+
+  if (authorization.requires_user_authorization) {
+    return {
+      verdict: "owner_needed",
+      handoff_target: "maintainer_or_owner",
+      execution_readiness_score: 0.48,
+      can_execute_without_parent_context: false,
+      requires_user_authorization: true,
+      authorization_reason: authorization.authorization_reason,
+      authorization_scopes: authorization.authorization_scopes,
+      authorization_evidence: authorization.authorization_evidence,
+      blocking_reasons: ["requires_user_authorization", ...authorization.authorization_scopes.map((scope) => `high_risk:${scope}`)],
+      context_gaps: ["explicit_user_authorization_missing"],
+      execution_risk: "high",
+      task_specificity_notes: ["Work order requests high-risk external or persistent effects; request explicit user authorization before execution."],
+      feedback_signals: ["human_review_requested"],
+      recommended_next_step: "request_user_authorization",
+      recommendation_only: true,
+      executes_work_order: false,
+      llm_notes: "Deterministic L4 mock review blocked handoff until user authorization is granted."
+    };
+  }
+
   const good = Boolean(gate.gate_ok)
     && actionableCount >= 4
     && weakCount === 0
@@ -299,13 +423,21 @@ function deterministicReviewForPacket(packet) {
   if (good) {
     return {
       verdict: "accept",
+      handoff_target: "no_context_worker",
       execution_readiness_score: 0.96,
       can_execute_without_parent_context: true,
+      requires_user_authorization: false,
+      authorization_reason: null,
+      authorization_scopes: [],
+      authorization_evidence: [],
       blocking_reasons: [],
       context_gaps: [],
+      execution_risk: "low",
       task_specificity_notes: ["Work order has concrete tasks, evidence refs, local commands, forbidden scope, and a stop condition."],
       feedback_signals: ["policy_clean"],
       recommended_next_step: "forward_to_no_context_execution_trial",
+      recommendation_only: true,
+      executes_work_order: false,
       llm_notes: "Deterministic L4 mock review accepted the L3 handoff."
     };
   }
@@ -323,13 +455,23 @@ function deterministicReviewForPacket(packet) {
     verdict: blockingReasons.includes("missing_evidence_refs") || blockingReasons.includes("missing_verification_commands")
       ? "human_needed"
       : "revise",
+    handoff_target: blockingReasons.includes("missing_evidence_refs") || blockingReasons.includes("missing_verification_commands")
+      ? "maintainer_or_owner"
+      : "primary_agent",
     execution_readiness_score: 0.62,
     can_execute_without_parent_context: false,
+    requires_user_authorization: false,
+    authorization_reason: null,
+    authorization_scopes: [],
+    authorization_evidence: [],
     blocking_reasons: blockingReasons,
     context_gaps: blockingReasons.filter((reason) => reason.startsWith("missing_")),
+    execution_risk: "medium",
     task_specificity_notes: ["Work order needs a tighter handoff before no-context execution."],
     feedback_signals: blockingReasons.includes("missing_evidence_refs") ? ["human_review_requested"] : ["low_revision_needed"],
     recommended_next_step: "send_back_to_l2_l3_prompt_or_gate_tuning",
+    recommendation_only: true,
+    executes_work_order: false,
     llm_notes: "Deterministic L4 mock review found handoff gaps."
   };
 }
@@ -392,13 +534,21 @@ function normalizeReview(rawReview, { providerError = null } = {}) {
   if (providerError) {
     return {
       verdict: "human_needed",
+      handoff_target: "maintainer_or_owner",
       execution_readiness_score: 0,
       can_execute_without_parent_context: false,
+      requires_user_authorization: false,
+      authorization_reason: null,
+      authorization_scopes: [],
+      authorization_evidence: [],
       blocking_reasons: ["provider_error"],
       context_gaps: [],
+      execution_risk: "high",
       task_specificity_notes: [],
       feedback_signals: ["human_review_requested"],
       recommended_next_step: "retry_l4_review_or_owner_review",
+      recommendation_only: true,
+      executes_work_order: false,
       llm_notes: providerError.message ?? "provider error"
     };
   }
@@ -407,13 +557,32 @@ function normalizeReview(rawReview, { providerError = null } = {}) {
   const verdict = VERDICTS.has(parsed.verdict) ? parsed.verdict : "human_needed";
   return {
     verdict,
+    handoff_target: HANDOFF_TARGETS.has(parsed.handoff_target)
+      ? parsed.handoff_target
+      : defaultHandoffTargetForVerdict(verdict),
     execution_readiness_score: clampScore(parsed.execution_readiness_score),
     can_execute_without_parent_context: Boolean(parsed.can_execute_without_parent_context),
+    requires_user_authorization: Boolean(parsed.requires_user_authorization),
+    authorization_reason: parsed.authorization_reason === null || parsed.authorization_reason === undefined
+      ? null
+      : String(parsed.authorization_reason).trim() || null,
+    authorization_scopes: uniqueStrings(parsed.authorization_scopes ?? []),
+    authorization_evidence: Array.isArray(parsed.authorization_evidence)
+      ? parsed.authorization_evidence.slice(0, 8).map((item) => ({
+        scope: String(item?.scope ?? "").trim(),
+        text: String(item?.text ?? "").trim()
+      })).filter((item) => item.scope && item.text)
+      : [],
     blocking_reasons: uniqueStrings(parsed.blocking_reasons ?? []),
     context_gaps: uniqueStrings(parsed.context_gaps ?? []),
+    execution_risk: EXECUTION_RISKS.has(parsed.execution_risk)
+      ? parsed.execution_risk
+      : defaultExecutionRiskForVerdict(verdict),
     task_specificity_notes: uniqueStrings(parsed.task_specificity_notes ?? []),
     feedback_signals: feedbackSignalsForVerdict(verdict, uniqueStrings(parsed.feedback_signals ?? [])),
     recommended_next_step: String(parsed.recommended_next_step ?? "").trim() || "owner_review_l4_result",
+    recommendation_only: true,
+    executes_work_order: false,
     llm_notes: String(parsed.llm_notes ?? "").trim()
   };
 }
@@ -498,6 +667,9 @@ async function reviewOneTarget({
 function summarizeReviews({ reviews, provider, l2Report, l3Report }) {
   const verdictCounts = sortedObject(countBy(reviews, (review) => review.review.verdict));
   const feedbackSignals = reviews.flatMap((review) => review.review.feedback_signals);
+  const authorizationScopes = reviews.flatMap((review) => review.review.authorization_scopes ?? []);
+  const handoffTargets = reviews.map((review) => review.review.handoff_target ?? "unknown");
+  const executionRisks = reviews.map((review) => review.review.execution_risk ?? "unknown");
   const poolVerdicts = {};
   for (const review of reviews) {
     const pool = review.l3_pool ?? "unknown";
@@ -513,6 +685,11 @@ function summarizeReviews({ reviews, provider, l2Report, l3Report }) {
     revise_count: verdictCounts.revise ?? 0,
     reject_count: verdictCounts.reject ?? 0,
     human_needed_count: verdictCounts.human_needed ?? 0,
+    owner_needed_count: verdictCounts.owner_needed ?? 0,
+    requires_user_authorization_count: reviews.filter((review) => review.review.requires_user_authorization).length,
+    authorization_scope_counts: sortedObject(countBy(authorizationScopes, (scope) => scope)),
+    handoff_target_counts: sortedObject(countBy(handoffTargets, (target) => target)),
+    execution_risk_counts: sortedObject(countBy(executionRisks, (risk) => risk)),
     avg_execution_readiness_score: average(reviews.map((review) => review.review.execution_readiness_score)),
     no_context_executable_count: reviews.filter((review) => review.review.can_execute_without_parent_context).length,
     provider_error_count: reviews.filter((review) => review.provider_error).length,
@@ -614,7 +791,8 @@ export async function buildL4WorkOrderReviewReport({
       changes_winner: false,
       touches_vps: false,
       pushes_github: false,
-      publishes_publicly: false
+      publishes_publicly: false,
+      requests_user_authorization: summary.requires_user_authorization_count > 0
     },
     reviews,
     warnings: [
@@ -637,8 +815,11 @@ export function renderL4WorkOrderReviewMarkdown(result) {
     `- verdict_counts: ${JSON.stringify(result.summary.verdict_counts)}`,
     `- avg_execution_readiness_score: ${result.summary.avg_execution_readiness_score}`,
     `- no_context_executable_count: ${result.summary.no_context_executable_count}`,
+    `- requires_user_authorization_count: ${result.summary.requires_user_authorization_count}`,
     `- provider_error_count: ${result.summary.provider_error_count}`,
     `- llm_api_calls: ${result.summary.llm_api_calls}`,
+    `- handoff_target_counts: ${JSON.stringify(result.summary.handoff_target_counts)}`,
+    `- execution_risk_counts: ${JSON.stringify(result.summary.execution_risk_counts)}`,
     "",
     "## Feedback Signals",
     "",
@@ -658,6 +839,9 @@ export function renderL4WorkOrderReviewMarkdown(result) {
     );
     if (review.review.blocking_reasons.length) {
       lines.push(`  blocking=${review.review.blocking_reasons.join(", ")}`);
+    }
+    if (review.review.requires_user_authorization) {
+      lines.push(`  authorization_scopes=${review.review.authorization_scopes.join(", ")}`);
     }
   }
   return `${lines.join("\n")}\n`;

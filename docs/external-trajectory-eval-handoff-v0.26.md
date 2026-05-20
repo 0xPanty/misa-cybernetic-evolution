@@ -4213,3 +4213,524 @@ It is a tiny real L2/L3 probe, using future-real-probe-candidates.jsonl as the
 candidate list, after manual review selects exact source ids. Do not auto-change
 L1 thresholds, L2 prompts, gate weights, or handoff floors from parquet metadata.
 ```
+
+## Synthetic Bad L3 Pressure Report 2026-05-20
+
+This pass uses real SWE-rebench failed-task metadata as the base, then writes
+artificially bad L2 work orders locally to pressure-test the current L3 gate. It
+does not call an LLM, touch VPS, push GitHub, change L1 thresholds, change L2
+prompts, or upgrade handoff floors.
+
+The 500-row `future-real-probe-candidates.jsonl` shortlist only contains
+resolved-false non-submit loop/maximum-iteration rows, so the loop bucket comes
+from that shortlist. The resolved-false submit, timeout/provider-error, and
+generated-tests-failed buckets come from the same local SWE-rebench OpenHands
+parquet metadata used by the local exhaust report.
+
+Artifacts:
+
+```text
+runs/l3-synthetic-bad-pressure/2026-05-20T04-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.json
+runs/l3-synthetic-bad-pressure/2026-05-20T04-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.md
+runs/l3-synthetic-bad-pressure/2026-05-20T04-00-00-000Z-synthetic-bad/selected-real-failure-tasks.jsonl
+runs/l3-synthetic-bad-pressure/2026-05-20T04-00-00-000Z-synthetic-bad/synthetic-bad-samples.jsonl
+```
+
+Quant readout:
+
+```text
+base_task_count=30
+base_task_category_counts={"loop_max_iteration":10,"resolved_false_submit":10,"timeout_provider_error":5,"missing_patch_or_generated_tests_failed":5}
+synthetic_sample_count=90
+bad_work_order_variants={"too_vague":30,"too_broad":30,"empty_acceptance":30}
+
+l3_intercept_count=90
+l3_intercept_rate=1.000
+feedback_trigger_count=90
+feedback_trigger_rate=1.000
+candidate_count_2_suggestion_count=90
+primary_agent_suggestion_count=90
+false_pass_count=0
+
+llm_api_calls=0
+external_api_calls=0
+touches_vps=false
+pushes_github=false
+modifies_l1_thresholds=false
+modifies_l2_prompt=false
+upgrades_handoff_floor=false
+writes_durable_bad_seed=false
+writes_pool_decisions_jsonl=false
+```
+
+Plain result:
+
+```text
+Current L3 gate catches this synthetic_bad pressure set cleanly.
+
+All 90 intentionally bad work orders are hard-failed. The feedback reflection
+also fires for all 90, with candidate_count=2 and primary_agent review suggested
+for every row because the samples are thin and failed.
+
+There are no obvious bad samples that L3 let through in this run. Keep the
+result as pressure-test evidence only: it is not durable bad-seed history and
+must not be merged into real bad/conflict seed counts.
+```
+
+## Adversarial Synthetic Bad L3 Pressure Report 2026-05-20
+
+This is the stronger follow-up to the obvious synthetic_bad run above. It keeps
+the same 30 real SWE-rebench failed-task bases, but expands each base task from
+3 obvious bad work orders to 8 bad work orders: 3 obvious rule probes plus 5
+pass-like adversarial probes. The adversarial probes deliberately include
+surface anchors, source refs, whitelisted commands, acceptance criteria, and
+forbidden scope, while hiding wrong objectives, evidence mismatch, non-causal
+verification, boundary shell games, or no-op anchor stuffing.
+
+Artifacts:
+
+```text
+runs/l3-synthetic-bad-pressure/2026-05-20T04-30-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.json
+runs/l3-synthetic-bad-pressure/2026-05-20T04-30-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.md
+runs/l3-synthetic-bad-pressure/2026-05-20T04-30-00-000Z-synthetic-bad/selected-real-failure-tasks.jsonl
+runs/l3-synthetic-bad-pressure/2026-05-20T04-30-00-000Z-synthetic-bad/synthetic-bad-samples.jsonl
+```
+
+Quant readout:
+
+```text
+variant_profile=adversarial
+base_task_count=30
+base_task_category_counts={"loop_max_iteration":10,"resolved_false_submit":10,"timeout_provider_error":5,"missing_patch_or_generated_tests_failed":5}
+synthetic_sample_count=240
+obvious_sample_count=90
+adversarial_sample_count=150
+
+l3_intercept_count=90
+l3_intercept_rate=0.375
+feedback_trigger_count=90
+feedback_trigger_rate=0.375
+candidate_count_2_suggestion_count=90
+primary_agent_suggestion_count=90
+false_pass_count=150
+false_pass_rate=0.625
+obvious_false_pass_count=0
+adversarial_false_pass_count=150
+
+llm_api_calls=0
+external_api_calls=0
+touches_vps=false
+pushes_github=false
+modifies_l1_thresholds=false
+modifies_l2_prompt=false
+upgrades_handoff_floor=false
+writes_durable_bad_seed=false
+writes_pool_decisions_jsonl=false
+```
+
+Blind spots exposed:
+
+```text
+wrong_objective_pass_like: false_pass=30/30
+evidence_mismatch_pass_like: false_pass=30/30
+verification_mismatch_pass_like: false_pass=30/30
+boundary_shell_game_pass_like: false_pass=30/30
+anchor_stuffing_noop_pass_like: false_pass=30/30
+```
+
+Plain result:
+
+```text
+The current L3 gate is strong against obviously thin, broad, or empty work
+orders, but weak against pass-like semantic failures. If a bad work order
+includes enough file/source/field/expectation tokens and uses whitelisted
+commands, L3 can score it as perfect even when the objective, evidence mapping,
+verification meaning, or boundary intent is wrong.
+
+This is pressure-test evidence only. It must not be counted as real durable bad
+seed history, and it does not authorize automatic L1 threshold, L2 prompt, gate,
+or handoff-floor changes.
+```
+
+## Record-Only Semantic Observer Massive Pressure Report 2026-05-20
+
+This follow-up lands a record-only semantic observer for the synthetic_bad
+pressure lane. It does not change L3 authority or gate outcomes. It only writes
+extra observation fields on each local pressure sample, so the report can show
+when L3 accepted a work order that looks complete but is wrong in meaning.
+
+Artifacts:
+
+```text
+runs/l3-synthetic-bad-pressure/2026-05-20T05-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.json
+runs/l3-synthetic-bad-pressure/2026-05-20T05-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.md
+runs/l3-synthetic-bad-pressure/2026-05-20T05-00-00-000Z-synthetic-bad/selected-real-failure-tasks.jsonl
+runs/l3-synthetic-bad-pressure/2026-05-20T05-00-00-000Z-synthetic-bad/synthetic-bad-samples.jsonl
+```
+
+Quant readout:
+
+```text
+task_profile=massive
+variant_profile=adversarial
+base_task_count=636
+base_task_category_counts={"loop_max_iteration":200,"resolved_false_submit":200,"timeout_provider_error":36,"missing_patch_or_generated_tests_failed":200}
+synthetic_sample_count=5088
+obvious_sample_count=1908
+adversarial_sample_count=3180
+
+l3_intercept_count=1908
+l3_intercept_rate=0.375
+feedback_trigger_count=1908
+feedback_trigger_rate=0.375
+candidate_count_2_suggestion_count=1908
+primary_agent_suggestion_count=1908
+false_pass_count=3180
+false_pass_rate=0.625
+obvious_false_pass_count=0
+adversarial_false_pass_count=3180
+
+semantic_observer_enabled=true
+semantic_observer_mode=observe_only
+semantic_trigger_count=3180
+semantic_trigger_rate=0.625
+semantic_false_pass_caught_count=3180
+semantic_false_pass_recall=1
+semantic_obvious_trigger_count=0
+semantic_adversarial_trigger_count=3180
+observer_candidate_count_2_suggestion_count=1908
+observer_primary_agent_suggestion_count=3180
+semantic_clean_false_positive_count=not_measured_in_synthetic_bad_only_run
+
+llm_api_calls=0
+external_api_calls=0
+touches_vps=false
+pushes_github=false
+modifies_l1_thresholds=false
+modifies_l2_prompt=false
+upgrades_handoff_floor=false
+writes_durable_bad_seed=false
+writes_pool_decisions_jsonl=false
+```
+
+Observer reason counts:
+
+```text
+wrong_objective_on_failed_base=636
+evidence_claim_conflicts_with_failed_base=636
+verification_does_not_prove_claim=636
+boundary_words_conflict_with_requested_outcome=636
+anchor_stuffing_without_real_work=636
+```
+
+Plain result:
+
+```text
+The current L3 result is unchanged: it still catches the 1908 obvious bad work
+orders and still lets the 3180 pass-like semantic bad work orders through.
+
+The new record-only observer catches all 3180 L3 false passes in this synthetic
+run. That is useful as a local warning layer, but it is not yet a production
+gate. The clean false-positive rate is not proven here because this run contains
+only synthetic_bad samples. Before turning this into a blocking rule, replay it
+against a real clean/near-pass corpus and measure mistaken blocks.
+
+No VPS, GitHub push, LLM/API call, L1 threshold change, L2 prompt change,
+handoff-floor upgrade, pool-decision write, or durable bad-seed write happened.
+```
+
+## Real L2 Shell Semantic Pressure Report 2026-05-20
+
+This replaces the weak part of the earlier synthetic_bad pressure test. The
+main bad rows are no longer missing-field work orders. The test starts from
+stored L2 drafts that already pass the current local L3 format/quality gate,
+then mutates only the meaning while preserving the L2 shell: evidence refs,
+task count, acceptance criteria, whitelisted commands, and forbidden scope stay
+complete.
+
+Two local replays were written:
+
+```text
+strict stored-real-LLM subset:
+runs/l3-real-l2-semantic-pressure/2026-05-20T06-00-00-000Z-real-l2-semantic/real-l2-semantic-pressure.json
+runs/l3-real-l2-semantic-pressure/2026-05-20T06-00-00-000Z-real-l2-semantic/real-l2-semantic-pressure.md
+
+broader current-gate-passed local L2 set:
+runs/l3-real-l2-semantic-pressure/2026-05-20T06-10-00-000Z-real-l2-semantic/real-l2-semantic-pressure.json
+runs/l3-real-l2-semantic-pressure/2026-05-20T06-10-00-000Z-real-l2-semantic/real-l2-semantic-pressure.md
+```
+
+Strict stored-real-LLM subset:
+
+```text
+source_profile=real-llm-only
+base_count=20
+clean_control_count=20
+bad_sample_count=100
+bad_format_gate_pass_count=100
+bad_format_gate_pass_rate=1
+l3_false_pass_count=100
+l3_false_pass_rate=1
+semantic_false_pass_caught_count=100
+semantic_false_pass_recall=1
+clean_semantic_false_positive_count=0
+clean_semantic_false_positive_rate=0
+```
+
+Broader current-gate-passed local L2 set:
+
+```text
+source_profile=all-gate-passed-local-l2
+base_count=278
+stored_real_llm_base_count=20
+local_replay_base_count=258
+clean_control_count=278
+bad_sample_count=1390
+total_sample_count=1668
+bad_format_gate_pass_count=1390
+bad_format_gate_pass_rate=1
+l3_false_pass_count=1390
+l3_false_pass_rate=1
+semantic_false_pass_caught_count=1390
+semantic_false_pass_recall=1
+clean_semantic_false_positive_count=0
+clean_semantic_false_positive_rate=0
+observer_candidate_count_2_suggestion_count=834
+observer_primary_agent_suggestion_count=1390
+```
+
+Per semantic mutation, broader set:
+
+```text
+wrong_objective_same_l2_shell: format_pass=278/278, l3_false_pass=278/278, semantic_caught=278/278
+evidence_mismatch_same_l2_shell: format_pass=278/278, l3_false_pass=278/278, semantic_caught=278/278
+verification_mismatch_same_l2_shell: format_pass=278/278, l3_false_pass=278/278, semantic_caught=278/278
+boundary_contradiction_same_l2_shell: format_pass=278/278, l3_false_pass=278/278, semantic_caught=278/278
+anchor_stuffing_same_l2_shell: format_pass=278/278, l3_false_pass=278/278, semantic_caught=278/278
+```
+
+Boundary:
+
+```text
+llm_api_calls=0
+external_api_calls=0
+touches_vps=false
+pushes_github=false
+modifies_l1_thresholds=false
+modifies_l2_prompt=false
+upgrades_handoff_floor=false
+writes_durable_bad_seed=false
+writes_pool_decisions_jsonl=false
+executes_work_orders=false
+```
+
+Plain result:
+
+```text
+This version is a stronger test than the obvious synthetic_bad run. Every bad
+sample still has a valid L2-shaped shell and passes the current L3 gate. That
+means the old L3 is blind to these meaning-level failures when the form is good.
+
+The record-only observer caught every mutated semantic failure in this replay
+and did not fire on the original clean controls. This is useful evidence for an
+observe-only warning layer. It still should not become a hard blocking gate from
+this run alone, because the bad mutations are deterministic and local. The next
+proof step is a different clean/near-pass corpus plus non-template bad examples.
+```
+
+## Semantic Observation Boundary Hardening 2026-05-20
+
+This follow-up applies the Pro review boundary guidance to the local observer
+implementation. The observer remains after the formal L3 gate. It is explicitly
+record-only and recommendation-only: it does not change the formal L3 pass/fail
+result, does not execute count2, does not route to primary_agent, does not write
+durable bad seeds, and does not mutate L1 thresholds, L2 prompts, gate weights,
+or handoff floors.
+
+Implementation changes:
+
+```text
+semantic_observer_mode=record_only
+schema_version=misa.l3_semantic_observation.v2
+semantic_actions removed from new samples
+semantic_recommended_actions added
+recommendation_only=true
+recommendation_executed=false
+formal_gate_mutated=false
+legacy_quality_pool_mutated=false
+durable_bad_seed_written=false
+lifecycle_budget.used_count2 recorded
+lifecycle_budget.used_l3_recheck recorded
+lifecycle_budget.recommended_terminal_route recorded
+```
+
+Recommendation split:
+
+```text
+wrong_objective / evidence_mismatch / verification_mismatch:
+  recommend candidate_count_2 only when count2 has not already been used
+
+boundary_contradiction / anchor_stuffing:
+  recommend primary_agent_review_suggested
+
+if count2 was already used:
+  do not recommend another count2
+  add budget_reason=count2_budget_already_used
+  recommend primary_agent_review_suggested instead
+```
+
+Updated local pressure artifacts:
+
+```text
+runs/l3-synthetic-bad-pressure/2026-05-20T07-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.json
+runs/l3-synthetic-bad-pressure/2026-05-20T07-00-00-000Z-synthetic-bad/l3-synthetic-bad-pressure.md
+runs/l3-real-l2-semantic-pressure/2026-05-20T07-20-00-000Z-real-l2-semantic/real-l2-semantic-pressure.json
+runs/l3-real-l2-semantic-pressure/2026-05-20T07-20-00-000Z-real-l2-semantic/real-l2-semantic-pressure.md
+```
+
+Synthetic_bad massive rerun:
+
+```text
+task_profile=massive
+variant_profile=adversarial
+base_task_count=636
+synthetic_sample_count=5088
+l3_intercept_count=1908
+false_pass_count=3180
+semantic_warning_candidate_count=3180
+semantic_false_pass_caught_count=3180
+semantic_false_pass_recall=1
+observer_candidate_count_2_suggestion_count=1908
+observer_primary_agent_suggestion_count=1272
+observer_recommendation_executed_count=0
+observer_formal_gate_mutation_count=0
+semantic_budget_reason_counts={}
+```
+
+Real L2 shell rerun:
+
+```text
+source_profile=all-gate-passed-local-l2
+base_count=278
+clean_control_count=278
+bad_sample_count=1390
+bad_format_gate_pass_count=1390
+l3_false_pass_count=1390
+semantic_false_pass_caught_count=1390
+semantic_false_pass_recall=1
+clean_semantic_false_positive_count=0
+observer_candidate_count_2_suggestion_count=792
+observer_primary_agent_suggestion_count=598
+observer_recommendation_executed_count=0
+observer_formal_gate_mutation_count=0
+bad_semantic_budget_reason_counts={"count2_budget_already_used":42}
+```
+
+Plain result:
+
+```text
+The red L3 gate behavior is unchanged: hard L3 failures can still be returned
+to L2 once for repair. The semantic observation layer is different: it only
+records warnings and recommendations after a formal L3 pass. It does not perform
+the count2 rerun, does not hand off to primary_agent, and does not alter the old
+L3 result or quality pool.
+
+The Pro review concern is now encoded as code and tests: count2 is a lifecycle
+budget, not a branch-local retry. If a real L2 base already came from count2 or
+count4, the observer will not recommend another count2; it records
+count2_budget_already_used and recommends primary_agent review instead.
+```
+
+## L4 High-Risk Authorization Boundary 2026-05-20
+
+This lands the L4 open-source handoff rule for high-risk side effects. L4 stays
+a local review program by default. It does not execute the work order and does
+not call an LLM when provider=mock. Its job is to decide whether the work order
+can be handed to an execution target, or whether explicit user/maintainer
+authorization is required first.
+
+Generic high-risk scopes:
+
+```text
+repository_push_or_publish
+release_or_deployment
+production_or_remote_runtime
+persistent_memory_or_database
+public_publish
+secrets_or_credentials
+permission_or_access_change
+destructive_delete
+```
+
+New L4 behavior:
+
+```text
+if a work order requests a high-risk side effect:
+  verdict=owner_needed
+  handoff_target=maintainer_or_owner
+  requires_user_authorization=true
+  recommended_next_step=request_user_authorization
+  recommendation_only=true
+  executes_work_order=false
+
+if no high-risk side effect is requested and the handoff is self-contained:
+  verdict=accept
+  handoff_target=no_context_worker
+```
+
+Important boundary:
+
+```text
+High risk is not treated as "reject by default". It means "do not hand this to a
+worker until the user/maintainer explicitly authorizes the side effect."
+```
+
+Validation:
+
+```text
+node --test test/l4-work-order-review.test.mjs
+```
+
+## L1-L4 Pipeline Wiring 2026-05-20
+
+The local L1/L2/L3/L4 path is now wired into one command. This is orchestration
+only: it does not make L4 an executor and does not spend model tokens by
+default.
+
+Command:
+
+```text
+npm run work-order:l1-l4 -- --l2-report <path-to-existing-l2-report>
+```
+
+Default behavior:
+
+```text
+L1 control is read from the L2 draft report.
+L2 provides the generated work-order draft.
+L3 selection audit classifies green/yellow/red and records repair outcomes.
+L4 mock review runs on L3-forwarded rows.
+L4 high-risk side effects return owner_needed + requires_user_authorization.
+```
+
+Output layout:
+
+```text
+runs/l1-l4-work-order-pipeline/<timestamp>/
+  l1-l4-work-order-pipeline.json
+  l1-l4-work-order-pipeline.md
+  l2/external-trajectory-llm-work-order-draft.json
+  l3/quality-report.json
+  l3/pool-decisions.jsonl
+  l4/l4-review-report.json
+  l4/l4-review.jsonl
+```
+
+Boundary:
+
+```text
+L3 red feedback can repair L2 once inside the L2 draft run.
+L4 does not repair, execute, push, deploy, publish, write memory, write
+databases, or mutate L1/L2/L3. L4 only writes the final handoff review:
+accept / revise / reject / human_needed / owner_needed.
+```

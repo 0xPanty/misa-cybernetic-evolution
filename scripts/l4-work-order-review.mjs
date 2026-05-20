@@ -66,6 +66,7 @@ if (hasArg("json")) {
   console.log(`verdict_counts=${JSON.stringify(result.summary.verdict_counts)}`);
   console.log(`avg_execution_readiness_score=${result.summary.avg_execution_readiness_score}`);
   console.log(`no_context_executable=${result.summary.no_context_executable_count}`);
+  console.log(`requires_user_authorization=${result.summary.requires_user_authorization_count}`);
   console.log(`provider_error_count=${result.summary.provider_error_count}`);
   console.log(`llm_api_calls=${result.summary.llm_api_calls}`);
   if (result.delegate?.provider || result.delegate?.model) {
@@ -73,7 +74,8 @@ if (hasArg("json")) {
   }
   for (const item of result.reviews) {
     const providerError = item.provider_error ? ` provider_error=${item.provider_error.code}` : "";
-    console.log(`- ${item.source_id} verdict=${item.review.verdict} score=${item.review.execution_readiness_score} no_context=${item.review.can_execute_without_parent_context}${providerError} title=${item.draft_title ?? "none"}`);
+    const auth = item.review.requires_user_authorization ? ` auth=${item.review.authorization_scopes.join("+")}` : "";
+    console.log(`- ${item.source_id} verdict=${item.review.verdict} target=${item.review.handoff_target} score=${item.review.execution_readiness_score} no_context=${item.review.can_execute_without_parent_context}${auth}${providerError} title=${item.draft_title ?? "none"}`);
   }
   if (result.output) {
     console.log(`output_dir=${result.output.output_dir}`);

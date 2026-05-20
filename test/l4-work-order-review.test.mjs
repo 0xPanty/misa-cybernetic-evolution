@@ -14,17 +14,22 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-function draftFor(sourceId, { weak = false, missingEvidence = false } = {}) {
+function draftFor(sourceId, { weak = false, missingEvidence = false, highRiskAction = false } = {}) {
+  const concreteTasks = [
+    `In scripts/lib/external-trajectory-online-shadow-contract.mjs, check source_id=${sourceId}; expected result is no route change.`,
+    `In test/external-trajectory-online-shadow-contract.test.mjs, check evidence ref:${sourceId}; expected result is pass without memory writes.`,
+    `In scripts/lib/l2-l3-selection-audit.mjs, check l4_forward for ${sourceId}; expected result is review-only handoff.`,
+    weak ? "Review the logic." : `In test/l2-l3-selection-audit.test.mjs, check pool for ${sourceId}; expected result is no work-order execution.`
+  ];
+  if (highRiskAction) {
+    concreteTasks.push("Push the branch to the remote repository and deploy the change to production after local tests pass.");
+  }
+
   return {
     title: `${sourceId} no-context work order`,
     problem: `${sourceId} needs a local review of route and memory boundaries.`,
     evidence_refs: missingEvidence ? [] : [`ref:${sourceId}`],
-    concrete_tasks: [
-      `In scripts/lib/external-trajectory-online-shadow-contract.mjs, check source_id=${sourceId}; expected result is no route change.`,
-      `In test/external-trajectory-online-shadow-contract.test.mjs, check evidence ref:${sourceId}; expected result is pass without memory writes.`,
-      `In scripts/lib/l2-l3-selection-audit.mjs, check l4_forward for ${sourceId}; expected result is review-only handoff.`,
-      weak ? "Review the logic." : `In test/l2-l3-selection-audit.test.mjs, check pool for ${sourceId}; expected result is no work-order execution.`
-    ],
+    concrete_tasks: concreteTasks,
     acceptance_criteria: [
       "No route, winner, memory, Zilliz, embedding, VPS, GitHub, or public publish effect is requested.",
       "Verification commands are local and whitelisted.",
@@ -54,7 +59,8 @@ function l2Item({
   actionable = 4,
   weak = 0,
   violations = [],
-  missingEvidence = false
+  missingEvidence = false,
+  highRiskAction = false
 }) {
   return {
     source_id: sourceId,
@@ -81,7 +87,7 @@ function l2Item({
     candidates: null,
     winner_candidate_id: null,
     winner_strategy: null,
-    draft: draftFor(sourceId, { weak: weak > 0, missingEvidence }),
+    draft: draftFor(sourceId, { weak: weak > 0, missingEvidence, highRiskAction }),
     provider_error: null,
     gate: {
       ok: gateOk,
@@ -178,6 +184,7 @@ test("L4 review uses existing L3 handoff and writes l4-review ledger", async () 
     assert.equal(result.summary.sample_count, 4);
     assert.equal(result.summary.accept_count, 1);
     assert.equal(result.summary.revise_count, 3);
+    assert.equal(result.summary.requires_user_authorization_count, 0);
     assert.equal(result.summary.llm_api_calls, 0);
     assert.equal(result.safety.executes_work_orders, false);
     assert.equal(result.reviews.find((review) => review.source_id === "green-weak").review.verdict, "revise");
@@ -191,6 +198,46 @@ test("L4 review uses existing L3 handoff and writes l4-review ledger", async () 
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
+});
+
+test("L4 mock review requests user authorization for high-risk side effects", async () => {
+  const item = l2Item({
+    sourceId: "green-high-risk",
+    actionable: 5,
+    highRiskAction: true
+  });
+  const l2Report = l2ReportFixture([item]);
+  const l3Report = buildL2L3SelectionAuditReport({
+    l2Report,
+    l2ReportPath: "fixtures/l2.json",
+    now: new Date("2026-05-18T12:00:00Z")
+  });
+
+  const result = await buildL4WorkOrderReviewReport({
+    l2Report,
+    l3Report,
+    provider: "mock",
+    now: new Date("2026-05-18T12:00:00Z")
+  });
+
+  assert.equal(result.summary.sample_count, 1);
+  assert.equal(result.summary.owner_needed_count, 1);
+  assert.equal(result.summary.requires_user_authorization_count, 1);
+  assert.equal(result.summary.llm_api_calls, 0);
+  assert.equal(result.safety.requests_user_authorization, true);
+  assert.equal(result.safety.executes_work_orders, false);
+
+  const review = result.reviews[0].review;
+  assert.equal(review.verdict, "owner_needed");
+  assert.equal(review.handoff_target, "maintainer_or_owner");
+  assert.equal(review.requires_user_authorization, true);
+  assert.equal(review.authorization_reason, "work_order_requests_high_risk_external_or_persistent_side_effects");
+  assert.ok(review.authorization_scopes.includes("repository_push_or_publish"));
+  assert.ok(review.authorization_scopes.includes("release_or_deployment"));
+  assert.ok(review.authorization_scopes.includes("production_or_remote_runtime"));
+  assert.equal(review.recommended_next_step, "request_user_authorization");
+  assert.equal(review.recommendation_only, true);
+  assert.equal(review.executes_work_order, false);
 });
 
 test("L4 review CLI can call Hermes delegate through a local bridge stub", async () => {
