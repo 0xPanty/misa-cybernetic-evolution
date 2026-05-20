@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { applyExtractedSignals } from "./signal-extractor.mjs";
 import { distillLocalMisaSources } from "./session-distiller.mjs";
 
 const FIXTURE_DIR = path.join("examples", "misa-learning");
@@ -204,6 +205,9 @@ function assertFixture(event) {
 }
 
 export function simulateLearningCycle(event) {
+  event = Array.isArray(event?.signals) && event.signals.length > 0
+    ? event
+    : applyExtractedSignals(event);
   assertFixture(event);
   const artifactEvidence = normalizeArtifactEvidence(event);
   const route = classifyRoute(event);

@@ -1,0 +1,398 @@
+{
+  "schema_version": "misa.signal_rules.v1",
+  "mode": "deterministic-rule-matching",
+  "description": "Rule data for the local Misa signal extractor. Rules are deterministic and never call an LLM.",
+  "rules": [
+    {
+      "signal": "candidate_replay_failed",
+      "route_hint": "damping",
+      "confidence": 0.96,
+      "patterns": [
+        "\\breplay failed\\b",
+        "\\bfailed local replay\\b",
+        "\\bvalidation failed\\b",
+        "\\breplay-regression\\b",
+        "\\bfailed validation\\b",
+        "回放失败",
+        "验证失败"
+      ],
+      "tool_error_patterns": [
+        "replay"
+      ]
+    },
+    {
+      "signal": "avoid_overreaction",
+      "route_hint": "damping",
+      "confidence": 0.9,
+      "patterns": [
+        "\\bavoid changing\\b",
+        "\\bnot an immediate\\b",
+        "\\bshould not trigger\\b",
+        "\\bwithout changing routes\\b",
+        "\\bbefore changing the system\\b",
+        "\\bdo not learn from one\\b",
+        "\\bhold the candidate\\b",
+        "\\boverreact(?:ion)?\\b",
+        "避免.*过度",
+        "不要.*过度"
+      ]
+    },
+    {
+      "signal": "single_failure",
+      "route_hint": "damping",
+      "confidence": 0.9,
+      "patterns": [
+        "\\bsingle\\b",
+        "\\bone transient\\b",
+        "\\bone[- ]off\\b",
+        "\\bfrom one\\b",
+        "\\bnot learn from one\\b",
+        "\\bonce\\b",
+        "单次",
+        "偶发"
+      ]
+    },
+    {
+      "signal": "repeated_failure_pattern",
+      "route_hint": "case",
+      "confidence": 0.91,
+      "patterns": [
+        "\\bappeared repeatedly\\b",
+        "\\brepeated failure\\b",
+        "\\brepeatedly failed\\b",
+        "\\bknown failure mode\\b",
+        "\\bfailed local replay\\b",
+        "\\btimeouts? have appeared repeatedly\\b",
+        "\\bhandled by rollback or retry\\b",
+        "\\braw retrieval noise\\b",
+        "\\bretrieval detail chunks\\b",
+        "反复失败",
+        "重复失败"
+      ],
+      "source_kinds": [
+        "failure_log"
+      ],
+      "negative_patterns": [
+        "\\bno\\b[\\s\\S]{0,80}\\b(?:failure|error|retry|timeout)\\b[\\s\\S]{0,40}\\b(?:involved|described|observed|reported)\\b"
+      ]
+    },
+    {
+      "signal": "provider_timeout",
+      "route_hint": "case",
+      "confidence": 0.86,
+      "patterns": [
+        "\\bprovider read timeout\\b",
+        "\\bprovider timeout\\b",
+        "\\bprovider[- ]route\\b",
+        "\\bprovider.*timeout\\b"
+      ],
+      "tool_error_patterns": [
+        "provider-read-timeout"
+      ]
+    },
+    {
+      "signal": "retrieval_noise",
+      "route_hint": "case",
+      "confidence": 0.9,
+      "patterns": [
+        "\\bretrieval noise\\b",
+        "\\braw retrieval noise\\b",
+        "\\bretrieval detail chunks\\b",
+        "\\bprompt scaffolding\\b",
+        "\\btool boilerplate\\b"
+      ],
+      "tool_error_patterns": [
+        "retrieval-noise"
+      ]
+    },
+    {
+      "signal": "explicit_user_boundary",
+      "route_hint": "policy",
+      "confidence": 0.94,
+      "patterns": [
+        "\\bdo not\\b",
+        "\\bdon't\\b",
+        "\\bnot to proactively\\b",
+        "\\bunless asked\\b",
+        "\\buntil an explicit request\\b",
+        "\\bexplicit request\\b",
+        "\\bwithout approval\\b",
+        "\\bmust not\\b",
+        "\\bblocked\\b",
+        "\\brequires approval\\b",
+        "不要",
+        "不能",
+        "未经.*批准"
+      ]
+    },
+    {
+      "signal": "public_posting_boundary",
+      "route_hint": "policy",
+      "confidence": 0.92,
+      "patterns": [
+        "\\bFarcaster\\b",
+        "\\breal test post\\b",
+        "\\bpublic[- ]channel\\b",
+        "\\bpublic posting\\b",
+        "\\bposts?\\b",
+        "\\bcasts?\\b",
+        "\\brepl(?:y|ies)\\b",
+        "\\bpublisher\\b",
+        "\\bwebhook\\b",
+        "\\bpublic memory\\b",
+        "公开",
+        "发帖",
+        "回复"
+      ],
+      "channels": [
+        "farcaster"
+      ]
+    },
+    {
+      "signal": "farcaster_public_memory_risk",
+      "route_hint": "policy",
+      "confidence": 0.95,
+      "patterns": [
+        "\\bpublic memory risk\\b",
+        "\\bprivate project memory\\b",
+        "\\bpublic memory\\b",
+        "\\bmemory leak\\b",
+        "\\bprivacy leak\\b",
+        "公开记忆",
+        "隐私",
+        "泄露"
+      ]
+    },
+    {
+      "signal": "timer_restore_boundary",
+      "route_hint": "policy",
+      "confidence": 0.9,
+      "patterns": [
+        "\\bautomatic distillation timer\\b",
+        "\\bautomatic background writes\\b",
+        "\\brestore an automatic\\b",
+        "\\bclean canary\\b",
+        "\\bwrite path\\b",
+        "\\btimer\\b"
+      ]
+    },
+    {
+      "signal": "reusable_workflow",
+      "route_hint": "skill",
+      "confidence": 0.88,
+      "patterns": [
+        "\\bworkflow\\b",
+        "\\brepeatable\\b",
+        "\\brepeatedly starts\\b",
+        "\\bprocess state\\b",
+        "\\blogs\\b",
+        "\\bartifact cleanliness\\b",
+        "\\bbefore sending any live test\\b",
+        "\\brun a real local simulation\\b",
+        "\\brecovery work\\b",
+        "\\bskill candidate\\b",
+        "\\bsteps?\\b",
+        "\\bprocedure\\b",
+        "流程",
+        "步骤"
+      ],
+      "artifact_prefixes": [
+        "skill:"
+      ]
+    },
+    {
+      "signal": "project_recovery_sequence",
+      "route_hint": "skill",
+      "confidence": 0.9,
+      "patterns": [
+        "\\brecovery work\\b",
+        "\\bproject recovery\\b",
+        "\\bthree core project files\\b",
+        "\\bbefore editing\\b",
+        "\\brecover(?:y|able)?\\b"
+      ]
+    },
+    {
+      "signal": "read_only_verification",
+      "route_hint": "skill",
+      "confidence": 0.91,
+      "patterns": [
+        "\\bread[- ]only\\b",
+        "\\binspect process state\\b",
+        "\\blogs\\b",
+        "\\bartifact cleanliness\\b",
+        "\\bbefore sending any live test\\b",
+        "\\bwithout polluting live conversations\\b",
+        "\\bverification\\b"
+      ]
+    },
+    {
+      "signal": "real_chat_validation_required",
+      "route_hint": "skill",
+      "confidence": 0.91,
+      "patterns": [
+        "\\breal local chat\\b",
+        "\\breal local simulation\\b",
+        "\\breal chat samples\\b",
+        "\\bstop judging.*conceptually\\b",
+        "\\bbefore deciding\\b"
+      ]
+    },
+    {
+      "signal": "stable_user_preference",
+      "route_hint": "memory",
+      "confidence": 0.88,
+      "patterns": [
+        "\\buser repeatedly asks\\b",
+        "\\bHuan asked\\b",
+        "\\bwants\\b",
+        "\\bprefers\\b",
+        "\\bpreferred communication style\\b",
+        "\\bChinese-first\\b",
+        "\\bplainspoken\\b",
+        "\\bconclusion first\\b",
+        "用户.*反复",
+        "偏好"
+      ]
+    },
+    {
+      "signal": "explicit_feedback",
+      "route_hint": "memory",
+      "confidence": 0.86,
+      "patterns": [
+        "\\bexplicit feedback\\b",
+        "\\buser repeatedly asks\\b",
+        "\\basks for Chinese-first\\b",
+        "\\bplainspoken answers\\b",
+        "\\bconclusion first\\b"
+      ]
+    },
+    {
+      "signal": "stable_project_fact",
+      "route_hint": "memory",
+      "confidence": 0.88,
+      "patterns": [
+        "\\blocal cybernetic repo\\b",
+        "\\bcore project files\\b",
+        "\\bproject files\\b",
+        "\\bproject state\\b",
+        "\\bZilliz\\b",
+        "\\bQianxuesen\\b",
+        "\\brepo\\b",
+        "\\bGitHub\\b",
+        "\\bVPS\\b",
+        "本地",
+        "仓库"
+      ],
+      "artifact_prefixes": [
+        "repo:",
+        "docs/"
+      ]
+    },
+    {
+      "signal": "verified_project_state",
+      "route_hint": "memory",
+      "confidence": 0.88,
+      "patterns": [
+        "\\bverified project state\\b",
+        "\\bscoped and recoverable\\b",
+        "\\bstay inside the local cybernetic repo\\b",
+        "\\bcore project files explicitly require\\b"
+      ]
+    },
+    {
+      "signal": "external_framework_change",
+      "route_hint": "skill",
+      "confidence": 0.82,
+      "patterns": [
+        "(?:LangGraph|LangChain|Neynar|Snapchain|Farcaster|Frames?|GEPA|EvoAgentX|SDK|API|protocol|framework)[\\s\\S]{0,80}(?:changed|updated|release|changelog|breaking|deprecated|drift)",
+        "(?:changed|updated|release|changelog|breaking|deprecated|drift)[\\s\\S]{0,80}(?:LangGraph|LangChain|Neynar|Snapchain|Farcaster|Frames?|GEPA|EvoAgentX|SDK|API|protocol|framework)"
+      ]
+    },
+    {
+      "signal": "competitor_change",
+      "route_hint": "skill",
+      "confidence": 0.8,
+      "patterns": [
+        "(?:competitor|rival|alternative|benchmark)[\\s\\S]{0,80}(?:changed|updated|release|changelog|benchmark)",
+        "(?:changed|updated|release|changelog|benchmark)[\\s\\S]{0,80}(?:competitor|rival|alternative|benchmark)"
+      ]
+    },
+    {
+      "signal": "knowledge_gap",
+      "route_hint": "case",
+      "confidence": 0.82,
+      "patterns": [
+        "\\bunknown\\b",
+        "\\bnot sure\\b",
+        "\\bunclear\\b",
+        "\\bknowledge gap\\b",
+        "\\bmissing context\\b",
+        "\\bcannot answer\\b",
+        "\\boutdated\\b"
+      ]
+    },
+    {
+      "signal": "research_needed",
+      "route_hint": "case",
+      "confidence": 0.82,
+      "patterns": [
+        "\\bneed to research\\b",
+        "\\bresearch needed\\b",
+        "\\blook up\\b",
+        "\\bcheck docs\\b",
+        "\\bread docs\\b",
+        "\\bverify against docs\\b"
+      ]
+    },
+    {
+      "signal": "user_correction",
+      "route_hint": "case",
+      "confidence": 0.84,
+      "patterns": [
+        "\\buser corrected\\b",
+        "\\bcorrection from user\\b",
+        "\\byou misunderstood\\b",
+        "\\bmodel was wrong\\b",
+        "\\bmisunderstood\\b",
+        "你理解错",
+        "纠正"
+      ]
+    },
+    {
+      "signal": "repeated_terminology",
+      "route_hint": "memory",
+      "confidence": 0.78,
+      "patterns": [
+        "\\bterminology\\b",
+        "\\brepeated term\\b",
+        "\\bdomain term\\b"
+      ]
+    },
+    {
+      "signal": "farcaster_reply_success",
+      "route_hint": "skill",
+      "confidence": 0.72,
+      "patterns": [
+        "\\bgood reply\\b",
+        "\\breply success\\b",
+        "\\buseful reply\\b",
+        "\\bthread result\\b"
+      ],
+      "source_kinds": [
+        "farcaster_audit"
+      ]
+    },
+    {
+      "signal": "farcaster_low_quality_reply",
+      "route_hint": "case",
+      "confidence": 0.78,
+      "patterns": [
+        "\\blow quality\\b",
+        "\\boff voice\\b",
+        "\\bbad reply\\b",
+        "\\boverposting\\b"
+      ]
+    }
+  ]
+}
