@@ -1,0 +1,112 @@
+{
+  "schema_version": "misa.stability_indicator.v1",
+  "mode": "stability-monitor",
+  "ok": false,
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "review_window": {
+    "kind": "recent_local_evidence",
+    "post_deploy_ticket_count": 3,
+    "skill_replay_result_count": 4
+  },
+  "summary": {
+    "indicator_count": 2,
+    "divergent_indicator_count": 2,
+    "warning_indicator_count": 0,
+    "insufficient_data_indicator_count": 0,
+    "safe_mode_incident_count": 2,
+    "post_deploy_ticket_count": 3,
+    "skill_replay_result_count": 4,
+    "route_counts": {
+      "memory": 1,
+      "skill": 1
+    },
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "safe_mode": {
+    "active": true,
+    "state": "safe_mode",
+    "allowed_routes": ["damping", "ignore"],
+    "frozen_routes": ["memory", "skill", "case", "policy"],
+    "release_policy": "human_owner_manual_release_only",
+    "requires_human_release": true,
+    "route_gate_output_only": true,
+    "live_route_table_mutated": false
+  },
+  "indicators": [
+    {
+      "indicator_id": "memory_route.promote_rollback_ratio",
+      "route_target": "memory",
+      "value": 0.667,
+      "warning_threshold": 0.25,
+      "safe_mode_threshold": 0.5,
+      "min_samples": 3,
+      "sample_count": 3,
+      "numerator": 2,
+      "denominator": 3,
+      "status": "divergent",
+      "safe_mode_triggered": true,
+      "evidence": [
+        "deploy-memory-divergent-001",
+        "deploy-memory-divergent-002"
+      ]
+    },
+    {
+      "indicator_id": "skill_route.replay_failure_streak",
+      "route_target": "skill",
+      "value": 3,
+      "warning_threshold": 2,
+      "safe_mode_threshold": 3,
+      "min_samples": 3,
+      "sample_count": 4,
+      "numerator": 3,
+      "denominator": 4,
+      "status": "divergent",
+      "safe_mode_triggered": true,
+      "evidence": [
+        "skill-replay-failed-002",
+        "skill-replay-failed-003",
+        "skill-replay-failed-004"
+      ]
+    }
+  ],
+  "incidents": [
+    {
+      "incident_id": "stability-memory_route.promote_rollback_ratio-2026-05-21t00-00-00.000z",
+      "indicator_id": "memory_route.promote_rollback_ratio",
+      "route_target": "memory",
+      "severity": "safe_mode",
+      "reason": "memory_route.promote_rollback_ratio value 0.667 reached safe-mode threshold 0.5.",
+      "observed_at": "2026-05-21T00:00:00.000Z",
+      "allowed_routes": ["damping", "ignore"],
+      "frozen_routes": ["memory", "skill", "case", "policy"],
+      "requires_human_release": true,
+      "incident_path": null
+    },
+    {
+      "incident_id": "stability-skill_route.replay_failure_streak-2026-05-21t00-00-00.000z",
+      "indicator_id": "skill_route.replay_failure_streak",
+      "route_target": "skill",
+      "severity": "safe_mode",
+      "reason": "skill_route.replay_failure_streak value 3 reached safe-mode threshold 3.",
+      "observed_at": "2026-05-21T00:00:00.000Z",
+      "allowed_routes": ["damping", "ignore"],
+      "frozen_routes": ["memory", "skill", "case", "policy"],
+      "requires_human_release": true,
+      "incident_path": null
+    }
+  ],
+  "safety": {
+    "production_authority": false,
+    "publication_allowed": false,
+    "live_route_table_mutated": false,
+    "writes_persistent_memory": false,
+    "incident_write_root": "runs/stability-incidents",
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  },
+  "warnings": [
+    "Safe mode is active in the monitor output; only damping and ignore routes should be accepted until manual release."
+  ],
+  "violations": []
+}

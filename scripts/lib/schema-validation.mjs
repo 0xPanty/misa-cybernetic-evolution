@@ -19,6 +19,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/signal_candidate_rollup.schema.json", "examples/signal_candidate_rollup.example.json"],
   ["schemas/evolution_tournament_gate.schema.json", "examples/evolution_tournament_gate.example.json"],
   ["schemas/deployment-ticket.schema.json", "examples/deployment_ticket.example.json"],
+  ["schemas/stability-indicator.schema.json", "examples/stability_indicator.example.json"],
   ["schemas/memory_layer.schema.json", "examples/memory_layer.example.json"],
   ["schemas/repair_ticket.schema.json", "examples/repair_ticket.example.json"],
   ["schemas/work_order_routing.schema.json", "examples/work_order_routing.example.json"],

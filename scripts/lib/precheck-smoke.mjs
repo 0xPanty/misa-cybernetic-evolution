@@ -10,6 +10,7 @@ import { distillLocalMisaSources } from "./session-distiller.mjs";
 import { reviewSignalCandidateRollup } from "./signal-candidate-rollup.mjs";
 import { reviewSignalIntakeContract } from "./signal-intake-contract.mjs";
 import { crystallizeMisaSkills } from "./skill-crystallization.mjs";
+import { reviewStabilityIndicators } from "./stability-monitor.mjs";
 import { buildWorkOrderRouting } from "./work-order-router.mjs";
 import { PHASES, checkResult } from "./precheck-shared.mjs";
 
@@ -190,6 +191,26 @@ export async function runSmokePrecheck({ repoRoot }) {
     schemaRel: "schemas/evolution_tournament_gate.schema.json",
     data: evolutionTournament,
     name: "validate evolution tournament gate review"
+  }));
+
+  const stability = reviewStabilityIndicators({
+    now: new Date("2026-05-21T00:00:00Z")
+  });
+  checks.push(smokeCheck("Misa stability monitor check", stability.ok, {
+    mode: stability.mode,
+    safeMode: stability.safe_mode.state,
+    indicators: stability.summary.indicator_count,
+    incidents: stability.summary.safe_mode_incident_count,
+    productionAuthority: stability.safety.production_authority,
+    liveRouteTableMutated: stability.safety.live_route_table_mutated,
+    llmApiCalls: stability.safety.llm_api_calls,
+    violations: stability.violations
+  }));
+  checks.push(await phasedValidation({
+    repoRoot,
+    schemaRel: "schemas/stability-indicator.schema.json",
+    data: stability,
+    name: "validate stability monitor review"
   }));
 
   const memoryLayer = await reviewMemoryLayerComparison({ repoRoot });

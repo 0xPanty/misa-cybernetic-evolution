@@ -28,6 +28,7 @@
     "evolution:evaluate:misa": "node scripts/evolution-evaluator.mjs",
     "evolution:tournament:misa": "node scripts/evolution-tournament.mjs",
     "post-deploy:measure": "node scripts/post-deploy-measurement.mjs",
+    "stability:monitor": "node scripts/stability-monitor.mjs",
     "loser:pressure": "node scripts/loser-pressure-quant.mjs",
     "loser:matrix": "node scripts/loser-pressure-matrix.mjs",
     "memory-layer:misa": "node scripts/memory-layer.mjs",

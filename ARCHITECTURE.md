@@ -458,7 +458,26 @@ hard-filter candidates, write memory, or touch VPS.
 The post-deploy measurement contract is described in
 [docs/post-deploy-measurement.md](./docs/post-deploy-measurement.md).
 
-### 8.5 Vector Memory and Retrieval Lineage
+### 8.5 Stability Monitor
+
+The stability monitor is the safe-mode gate for route divergence. It does not
+replace damping; it watches whether route-level outcomes show that damping is
+not enough.
+
+The first indicators are `memory_route.promote_rollback_ratio` and
+`skill_route.replay_failure_streak`. If either crosses its safe-mode threshold,
+the monitor outputs a route gate that accepts only `damping` and `ignore` until
+manual release.
+
+This is still local and non-authoritative. The monitor may write incident
+records under ignored `runs/stability-incidents/` when explicitly requested,
+but it does not mutate the live route table, write memory, call providers, or
+touch VPS.
+
+The stability monitor contract is described in
+[docs/stability-monitor.md](./docs/stability-monitor.md).
+
+### 8.6 Vector Memory and Retrieval Lineage
 
 Vector-memory classification is a storage plan, not a memory write. The dry-run
 records keep kind, authority, source lineage, replay keys, and retrieval hints
@@ -483,7 +502,7 @@ public distillation template locally, exposes `upsert`, `query`, `stats`, and
 LanceDB, Chroma, pgvector, or custom stores. Swapping the backend does not
 change the required `misa.local_session_distillation.v1` input shape.
 
-### 8.6 Skill Evolution Adapter
+### 8.7 Skill Evolution Adapter
 
 The skill evolution adapter turns arbitrary behavior layers into a uniform
 supervision surface. A behavior adapter reports what a skill tried to do:
@@ -511,7 +530,7 @@ The supervisor has no write authority. It does not mutate the skill, publish
 content, write memory, call providers, change route ownership, or promote a
 candidate without replay.
 
-### 8.7 Session-Distiller Review
+### 8.8 Session-Distiller Review
 
 Session-distiller review is live-adjacent but read-only. It can inspect a
 distiller summary, Zilliz manifest rows, rollback traces, and LLM artifacts, then

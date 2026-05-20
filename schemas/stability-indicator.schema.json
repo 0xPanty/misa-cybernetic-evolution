@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/stability-indicator.schema.json",
+  "title": "StabilityIndicatorReview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "review_window",
+    "summary",
+    "safe_mode",
+    "indicators",
+    "incidents",
+    "safety",
+    "warnings",
+    "violations"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.stability_indicator.v1" },
+    "mode": { "type": "string", "const": "stability-monitor" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "review_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "post_deploy_ticket_count", "skill_replay_result_count"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "post_deploy_ticket_count": { "type": "integer", "minimum": 0 },
+        "skill_replay_result_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicator_count",
+        "divergent_indicator_count",
+        "warning_indicator_count",
+        "insufficient_data_indicator_count",
+        "safe_mode_incident_count",
+        "post_deploy_ticket_count",
+        "skill_replay_result_count",
+        "route_counts",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "indicator_count": { "type": "integer", "minimum": 1 },
+        "divergent_indicator_count": { "type": "integer", "minimum": 0 },
+        "warning_indicator_count": { "type": "integer", "minimum": 0 },
+        "insufficient_data_indicator_count": { "type": "integer", "minimum": 0 },
+        "safe_mode_incident_count": { "type": "integer", "minimum": 0 },
+        "post_deploy_ticket_count": { "type": "integer", "minimum": 0 },
+        "skill_replay_result_count": { "type": "integer", "minimum": 0 },
+        "route_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "safe_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "state",
+        "allowed_routes",
+        "frozen_routes",
+        "release_policy",
+        "requires_human_release",
+        "route_gate_output_only",
+        "live_route_table_mutated"
+      ],
+      "properties": {
+        "active": { "type": "boolean" },
+        "state": { "type": "string", "enum": ["normal", "safe_mode"] },
+        "allowed_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy", "damping", "ignore"] }
+        },
+        "frozen_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy"] }
+        },
+        "release_policy": {
+          "type": "string",
+          "enum": ["not_required", "human_owner_manual_release_only"]
+        },
+        "requires_human_release": { "type": "boolean" },
+        "route_gate_output_only": { "type": "boolean", "const": true },
+        "live_route_table_mutated": { "type": "boolean", "const": false }
+      }
+    },
+    "indicators": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/indicator" }
+    },
+    "incidents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/incident" }
+    },
+    "safety": { "$ref": "#/$defs/safety" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "violations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "indicator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicator_id",
+        "route_target",
+        "value",
+        "warning_threshold",
+        "safe_mode_threshold",
+        "min_samples",
+        "sample_count",
+        "numerator",
+        "denominator",
+        "status",
+        "safe_mode_triggered",
+        "evidence"
+      ],
+      "properties": {
+        "indicator_id": { "type": "string", "minLength": 1 },
+        "route_target": { "type": "string", "enum": ["memory", "skill"] },
+        "value": { "type": "number", "minimum": 0 },
+        "warning_threshold": { "type": "number", "minimum": 0 },
+        "safe_mode_threshold": { "type": "number", "minimum": 0 },
+        "min_samples": { "type": "integer", "minimum": 1 },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "numerator": { "type": "number", "minimum": 0 },
+        "denominator": { "type": "number", "minimum": 0 },
+        "status": {
+          "type": "string",
+          "enum": ["stable", "warning", "divergent", "insufficient_data"]
+        },
+        "safe_mode_triggered": { "type": "boolean" },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "incident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incident_id",
+        "indicator_id",
+        "route_target",
+        "severity",
+        "reason",
+        "observed_at",
+        "allowed_routes",
+        "frozen_routes",
+        "requires_human_release",
+        "incident_path"
+      ],
+      "properties": {
+        "incident_id": { "type": "string", "minLength": 1 },
+        "indicator_id": { "type": "string", "minLength": 1 },
+        "route_target": { "type": "string", "enum": ["memory", "skill"] },
+        "severity": { "type": "string", "const": "safe_mode" },
+        "reason": { "type": "string", "minLength": 1 },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "allowed_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["damping", "ignore"] }
+        },
+        "frozen_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy"] }
+        },
+        "requires_human_release": { "type": "boolean", "const": true },
+        "incident_path": { "type": ["string", "null"] }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "publication_allowed",
+        "live_route_table_mutated",
+        "writes_persistent_memory",
+        "incident_write_root",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "publication_allowed": { "type": "boolean", "const": false },
+        "live_route_table_mutated": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "incident_write_root": { "type": "string", "minLength": 1 },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    }
+  }
+}
