@@ -143,6 +143,7 @@ export const INVENTORY_FILES = [
 
 export const MACHINE_CONTRACT_FILES = [
   "schemas/control_contract.schema.json",
+  "schemas/actuator-enum.json",
   "schemas/learning_event.schema.json",
   "schemas/learning_item.schema.json",
   "schemas/learning_cycle_trace.schema.json",

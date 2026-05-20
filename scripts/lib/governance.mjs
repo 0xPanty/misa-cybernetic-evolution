@@ -1,33 +1,16 @@
-const HIGH_RISK_PATTERNS = [
-  {
-    id: "public_posting",
-    patterns: [/public\s+post/i, /post\s+publicly/i, /live\s+channel/i]
-  },
-  {
-    id: "provider_route",
-    patterns: [/provider\s+route/i, /model\s+route/i, /change\s+provider/i]
-  },
-  {
-    id: "session_mechanics",
-    patterns: [/session\s+mechanic/i, /session\s+key/i, /conversation\s+state/i]
-  },
-  {
-    id: "background_timer",
-    patterns: [/timer/i, /cron/i, /scheduler/i, /background\s+job/i]
-  },
-  {
-    id: "persistent_deletion",
-    patterns: [/delete/i, /deletion/i, /prune/i, /purge/i]
-  },
-  {
-    id: "persistent_memory_write",
-    patterns: [/persistent\s+memory/i, /memory\s+write/i, /write\s+memory/i]
-  },
-  {
-    id: "security_policy",
-    patterns: [/security\s+policy/i, /redaction\s+policy/i, /secret\s+handling/i]
-  }
-];
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ACTUATOR_ENUM_PATH = path.join(__dirname, "..", "..", "schemas", "actuator-enum.json");
+const ACTUATOR_ENUM_MANIFEST = JSON.parse(fs.readFileSync(ACTUATOR_ENUM_PATH, "utf8"));
+
+export const ACTUATOR_ENUM = Object.freeze([...ACTUATOR_ENUM_MANIFEST.actuators]);
+export const HIGH_RISK_ACTUATORS = Object.freeze([...ACTUATOR_ENUM_MANIFEST.high_risk_actuators]);
+
+const ACTUATOR_SET = new Set(ACTUATOR_ENUM);
+const HIGH_RISK_ACTUATOR_SET = new Set(HIGH_RISK_ACTUATORS);
 
 const APPROVAL_PATTERN = /approval|approved|approver|explicit approval|manual review|human review/i;
 
@@ -43,22 +26,32 @@ function textOf(value) {
 
 export function classifyActuators(actuatorBudget = []) {
   const values = Array.isArray(actuatorBudget) ? actuatorBudget : [actuatorBudget];
-  const matches = [];
+  const knownActuators = [];
+  const unknownActuators = [];
+  const highRiskActuators = [];
 
   for (const rawValue of values) {
-    const value = textOf(rawValue);
-    for (const rule of HIGH_RISK_PATTERNS) {
-      if (rule.patterns.some((pattern) => pattern.test(value))) {
-        matches.push({ id: rule.id, actuator: value });
-      }
+    const actuator = textOf(rawValue).trim();
+    if (!ACTUATOR_SET.has(actuator)) {
+      unknownActuators.push(actuator);
+      continue;
+    }
+    knownActuators.push(actuator);
+    if (HIGH_RISK_ACTUATOR_SET.has(actuator)) {
+      highRiskActuators.push({ id: actuator, actuator });
     }
   }
 
-  return matches;
+  return {
+    knownActuators,
+    unknownActuators,
+    highRiskActuators
+  };
 }
 
 export function evaluateControlContract(contract) {
-  const highRiskActuators = classifyActuators(contract?.actuator_budget ?? []);
+  const actuatorClassification = classifyActuators(contract?.actuator_budget ?? []);
+  const { highRiskActuators, unknownActuators } = actuatorClassification;
   const violations = [];
   const warnings = [];
   const fullText = JSON.stringify(contract ?? {});
@@ -70,6 +63,10 @@ export function evaluateControlContract(contract) {
       violations: ["contract must be an object"],
       warnings
     };
+  }
+
+  if (unknownActuators.length > 0) {
+    violations.push(`unknown actuator, must come from enum: ${unknownActuators.join(", ")}`);
   }
 
   if (highRiskActuators.length > 0 && !APPROVAL_PATTERN.test(fullText)) {
@@ -98,7 +95,9 @@ export function evaluateControlContract(contract) {
 
   return {
     ok: violations.length === 0,
+    actuatorClassification,
     highRiskActuators,
+    unknownActuators,
     violations,
     warnings
   };

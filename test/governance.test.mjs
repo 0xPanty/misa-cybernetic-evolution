@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  ACTUATOR_ENUM,
+  HIGH_RISK_ACTUATORS,
   classifyActuators,
   evaluateControlContract,
   evaluateDampingRules,
@@ -65,17 +67,35 @@ import os from "node:os";
 import path from "node:path";
 
 test("classifies high-risk actuators", () => {
-  const matches = classifyActuators([
-    "write draft",
-    "start timer",
-    "change provider route"
+  const classification = classifyActuators([
+    "audit.write",
+    "timer.start",
+    "provider.route_change"
   ]);
 
-  assert.deepEqual(matches.map((match) => match.id), [
-    "background_timer",
-    "provider_route"
+  assert.deepEqual(classification.knownActuators, [
+    "audit.write",
+    "timer.start",
+    "provider.route_change"
   ]);
+  assert.deepEqual(classification.highRiskActuators.map((match) => match.id), [
+    "timer.start",
+    "provider.route_change"
+  ]);
+  assert.deepEqual(classification.unknownActuators, []);
 });
+
+test("control contract actuator enum stays aligned with the manifest", async () => {
+  const schema = JSON.parse(await fs.readFile(
+    path.join(process.cwd(), "schemas", "control_contract.schema.json"),
+    "utf8"
+  ));
+  const schemaEnum = schema.properties.actuator_budget.items.enum;
+
+  assert.deepEqual(schemaEnum, ACTUATOR_ENUM);
+  assert.equal(HIGH_RISK_ACTUATORS.every((actuator) => ACTUATOR_ENUM.includes(actuator)), true);
+});
+
 test("blocks high-risk control contract without approval", () => {
   const result = evaluateControlContract({
     contract_id: "unsafe",
@@ -86,12 +106,50 @@ test("blocks high-risk control contract without approval", () => {
     recovery_target: "restore previous provider",
     rollback_trigger: "smoke fails",
     boundary: ["provider route"],
-    actuator_budget: ["change provider route"],
+    actuator_budget: ["provider.route_change"],
     created_at: "2026-05-09T08:00:00Z"
   });
 
   assert.equal(result.ok, false);
   assert.match(result.violations.join("\n"), /approval/);
+});
+
+test("rejects unknown actuator names before risk classification", () => {
+  const result = evaluateControlContract({
+    contract_id: "unknown-actuator",
+    primary_setpoint: "send to a channel with an unregistered actuator name",
+    acceptance: ["smoke test"],
+    guardrail_metrics: [],
+    sampling_plan: "local",
+    recovery_target: "restore local-only mode",
+    rollback_trigger: "smoke fails",
+    boundary: ["local review"],
+    actuator_budget: ["send to channel"],
+    created_at: "2026-05-09T08:00:00Z"
+  });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.unknownActuators, ["send to channel"]);
+  assert.match(result.violations.join("\n"), /unknown actuator/);
+});
+
+test("allows low-risk actuator without approval evidence", () => {
+  const result = evaluateControlContract({
+    contract_id: "low-risk-audit",
+    primary_setpoint: "write a local audit report only",
+    acceptance: ["local report exists"],
+    guardrail_metrics: [],
+    sampling_plan: "local",
+    recovery_target: "remove the local report",
+    rollback_trigger: "report validation fails",
+    boundary: ["local report"],
+    actuator_budget: ["audit.write"],
+    created_at: "2026-05-09T08:00:00Z"
+  });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.highRiskActuators, []);
+  assert.deepEqual(result.unknownActuators, []);
 });
 
 test("accepts default damping rules", () => {

@@ -33,9 +33,9 @@
   ],
   "approximation_validity": "Replay proves behavior on known tasks only; canary is still required before broad activation.",
   "actuator_budget": [
-    "write draft",
-    "run replay",
-    "publish after approval"
+    "skill.draft",
+    "audit.write",
+    "skill.publish"
   ],
   "risks": [
     "Overfitting to old replay cases",

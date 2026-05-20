@@ -39,9 +39,7 @@
   ],
   "approximation_validity": "Local dry-run checks prove only repository consistency, route behavior, and boundary consistency; they do not prove live production safety.",
   "actuator_budget": [
-    "write docs",
-    "write schema",
-    "run local dry-run checks"
+    "audit.write"
   ],
   "risks": [
     "Overstating readiness as production runtime approval",

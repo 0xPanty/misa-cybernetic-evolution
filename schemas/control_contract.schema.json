@@ -51,7 +51,35 @@
     "approximation_validity": { "type": "string" },
     "actuator_budget": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string",
+        "enum": [
+          "memory.read",
+          "memory.write",
+          "memory.delete",
+          "skill.draft",
+          "skill.install",
+          "skill.publish",
+          "skill.deprecate",
+          "provider.route_change",
+          "provider.add",
+          "provider.remove",
+          "channel.public_post",
+          "channel.private_reply",
+          "session.mechanics_change",
+          "session.restart",
+          "timer.start",
+          "timer.stop",
+          "timer.modify",
+          "security.policy_change",
+          "security.redaction_change",
+          "vps.deploy",
+          "vps.config_change",
+          "vector.upsert",
+          "vector.delete",
+          "audit.write"
+        ]
+      },
       "minItems": 1
     },
     "risks": {
