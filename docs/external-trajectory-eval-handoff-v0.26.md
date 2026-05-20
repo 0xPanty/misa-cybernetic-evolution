@@ -3747,3 +3747,469 @@ Updated next-window recovery phrase:
 当前本地已经完成两条不花 LLM 的校准：1）历史 L2 gate-intercept replay 证明旧 gate 误杀偏多，新 gate 更准；2）SWE-rebench stratified-500 经过 adapter -> L1 alpha simulation，得到 256 条 single/no_context 和 244 条 recheck/primary_agent，并固定 15 条 Gemini probe。mock L2/L3 跑这 15 条：samples=15，candidate_count_histogram={"1":9,"2":6}，passed_gate=15，failed_gate=0，llm_api_calls=0。新增 test/l1-alpha-simulation.test.mjs，npm test/precheck 均通过。还没有 push、没有 commit、没有新 Gemini 调用、没有 VPS/生产变化。下一步若继续验证，用同一批 15 条 source_id 跑真实 Gemini，对比质量和调用数。
 已在 VPS /tmp 跑完同一批 15 条真实 Gemini A/B：A=all candidate_count=1，pass=14/15，fail=1，avg_quality=0.986，llm_api_calls=19，失败是 numpy__numpydoc-101；B=L1-controlled mixed，candidate_count_histogram={"1":9,"2":6}，pass=15/15，fail=0，avg_quality=0.992，llm_api_calls=15。结果已拉回 runs/l1-alpha-simulation/2026-05-19-swe-stratified500/real-gemini-vps-ab/。结论：这批固定 probe 上，L1 分流 alpha 成立，但仍是 shadow 证据，不自动改 L1 阈值或 handoff 权限。
 ```
+
+### Next Calibration Handoff 2026-05-19 After L1 Alpha Commit
+
+This section supersedes the previous recovery phrase above. Use this as the
+next-window anchor.
+
+Implementation anchor:
+
+```text
+7800679 codex: close l1-l3 feedback alpha loop
+```
+
+Current plain-language state:
+
+```text
+The loop is now connected enough to learn from L3 failures, but it is not yet
+production self-mutation. L3 can feed observations back into L2 repair and can
+produce suggestion-only L1 feedback. It does not automatically change L1
+thresholds, L2 prompts, gate parameters, or handoff authority.
+```
+
+Next window should do three things before adding any stronger production loop:
+
+1. Continue historical-sample false-judgment mining without LLM cost.
+
+   Look for both sides of the mistake:
+
+   - samples that a human would accept, but the gate wrongly kills;
+   - samples that the gate accepts, but the work order is actually hollow or too
+     vague to be useful.
+
+2. Verify the three L1 judgments directly.
+
+   Measure, with the existing local artifacts first:
+
+   - when `candidate_count=2` is actually worth the extra candidate;
+   - when `handoff_floor=primary_agent` is necessary instead of
+     `no_context_agent`;
+   - which L1 signals tend to cause repeated L3 repair failure.
+
+3. Compare old logic and new logic on the same historical batch.
+
+   Run old-version and new-version logic over the same source ids without LLM
+   calls. First judge whether the program-level decisions are steadier. Only
+   after local replay shows value should a small real Gemini confirmation run be
+   used.
+
+Promotion boundary:
+
+```text
+Do not jump straight to automatic threshold or prompt mutation.
+
+The production-grade loop should be:
+L3 finds a problem
+-> aggregate many similar observations, not one-off noise
+-> generate a candidate policy change
+-> replay it on historical samples
+-> promote only if the replay improves quality and does not add obvious false positives
+-> keep rollback, before/after comparison, and a plain explanation of why it changed
+```
+
+Next-window recovery phrase:
+
+```text
+继续 misa-cybernetic-evolution L1/L2/L3 强闭环校准。
+先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Next Calibration Handoff 2026-05-19 After L1 Alpha Commit，再读 docs/l2-l3-selection-audit-v0.30.md 的 Next Calibration Plan 2026-05-19。
+当前实现锚点是 7800679 codex: close l1-l3 feedback alpha loop；本地 main 比 origin/main ahead，先不要 push。
+下轮先不花 LLM 钱：继续用历史样本找两类误判：人看能用但 gate 错杀、gate 放过但内容很虚。然后专门验证三件事：什么时候 candidate_count=2 真值、什么时候必须 primary_agent、哪些 L1 信号容易导致 L3 反复修不好。再用同一批历史样本做旧逻辑 vs 新逻辑对比。只有本地回放证明更稳后，才拿小批真实 Gemini 复验。
+真正生产级闭环以后再做：L3 问题先汇总，不因单个样本乱改；生成候选策略；历史样本回放验证；通过后才更新 L1 阈值、L2 prompt 或 gate 参数，并且必须可回滚、可对比、可解释。
+```
+
+### Local Calibration Replay 2026-05-19 After L1 Alpha Commit
+
+This pass stayed local-only and history-only:
+
+```text
+new_llm_api_calls=0
+new_external_api_calls=0
+touches_vps=false
+pushes_github=false
+mutates_l1_thresholds=false
+mutates_l2_prompt=false
+mutates_handoff_floor=false
+```
+
+Artifacts:
+
+```text
+runs/l2-gate-intercept-analysis/2026-05-19-local-alpha-misjudgment-replay/gate-intercept-analysis.json
+runs/l2-l3-quantitative-comparison/2026-05-19-local-alpha-candidate-count-replay/quantitative-comparison.json
+runs/l1-alpha-simulation/2026-05-19-local-calibration-rerun/l1-alpha/l1-alpha-simulation.json
+runs/l1-l3-local-calibration/2026-05-19-alpha-misjudgment-audit/alpha-misjudgment-audit.json
+```
+
+Readout:
+
+```text
+gate false judgment:
+- scanned_l2_reports=143
+- deduped_result_count=420
+- old_blocked_count=172
+- old_blocked_salvageable_count=110
+- old_blocked_salvageable_rate_pct=64
+- hollow_old_pass_count=13
+- hollow_old_pass_rate_pct=5.2
+
+candidate_count replay on fixed 20-sample historical batch:
+- count1 avg_quality=0.958, green=7, yellow=9, red=4, candidates=20
+- count2 avg_quality=0.968, green=7, yellow=9, red=4, candidates=40, default_ready=true
+- count4 avg_quality=0.960, green=11, yellow=3, red=6, candidates=80, default_ready=false
+
+handoff / L3 repair signal:
+- L1 alpha sim handoff floors: {"no_context_agent":256,"primary_agent":244}
+- joined L4 rows: no_context_agent accept=205 revise=6; primary_agent accept=21 revise=0
+- L3 rows inspected=302
+- repair_pressure_count=5
+- repeated_failure_count=3
+- repeated failures cluster in single + medium-risk + damping + no_context_agent rows
+```
+
+Plain interpretation:
+
+```text
+The alpha did find real signal, but not a promotion rule yet.
+
+Old hard gate still over-kills: many blocked rows recompute to near_pass/pass.
+There is also a smaller opposite pocket: old gate passed 13 hollow rows,
+mostly too few actionable tasks / too many weak tasks.
+
+candidate_count=2 is useful on the fixed 20-sample replay, but count4 is too
+noisy for default. The handoff signal does not justify globally upgrading
+no_context_agent to primary_agent. The next narrow alpha is the false-safe lane:
+medium+damping/no_context_agent rows that later exhaust L3 repair.
+```
+
+Next calibration boundary:
+
+```text
+Do not auto-change L1 thresholds.
+Do not auto-change L2 prompts.
+Do not auto-upgrade handoff floor.
+
+Next local step should isolate the medium+damping/no_context_agent false-safe
+cases and test whether a narrower L1 signal predicts them before any policy
+change is proposed.
+```
+
+## Local Reflection Replay 2026-05-19
+
+The narrow replay was written to:
+
+- `runs/l1-l3-local-calibration/2026-05-19T13-44-28-927Z-reflection-replay/l3-feedback-reflection-replay.json`
+- `runs/l1-l3-local-calibration/2026-05-19T13-44-28-927Z-reflection-replay/l3-feedback-reflection-replay.md`
+- `runs/l1-l3-local-calibration/2026-05-19T13-44-28-927Z-reflection-replay/l3-feedback-reflection-library.jsonl`
+
+Local replay summary:
+
+- sample_count: 30
+- bad_sample_count: 3
+- recorded_recall: 0.667
+- recorded_missing_baseline_caught_count: 1
+- baseline_recall: 1
+- baseline_primary_agent_review_suggested_count: 2
+- candidate_recall: 1
+- candidate_primary_agent_review_suggested_count: 2
+- newly_caught_count: 0
+- candidate_good_false_positive_count: 0
+
+Plain result:
+
+```text
+The replay is doing the right kind of thing, but the comparison must be read
+carefully. One older artifact did not record L1 feedback, so recorded_recall is
+0.667. When the current suggestion-only L3 feedback rule is recomputed on the
+same rows, baseline_recall is already 1. The reflection candidate still adds
+value by turning the same three failed rows into a concrete thin-work-order
+rule, and it leaves the 27 normal samples alone.
+```
+
+### Local Reflection Stress 2026-05-20
+
+This pass stayed local-only and used no LLM/API/VPS calls.
+
+Artifacts:
+
+```text
+runs/l1-l3-local-calibration/2026-05-20T00-00-00-000Z-reflection-stress/l3-feedback-reflection-stress.json
+runs/l1-l3-local-calibration/2026-05-20T00-00-00-000Z-reflection-stress/l3-feedback-reflection-stress.md
+runs/l1-l3-local-calibration/2026-05-20T00-00-00-000Z-reflection-stress/l3-feedback-reflection-full-library.jsonl
+```
+
+Stress readout:
+
+```text
+full_sample_count=556
+strict_seed_sample_count=30
+strict_seed_bad_count=3
+clean_good_count=247
+holdout_sample_count=526
+documented_strict_trigger_count=3
+documented_strict_clean_good_false_positive_count=0
+documented_strict_holdout_trigger_count=0
+over_broad_holdout_trigger_count=91
+boundary_probe_count=100
+strict_boundary_probe_trigger_count=0
+widening_boundary_probe_trigger_count=250
+l1_promotion_recommendation=keep_shadow_collect_more_holdout_before_l1_strategy
+```
+
+Plain result:
+
+```text
+The rule can take pressure, but only while it stays narrow:
+signal_family=keyword_risk_noise + candidate_mode=single + candidate_count=1
++ risk_level=medium + route_hint=damping + handoff_floor=no_context_agent.
+
+In the 556-row full historical background, the strict rule triggered only on
+the three known bad thin-work-order rows and did not touch the 247 accepted
+rows or the 526-row holdout. But widened variants became noisy fast:
+thinness-only created 91 holdout triggers, and 100 boundary probes created
+250 triggers across widened variants.
+
+Do not wire this into L1 as an automatic strategy yet. Keep it as a shadow
+candidate, collect more bad examples, and require another clean holdout before
+any L1 policy integration.
+```
+
+## L1/L3 Sample Library Quant 2026-05-20
+
+This pass stayed local-only and spent no model/API/VPS/GitHub budget.
+
+Artifacts:
+
+```text
+runs/l1-l3-sample-library/2026-05-20T00-30-00-000Z-github-stratified500/adapt/external-trajectory-adaptation.json
+runs/l1-l3-sample-library/2026-05-20T00-30-00-000Z-github-stratified500/l1-alpha/l1-alpha-simulation.json
+runs/l1-l3-sample-library/2026-05-20T00-30-00-000Z-github-stratified500/sample-library/l1-l3-sample-library.json
+runs/l1-l3-sample-library/2026-05-20T00-30-00-000Z-github-stratified500/sample-library/l1-l3-sample-library.md
+runs/l1-l3-sample-library/2026-05-20T00-30-00-000Z-github-stratified500/sample-library/l1-l3-backfill-queue.jsonl
+```
+
+Quant readout:
+
+```text
+adaptation_sample_count=500
+l1_sample_count=500
+library_row_count=500
+l1_missing_count=0
+l1_mode_counts={"recheck":244,"single":256}
+l1_candidate_count_hint_counts={"1":256,"2":244}
+l1_signal_family_counts={"keyword_context_filter":256,"safety_boundary":244}
+l1_risk_level_counts={"high":244,"medium":256}
+l1_route_hint_counts={"damping":256,"policy":244}
+l1_handoff_floor_counts={"no_context_agent":256,"primary_agent":244}
+
+reflection_scope_count=256
+reflection_scope_rate=0.512
+reflection_l3_labeled_count=14
+reflection_l3_labeled_rate=0.055
+reflection_l3_missing_count=242
+reflection_bad_seed_count=3
+reflection_clean_labeled_count=11
+reflection_conflict_count=3
+reflection_queue_count=245
+
+l3_source_coverage_count=20
+l3_source_coverage_rate=0.04
+l3_pool_decision_row_count=556
+l3_pool_decision_unique_source_count=36
+sample_library_ready=true
+l1_auto_strategy_ready=false
+```
+
+Plain result:
+
+```text
+The GitHub/SWE sample library is now quantified enough for local backfill work,
+but not enough for automatic L1 strategy promotion.
+
+L1 split the same 500 source ids into 244 high-risk safety-boundary rows that
+deserve candidate_count=2 / primary_agent, and 256 medium+damping rows that
+look cheap enough for candidate_count=1 / no_context_agent. The false-safe
+reflection lane is those 256 rows.
+
+Only 14 of those 256 rows currently have historical L3 labels. They contain
+3 bad/conflict seeds and 11 clean labels, while 242 rows still need L2/L3
+backfill labels. That is useful direction, but it is not product-grade proof
+for mutating L1 thresholds, prompts, gates, or handoff floors.
+```
+
+Next local step:
+
+```text
+Use l1-l3-backfill-queue.jsonl as the local label queue. Backfill L2/L3 labels
+on prioritized reflection-scope source ids without LLM spend first where
+possible. After the bad seed and clean holdout counts are both stronger, replay
+candidate L1 policy changes against this same library before any integration.
+```
+
+## L1/L3 Backfill Benchmark 2026-05-20
+
+This pass used the sample-library queue to backfill all missing strict
+reflection-scope labels locally. It did not call an LLM, touch VPS, push GitHub,
+write memory, write Zilliz, create embeddings, or change L1/L2/L3 runtime
+policy.
+
+Artifacts:
+
+```text
+runs/l1-l3-backfill-benchmark/2026-05-20T02-00-00-000Z-top80/l1-l3-backfill-benchmark.json
+runs/l1-l3-backfill-benchmark/2026-05-20T02-00-00-000Z-top80/comparison/quantitative-comparison.json
+runs/l1-l3-backfill-benchmark/2026-05-20T02-10-00-000Z-rest162/l1-l3-backfill-benchmark.json
+runs/l1-l3-backfill-benchmark/2026-05-20T02-10-00-000Z-rest162/comparison/quantitative-comparison.json
+runs/l1-l3-backfill-benchmark/2026-05-20T02-10-00-000Z-rest162/sample-library/l1-l3-sample-library.json
+```
+
+Backfill readout:
+
+```text
+batch_1_selected=80
+batch_1_new_green=80
+batch_1_old_template_red=80
+
+batch_2_selected=162
+batch_2_new_green=162
+batch_2_old_template_red=162
+
+new_llm_api_calls=0
+new_external_api_calls=0
+touches_vps=false
+pushes_github=false
+```
+
+Final sample-library readout after both batches:
+
+```text
+reflection_scope_count=256
+reflection_l3_labeled_count=256
+reflection_l3_missing_count=0
+reflection_bad_seed_count=3
+reflection_clean_labeled_count=253
+reflection_conflict_count=3
+reflection_queue_count=3
+l3_source_coverage_count=262
+l3_pool_decision_row_count=798
+l3_pool_decision_unique_source_count=278
+l1_auto_strategy_ready=false
+```
+
+Old-template vs new local hard comparison:
+
+```text
+top80:
+- old_template: avg_quality=0.407, green=0, red=80
+- new_l1_control: avg_quality=1, green=80, red=0
+
+rest162:
+- old_template: avg_quality=0.407, green=0, red=162
+- new_l1_control: avg_quality=1, green=162, red=0
+```
+
+Plain result:
+
+```text
+The local sample library is now much stronger on clean holdout: all 256
+medium+damping/no_context_agent reflection-scope rows have labels, and 253 are
+clean under the current deterministic local L2/L3 path.
+
+The old-template comparison proves the new local work-order shape is better
+than the thin old template on the same source ids. But the old-template red
+rows are comparison evidence only; they were deliberately not written as
+pool-decisions, so they do not inflate the durable bad-seed count.
+
+The remaining blocker is real bad-seed coverage. Durable bad/conflict seeds are
+still only 3: PyPSA__linopy-79, numpy__numpydoc-101, and alexgolec__tda-api-37.
+That is enough to keep the shadow rule, but not enough to mutate L1 thresholds,
+L2 prompts, gate parameters, or handoff floors automatically.
+```
+
+Next safe step:
+
+```text
+Do not spend more local mock cycles trying to manufacture bad samples. The
+clean holdout is now large enough. The next evidence gap is real bad examples:
+either mine older real Gemini/VPS L3 failures that match this reflection scope,
+or run a tiny controlled real Gemini probe on unresolved/conflict-prone source
+ids and append those labels before L1 integration review.
+```
+
+## L1/L3 Local Exhaust Report 2026-05-20
+
+This pass exhausts the local evidence that can be used without LLM spend and
+without touching VPS. It scans the full local historical `pool-decisions.jsonl`
+set, the completed 500-row L1/L3 sample library, and the local SWE-rebench
+OpenHands parquet metadata.
+
+Artifacts:
+
+```text
+runs/l1-l3-local-exhaust/2026-05-20T03-00-00-000Z-local-exhaust/l1-l3-local-exhaust-report.json
+runs/l1-l3-local-exhaust/2026-05-20T03-00-00-000Z-local-exhaust/l1-l3-local-exhaust-report.md
+runs/l1-l3-local-exhaust/2026-05-20T03-00-00-000Z-local-exhaust/future-real-probe-candidates.jsonl
+```
+
+Quant readout:
+
+```text
+historical_pool_decision_files=44
+historical_pool_decision_rows=798
+historical_unique_sources=278
+historical_known_bad_rows=3
+historical_known_bad_unique_sources=3
+historical_strict_scope_rows=272
+historical_strict_scope_unique_sources=256
+historical_strict_scope_known_bad_rows=3
+
+sample_library_rows=500
+reflection_scope_count=256
+reflection_l3_labeled_count=256
+reflection_l3_missing_count=0
+reflection_bad_seed_count=3
+reflection_clean_labeled_count=253
+reflection_conflict_count=3
+
+parquet_row_count=67074
+parquet_resolved_false_count=34913
+parquet_non_submit_count=6335
+parquet_high_priority_unique_candidates_excluding_sampled=4820
+future_probe_candidate_written_count=500
+partial_full_jsonl_line_count=9199
+partial_full_jsonl_excluded_from_evidence=true
+
+llm_api_calls=0
+external_api_calls=0
+touches_vps=false
+pushes_github=false
+can_create_more_real_l3_labels_without_llm=false
+```
+
+Plain result:
+
+```text
+Local evidence is now squeezed to the useful boundary.
+
+The real historical L3 bad labels are exhausted locally: there are only 3 known
+bad/conflict sources in the current local pool, and all 3 are already inside
+the medium+damping/no_context reflection lane.
+
+The 500-row sample library is also closed for this lane: all 256 reflection
+scope rows have labels, with 253 clean and 3 bad/conflict.
+
+The 2GB parquet still contains many useful future candidates: 67,074 rows total,
+34,913 unresolved rows, and 4,820 unique high-priority candidates not already in
+the 500-row sample library. But those are task-outcome proxies, not L3 gate
+labels. They can choose the next real probe set; they cannot prove an L3
+feedback failure by themselves.
+```
+
+Next boundary:
+
+```text
+Stop local mock backfill here. The next useful step is not more local labels.
+It is a tiny real L2/L3 probe, using future-real-probe-candidates.jsonl as the
+candidate list, after manual review selects exact source ids. Do not auto-change
+L1 thresholds, L2 prompts, gate weights, or handoff floors from parquet metadata.
+```
