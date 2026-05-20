@@ -1,4 +1,5 @@
 import {
+  CONTROL_NO_PROVIDER_CALL_FILES,
   CORE_REQUIRED_FILES,
   INVENTORY_FILES,
   MACHINE_CONTRACT_FILES,
@@ -9,6 +10,7 @@ import {
   missingFiles,
   readPackageVersion,
   readReadmeVersion,
+  scanControlPathProviderCalls,
   scanForSecretAssignments
 } from "./precheck-shared.mjs";
 
@@ -52,6 +54,14 @@ export async function runStaticFileChecks({ repoRoot }) {
     violations: versionSynced
       ? []
       : [`README version ${readmeVersion ?? "missing"} does not match package.json ${packageVersion ?? "missing"}`]
+  }));
+
+  const providerCallHits = await scanControlPathProviderCalls(repoRoot);
+  checks.push(checkResult("control paths avoid provider and fetch calls", providerCallHits.length === 0, {
+    phase: PHASES.static,
+    checked: CONTROL_NO_PROVIDER_CALL_FILES.length,
+    hits: providerCallHits.map((hit) => `${hit.file}:${hit.line}:${hit.rule}`),
+    violations: providerCallHits.map((hit) => `${hit.file}:${hit.line} contains forbidden ${hit.rule}`)
   }));
 
   return { checks };

@@ -423,6 +423,11 @@ The calibration signal-layer details live in
 That map is descriptive only; it does not add a controller, writer, provider
 call, or route authority.
 
+`npm run precheck` also runs a static no-provider-call guard over the
+deterministic control paths. The route, metric, signal extractor,
+post-deploy, stability, and outer-loop modules must not contain `fetch()` or
+provider SDK/API endpoint calls.
+
 For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
 `--out-file <path>` so the file contains only JSON.

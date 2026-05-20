@@ -7,6 +7,7 @@ import { runPrecheck } from "../scripts/lib/precheck-core.mjs";
 import {
   PHASES,
   normalizeChecks,
+  scanControlPathProviderCalls,
   scanForSecretAssignments,
   walkFiles
 } from "../scripts/lib/precheck-shared.mjs";
@@ -25,13 +26,14 @@ test("repository dry-run precheck passes", async () => {
   assert.ok(result.phase_summary.static.total > 0);
   assert.ok(result.phase_summary.contracts.total > 0);
   assert.ok(result.phase_summary["current-line"].total > 0);
-  assertPhaseCounts(result.phase_summary, "static", 4);
+  assertPhaseCounts(result.phase_summary, "static", 5);
   assertPhaseCounts(result.phase_summary, "contracts", 115);
   assertPhaseCounts(result.phase_summary, "bridges", 21);
   assertPhaseCounts(result.phase_summary, "current-line", 25);
   assertPhaseCounts(result.phase_summary, "smoke", 14);
   assert.equal(result.checks.every((check) => Object.values(PHASES).includes(check.phase)), true);
   assert.ok(result.checks.some((check) => check.name === "README/package version sync"));
+  assert.ok(result.checks.some((check) => check.name === "control paths avoid provider and fetch calls"));
   assert.ok(result.checks.some((check) => check.name === "Session distiller cybernetic review check"));
 });
 
@@ -63,4 +65,26 @@ test("secret scan stays text-only and skips ignored output directories", async (
   assert.equal(walked.some((filePath) => filePath.startsWith("runs/")), false);
   assert.equal(walked.some((filePath) => filePath.startsWith("node_modules/")), false);
   assert.deepEqual(hits, ["src/config.mjs"]);
+});
+
+test("control path provider-call scan blocks fetch and provider endpoints", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-precheck-control-scan-"));
+  const targetDir = path.join(tempRoot, "scripts", "lib");
+  await fs.mkdir(targetDir, { recursive: true });
+  await fs.writeFile(
+    path.join(targetDir, "learning-loop.mjs"),
+    "export async function bad() { return fetch('https://api.openai.com/v1/chat/completions'); }\n",
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(targetDir, "stability-monitor.mjs"),
+    "export const safety = { llm_api_calls: 0, external_api_calls: 0 };\n",
+    "utf8"
+  );
+
+  const hits = await scanControlPathProviderCalls(tempRoot);
+  const rules = hits.map((hit) => hit.rule).sort();
+
+  assert.deepEqual(rules, ["fetch_call", "provider_endpoint"]);
+  assert.equal(hits.every((hit) => hit.file === "scripts/lib/learning-loop.mjs"), true);
 });

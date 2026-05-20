@@ -259,6 +259,36 @@ export const MACHINE_CONTRACT_FILES = [
   "examples/misa-learning/damping_provider_retry_realish.fixture.json"
 ];
 
+export const CONTROL_NO_PROVIDER_CALL_FILES = Object.freeze([
+  "scripts/lib/learning-loop.mjs",
+  "scripts/lib/signal-extractor.mjs",
+  "scripts/lib/metric-registry.mjs",
+  "scripts/lib/plant-model.mjs",
+  "scripts/lib/post-deploy-measurement.mjs",
+  "scripts/lib/stability-monitor.mjs",
+  "scripts/lib/outer-loop-review.mjs",
+  "scripts/lib/evolution-tournament-validation.mjs"
+]);
+
+const CONTROL_PROVIDER_CALL_PATTERNS = [
+  {
+    rule: "fetch_call",
+    pattern: /\bfetch\s*\(/g
+  },
+  {
+    rule: "provider_sdk_import",
+    pattern: /\bfrom\s+["'](?:openai|@anthropic-ai\/sdk|anthropic|node-fetch|undici|axios|got|@ai-sdk\/openai|@ai-sdk\/anthropic|@ai-sdk\/google|@ai-sdk\/xai|google-genai|@google\/generative-ai|groq-sdk|xai-sdk)["']/gi
+  },
+  {
+    rule: "provider_client_constructor",
+    pattern: /\bnew\s+(?:OpenAI|Anthropic)\s*\(/g
+  },
+  {
+    rule: "provider_endpoint",
+    pattern: /https?:\/\/(?:api\.openai\.com|api\.anthropic\.com|openrouter\.ai|generativelanguage\.googleapis\.com|api\.x\.ai)/gi
+  }
+];
+
 const SECRET_PATTERNS = [
   /-----BEGIN (?:RSA |EC |OPENSSH |)PRIVATE KEY-----/,
   /\b(?:OPENAI|ANTHROPIC|GOOGLE|GEMINI|NOVAI|NEYNAR|DISCORD|FARCASTER|AGENTMAIL)_API_KEY\s*=/i,
@@ -414,6 +444,36 @@ export async function scanForSecretAssignments(repoRoot) {
       if (pattern.test(raw)) {
         hits.push(rel);
         break;
+      }
+    }
+  }
+
+  return hits;
+}
+
+function lineNumberAt(text, index) {
+  return text.slice(0, index).split(/\r?\n/).length;
+}
+
+export async function scanControlPathProviderCalls(repoRoot) {
+  const hits = [];
+
+  for (const rel of CONTROL_NO_PROVIDER_CALL_FILES) {
+    const filePath = path.join(repoRoot, rel);
+    const raw = await fs.readFile(filePath, "utf8").catch(() => null);
+    if (raw === null) {
+      continue;
+    }
+
+    for (const { rule, pattern } of CONTROL_PROVIDER_CALL_PATTERNS) {
+      pattern.lastIndex = 0;
+      for (const match of raw.matchAll(pattern)) {
+        hits.push({
+          file: rel,
+          line: lineNumberAt(raw, match.index ?? 0),
+          rule,
+          match: match[0]
+        });
       }
     }
   }
