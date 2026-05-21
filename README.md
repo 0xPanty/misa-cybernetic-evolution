@@ -214,6 +214,18 @@ It writes a small ignored manifest under `runs/qianxuesen-full-loop/` with
 `latest.json`, `latest.md`, and timestamped history. It does not copy full logs
 or add runtime authority.
 
+## Optional VPS Session-Distiller Hook
+
+The deploy helper in `scripts/deploy/misa-cybernetic-session-distiller-review.sh`
+can be installed as an `ExecStartPost` hook for the existing Hermes
+`misa-session-distiller.service`.
+
+It reads the same session-distiller environment, calls the Hermes wrapper in
+`session-distiller-review` mode, and writes review evidence under the existing
+session-distiller artifact directory. It does not start a new cybernetic timer,
+write Zilliz, call embedding providers, publish, install skills, or change live
+session mechanics.
+
 ## Perception Log Layout
 
 `perception:layout` records the folder split for future full-log perception. By
