@@ -93,6 +93,7 @@ export const CORE_REQUIRED_FILES = [
   "scripts/lib/work-order-router.mjs",
   "scripts/lib/work-order-variants.mjs",
   "scripts/lib/work-order-quality-eval.mjs",
+  "scripts/lib/work-order-quality-artifacts.mjs",
   "scripts/lib/vector-memory-storage.mjs",
   "scripts/lib/vector-retrieval-ranker.mjs",
   "scripts/lib/local-vector-store.mjs",
