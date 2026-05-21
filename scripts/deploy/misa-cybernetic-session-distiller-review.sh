@@ -23,6 +23,9 @@ REVIEW_ENABLED="${MISA_SESSION_DISTILLER_CYBERNETIC_REVIEW_ENABLED:-true}"
 REVIEW_DIR="${MISA_SESSION_DISTILLER_CYBERNETIC_REVIEW_DIR:-$ARTIFACT_DIR/cybernetic-review}"
 WRAPPER="${MISA_CYBERNETIC_WRAPPER:-$PROJECT_ROOT/tools/misa_cybernetic_wrapper.py}"
 NODE_BIN_DIR="${MISA_CYBERNETIC_NODE_BIN_DIR:-/opt/misa-node20/bin}"
+CYBERNETIC_REPO="${MISA_CYBERNETIC_REPO:-/root/misa-cybernetic-evolution}"
+WORK_ORDER_INBOX_ENABLED="${MISA_SESSION_DISTILLER_WORK_ORDER_INBOX_ENABLED:-true}"
+WORK_ORDER_ROOT="${MISA_CYBERNETIC_WORK_ORDER_ROOT:-$PROJECT_ROOT/work-orders/cybernetic}"
 
 mkdir -p "$REVIEW_DIR"
 
@@ -114,4 +117,31 @@ fi
 
 cp "$review_output" "$REVIEW_DIR/latest.json"
 cp "$wrapper_output" "$REVIEW_DIR/latest.wrapper.json"
+
+if [[ "$WORK_ORDER_INBOX_ENABLED" == "true" ]]; then
+  inbox_output="$REVIEW_DIR/session-distiller-work-order-inbox-$timestamp.json"
+  if [[ ! -f "$CYBERNETIC_REPO/scripts/work-order-inbox.mjs" ]]; then
+    write_status "failed" "work_order_inbox_script_missing" 127
+    exit 127
+  fi
+
+  set +e
+  (
+    cd "$CYBERNETIC_REPO"
+    node scripts/work-order-inbox.mjs \
+      --review-file "$review_output" \
+      --root "$WORK_ORDER_ROOT" \
+      --json
+  ) > "$inbox_output" 2>&1
+  inbox_exit_code=$?
+  set -e
+
+  if [[ "$inbox_exit_code" -ne 0 ]]; then
+    write_status "failed" "work_order_inbox_export_failed" "$inbox_exit_code"
+    exit "$inbox_exit_code"
+  fi
+
+  cp "$inbox_output" "$REVIEW_DIR/latest-work-order-inbox.json"
+fi
+
 write_status "ok" "cybernetic_review_written"

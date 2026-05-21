@@ -37,6 +37,7 @@
     "repair-ticket:misa": "node scripts/repair-ticket.mjs",
     "skill:evolution": "node scripts/skill-evolution-supervisor.mjs",
     "session-distiller:review": "node scripts/session-distiller-review.mjs",
+    "work-order:inbox": "node scripts/work-order-inbox.mjs",
     "work-order:route": "node scripts/work-order-router.mjs",
     "work-order:variants": "node scripts/work-order-variants.mjs",
     "work-order:evaluate": "node scripts/work-order-quality-eval.mjs",

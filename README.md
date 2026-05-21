@@ -162,6 +162,7 @@ Two rules matter most:
 | Local skill export | `npm run export-skills:misa` | writes draft files, does not install Skills |
 | Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
 | Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
+| Work-order inbox | `npm run work-order:inbox -- --review-file <file>` | split review repair work orders into agent-claimable inbox files; no execution |
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Work-order variants | `npm run work-order:variants -- --json --dry-run` | seeded local candidate work orders; LLM critique is value-gated and zero-call by default |
 | Work-order quality eval | `npm run work-order:evaluate -- --json --dry-run` | baseline-vs-winner quality score for final Qianxuesen work-order packets |
@@ -225,6 +226,21 @@ It reads the same session-distiller environment, calls the Hermes wrapper in
 session-distiller artifact directory. It does not start a new cybernetic timer,
 write Zilliz, call embedding providers, publish, install skills, or change live
 session mechanics.
+
+When enabled, the same hook also calls `work-order:inbox` and splits
+`repair_work_orders[]` into agent-claimable JSON files under:
+
+```text
+/root/misa-hermes-project/work-orders/cybernetic/
+  inbox/
+  in-progress/
+  done/
+  failed/
+  ignored/
+```
+
+Those files are an inbox for a primary agent or Codex-style repair pass. They
+are not shell jobs and do not execute themselves.
 
 ## Perception Log Layout
 
