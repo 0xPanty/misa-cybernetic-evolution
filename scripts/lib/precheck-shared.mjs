@@ -284,6 +284,10 @@ const CONTROL_PROVIDER_CALL_PATTERNS = [
     pattern: /\bfrom\s+["'](?:openai|@anthropic-ai\/sdk|anthropic|node-fetch|undici|axios|got|@ai-sdk\/openai|@ai-sdk\/anthropic|@ai-sdk\/google|@ai-sdk\/xai|google-genai|@google\/generative-ai|groq-sdk|xai-sdk)["']/gi
   },
   {
+    rule: "provider_dynamic_import",
+    pattern: /\bimport\s*\(\s*["'`](?:openai|@anthropic-ai\/sdk|anthropic|node-fetch|undici|axios|got|@ai-sdk\/openai|@ai-sdk\/anthropic|@ai-sdk\/google|@ai-sdk\/xai|google-genai|@google\/generative-ai|groq-sdk|xai-sdk)["'`]\s*\)/gi
+  },
+  {
     rule: "provider_client_constructor",
     pattern: /\bnew\s+(?:OpenAI|Anthropic)\s*\(/g
   },

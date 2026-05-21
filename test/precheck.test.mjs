@@ -78,13 +78,20 @@ test("control path provider-call scan blocks fetch and provider endpoints", asyn
   );
   await fs.writeFile(
     path.join(targetDir, "stability-monitor.mjs"),
-    "export const safety = { llm_api_calls: 0, external_api_calls: 0 };\n",
+    "export async function bad() { return import('openai'); }\n",
     "utf8"
   );
 
   const hits = await scanControlPathProviderCalls(tempRoot);
   const rules = hits.map((hit) => hit.rule).sort();
 
-  assert.deepEqual(rules, ["fetch_call", "provider_endpoint"]);
-  assert.equal(hits.every((hit) => hit.file === "scripts/lib/learning-loop.mjs"), true);
+  assert.deepEqual(rules, ["fetch_call", "provider_dynamic_import", "provider_endpoint"]);
+  assert.deepEqual(
+    hits.map((hit) => hit.file).sort(),
+    [
+      "scripts/lib/learning-loop.mjs",
+      "scripts/lib/learning-loop.mjs",
+      "scripts/lib/stability-monitor.mjs"
+    ]
+  );
 });
