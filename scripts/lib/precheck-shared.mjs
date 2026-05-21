@@ -298,6 +298,15 @@ export const CONTROL_NO_PROVIDER_CALL_FILES = Object.freeze([
   "scripts/lib/stability-monitor.mjs",
   "scripts/lib/outer-loop-review.mjs",
   "scripts/lib/evolution-tournament-validation.mjs",
+  "scripts/candidate-generation-context.mjs",
+  "scripts/factor-candidate-reducer.mjs",
+  "scripts/human-escalation.mjs",
+  "scripts/lib/candidate-generation-context.mjs",
+  "scripts/lib/factor-candidate-reducer.mjs",
+  "scripts/lib/human-escalation.mjs",
+  "scripts/lib/prompt-templates.mjs",
+  "scripts/lib/route-focused-candidate-generators.mjs",
+  "scripts/runtime-thread.mjs",
   "scripts/lib/runtime-thread.mjs"
 ]);
 
