@@ -86,6 +86,16 @@ It tracks source trace, replayability, boundary safety, handoff clarity,
 control-loop fit, Qianxuesen fit, sample diversity, dev/test holdout lift, and
 zero-call safety.
 
+The v0.26 architecture closeout is now complete as a control-plane hardening
+line. It closes the plant/setpoint/sensor/post-deploy/stability/outer-loop
+architecture gaps, then finishes P4 engineering hardening: control-path provider
+guards, provider dynamic-import detection, loser-pressure sample splitting,
+work-order quality artifact splitting, current/history docs separation,
+sidecar status broadcast, and a work-order quality golden snapshot. The
+remaining `work-order-quality-eval.mjs` body split is intentionally deferred to
+the next time scoring logic needs a real change; it is backlog, not a current
+blocker.
+
 ## Version History
 
 Rows before v0.25 are historical anchors for retained behavior. They should not
@@ -119,6 +129,7 @@ chain above.
 | v0.23 | Seeded work-order variants and value-gated LLM critique recommendation | local draft search only, no model call or execution |
 | v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
 | v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, medium-risk diversity guard, risk-adaptive candidate budget, zero-call LLM mutation/crossover gate, and Evolution/Task model split | local fixture adapter only, no external fetch, execution, model call, external API, winner authority, or task-model call |
+| v0.26 | Cybernetic architecture closeout plus P4 hardening: plant model, measurable setpoints, deterministic sensor, post-deploy review, stability monitor, outer-loop review, control-path provider guards, docs current/history split, sidecar status broadcast, and work-order quality golden snapshot | local control-plane contracts and reports only; no production/VPS authority, provider call, webhook push, execution, memory write, or route/winner authority change |
 
 ## Historical Sample Validation
 
