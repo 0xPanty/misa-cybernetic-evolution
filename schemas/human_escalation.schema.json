@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/human_escalation.schema.json",
+  "title": "HumanEscalation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "created_at",
+    "escalation_id",
+    "trigger_source",
+    "severity",
+    "summary",
+    "structured_evidence",
+    "suggested_actions",
+    "required_human_decision",
+    "authority_policy",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.human_escalation.v1" },
+    "mode": { "type": "string", "const": "human-escalation" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "escalation_id": { "type": "string", "minLength": 1 },
+    "trigger_source": {
+      "type": "string",
+      "enum": [
+        "post_deploy",
+        "safe_mode",
+        "outer_loop",
+        "l4_review",
+        "work_order",
+        "candidate_generation",
+        "control_boundary"
+      ]
+    },
+    "severity": { "type": "string", "enum": ["P0", "P1", "P2", "P3"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "structured_evidence": { "type": "object", "additionalProperties": true },
+    "suggested_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action_id", "label", "effect"],
+        "properties": {
+          "action_id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "effect": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "required_human_decision": {
+      "type": "string",
+      "enum": ["approve", "reject", "modify", "choose_executor", "release_safe_mode", "hold"]
+    },
+    "authority_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "human_owner_required",
+        "agent_may_execute_without_decision",
+        "llm_may_change_decision",
+        "resume_after_decision"
+      ],
+      "properties": {
+        "human_owner_required": { "type": "boolean", "const": true },
+        "agent_may_execute_without_decision": { "type": "boolean", "const": false },
+        "llm_may_change_decision": { "type": "boolean", "const": false },
+        "resume_after_decision": { "type": "string", "enum": ["manual_resume", "rebuild_candidate_context", "rerun_local_gate"] }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "installs_skills",
+        "calls_model_providers",
+        "calls_external_api",
+        "touches_vps"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "calls_model_providers": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

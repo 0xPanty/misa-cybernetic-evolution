@@ -96,6 +96,13 @@ remaining `work-order-quality-eval.mjs` body split is intentionally deferred to
 the next time scoring logic needs a real change; it is backlog, not a current
 blocker.
 
+The v0.27 candidate layer starts the 12-factor integration at the candidate
+generation boundary, not at runtime autonomy. It adds locked candidate context,
+versioned prompt templates, unified human escalation packets, a deterministic
+candidate reducer, route-focused generator charters, and an explicit control
+boundary document. It does not import HumanLayer, BAML, launch/pause/resume
+runtime state, multi-entry triggers, provider calls, or production/VPS authority.
+
 ## Version History
 
 Rows before v0.25 are historical anchors for retained behavior. They should not
@@ -130,6 +137,7 @@ chain above.
 | v0.24 | Work-order quality evaluation plus Qianxuesen strategy alignment | baseline-vs-winner scoring only, no execution or model call |
 | v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, medium-risk diversity guard, risk-adaptive candidate budget, zero-call LLM mutation/crossover gate, and Evolution/Task model split | local fixture adapter only, no external fetch, execution, model call, external API, winner authority, or task-model call |
 | v0.26 | Cybernetic architecture closeout plus P4 hardening: plant model, measurable setpoints, deterministic sensor, post-deploy review, stability monitor, outer-loop review, control-path provider guards, docs current/history split, sidecar status broadcast, and work-order quality golden snapshot | local control-plane contracts and reports only; no production/VPS authority, provider call, webhook push, execution, memory write, or route/winner authority change |
+| v0.27 | Factor-compliant candidate layer: locked context, versioned prompts, unified human escalation, deterministic reducer, small route-focused generator charters, and documented dumb zone / authority matrix | candidate-generation discipline only; no runtime autonomy, HumanLayer, BAML, provider call, execution, memory write, skill install, production/VPS authority, or route/winner authority change |
 
 ## Historical Sample Validation
 

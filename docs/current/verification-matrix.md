@@ -60,6 +60,9 @@ npm run hermes:plugin:doctor
 npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
 npm run work-order:variants -- --json --dry-run
 npm run work-order:evaluate -- --json --dry-run
+npm run candidate:context -- --json
+npm run candidate:reduce -- --json --seed stable-review
+npm run human:escalation -- --json
 npm run skill:evolution -- --json
 npm run vector-memory:classify -- --json
 npm run vector-store:local -- --mode upsert --dry-run
@@ -108,6 +111,8 @@ The current-line additions are documented in:
 - [work-order-variants-v0.23.md](./work-order-variants-v0.23.md)
 - [work-order-quality-eval-v0.24.md](./work-order-quality-eval-v0.24.md)
 - [work-order-external-samples-v0.25.md](./work-order-external-samples-v0.25.md)
+- [factor-compliant-candidate-layer-v0.27.md](./factor-compliant-candidate-layer-v0.27.md)
+- [control-boundaries.md](./control-boundaries.md)
 - [skill-evolution-adapter-v0.22.md](./skill-evolution-adapter-v0.22.md)
 - [hermes-runtime-adapter-v0.22.md](./hermes-runtime-adapter-v0.22.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)

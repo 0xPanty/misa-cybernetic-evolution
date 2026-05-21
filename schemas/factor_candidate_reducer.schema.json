@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/factor_candidate_reducer.schema.json",
+  "title": "FactorCandidateReducer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "seed",
+    "context_ref",
+    "reducer_policy",
+    "summary",
+    "candidate_results",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.factor_candidate_reducer.v1" },
+    "mode": { "type": "string", "const": "factor-candidate-reducer" },
+    "ok": { "type": "boolean", "const": true },
+    "created_at": { "type": "string", "format": "date-time" },
+    "seed": { "type": "string", "minLength": 1 },
+    "context_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "source_id", "work_order_count"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.candidate_generation_context.v1" },
+        "source_id": { "type": ["string", "null"] },
+        "work_order_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "reducer_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "same_input_same_seed_same_output",
+        "runtime_fetch_allowed",
+        "llm_tool_calls_allowed",
+        "route_or_winner_authority"
+      ],
+      "properties": {
+        "same_input_same_seed_same_output": { "type": "boolean", "const": true },
+        "runtime_fetch_allowed": { "type": "boolean", "const": false },
+        "llm_tool_calls_allowed": { "type": "boolean", "const": false },
+        "route_or_winner_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_count", "human_escalation_required_count", "by_generator"],
+      "properties": {
+        "candidate_count": { "type": "integer", "minimum": 0 },
+        "human_escalation_required_count": { "type": "integer", "minimum": 0 },
+        "by_generator": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "candidate_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "source_work_order_id",
+          "generator_id",
+          "deterministic_fingerprint",
+          "output_surface",
+          "execution_allowed",
+          "publication_allowed",
+          "human_escalation_required"
+        ],
+        "properties": {
+          "candidate_id": { "type": "string", "minLength": 1 },
+          "source_work_order_id": { "type": "string", "minLength": 1 },
+          "generator_id": { "type": "string", "minLength": 1 },
+          "deterministic_fingerprint": { "type": "string", "minLength": 1 },
+          "output_surface": { "type": "string", "const": "draft_candidate_only" },
+          "execution_allowed": { "type": "boolean", "const": false },
+          "publication_allowed": { "type": "boolean", "const": false },
+          "human_escalation_required": { "type": "boolean" }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "installs_skills",
+        "calls_model_providers",
+        "calls_external_api",
+        "touches_vps"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "calls_model_providers": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

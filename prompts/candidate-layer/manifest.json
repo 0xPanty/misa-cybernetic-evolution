@@ -1,0 +1,39 @@
+{
+  "schema_version": "misa.prompt_template_manifest.v1",
+  "mode": "versioned-prompt-templates",
+  "templates": [
+    {
+      "template_id": "candidate-layer.work-order-variant.v1",
+      "version": "v1",
+      "path": "prompts/candidate-layer/work-order-variant.prompt.md",
+      "variables": [
+        "candidate_generation_context",
+        "work_order_context",
+        "generator_charter"
+      ],
+      "purpose": "Ask an allowed candidate generator to draft one bounded work-order candidate from locked context.",
+      "allowed_outputs": [
+        "draft_candidate",
+        "critique_note",
+        "verification_gap",
+        "human_escalation_recommendation"
+      ],
+      "forbidden_outputs": [
+        "execute_work_order",
+        "change_route",
+        "change_winner_without_deterministic_rescore",
+        "write_memory",
+        "install_skill",
+        "call_provider",
+        "fetch_runtime_context",
+        "touch_vps"
+      ]
+    }
+  ],
+  "policy": {
+    "runtime_string_concatenation_allowed": false,
+    "unversioned_prompt_allowed": false,
+    "llm_may_choose_template": false,
+    "template_changes_require_review": true
+  }
+}

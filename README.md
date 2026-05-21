@@ -8,6 +8,7 @@ persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
 contract, adds seeded work-order variants, adds work-order quality evaluation,
 adds issue/PR-shaped dev/test work-order samples,
+adds the v0.27 factor-compliant candidate layer,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 
@@ -163,6 +164,9 @@ Two rules matter most:
 | Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
 | Work-order variants | `npm run work-order:variants -- --json --dry-run` | seeded local candidate work orders; LLM critique is value-gated and zero-call by default |
 | Work-order quality eval | `npm run work-order:evaluate -- --json --dry-run` | baseline-vs-winner quality score for final Qianxuesen work-order packets |
+| Candidate context | `npm run candidate:context -- --json` | locks the context, prompt refs, metric refs, and generator scope for factor-compliant candidate generation |
+| Candidate reducer | `npm run candidate:reduce -- --json --seed stable-review` | deterministic draft candidate fingerprints from locked context; no execution or provider calls |
+| Human escalation | `npm run human:escalation -- --json` | unified human-review packets for high-risk work-order decisions |
 | Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
@@ -401,6 +405,27 @@ spend.
 npm run work-order:evaluate -- --json --dry-run
 ```
 
+## Factor-Compliant Candidate Layer
+
+v0.27 adds 12-factor-style micro discipline under the Qianxuesen macro control
+loop. It does not import a new runtime framework.
+
+The local candidate layer now has:
+
+- locked candidate-generation context;
+- versioned prompt templates under `prompts/`;
+- a unified `human_escalation` packet;
+- a deterministic candidate reducer keyed by context and seed;
+- small route-focused generator charters;
+- a documented dumb zone and authority matrix.
+
+Plain rule:
+
+```text
+Qianxuesen owns route, metric, stability, winner, and authority.
+The factor layer only makes candidate generation cleaner and easier to review.
+```
+
 ## Validation
 
 The canonical validation chain lives in
@@ -414,6 +439,8 @@ Current local review usually runs the same shadow gate:
 npm run validate:schemas
 npm run smoke:current-line
 npm run calibrate:current-line
+npm run candidate:context -- --json
+npm run candidate:reduce -- --json --seed stable-review
 npm run precheck
 npm test
 ```
@@ -481,6 +508,8 @@ tracks; use the command map and validation chain above for the current surface.
 - [Work-order variants](./docs/current/work-order-variants-v0.23.md)
 - [Work-order quality evaluation](./docs/current/work-order-quality-eval-v0.24.md)
 - [Work-order external samples](./docs/current/work-order-external-samples-v0.25.md)
+- [Factor-compliant candidate layer](./docs/current/factor-compliant-candidate-layer-v0.27.md)
+- [Control boundaries](./docs/current/control-boundaries.md)
 - [Skill evolution adapter](./docs/current/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/current/skill-control-intake-template.md)
 - [Vector memory storage](./docs/current/vector-memory-storage-v0.19.md)

@@ -1,0 +1,115 @@
+{
+  "schema_version": "misa.candidate_generation_context.v1",
+  "mode": "factor-compliant-candidate-context",
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "source": {
+    "source_type": "work_order_routing",
+    "source_id": "example"
+  },
+  "context_policy": {
+    "input_locked": true,
+    "runtime_fetch_allowed": false,
+    "llm_tool_calls_allowed": false,
+    "route_authority": false,
+    "winner_authority": false,
+    "allowed_context_sections": [
+      "metric_context",
+      "work_order_contexts",
+      "generator_scope",
+      "prompt_templates"
+    ],
+    "forbidden_context_sources": [
+      "raw_private_memory",
+      "provider_runtime",
+      "unredacted_logs",
+      "vps_state",
+      "live_channel_state"
+    ]
+  },
+  "prompt_templates": [
+    {
+      "template_id": "candidate-layer.work-order-variant.v1",
+      "version": "v1",
+      "path": "prompts/candidate-layer/work-order-variant.prompt.md",
+      "variables": [
+        "candidate_generation_context",
+        "work_order_context",
+        "generator_charter"
+      ],
+      "purpose": "Ask an allowed candidate generator to draft one bounded work-order candidate from locked context."
+    }
+  ],
+  "metric_context": [
+    {
+      "metric_id": "skill.replay_pass_rate",
+      "direction": "maximize",
+      "owner": "evolution plane",
+      "description": "Primary skill-quality metric for measurable skill setpoints."
+    }
+  ],
+  "work_order_contexts": [
+    {
+      "work_order_id": "wo-example",
+      "route_kind": "work_order",
+      "title": "Example bounded work order",
+      "category": "engineering_repair",
+      "severity": "P2",
+      "risk_level": "medium",
+      "source_refs": [
+        "repair_ticket:repair-example"
+      ],
+      "evidence_summary": {
+        "verdict": "example"
+      },
+      "acceptance_criteria": [
+        "local validation passes"
+      ],
+      "forbidden_scope": [
+        "production services"
+      ],
+      "suggested_executor": "specialized_engineering_agent",
+      "human_escalation_required": false,
+      "prompt_template_id": "candidate-layer.work-order-variant.v1"
+    }
+  ],
+  "generator_scope": {
+    "routing": "small-focused-route-generators",
+    "charters": [
+      {
+        "generator_id": "work-order-candidate-generator",
+        "route_kind": "work_order",
+        "purpose": "Draft bounded work-order candidates from locked work-order context.",
+        "allowed_inputs": [
+          "work_order_context",
+          "metric_context",
+          "prompt_template"
+        ],
+        "output_surface": "draft_candidate_only",
+        "forbidden_actions": [
+          "execute_work_order",
+          "write_memory",
+          "install_skill",
+          "call_provider",
+          "touch_vps"
+        ],
+        "persistent_state": false,
+        "max_steps": 10
+      }
+    ]
+  },
+  "safety": {
+    "production_authority": false,
+    "executes_work_orders": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_model_providers": false,
+    "calls_external_api": false,
+    "touches_vps": false,
+    "changes_route": false,
+    "changes_winner_authority": false
+  },
+  "warnings": [
+    "Candidate context is a locked input packet, not permission to execute.",
+    "LLM outputs remain proposals only."
+  ]
+}

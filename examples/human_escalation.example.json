@@ -1,0 +1,44 @@
+{
+  "schema_version": "misa.human_escalation.v1",
+  "mode": "human-escalation",
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "escalation_id": "human-escalation-example",
+  "trigger_source": "work_order",
+  "severity": "P1",
+  "summary": "High-risk work order needs human owner choice before execution.",
+  "structured_evidence": {
+    "work_order_id": "wo-example",
+    "risk_level": "high"
+  },
+  "suggested_actions": [
+    {
+      "action_id": "approve-local-only",
+      "label": "Approve local-only repair",
+      "effect": "Allow a bounded local repair pass without durable or public effects."
+    },
+    {
+      "action_id": "hold",
+      "label": "Hold",
+      "effect": "Keep the candidate pending."
+    }
+  ],
+  "required_human_decision": "choose_executor",
+  "authority_policy": {
+    "human_owner_required": true,
+    "agent_may_execute_without_decision": false,
+    "llm_may_change_decision": false,
+    "resume_after_decision": "manual_resume"
+  },
+  "safety": {
+    "production_authority": false,
+    "executes_work_orders": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_model_providers": false,
+    "calls_external_api": false,
+    "touches_vps": false
+  },
+  "warnings": [
+    "This packet asks for a human decision; it does not grant execution authority."
+  ]
+}
