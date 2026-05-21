@@ -95,3 +95,37 @@ test("control path provider-call scan blocks fetch and provider endpoints", asyn
     ]
   );
 });
+
+test("factor candidate files are covered by provider-call guard", async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "misa-precheck-factor-guard-"));
+  const scriptsDir = path.join(tempRoot, "scripts");
+  const libDir = path.join(scriptsDir, "lib");
+  await fs.mkdir(libDir, { recursive: true });
+  await fs.writeFile(
+    path.join(libDir, "candidate-generation-context.mjs"),
+    "export async function bad() { return fetch('https://api.openai.com/v1/chat/completions'); }\n",
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(libDir, "factor-candidate-reducer.mjs"),
+    "export async function bad() { return import('openai'); }\n",
+    "utf8"
+  );
+  await fs.writeFile(
+    path.join(scriptsDir, "human-escalation.mjs"),
+    "export const endpoint = 'https://api.anthropic.com/v1/messages';\n",
+    "utf8"
+  );
+
+  const hits = await scanControlPathProviderCalls(tempRoot);
+
+  assert.deepEqual(
+    hits.map((hit) => `${hit.file}:${hit.rule}`).sort(),
+    [
+      "scripts/human-escalation.mjs:provider_endpoint",
+      "scripts/lib/candidate-generation-context.mjs:fetch_call",
+      "scripts/lib/candidate-generation-context.mjs:provider_endpoint",
+      "scripts/lib/factor-candidate-reducer.mjs:provider_dynamic_import"
+    ]
+  );
+});

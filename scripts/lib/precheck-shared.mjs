@@ -283,6 +283,9 @@ export const MACHINE_CONTRACT_FILES = [
 ];
 
 export const CONTROL_NO_PROVIDER_CALL_FILES = Object.freeze([
+  "scripts/candidate-generation-context.mjs",
+  "scripts/factor-candidate-reducer.mjs",
+  "scripts/human-escalation.mjs",
   "scripts/lib/learning-loop.mjs",
   "scripts/lib/signal-extractor.mjs",
   "scripts/lib/metric-registry.mjs",
@@ -290,7 +293,12 @@ export const CONTROL_NO_PROVIDER_CALL_FILES = Object.freeze([
   "scripts/lib/post-deploy-measurement.mjs",
   "scripts/lib/stability-monitor.mjs",
   "scripts/lib/outer-loop-review.mjs",
-  "scripts/lib/evolution-tournament-validation.mjs"
+  "scripts/lib/evolution-tournament-validation.mjs",
+  "scripts/lib/candidate-generation-context.mjs",
+  "scripts/lib/factor-candidate-reducer.mjs",
+  "scripts/lib/human-escalation.mjs",
+  "scripts/lib/prompt-templates.mjs",
+  "scripts/lib/route-focused-candidate-generators.mjs"
 ]);
 
 const CONTROL_PROVIDER_CALL_PATTERNS = [
