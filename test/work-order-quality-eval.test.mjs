@@ -12,6 +12,20 @@ import {
 } from "../scripts/lib/work-order-quality-eval.mjs";
 
 const execFileAsync = promisify(execFile);
+const WORK_ORDER_QUALITY_GOLDEN_SNAPSHOT = path.join(
+  process.cwd(),
+  "test",
+  "fixtures",
+  "work-order-quality",
+  "quality-eval-golden-snapshot.json"
+);
+const WORK_ORDER_QUALITY_GOLDEN_ROWS = Object.freeze([
+  ["operator_tighten", "golden-quality-01"],
+  ["dev-auth-boundary-regression", "golden-quality-01"],
+  ["dev-cache-replay-regression", "golden-quality-01"],
+  ["dev-doc-command-scope", "golden-quality-01"],
+  ["test-queue-replay-timeout", "golden-quality-02"]
+]);
 
 function runNpm(args) {
   const options = {
@@ -23,6 +37,107 @@ function runNpm(args) {
   }
   return execFileAsync("npm", args, options);
 }
+
+function scoreGoldenSnapshot(score) {
+  return {
+    surface: score.surface,
+    variant_id: score.variant_id ?? null,
+    strategy: score.strategy ?? null,
+    dimensions: score.dimensions
+  };
+}
+
+function comparisonGoldenSnapshot(item) {
+  return {
+    source_label: item.source_label,
+    source_kind: item.source_kind,
+    split: item.split,
+    seed: item.seed,
+    work_order_id: item.work_order_id,
+    category: item.category,
+    severity: item.severity,
+    risk_level: item.risk_level,
+    baseline: scoreGoldenSnapshot(item.baseline),
+    winner: scoreGoldenSnapshot(item.winner),
+    delta: item.delta,
+    positive_lift: item.positive_lift,
+    safety_regression: item.safety_regression,
+    budget_control: {
+      policy: item.budget_control.policy,
+      population_size: item.budget_control.population_size,
+      required_strategies: item.budget_control.required_strategies,
+      generated_variant_count: item.budget_control.generated_variant_count,
+      saved_variant_count_against_fixed5: item.budget_control.saved_variant_count_against_fixed5
+    },
+    selection_update: item.selection_update,
+    diversity_guard: {
+      policy: item.diversity_guard.policy,
+      applied: item.diversity_guard.applied,
+      selected_strategy_before_guard: item.diversity_guard.selected_strategy_before_guard,
+      selected_strategy_after_guard: item.diversity_guard.selected_strategy_after_guard,
+      retained_variant_id: item.diversity_guard.retained_variant_id,
+      retained_strategy: item.diversity_guard.retained_strategy,
+      retained_delta: item.diversity_guard.retained_delta
+    },
+    llm_mutation_crossover_gate: {
+      candidate_value: item.llm_mutation_crossover_gate.candidate_value,
+      call_policy: item.llm_mutation_crossover_gate.call_policy,
+      primary_agent_review_required: item.llm_mutation_crossover_gate.primary_agent_review_required,
+      route_or_winner_authority: item.llm_mutation_crossover_gate.route_or_winner_authority,
+      llm_api_calls: item.llm_mutation_crossover_gate.llm_api_calls
+    },
+    model_role_separation: item.model_role_separation,
+    qianxuesen_signals: item.qianxuesen_signals
+  };
+}
+
+function workOrderQualityGoldenSnapshot(result) {
+  return {
+    sample_summary: result.sample_summary,
+    summary: {
+      comparison_count: result.summary.comparison_count,
+      variant_count: result.summary.variant_count,
+      positive_lift_rate: result.summary.positive_lift_rate,
+      regression_count: result.summary.regression_count,
+      safety_regression_count: result.summary.safety_regression_count,
+      avg_baseline_score: result.summary.avg_baseline_score,
+      avg_winner_score: result.summary.avg_winner_score,
+      avg_delta: result.summary.avg_delta,
+      min_delta: result.summary.min_delta,
+      max_delta: result.summary.max_delta,
+      by_winner_strategy: result.summary.by_winner_strategy,
+      budget_control: result.summary.budget_control,
+      selection_update: result.summary.selection_update,
+      diversity_guard: result.summary.diversity_guard,
+      llm_mutation_crossover: result.summary.llm_mutation_crossover,
+      model_role_separation: result.summary.model_role_separation,
+      qianxuesen_signal_fit: result.summary.qianxuesen_signal_fit,
+      dev_test: result.summary.dev_test
+    },
+    comparisons: WORK_ORDER_QUALITY_GOLDEN_ROWS.map(([sourceLabel, seed]) => {
+      const item = result.comparisons.find((comparison) => (
+        comparison.source_label === sourceLabel && comparison.seed === seed
+      ));
+      assert.ok(item, `missing golden comparison ${sourceLabel} ${seed}`);
+      return comparisonGoldenSnapshot(item);
+    }),
+    safety: result.safety
+  };
+}
+
+async function readJson(filePath) {
+  return JSON.parse(await fs.readFile(filePath, "utf8"));
+}
+
+test("work-order quality evaluation golden snapshot protects baseline winner and aggregation", async () => {
+  const result = await runWorkOrderQualityEvaluation({
+    seeds: ["golden-quality-01", "golden-quality-02", "golden-quality-03"],
+    now: new Date("2026-05-15T00:00:00Z")
+  });
+  const expected = await readJson(WORK_ORDER_QUALITY_GOLDEN_SNAPSHOT);
+
+  assert.deepEqual(workOrderQualityGoldenSnapshot(result), expected);
+});
 
 test("work-order quality evaluation compares baseline and winner on Qianxuesen metrics", async () => {
   const result = await runWorkOrderQualityEvaluation({

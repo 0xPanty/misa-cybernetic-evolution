@@ -1,0 +1,622 @@
+{
+  "sample_summary": {
+    "source_set_count": 14,
+    "work_order_count": 14,
+    "unique_work_order_id_count": 11,
+    "unique_work_order_shape_count": 11,
+    "split_counts": {
+      "local_regression": 8,
+      "dev": 3,
+      "test": 3
+    },
+    "external_issue_pr_sample_count": 6,
+    "dev_sample_count": 3,
+    "test_sample_count": 3,
+    "sample_quality": "mixed_with_external_issue_pr_samples_but_still_needs_benchmark_scale"
+  },
+  "summary": {
+    "comparison_count": 42,
+    "variant_count": 180,
+    "positive_lift_rate": 1,
+    "regression_count": 0,
+    "safety_regression_count": 0,
+    "avg_baseline_score": 0.792,
+    "avg_winner_score": 0.961,
+    "avg_delta": 0.168,
+    "min_delta": 0.158,
+    "max_delta": 0.177,
+    "by_winner_strategy": {
+      "boundary_tightening": 21,
+      "compact_handoff": 6,
+      "replay_extension": 2,
+      "evidence_expansion": 4,
+      "conservative_patch": 9
+    },
+    "budget_control": {
+      "policy": "risk_adaptive",
+      "total_variant_budget": 180,
+      "fixed5_variant_budget": 210,
+      "saved_variant_count_against_fixed5": 30,
+      "avg_population_size": 4.286,
+      "by_population_size": {
+        "3": 9,
+        "4": 12,
+        "5": 21
+      },
+      "by_risk_population_size": {
+        "high:5": 21,
+        "medium:4": 12,
+        "low:3": 9
+      }
+    },
+    "selection_update": {
+      "policy": "quality_replacement",
+      "replacement_allowed_count": 42,
+      "incumbent_retained_count": 0,
+      "rejected_candidate_count": 0,
+      "avg_selected_delta": 0.168,
+      "safety_passed_count": 42
+    },
+    "diversity_guard": {
+      "policy": "strategy_guard",
+      "enabled": true,
+      "applied_count": 10,
+      "unique_winner_strategy_count": 5,
+      "avg_candidate_strategy_entropy": 1,
+      "retained_strategy_counts": {
+        "compact_handoff": 6,
+        "evidence_expansion": 4
+      }
+    },
+    "llm_mutation_crossover": {
+      "enabled_count": 0,
+      "review_worthy_count": 21,
+      "diagnostic_only_count": 3,
+      "primary_agent_inline_review_count": 21,
+      "separate_llm_call_required_count": 0,
+      "primary_agent_review_required_count": 21,
+      "mutation_candidate_allowed_count": 0,
+      "crossover_candidate_allowed_count": 0,
+      "route_or_winner_authority_count": 0,
+      "llm_api_calls": 0
+    },
+    "model_role_separation": {
+      "policy": "deterministic_controller_owns_route_score_and_selection",
+      "clean_split_count": 42,
+      "evolution_model_call_count": 0,
+      "evolution_model_winner_authority_count": 0,
+      "task_model_called_count": 0,
+      "task_model_self_select_count": 0
+    },
+    "qianxuesen_signal_fit": {
+      "high_risk_count": 21,
+      "high_risk_boundary_fit_count": 21,
+      "medium_risk_count": 12,
+      "medium_risk_replay_or_compact_fit_count": 12,
+      "low_risk_count": 9,
+      "low_risk_conservative_fit_count": 9,
+      "route_preserved_count": 42,
+      "source_trace_preserved_count": 42,
+      "no_direct_execution_count": 42
+    },
+    "dev_test": {
+      "dev": {
+        "comparison_count": 9,
+        "avg_baseline_score": 0.791,
+        "avg_winner_score": 0.961,
+        "avg_delta": 0.17,
+        "positive_lift_rate": 1,
+        "regression_count": 0,
+        "safety_regression_count": 0
+      },
+      "test": {
+        "comparison_count": 9,
+        "avg_baseline_score": 0.791,
+        "avg_winner_score": 0.967,
+        "avg_delta": 0.176,
+        "positive_lift_rate": 1,
+        "regression_count": 0,
+        "safety_regression_count": 0
+      },
+      "overfit_gap": -0.006,
+      "holdout_passed": true
+    }
+  },
+  "comparisons": [
+    {
+      "source_label": "operator_tighten",
+      "source_kind": "operator_quality_report",
+      "split": "local_regression",
+      "seed": "golden-quality-01",
+      "work_order_id": "wo-operator-quality-2026-05-12",
+      "category": "operator_quality",
+      "severity": "P1",
+      "risk_level": "high",
+      "baseline": {
+        "surface": "baseline_work_order",
+        "variant_id": null,
+        "strategy": null,
+        "dimensions": {
+          "source_trace": 0.875,
+          "replayability": 0.15,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.8,
+          "control_loop_fit": 0.838,
+          "qianxuesen_fit": 0.742,
+          "overdesign_penalty": 0,
+          "total": 0.713
+        }
+      },
+      "winner": {
+        "surface": "variant_winner",
+        "variant_id": "wo-operator-quality-2026-05-12:boundary_tightening",
+        "strategy": "boundary_tightening",
+        "dimensions": {
+          "source_trace": 0.875,
+          "replayability": 0.7,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.971,
+          "control_loop_fit": 0.929,
+          "qianxuesen_fit": 0.897,
+          "overdesign_penalty": 0,
+          "total": 0.889
+        }
+      },
+      "delta": 0.176,
+      "positive_lift": true,
+      "safety_regression": false,
+      "budget_control": {
+        "policy": "risk_adaptive",
+        "population_size": 5,
+        "required_strategies": [
+          "boundary_tightening"
+        ],
+        "generated_variant_count": 5,
+        "saved_variant_count_against_fixed5": 0
+      },
+      "selection_update": {
+        "policy": "quality_replacement",
+        "incumbent_score": 0.713,
+        "selected_score": 0.889,
+        "selected_delta": 0.176,
+        "selected_surface": "variant_winner",
+        "selected_variant_id": "wo-operator-quality-2026-05-12:boundary_tightening",
+        "selected_strategy": "boundary_tightening",
+        "replacement_allowed": true,
+        "rejected_candidate_count": 0,
+        "safety_passed": true
+      },
+      "diversity_guard": {
+        "policy": "strategy_guard",
+        "applied": false,
+        "selected_strategy_before_guard": "boundary_tightening",
+        "selected_strategy_after_guard": "boundary_tightening",
+        "retained_variant_id": null,
+        "retained_strategy": null,
+        "retained_delta": null
+      },
+      "llm_mutation_crossover_gate": {
+        "candidate_value": "review_worthy",
+        "call_policy": "primary_agent_inline_review",
+        "primary_agent_review_required": true,
+        "route_or_winner_authority": false,
+        "llm_api_calls": 0
+      },
+      "model_role_separation": {
+        "policy": "deterministic_controller_owns_route_score_and_selection",
+        "deterministic_controller_owns_selection": true,
+        "evolution_model_call_policy": "do_not_call",
+        "evolution_model_can_change_winner": false,
+        "task_model_called_by_eval": false,
+        "task_model_can_self_select_candidate": false
+      },
+      "qianxuesen_signals": {
+        "high_risk_boundary_fit": true,
+        "medium_risk_replay_or_compact_fit": false,
+        "low_risk_conservative_fit": false,
+        "route_preserved": true,
+        "source_trace_preserved": true,
+        "no_direct_execution": true
+      }
+    },
+    {
+      "source_label": "dev-auth-boundary-regression",
+      "source_kind": "external_issue_pr_sample",
+      "split": "dev",
+      "seed": "golden-quality-01",
+      "work_order_id": "wo-external-dev-auth-boundary-regression",
+      "category": "engineering_repair",
+      "severity": "P1",
+      "risk_level": "high",
+      "baseline": {
+        "surface": "baseline_work_order",
+        "variant_id": null,
+        "strategy": null,
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 0.5,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.857,
+          "control_loop_fit": 0.917,
+          "qianxuesen_fit": 0.862,
+          "overdesign_penalty": 0,
+          "total": 0.842
+        }
+      },
+      "winner": {
+        "surface": "variant_winner",
+        "variant_id": "wo-external-dev-auth-boundary-regression:boundary_tightening",
+        "strategy": "boundary_tightening",
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 1,
+          "boundary_safety": 1,
+          "handoff_clarity": 1,
+          "control_loop_fit": 1,
+          "qianxuesen_fit": 1,
+          "overdesign_penalty": 0,
+          "total": 1
+        }
+      },
+      "delta": 0.158,
+      "positive_lift": true,
+      "safety_regression": false,
+      "budget_control": {
+        "policy": "risk_adaptive",
+        "population_size": 5,
+        "required_strategies": [
+          "boundary_tightening"
+        ],
+        "generated_variant_count": 5,
+        "saved_variant_count_against_fixed5": 0
+      },
+      "selection_update": {
+        "policy": "quality_replacement",
+        "incumbent_score": 0.842,
+        "selected_score": 1,
+        "selected_delta": 0.158,
+        "selected_surface": "variant_winner",
+        "selected_variant_id": "wo-external-dev-auth-boundary-regression:boundary_tightening",
+        "selected_strategy": "boundary_tightening",
+        "replacement_allowed": true,
+        "rejected_candidate_count": 0,
+        "safety_passed": true
+      },
+      "diversity_guard": {
+        "policy": "strategy_guard",
+        "applied": false,
+        "selected_strategy_before_guard": "boundary_tightening",
+        "selected_strategy_after_guard": "boundary_tightening",
+        "retained_variant_id": null,
+        "retained_strategy": null,
+        "retained_delta": null
+      },
+      "llm_mutation_crossover_gate": {
+        "candidate_value": "review_worthy",
+        "call_policy": "primary_agent_inline_review",
+        "primary_agent_review_required": true,
+        "route_or_winner_authority": false,
+        "llm_api_calls": 0
+      },
+      "model_role_separation": {
+        "policy": "deterministic_controller_owns_route_score_and_selection",
+        "deterministic_controller_owns_selection": true,
+        "evolution_model_call_policy": "do_not_call",
+        "evolution_model_can_change_winner": false,
+        "task_model_called_by_eval": false,
+        "task_model_can_self_select_candidate": false
+      },
+      "qianxuesen_signals": {
+        "high_risk_boundary_fit": true,
+        "medium_risk_replay_or_compact_fit": false,
+        "low_risk_conservative_fit": false,
+        "route_preserved": true,
+        "source_trace_preserved": true,
+        "no_direct_execution": true
+      }
+    },
+    {
+      "source_label": "dev-cache-replay-regression",
+      "source_kind": "external_issue_pr_sample",
+      "split": "dev",
+      "seed": "golden-quality-01",
+      "work_order_id": "wo-external-dev-cache-replay-regression",
+      "category": "engineering_repair",
+      "severity": "P2",
+      "risk_level": "medium",
+      "baseline": {
+        "surface": "baseline_work_order",
+        "variant_id": null,
+        "strategy": null,
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 0.325,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.829,
+          "control_loop_fit": 0.888,
+          "qianxuesen_fit": 0.817,
+          "overdesign_penalty": 0,
+          "total": 0.791
+        }
+      },
+      "winner": {
+        "surface": "variant_winner",
+        "variant_id": "wo-external-dev-cache-replay-regression:evidence_expansion",
+        "strategy": "evidence_expansion",
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 0.875,
+          "boundary_safety": 1,
+          "handoff_clarity": 1,
+          "control_loop_fit": 0.979,
+          "qianxuesen_fit": 0.971,
+          "overdesign_penalty": 0,
+          "total": 0.967
+        }
+      },
+      "delta": 0.176,
+      "positive_lift": true,
+      "safety_regression": false,
+      "budget_control": {
+        "policy": "risk_adaptive",
+        "population_size": 4,
+        "required_strategies": [
+          "replay_extension",
+          "compact_handoff",
+          "evidence_expansion"
+        ],
+        "generated_variant_count": 4,
+        "saved_variant_count_against_fixed5": 1
+      },
+      "selection_update": {
+        "policy": "quality_replacement",
+        "incumbent_score": 0.791,
+        "selected_score": 0.967,
+        "selected_delta": 0.176,
+        "selected_surface": "variant_winner",
+        "selected_variant_id": "wo-external-dev-cache-replay-regression:evidence_expansion",
+        "selected_strategy": "evidence_expansion",
+        "replacement_allowed": true,
+        "rejected_candidate_count": 0,
+        "safety_passed": true
+      },
+      "diversity_guard": {
+        "policy": "strategy_guard",
+        "applied": true,
+        "selected_strategy_before_guard": "replay_extension",
+        "selected_strategy_after_guard": "evidence_expansion",
+        "retained_variant_id": "wo-external-dev-cache-replay-regression:evidence_expansion",
+        "retained_strategy": "evidence_expansion",
+        "retained_delta": 0.176
+      },
+      "llm_mutation_crossover_gate": {
+        "candidate_value": "none",
+        "call_policy": "do_not_call",
+        "primary_agent_review_required": false,
+        "route_or_winner_authority": false,
+        "llm_api_calls": 0
+      },
+      "model_role_separation": {
+        "policy": "deterministic_controller_owns_route_score_and_selection",
+        "deterministic_controller_owns_selection": true,
+        "evolution_model_call_policy": "do_not_call",
+        "evolution_model_can_change_winner": false,
+        "task_model_called_by_eval": false,
+        "task_model_can_self_select_candidate": false
+      },
+      "qianxuesen_signals": {
+        "high_risk_boundary_fit": false,
+        "medium_risk_replay_or_compact_fit": true,
+        "low_risk_conservative_fit": false,
+        "route_preserved": true,
+        "source_trace_preserved": true,
+        "no_direct_execution": true
+      }
+    },
+    {
+      "source_label": "dev-doc-command-scope",
+      "source_kind": "external_issue_pr_sample",
+      "split": "dev",
+      "seed": "golden-quality-01",
+      "work_order_id": "wo-external-dev-doc-command-scope",
+      "category": "engineering_repair",
+      "severity": "P3",
+      "risk_level": "low",
+      "baseline": {
+        "surface": "baseline_work_order",
+        "variant_id": null,
+        "strategy": null,
+        "dimensions": {
+          "source_trace": 0.938,
+          "replayability": 0.275,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.8,
+          "control_loop_fit": 0.702,
+          "qianxuesen_fit": 0.753,
+          "overdesign_penalty": 0,
+          "total": 0.739
+        }
+      },
+      "winner": {
+        "surface": "variant_winner",
+        "variant_id": "wo-external-dev-doc-command-scope:conservative_patch",
+        "strategy": "conservative_patch",
+        "dimensions": {
+          "source_trace": 0.938,
+          "replayability": 0.825,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.971,
+          "control_loop_fit": 0.794,
+          "qianxuesen_fit": 0.907,
+          "overdesign_penalty": 0,
+          "total": 0.915
+        }
+      },
+      "delta": 0.176,
+      "positive_lift": true,
+      "safety_regression": false,
+      "budget_control": {
+        "policy": "risk_adaptive",
+        "population_size": 3,
+        "required_strategies": [
+          "conservative_patch"
+        ],
+        "generated_variant_count": 3,
+        "saved_variant_count_against_fixed5": 2
+      },
+      "selection_update": {
+        "policy": "quality_replacement",
+        "incumbent_score": 0.739,
+        "selected_score": 0.915,
+        "selected_delta": 0.176,
+        "selected_surface": "variant_winner",
+        "selected_variant_id": "wo-external-dev-doc-command-scope:conservative_patch",
+        "selected_strategy": "conservative_patch",
+        "replacement_allowed": true,
+        "rejected_candidate_count": 0,
+        "safety_passed": true
+      },
+      "diversity_guard": {
+        "policy": "strategy_guard",
+        "applied": false,
+        "selected_strategy_before_guard": "conservative_patch",
+        "selected_strategy_after_guard": "conservative_patch",
+        "retained_variant_id": null,
+        "retained_strategy": null,
+        "retained_delta": null
+      },
+      "llm_mutation_crossover_gate": {
+        "candidate_value": "none",
+        "call_policy": "do_not_call",
+        "primary_agent_review_required": false,
+        "route_or_winner_authority": false,
+        "llm_api_calls": 0
+      },
+      "model_role_separation": {
+        "policy": "deterministic_controller_owns_route_score_and_selection",
+        "deterministic_controller_owns_selection": true,
+        "evolution_model_call_policy": "do_not_call",
+        "evolution_model_can_change_winner": false,
+        "task_model_called_by_eval": false,
+        "task_model_can_self_select_candidate": false
+      },
+      "qianxuesen_signals": {
+        "high_risk_boundary_fit": false,
+        "medium_risk_replay_or_compact_fit": false,
+        "low_risk_conservative_fit": true,
+        "route_preserved": true,
+        "source_trace_preserved": true,
+        "no_direct_execution": true
+      }
+    },
+    {
+      "source_label": "test-queue-replay-timeout",
+      "source_kind": "external_issue_pr_sample",
+      "split": "test",
+      "seed": "golden-quality-02",
+      "work_order_id": "wo-external-test-queue-replay-timeout",
+      "category": "engineering_repair",
+      "severity": "P2",
+      "risk_level": "medium",
+      "baseline": {
+        "surface": "baseline_work_order",
+        "variant_id": null,
+        "strategy": null,
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 0.325,
+          "boundary_safety": 1,
+          "handoff_clarity": 0.829,
+          "control_loop_fit": 0.888,
+          "qianxuesen_fit": 0.817,
+          "overdesign_penalty": 0,
+          "total": 0.791
+        }
+      },
+      "winner": {
+        "surface": "variant_winner",
+        "variant_id": "wo-external-test-queue-replay-timeout:replay_extension",
+        "strategy": "replay_extension",
+        "dimensions": {
+          "source_trace": 1,
+          "replayability": 0.875,
+          "boundary_safety": 1,
+          "handoff_clarity": 1,
+          "control_loop_fit": 0.979,
+          "qianxuesen_fit": 0.971,
+          "overdesign_penalty": 0,
+          "total": 0.967
+        }
+      },
+      "delta": 0.176,
+      "positive_lift": true,
+      "safety_regression": false,
+      "budget_control": {
+        "policy": "risk_adaptive",
+        "population_size": 4,
+        "required_strategies": [
+          "replay_extension",
+          "compact_handoff",
+          "evidence_expansion"
+        ],
+        "generated_variant_count": 4,
+        "saved_variant_count_against_fixed5": 1
+      },
+      "selection_update": {
+        "policy": "quality_replacement",
+        "incumbent_score": 0.791,
+        "selected_score": 0.967,
+        "selected_delta": 0.176,
+        "selected_surface": "variant_winner",
+        "selected_variant_id": "wo-external-test-queue-replay-timeout:replay_extension",
+        "selected_strategy": "replay_extension",
+        "replacement_allowed": true,
+        "rejected_candidate_count": 0,
+        "safety_passed": true
+      },
+      "diversity_guard": {
+        "policy": "strategy_guard",
+        "applied": false,
+        "selected_strategy_before_guard": "replay_extension",
+        "selected_strategy_after_guard": "replay_extension",
+        "retained_variant_id": null,
+        "retained_strategy": null,
+        "retained_delta": null
+      },
+      "llm_mutation_crossover_gate": {
+        "candidate_value": "none",
+        "call_policy": "do_not_call",
+        "primary_agent_review_required": false,
+        "route_or_winner_authority": false,
+        "llm_api_calls": 0
+      },
+      "model_role_separation": {
+        "policy": "deterministic_controller_owns_route_score_and_selection",
+        "deterministic_controller_owns_selection": true,
+        "evolution_model_call_policy": "do_not_call",
+        "evolution_model_can_change_winner": false,
+        "task_model_called_by_eval": false,
+        "task_model_can_self_select_candidate": false
+      },
+      "qianxuesen_signals": {
+        "high_risk_boundary_fit": false,
+        "medium_risk_replay_or_compact_fit": true,
+        "low_risk_conservative_fit": false,
+        "route_preserved": true,
+        "source_trace_preserved": true,
+        "no_direct_execution": true
+      }
+    }
+  ],
+  "safety": {
+    "production_authority": false,
+    "executes_work_orders": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "durable_or_public_effect_allowed": false,
+    "changes_route": false,
+    "changes_winner_authority": false,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  }
+}
