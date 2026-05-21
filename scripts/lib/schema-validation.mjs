@@ -20,6 +20,7 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/evolution_tournament_gate.schema.json", "examples/evolution_tournament_gate.example.json"],
   ["schemas/deployment-ticket.schema.json", "examples/deployment_ticket.example.json"],
   ["schemas/stability-indicator.schema.json", "examples/stability_indicator.example.json"],
+  ["schemas/sidecar-status.schema.json", "examples/sidecar_status.example.json"],
   ["schemas/outer-loop-review.schema.json", "examples/outer_loop_review.example.json"],
   ["schemas/memory_layer.schema.json", "examples/memory_layer.example.json"],
   ["schemas/repair_ticket.schema.json", "examples/repair_ticket.example.json"],

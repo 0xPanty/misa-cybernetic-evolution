@@ -5,8 +5,10 @@ import path from "node:path";
 import {
   runStabilityMonitor,
   sampleDivergentPostDeployTickets,
-  sampleDivergentSkillReplayResults
+  sampleDivergentSkillReplayResults,
+  toSidecarStatus
 } from "./lib/stability-monitor.mjs";
+import { validateJsonData } from "./lib/schema-validation.mjs";
 
 function readArg(name) {
   const prefix = `--${name}=`;
@@ -22,11 +24,21 @@ async function readJsonFile(filePath) {
   return JSON.parse(raw);
 }
 
+async function writeJsonAtomic(filePath, data) {
+  const target = path.resolve(filePath);
+  const dir = path.dirname(target);
+  const temp = path.join(dir, `.${path.basename(target)}.${process.pid}.${Date.now()}.tmp`);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(temp, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  await fs.rename(temp, target);
+}
+
 const jsonMode = process.argv.includes("--json");
 const demoDivergent = process.argv.includes("--demo-divergent");
 const writeIncidents = process.argv.includes("--write-incidents");
 const postDeployPath = readArg("post-deploy-file");
 const skillReplayPath = readArg("skill-replay-file");
+const writeStatusPath = readArg("write-status");
 
 const result = await runStabilityMonitor({
   postDeployTickets: postDeployPath
@@ -38,6 +50,25 @@ const result = await runStabilityMonitor({
   incidentRoot: readArg("incident-root") ?? undefined,
   writeIncidents
 });
+
+if (writeStatusPath) {
+  const status = toSidecarStatus(result);
+  const validation = await validateJsonData({
+    schemaRel: "schemas/sidecar-status.schema.json",
+    data: status,
+    name: "sidecar status broadcast"
+  });
+  if (!validation.ok) {
+    console.error("sidecar status validation failed; refusing to write status file");
+    console.error(JSON.stringify(validation.errors, null, 2));
+    process.exit(2);
+  }
+  await writeJsonAtomic(writeStatusPath, status);
+  result.output = {
+    ...(result.output ?? {}),
+    sidecar_status_path: path.resolve(writeStatusPath)
+  };
+}
 
 if (jsonMode) {
   console.log(JSON.stringify(result, null, 2));
@@ -51,6 +82,9 @@ if (jsonMode) {
   console.log(`production_authority: ${result.safety.production_authority}`);
   console.log(`live_route_table_mutated: ${result.safety.live_route_table_mutated}`);
   console.log(`llm_api_calls: ${result.safety.llm_api_calls}`);
+  if (result.output?.sidecar_status_path) {
+    console.log(`sidecar_status: ${result.output.sidecar_status_path}`);
+  }
 
   if (result.indicators.length > 0) {
     console.log("");

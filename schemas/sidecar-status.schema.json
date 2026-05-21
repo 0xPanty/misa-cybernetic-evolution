@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/sidecar-status.schema.json",
+  "title": "SidecarStatusBroadcast",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "updated_at",
+    "stale_after_minutes",
+    "stability",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "cybernetic.sidecar_status.v1" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "stale_after_minutes": { "type": "integer", "minimum": 1 },
+    "stability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "allowed_routes",
+        "frozen_routes",
+        "requires_human_release",
+        "incidents"
+      ],
+      "properties": {
+        "state": { "type": "string", "enum": ["normal", "safe_mode"] },
+        "allowed_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy", "damping", "ignore"] }
+        },
+        "frozen_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["memory", "skill", "case", "policy"] }
+        },
+        "requires_human_release": { "type": "boolean" },
+        "incidents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/incident" }
+        }
+      }
+    },
+    "safety": { "$ref": "#/$defs/safety" }
+  },
+  "$defs": {
+    "incident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicator_id",
+        "value",
+        "threshold",
+        "reason"
+      ],
+      "properties": {
+        "indicator_id": { "type": "string", "minLength": 1 },
+        "value": { "type": "number", "minimum": 0 },
+        "threshold": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "is_recommendation_only",
+        "llm_api_calls",
+        "external_api_calls"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "is_recommendation_only": { "type": "boolean", "const": true },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "external_api_calls": { "type": "integer", "const": 0 }
+      }
+    }
+  }
+}

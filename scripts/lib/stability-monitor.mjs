@@ -219,6 +219,39 @@ export function reviewStabilityIndicators({
   };
 }
 
+export function toSidecarStatus(review, { staleAfterMinutes = 60 } = {}) {
+  const indicatorsById = new Map((review.indicators ?? []).map((indicatorItem) => [
+    indicatorItem.indicator_id,
+    indicatorItem
+  ]));
+  return {
+    schema_version: "cybernetic.sidecar_status.v1",
+    updated_at: review.created_at,
+    stale_after_minutes: staleAfterMinutes,
+    stability: {
+      state: review.safe_mode.state,
+      allowed_routes: [...review.safe_mode.allowed_routes],
+      frozen_routes: [...review.safe_mode.frozen_routes],
+      requires_human_release: review.safe_mode.requires_human_release,
+      incidents: (review.incidents ?? []).map((incidentItem) => {
+        const indicatorItem = indicatorsById.get(incidentItem.indicator_id);
+        return {
+          indicator_id: incidentItem.indicator_id,
+          value: indicatorItem?.value ?? 0,
+          threshold: indicatorItem?.safe_mode_threshold ?? 0,
+          reason: incidentItem.reason
+        };
+      })
+    },
+    safety: {
+      production_authority: false,
+      is_recommendation_only: true,
+      llm_api_calls: 0,
+      external_api_calls: 0
+    }
+  };
+}
+
 async function writeJson(filePath, data) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");

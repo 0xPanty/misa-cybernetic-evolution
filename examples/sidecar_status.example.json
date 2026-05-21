@@ -1,0 +1,18 @@
+{
+  "schema_version": "cybernetic.sidecar_status.v1",
+  "updated_at": "2026-05-21T00:00:00.000Z",
+  "stale_after_minutes": 60,
+  "stability": {
+    "state": "normal",
+    "allowed_routes": ["memory", "skill", "case", "policy", "damping", "ignore"],
+    "frozen_routes": [],
+    "requires_human_release": false,
+    "incidents": []
+  },
+  "safety": {
+    "production_authority": false,
+    "is_recommendation_only": true,
+    "llm_api_calls": 0,
+    "external_api_calls": 0
+  }
+}
