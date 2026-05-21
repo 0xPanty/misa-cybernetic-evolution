@@ -8,8 +8,8 @@ const JSON_HANDOFF_MAY_EDIT = [
   "scripts/work-order-router.mjs",
   "scripts/repair-ticket.mjs",
   "test/governance.test.mjs",
-  "docs/repair-ticket-v0.13.md",
-  "docs/work-order-routing-v0.14.md"
+  "docs/current/repair-ticket-v0.13.md",
+  "docs/current/work-order-routing-v0.14.md"
 ];
 
 const JSON_HANDOFF_MUST_NOT_EDIT = [

@@ -79,7 +79,7 @@ The learning plane should resist oscillation:
 - conflicting controllers must pause and escalate
 
 The default thresholds live in
-[docs/damping-rules.md](./docs/damping-rules.md) and
+[docs/current/damping-rules.md](./docs/current/damping-rules.md) and
 [schemas/damping_rules.schema.json](./schemas/damping_rules.schema.json).
 
 Run the local dry-run gate before publishing a governance change:
@@ -115,7 +115,7 @@ These require explicit approval:
 
 Misa can use this repository as a structure reference and local precheck layer:
 
-- [docs/misa-readonly-integration.md](./docs/misa-readonly-integration.md)
+- [docs/current/misa-readonly-integration.md](./docs/current/misa-readonly-integration.md)
 - [examples/misa_readonly_integration.example.json](./examples/misa_readonly_integration.example.json)
 
 The local precheck keeps the v0.2 shape honest: docs, schemas, examples, and

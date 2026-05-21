@@ -8,8 +8,8 @@ tolerance, and a direction.
 
 Machine-readable files:
 
-- [schemas/metric_registry.schema.json](../schemas/metric_registry.schema.json)
-- [examples/metric_registry.example.json](../examples/metric_registry.example.json)
+- [schemas/metric_registry.schema.json](../../schemas/metric_registry.schema.json)
+- [examples/metric_registry.example.json](../../examples/metric_registry.example.json)
 
 ## Contract
 

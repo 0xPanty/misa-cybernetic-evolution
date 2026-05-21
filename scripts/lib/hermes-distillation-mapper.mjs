@@ -41,7 +41,7 @@ const DEFAULT_CODEX_SCOPE = {
     "scripts/hermes-distillation-mapper.mjs",
     "schemas/hermes_distillation_mapping.schema.json",
     "test/governance.test.mjs",
-    "docs/hermes-distillation-mapping-v0.15.md"
+    "docs/current/hermes-distillation-mapping-v0.15.md"
   ],
   must_not_edit: [
     "Hermes runtime files",

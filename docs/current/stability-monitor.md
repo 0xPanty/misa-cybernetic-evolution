@@ -8,9 +8,9 @@ candidates until a human reviews it."
 
 Machine-readable files:
 
-- [schemas/stability-indicator.schema.json](../schemas/stability-indicator.schema.json)
-- [examples/stability_indicator.example.json](../examples/stability_indicator.example.json)
-- [scripts/lib/stability-monitor.mjs](../scripts/lib/stability-monitor.mjs)
+- [schemas/stability-indicator.schema.json](../../schemas/stability-indicator.schema.json)
+- [examples/stability_indicator.example.json](../../examples/stability_indicator.example.json)
+- [scripts/lib/stability-monitor.mjs](../../scripts/lib/stability-monitor.mjs)
 
 ## First Indicators
 

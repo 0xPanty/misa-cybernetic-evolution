@@ -38,7 +38,7 @@ artifacts instead of embedding full logs.
 
 The GitHub Actions version is:
 
-- [../.github/workflows/current-line-shadow.yml](../.github/workflows/current-line-shadow.yml)
+- [.github/workflows/current-line-shadow.yml](../../.github/workflows/current-line-shadow.yml)
 
 It has read-only repository permissions and no secret-backed publish/deploy
 steps.
@@ -70,7 +70,7 @@ npm run zilliz:adapt -- --json
 For Misa specifically, L0 also checks the launch profile:
 
 - [misa-readonly-integration.md](./misa-readonly-integration.md)
-- [../examples/misa_readonly_integration.example.json](../examples/misa_readonly_integration.example.json)
+- [examples/misa_readonly_integration.example.json](../../examples/misa_readonly_integration.example.json)
 
 Passing this means the local sidecar is coherent as a dry-run/shadow-ready
 control-learning layer. The local vector store can persist ignored runtime

@@ -45,9 +45,9 @@ It is not a background runtime service yet.
 
 The current gate is encoded in:
 
-- [schemas/integration_profile.schema.json](../schemas/integration_profile.schema.json)
-- [examples/misa_readonly_integration.example.json](../examples/misa_readonly_integration.example.json)
-- [examples/misa_readonly_control_contract.example.json](../examples/misa_readonly_control_contract.example.json)
+- [schemas/integration_profile.schema.json](../../schemas/integration_profile.schema.json)
+- [examples/misa_readonly_integration.example.json](../../examples/misa_readonly_integration.example.json)
+- [examples/misa_readonly_control_contract.example.json](../../examples/misa_readonly_control_contract.example.json)
 
 Run:
 

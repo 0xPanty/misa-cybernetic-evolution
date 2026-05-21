@@ -171,7 +171,7 @@ function normalizeGatePacketForDraft(row) {
       relevant_files: uniqueStrings([
         ...(packet.context?.relevant_files ?? []),
         ...files,
-        "docs/external-trajectory-eval-handoff-v0.26.md"
+        "docs/history/external-trajectory-eval-handoff-v0.26.md"
       ]),
       context_anchors: anchors,
       task_focus: uniqueStrings([
@@ -307,7 +307,7 @@ function asList(value) {
 function taskFileFromOriginal(draft) {
   const task = asList(draft?.concrete_tasks)[0] ?? "";
   const match = task.match(/\b(?:In|in)\s+([^,;]+?\.(?:mjs|js|json|md|yml|yaml|ts|tsx|py))/);
-  return match?.[1] ?? "docs/external-trajectory-eval-handoff-v0.26.md";
+  return match?.[1] ?? "docs/history/external-trajectory-eval-handoff-v0.26.md";
 }
 
 function buildSameShellDraft(base, variant) {

@@ -18,7 +18,7 @@
     {
       "type": "tool_execution_end",
       "tool": "read_file",
-      "path": "docs/control-theory-mapping.md",
+      "path": "docs/current/control-theory-mapping.md",
       "success": true
     },
     {

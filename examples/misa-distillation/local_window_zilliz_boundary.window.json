@@ -28,9 +28,9 @@
       "skill:misa-hermes-recovery"
     ],
     "read": [
-      "docs/signal-intake-cadence-v0.9.md",
-      "docs/signal-candidate-rollup-v0.10.md",
-      "docs/evolution-candidate-preflight-v0.11.md"
+      "docs/current/signal-intake-cadence-v0.9.md",
+      "docs/current/signal-candidate-rollup-v0.10.md",
+      "docs/current/evolution-candidate-preflight-v0.11.md"
     ],
     "modified": [],
     "tool_errors": []

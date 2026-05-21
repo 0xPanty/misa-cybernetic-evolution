@@ -5,7 +5,7 @@
   "owner_surface": "farcaster",
   "source": {
     "kind": "manual_intake",
-    "ref": "docs/skill-control-intake-template.md#farcaster-reply-operator",
+    "ref": "docs/current/skill-control-intake-template.md#farcaster-reply-operator",
     "extracted_by": "deterministic_template",
     "reviewed_by": "qianxuesen_local_shadow"
   },

@@ -374,8 +374,8 @@ function packetForTask(task) {
     context: {
       source_class: sourceClass,
       relevant_files: [
-        "docs/external-trajectory-eval-handoff-v0.26.md",
-        "docs/l2-l3-selection-audit-v0.30.md",
+        "docs/history/external-trajectory-eval-handoff-v0.26.md",
+        "docs/history/l2-l3-selection-audit-v0.30.md",
         DEFAULT_SYNTHETIC_BAD_SOURCE_CANDIDATES
       ],
       context_anchors: uniqueStrings([
@@ -415,8 +415,8 @@ function evidenceRefsForTask(task) {
 
 function passLikeContext(task) {
   const evidenceRefs = evidenceRefsForTask(task);
-  const fileA = "docs/external-trajectory-eval-handoff-v0.26.md";
-  const fileB = "docs/l2-l3-selection-audit-v0.30.md";
+  const fileA = "docs/history/external-trajectory-eval-handoff-v0.26.md";
+  const fileB = "docs/history/l2-l3-selection-audit-v0.30.md";
   const fileC = DEFAULT_SYNTHETIC_BAD_SOURCE_CANDIDATES;
   const signal = task.reason_codes[0] ?? task.task_category;
   const sourceClass = `swe_rebench_${task.task_category}`;

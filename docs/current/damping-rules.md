@@ -65,5 +65,5 @@ and at least shadow or canary evidence before publication:
 
 The machine-readable default ruleset is:
 
-- [schemas/damping_rules.schema.json](../schemas/damping_rules.schema.json)
-- [examples/damping_rules.example.json](../examples/damping_rules.example.json)
+- [schemas/damping_rules.schema.json](../../schemas/damping_rules.schema.json)
+- [examples/damping_rules.example.json](../../examples/damping_rules.example.json)

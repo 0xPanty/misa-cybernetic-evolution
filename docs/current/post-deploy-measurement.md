@@ -9,9 +9,9 @@ setpoint actually move in the right direction?
 
 Machine-readable files:
 
-- [schemas/deployment-ticket.schema.json](../schemas/deployment-ticket.schema.json)
-- [examples/deployment_ticket.example.json](../examples/deployment_ticket.example.json)
-- [scripts/lib/post-deploy-measurement.mjs](../scripts/lib/post-deploy-measurement.mjs)
+- [schemas/deployment-ticket.schema.json](../../schemas/deployment-ticket.schema.json)
+- [examples/deployment_ticket.example.json](../../examples/deployment_ticket.example.json)
+- [scripts/lib/post-deploy-measurement.mjs](../../scripts/lib/post-deploy-measurement.mjs)
 
 ## Deployment Ticket
 

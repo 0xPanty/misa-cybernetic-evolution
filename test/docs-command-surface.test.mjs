@@ -6,16 +6,16 @@ const DOCS_TO_CHECK = [
   "README.md",
   "QUICKSTART.md",
   "ARCHITECTURE.md",
-  "docs/verification-matrix.md",
-  "docs/skill-evolution-adapter-v0.22.md",
-  "docs/skill-control-intake-template.md",
-  "docs/work-order-variants-v0.23.md",
-  "docs/work-order-quality-eval-v0.24.md",
-  "docs/work-order-external-samples-v0.25.md",
-  "docs/local-vector-store-v0.21.md",
-  "docs/current-line-calibration-v0.21.md",
-  "docs/qianxuesen-full-loop-health-v0.21.md",
-  "docs/evolution-tournament-gate-v0.18.md",
+  "docs/current/verification-matrix.md",
+  "docs/current/skill-evolution-adapter-v0.22.md",
+  "docs/current/skill-control-intake-template.md",
+  "docs/current/work-order-variants-v0.23.md",
+  "docs/current/work-order-quality-eval-v0.24.md",
+  "docs/current/work-order-external-samples-v0.25.md",
+  "docs/current/local-vector-store-v0.21.md",
+  "docs/current/current-line-calibration-v0.21.md",
+  "docs/current/qianxuesen-full-loop-health-v0.21.md",
+  "docs/current/evolution-tournament-gate-v0.18.md",
   ".github/workflows/current-line-shadow.yml"
 ];
 
@@ -58,7 +58,7 @@ test("current docs reference package scripts that actually exist", async () => {
 test("current-line docs keep the validation command map aligned", async () => {
   const readme = await fs.readFile("README.md", "utf8");
   const architecture = await fs.readFile("ARCHITECTURE.md", "utf8");
-  const verification = await fs.readFile("docs/verification-matrix.md", "utf8");
+  const verification = await fs.readFile("docs/current/verification-matrix.md", "utf8");
   const workflow = await fs.readFile(".github/workflows/current-line-shadow.yml", "utf8");
 
   for (const command of REQUIRED_CURRENT_LINE_COMMANDS) {
@@ -67,8 +67,8 @@ test("current-line docs keep the validation command map aligned", async () => {
   }
 
   assert.doesNotMatch(verification, /--no-verify/);
-  assert.match(readme, /docs\/verification-matrix\.md/);
-  assert.match(architecture, /docs\/verification-matrix\.md/);
+  assert.match(readme, /docs\/current\/verification-matrix\.md/);
+  assert.match(architecture, /docs\/current\/verification-matrix\.md/);
   assert.match(readme, /Current-Line Command Map/);
   assert.match(verification, /Current Local Shadow Gate/);
   assert.match(verification, /canonical command\s+surface/);

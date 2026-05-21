@@ -17,9 +17,9 @@ const CODEX_MAY_EDIT = [
   "schemas/repair_ticket.schema.json",
   "schemas/work_order_routing.schema.json",
   "test/governance.test.mjs",
-  "docs/memory-layer-skill-export-v0.13.md",
-  "docs/repair-ticket-v0.13.md",
-  "docs/work-order-routing-v0.14.md"
+  "docs/current/memory-layer-skill-export-v0.13.md",
+  "docs/current/repair-ticket-v0.13.md",
+  "docs/current/work-order-routing-v0.14.md"
 ];
 
 const CODEX_MUST_NOT_EDIT = [

@@ -70,8 +70,8 @@ requirements.
 
 ## First Contract Pair
 
-- [../schemas/skill_evolution_contract.schema.json](../schemas/skill_evolution_contract.schema.json)
-- [../schemas/behavior_event.schema.json](../schemas/behavior_event.schema.json)
+- [schemas/skill_evolution_contract.schema.json](../../schemas/skill_evolution_contract.schema.json)
+- [schemas/behavior_event.schema.json](../../schemas/behavior_event.schema.json)
 
 The first sample pair is Farcaster-specific, but the contract is not. Discord,
 email, code repair, support bots, and calendar agents should adapt through the

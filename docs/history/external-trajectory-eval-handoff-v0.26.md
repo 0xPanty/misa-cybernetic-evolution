@@ -430,7 +430,7 @@ one grouped calibration.
 Use this exact recovery phrase:
 
 ```text
-继续 misa-cybernetic-evolution，先读 docs/external-trajectory-eval-handoff-v0.26.md。
+继续 misa-cybernetic-evolution，先读 docs/history/external-trajectory-eval-handoff-v0.26.md。
 当前最新本地 commit 应为 c3363ab Add external trajectory eval handoff，先用 git status/log 确认。
 SWE-chat / SWE-rebench / ATBench / ATBench-Codex / AgentRx 已完成 Layer 1 离线统计。
 下一步直接做 Layer 2：external trajectory adapter + adoption ledger。
@@ -491,7 +491,7 @@ Layer 2 is now implemented locally:
 script: npm run external:adapt
 library: scripts/lib/external-trajectory-adapter.mjs
 schema: schemas/external_trajectory_adaptation.schema.json
-doc: docs/external-trajectory-adapter-v0.27.md
+doc: docs/history/external-trajectory-adapter-v0.27.md
 ```
 
 Main Layer 2 batch:
@@ -510,7 +510,7 @@ Layer 3 side-by-side is now implemented locally:
 script: npm run external:side-by-side
 library: scripts/lib/external-trajectory-side-by-side.mjs
 schema: schemas/external_trajectory_side_by_side.schema.json
-doc: docs/external-trajectory-side-by-side-v0.28.md
+doc: docs/history/external-trajectory-side-by-side-v0.28.md
 ```
 
 Latest Layer 3 parameter-sweep report:
@@ -576,9 +576,9 @@ working tree may contain the uncommitted Layer 2 / Layer 3 files listed above
 Step 2: read only the current lane files.
 
 ```text
-docs/external-trajectory-eval-handoff-v0.26.md
-docs/external-trajectory-adapter-v0.27.md
-docs/external-trajectory-side-by-side-v0.28.md
+docs/history/external-trajectory-eval-handoff-v0.26.md
+docs/history/external-trajectory-adapter-v0.27.md
+docs/history/external-trajectory-side-by-side-v0.28.md
 runs/external-trajectory-side-by-side/2026-05-15T11-35-00-000Z/external-trajectory-side-by-side.json
 ```
 
@@ -659,7 +659,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Current Progress Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Current Progress Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md。
 用 git status/log 确认当前本地状态；注意 HEAD 可能是 1fbe746，但 external trajectory baseline 固定用 a3f6cfb。
 最新 Layer 3 sweep 报告是 runs/external-trajectory-side-by-side/2026-05-15T11-35-00-000Z/external-trajectory-side-by-side.json。
 当前推荐参数档是 noise_tolerant_v1，平均提升 +0.067，安全回退 0，但 actual_risk_without_unsafe_label_count=0。
@@ -1165,7 +1165,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先只读 docs/external-trajectory-eval-handoff-v0.26.md 的 Stratified-500 Alpha Addendum 2026-05-15 和 Next Window Recovery Phrase 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Stratified-500 Alpha Addendum 2026-05-15。
+先只读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Stratified-500 Alpha Addendum 2026-05-15 和 Next Window Recovery Phrase 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Stratified-500 Alpha Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 当前最新推荐 shadow profile 已从 noise_tolerant_v1 升级为 noise_tolerant_pushback_strict_v1。
@@ -1320,7 +1320,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Command Context Classifier Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Command Context Classifier Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Command Context Classifier Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Command Context Classifier Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 unknown command context classifier 已完成：
@@ -1633,7 +1633,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Final Full-Batch Comparison Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Final Full-Batch Comparison Addendum 2026-05-16。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Final Full-Batch Comparison Addendum 2026-05-16，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Final Full-Batch Comparison Addendum 2026-05-16。
 用 git status/log 对齐本地状态；本轮本地收敛 commit 是 bf844f9，优化前 GitHub baseline 是 origin/codex/local-vector-store-adapter@3e79083。
 
 最新全量对照报告：
@@ -1764,7 +1764,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Benign/Complexity Alpha Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Benign/Complexity Alpha Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Benign/Complexity Alpha Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Benign/Complexity Alpha Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 最新 alpha inspection 报告：
@@ -1902,7 +1902,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Guarded Alpha Ablation Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Guarded Alpha Ablation Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Guarded Alpha Ablation Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Guarded Alpha Ablation Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 最新 alpha ablation 报告：
@@ -2050,7 +2050,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Shadow Policy Surface Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Shadow Policy Surface Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Shadow Policy Surface Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Shadow Policy Surface Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 最新 shadow policy surface 报告：
@@ -2206,7 +2206,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Side-by-Side Shadow Policy Readout Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Side-by-Side Shadow Policy Readout Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Side-by-Side Shadow Policy Readout Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Side-by-Side Shadow Policy Readout Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 最新 side-by-side policy readout 报告：
@@ -2395,7 +2395,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 最新 alpha fit 报告：
@@ -2502,7 +2502,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Window Closeout 2026-05-16 和 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Window Closeout 2026-05-16。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Window Closeout 2026-05-16 和 Qianxuesen Second-Order Alpha Fit Addendum 2026-05-15，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Window Closeout 2026-05-16。
 用 git status/log 对齐本地状态；注意当前 HEAD 可能是 1fbe746，但 external trajectory baseline 固定看 a3f6cfb。
 
 当前进度：first-order alpha 已接入 shadow_policy_surface 和 side-by-side shadow_policy_readout；second-order Qianxuesen alpha fit 已完成，找到 3 个 promoted shadow-control priors。
@@ -2661,7 +2661,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Second-Order Shadow Ablation/Readout Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Second-Order Shadow Readout Addendum 2026-05-16。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Second-Order Shadow Ablation/Readout Addendum 2026-05-16，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Second-Order Shadow Readout Addendum 2026-05-16。
 用 git status/log 对齐本地状态；本轮开始时本地 commit 锚点是 7220b5b，external trajectory baseline 固定看 a3f6cfb。
 
 最新本地报告：
@@ -2764,7 +2764,7 @@ Use this exact recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Generalization Guard Addendum 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Generalization Guard Readout Addendum 2026-05-16。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Qianxuesen Generalization Guard Addendum 2026-05-16，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Qianxuesen Generalization Guard Readout Addendum 2026-05-16。
 用 git status/log 对齐本地状态；本轮开始时本地 commit 锚点是 7220b5b，external trajectory baseline 固定看 a3f6cfb。
 
 最新本地报告：
@@ -2900,7 +2900,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Second Pro Review Closeout 2026-05-16，再读 docs/external-trajectory-side-by-side-v0.28.md 的 Second Pro Review Closeout 2026-05-16，然后看 docs/pro-review/external-trajectory-2026-05-16/README.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Second Pro Review Closeout 2026-05-16，再读 docs/history/external-trajectory-side-by-side-v0.28.md 的 Second Pro Review Closeout 2026-05-16，然后看 docs/pro-review/external-trajectory-2026-05-16/README.md。
 用 git status/log 对齐本地状态。external trajectory baseline 固定看 3e79083；comparison behavior anchor 固定看 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b；后续 docs-only handoff commit 不算新行为锚点。
 
 当前结论：Pro 第二轮判定为小修后本地 closeout / GitHub 保留通过 / observe-only shadow 小修后通过 / suggestion-only 小修 / route-winner authority 不通过。Pro 点名的小修已经落地：formal JSON、MD、README 锚点对齐；action_score_separation 和 grouped_holdout 已进入 schema/lib/test/report。
@@ -2928,7 +2928,7 @@ schemas/external_trajectory_online_shadow_contract.schema.json
 examples/external-trajectory-online-shadow/generic-workflow-digest.example.json
 examples/external-trajectory-online-shadow/generic-workflow-adapter/
 test/external-trajectory-online-shadow-contract.test.mjs
-docs/external-trajectory-online-shadow-contract-v0.29.md
+docs/history/external-trajectory-online-shadow-contract-v0.29.md
 ```
 
 Contract result:
@@ -2990,7 +2990,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution external trajectory lane。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Online Observe-only Shadow Contract Addendum 2026-05-16，再读 docs/external-trajectory-online-shadow-contract-v0.29.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Online Observe-only Shadow Contract Addendum 2026-05-16，再读 docs/history/external-trajectory-online-shadow-contract-v0.29.md。
 用 git status/log 对齐本地状态。external trajectory baseline 仍固定看 3e79083；comparison behavior anchor 仍固定看 1bfd0ac8fc8945b8304f2e8c5f6a3d8fe966666b。
 
 当前已落地：online observe-only shadow contract + no-write suggestion/ticket contract。本地命令是 npm run external:online-shadow -- --json --dry-run。真实信号只能进入 external trajectory readout / review hints / repair-ticket drafts / work-order drafts；不接 route/winner authority，不写 memory/Zilliz/embedding，不跑真实 LLM/API，不碰 VPS/GitHub。
@@ -3043,7 +3043,7 @@ scripts/lib/l4-work-order-review.mjs
 test/external-trajectory-llm-work-order-draft.test.mjs
 test/l2-l3-selection-audit.test.mjs
 test/l4-work-order-review.test.mjs
-docs/l2-l3-selection-audit-v0.30.md
+docs/history/l2-l3-selection-audit-v0.30.md
 package.json
 scripts/lib/precheck-shared.mjs
 ```
@@ -3149,7 +3149,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution L1/L2/L3/L4 收口。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L1 Control and L4 Handoff Closeout 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 L1 Control and L4 Handoff Closeout 2026-05-19，再读 docs/history/l2-l3-selection-audit-v0.30.md。
 用 git status/log 对齐本地状态。
 
 当前结论：L1 已经从标签变成真实控制输入；真实 10 条 Gemini Flash 跑完后，调用数 12 -> 11，但质量没有提升，green 10 -> 9，红样本是 PyPSA__linopy-79。下一步不要再堆 L4 LLM 审判，先修 L3 repair prompt / gate，让 hard_fail 重跑不要重复同样弱任务。
@@ -3202,8 +3202,8 @@ Files changed:
 scripts/lib/external-trajectory-llm-work-order-draft.mjs
 scripts/lib/l2-l3-selection-audit.mjs
 test/external-trajectory-llm-work-order-draft.test.mjs
-docs/l2-l3-selection-audit-v0.30.md
-docs/external-trajectory-eval-handoff-v0.26.md
+docs/history/l2-l3-selection-audit-v0.30.md
+docs/history/external-trajectory-eval-handoff-v0.26.md
 ```
 
 Initial verification in this window was intentionally limited:
@@ -3504,7 +3504,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution L3->L2/L1 反馈闭环。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L3 Feedback Loop Implementation Addendum 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 L3 Feedback Loop Implementation Addendum 2026-05-19，再读 docs/history/l2-l3-selection-audit-v0.30.md。
 当前本地只落地低风险闭环：L3 task-level observation 反哺 L2 repair prompt，并产出 suggestion-only L1 feedback；没有自动改 L1 阈值、没有自动升级正式 handoff floor。已跑本地全量测试、precheck、7 份 online-shadow artifact 的 22 条 mock L2/L3/L4 量化、10 份历史 online-shadow-report 的 200 条 mock L2/L3/L4 量化，以及 VPS 真实 10 条 Gemini Flash 复跑。真实复跑已拉回 runs/l3-feedback-real-gemini-vps-2026-05-19T14-01-57/。PyPSA__linopy-79 已从红转绿。随后发现 numpy__numpydoc-101 和 alexgolec__tda-api-37 多数是 L3 gate 词表误判：旧 gate 不认 "without triggering"、"suppression"、"empty write-set"、"enforcement" 等明确 no-effect 预期。已修 gate 词表并重判同一批真实输出：old_pass=8/10 -> new_pass=10/10，new_avg_quality=0.995，llm_api_calls=0。没有 push、没有生产服务变化。下一步若继续真实验证，再跑一轮 10 条 Gemini，确认新 gate 在 live L2 生成链里稳定。
 已额外跑历史 L2 gate-intercept replay：136 份历史 L2 report、1551 条 raw result、360 条去重结果；旧 gate blocked=171，新 gate pass=205 / near_pass=81 / hard_fail=74，updated pools green=286 / yellow=4 / red=70；旧 blocked 里 64.3% 是可救回的 near-pass/pass，说明旧 gate 偏硬，但新 gate 仍保留 70 个 red，不是简单放水。
 ```
@@ -3743,7 +3743,7 @@ Updated next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution L1/L2/L3 反馈闭环。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 L1 Alpha Simulation Addendum 2026-05-19，再读 docs/l2-l3-selection-audit-v0.30.md。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 L1 Alpha Simulation Addendum 2026-05-19，再读 docs/history/l2-l3-selection-audit-v0.30.md。
 当前本地已经完成两条不花 LLM 的校准：1）历史 L2 gate-intercept replay 证明旧 gate 误杀偏多，新 gate 更准；2）SWE-rebench stratified-500 经过 adapter -> L1 alpha simulation，得到 256 条 single/no_context 和 244 条 recheck/primary_agent，并固定 15 条 Gemini probe。mock L2/L3 跑这 15 条：samples=15，candidate_count_histogram={"1":9,"2":6}，passed_gate=15，failed_gate=0，llm_api_calls=0。新增 test/l1-alpha-simulation.test.mjs，npm test/precheck 均通过。还没有 push、没有 commit、没有新 Gemini 调用、没有 VPS/生产变化。下一步若继续验证，用同一批 15 条 source_id 跑真实 Gemini，对比质量和调用数。
 已在 VPS /tmp 跑完同一批 15 条真实 Gemini A/B：A=all candidate_count=1，pass=14/15，fail=1，avg_quality=0.986，llm_api_calls=19，失败是 numpy__numpydoc-101；B=L1-controlled mixed，candidate_count_histogram={"1":9,"2":6}，pass=15/15，fail=0，avg_quality=0.992，llm_api_calls=15。结果已拉回 runs/l1-alpha-simulation/2026-05-19-swe-stratified500/real-gemini-vps-ab/。结论：这批固定 probe 上，L1 分流 alpha 成立，但仍是 shadow 证据，不自动改 L1 阈值或 handoff 权限。
 ```
@@ -3812,7 +3812,7 @@ Next-window recovery phrase:
 
 ```text
 继续 misa-cybernetic-evolution L1/L2/L3 强闭环校准。
-先读 docs/external-trajectory-eval-handoff-v0.26.md 的 Next Calibration Handoff 2026-05-19 After L1 Alpha Commit，再读 docs/l2-l3-selection-audit-v0.30.md 的 Next Calibration Plan 2026-05-19。
+先读 docs/history/external-trajectory-eval-handoff-v0.26.md 的 Next Calibration Handoff 2026-05-19 After L1 Alpha Commit，再读 docs/history/l2-l3-selection-audit-v0.30.md 的 Next Calibration Plan 2026-05-19。
 当前实现锚点是 7800679 codex: close l1-l3 feedback alpha loop；本地 main 比 origin/main ahead，先不要 push。
 下轮先不花 LLM 钱：继续用历史样本找两类误判：人看能用但 gate 错杀、gate 放过但内容很虚。然后专门验证三件事：什么时候 candidate_count=2 真值、什么时候必须 primary_agent、哪些 L1 信号容易导致 L3 反复修不好。再用同一批历史样本做旧逻辑 vs 新逻辑对比。只有本地回放证明更稳后，才拿小批真实 Gemini 复验。
 真正生产级闭环以后再做：L3 问题先汇总，不因单个样本乱改；生成候选策略；历史样本回放验证；通过后才更新 L1 阈值、L2 prompt 或 gate 参数，并且必须可回滚、可对比、可解释。

@@ -81,8 +81,8 @@ credentials, live publishing, and direct durable writes.
 
 The committed example is:
 
-- [../examples/skill-evolution/farcaster_reply_operator.contract.json](../examples/skill-evolution/farcaster_reply_operator.contract.json)
-- [../examples/behavior-events/farcaster_public_reply.event.json](../examples/behavior-events/farcaster_public_reply.event.json)
+- [examples/skill-evolution/farcaster_reply_operator.contract.json](../../examples/skill-evolution/farcaster_reply_operator.contract.json)
+- [examples/behavior-events/farcaster_public_reply.event.json](../../examples/behavior-events/farcaster_public_reply.event.json)
 
 It proves the first public behavior adapter shape: public reply drafts can
 produce replay-required optimization candidates without gaining publish

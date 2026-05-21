@@ -120,7 +120,7 @@ let a model judge winners or write memory. The first matrix report recommends
 weak-loser evidence gating without increasing unsafe leakage, false suppression,
 or promising-loser loss.
 
-See `docs/loser-pressure-quant-v0.26.md` for the current report pointers and
+See `docs/current/loser-pressure-quant-v0.26.md` for the current report pointers and
 decision.
 
 ## Route Strategy Fit

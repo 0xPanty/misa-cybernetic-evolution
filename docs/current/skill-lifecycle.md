@@ -31,7 +31,7 @@ A published skill should have:
 - rollback target
 
 Start new candidates from
-[templates/governance-skill-template.md](./templates/governance-skill-template.md).
+[templates/governance-skill-template.md](../templates/governance-skill-template.md).
 
 In v0.2, Skill candidates can be produced by the Misa learning-loop simulator
 only as drafts:

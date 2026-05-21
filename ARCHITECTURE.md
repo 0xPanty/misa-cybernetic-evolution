@@ -286,7 +286,7 @@ The verifier should compare candidate behavior against baseline behavior instead
 of relying on model confidence.
 
 The current local confidence chain is grouped by phase and kept canonical in
-[docs/verification-matrix.md](./docs/verification-matrix.md). Architecture
+[docs/current/verification-matrix.md](./docs/current/verification-matrix.md). Architecture
 describes what the verifier proves; the verification matrix owns the exact
 command order.
 
@@ -294,7 +294,7 @@ These commands are dry-run checks. They do not call providers, start timers,
 write memory, publish artifacts, post publicly, or change live channel behavior.
 
 Historical version detail lives in
-[docs/changelog.md](./docs/changelog.md). The important current rule is that
+[docs/history/changelog.md](./docs/history/changelog.md). The important current rule is that
 the precheck chain must show which phase failed: static files and versions,
 machine contracts, local smoke, bridge checks, or current-line vector/session
 review.
@@ -305,7 +305,7 @@ retrieval ranking, skill-evolution supervision, Hermes runtime adapter
 normalization, Zilliz adapter dry-run, route coverage, repair/work-order
 mapping, perception hints, and judge-escalation value without touching VPS or
 production state. The signal-layer details live in
-[docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
+[docs/current/current-line-calibration-v0.21.md](./docs/current/current-line-calibration-v0.21.md).
 
 The GitHub Actions workflow `.github/workflows/current-line-shadow.yml` pins
 that same shadow posture for pull requests and `main`: schema validation,
@@ -378,7 +378,7 @@ can be delegated to the persona/operator agent for self-review. High-risk
 public, durable, credential, memory, or production changes go to the human owner.
 
 The v0.14 handoff layer is described in
-[docs/work-order-routing-v0.14.md](./docs/work-order-routing-v0.14.md).
+[docs/current/work-order-routing-v0.14.md](./docs/current/work-order-routing-v0.14.md).
 
 ### 8.1 LangGraph Carrier Bridge
 
@@ -396,7 +396,7 @@ is LangGraph carrying evidence and pause/resume mechanics while Qianxuesen owns
 the route decision.
 
 The v0.15 bridge contract is described in
-[docs/langgraph-qianxuesen-bridge-v0.15.md](./docs/langgraph-qianxuesen-bridge-v0.15.md).
+[docs/current/langgraph-qianxuesen-bridge-v0.15.md](./docs/current/langgraph-qianxuesen-bridge-v0.15.md).
 
 ### 8.2 OmniAgent Footprint Bridge
 
@@ -414,7 +414,7 @@ runtime changes. If those appear in a footprint, they become policy evidence or
 damping pressure instead of live behavior.
 
 The v0.16 bridge is described in
-[docs/omniagent-footprint-bridge-v0.16.md](./docs/omniagent-footprint-bridge-v0.16.md).
+[docs/current/omniagent-footprint-bridge-v0.16.md](./docs/current/omniagent-footprint-bridge-v0.16.md).
 
 ### 8.3 Evolution Tournament Gate
 
@@ -434,7 +434,7 @@ Unsafe aggressive variants can appear as negative samples, but they must be
 rejected before any effect happens.
 
 The v0.18 tournament gate is described in
-[docs/evolution-tournament-gate-v0.18.md](./docs/evolution-tournament-gate-v0.18.md).
+[docs/current/evolution-tournament-gate-v0.18.md](./docs/current/evolution-tournament-gate-v0.18.md).
 
 ### 8.4 Post-Deploy Measurement
 
@@ -456,7 +456,7 @@ pressure only. They do not change the Qianxuesen route owner, pick winners,
 hard-filter candidates, write memory, or touch VPS.
 
 The post-deploy measurement contract is described in
-[docs/post-deploy-measurement.md](./docs/post-deploy-measurement.md).
+[docs/current/post-deploy-measurement.md](./docs/current/post-deploy-measurement.md).
 
 ### 8.5 Stability Monitor
 
@@ -475,7 +475,7 @@ but it does not mutate the live route table, write memory, call providers, or
 touch VPS.
 
 The stability monitor contract is described in
-[docs/stability-monitor.md](./docs/stability-monitor.md).
+[docs/current/stability-monitor.md](./docs/current/stability-monitor.md).
 
 ### 8.6 Control Hierarchy and Outer Loop
 
@@ -493,7 +493,7 @@ changes. Its schema locks `production_authority=false`,
 `setpoint_mutated=false`, and `llm_api_calls=0`.
 
 The hierarchy is described in
-[docs/control-hierarchy.md](./docs/control-hierarchy.md).
+[docs/current/control-hierarchy.md](./docs/current/control-hierarchy.md).
 
 ### 8.7 Vector Memory and Retrieval Lineage
 

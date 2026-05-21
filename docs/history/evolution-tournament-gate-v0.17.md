@@ -6,7 +6,7 @@ Qianxuesen loop: candidates can now compete before they reach human review.
 v0.18 keeps this contract and adds `strategy_fit` plus `llm_review_value` so
 optional model review has to name concrete critique value before auto mode can
 spend a call. See
-[evolution-tournament-gate-v0.18.md](./evolution-tournament-gate-v0.18.md) for
+[evolution-tournament-gate-v0.18.md](../current/evolution-tournament-gate-v0.18.md) for
 the calibrated v0.18 results.
 
 The borrowed idea from `NousResearch/hermes-agent-self-evolution` is not

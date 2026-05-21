@@ -193,7 +193,7 @@ See `experiments/external-trajectory/README.md` and
 ## Current-Line Command Map
 
 README keeps only the short human entrypoints. The canonical command surface and
-CI order live in [docs/verification-matrix.md](./docs/verification-matrix.md).
+CI order live in [docs/current/verification-matrix.md](./docs/current/verification-matrix.md).
 
 The two current-line commands most reviewers should reach for are:
 
@@ -404,7 +404,7 @@ npm run work-order:evaluate -- --json --dry-run
 ## Validation
 
 The canonical validation chain lives in
-[docs/verification-matrix.md](./docs/verification-matrix.md). Keep that file
+[docs/current/verification-matrix.md](./docs/current/verification-matrix.md). Keep that file
 and `.github/workflows/current-line-shadow.yml` as the source of truth for the
 exact CI order.
 
@@ -419,7 +419,7 @@ npm test
 ```
 
 The calibration signal-layer details live in
-[docs/current-line-calibration-v0.21.md](./docs/current-line-calibration-v0.21.md).
+[docs/current/current-line-calibration-v0.21.md](./docs/current/current-line-calibration-v0.21.md).
 That map is descriptive only; it does not add a controller, writer, provider
 call, or route authority.
 
@@ -474,32 +474,32 @@ tracks; use the command map and validation chain above for the current surface.
 
 - [Architecture](./ARCHITECTURE.md)
 - [Control contract](./CONTROL_CONTRACT.md)
-- [Verification matrix](./docs/verification-matrix.md) - canonical command surface and current local shadow gate
-- [Source synthesis](./docs/source-synthesis.md)
-- [Memory-layer and Skill export](./docs/memory-layer-skill-export-v0.13.md)
-- [Work-order routing](./docs/work-order-routing-v0.14.md)
-- [Work-order variants](./docs/work-order-variants-v0.23.md)
-- [Work-order quality evaluation](./docs/work-order-quality-eval-v0.24.md)
-- [Work-order external samples](./docs/work-order-external-samples-v0.25.md)
-- [Skill evolution adapter](./docs/skill-evolution-adapter-v0.22.md)
-- [Skill control intake template](./docs/skill-control-intake-template.md)
-- [Vector memory storage](./docs/vector-memory-storage-v0.19.md)
-- [Local vector store](./docs/local-vector-store-v0.21.md)
-- [Zilliz vector adapter](./docs/zilliz-vector-adapter-v0.19.md)
-- [Retrieval lineage](./docs/retrieval-lineage-v0.19.md)
-- [Vector retrieval ranker](./docs/vector-retrieval-ranker-v0.20.md)
-- [Evolution tournament v0.18](./docs/evolution-tournament-gate-v0.18.md)
-- [Current-line calibration v0.21](./docs/current-line-calibration-v0.21.md)
+- [Verification matrix](./docs/current/verification-matrix.md) - canonical command surface and current local shadow gate
+- [Source synthesis](./docs/current/source-synthesis.md)
+- [Memory-layer and Skill export](./docs/current/memory-layer-skill-export-v0.13.md)
+- [Work-order routing](./docs/current/work-order-routing-v0.14.md)
+- [Work-order variants](./docs/current/work-order-variants-v0.23.md)
+- [Work-order quality evaluation](./docs/current/work-order-quality-eval-v0.24.md)
+- [Work-order external samples](./docs/current/work-order-external-samples-v0.25.md)
+- [Skill evolution adapter](./docs/current/skill-evolution-adapter-v0.22.md)
+- [Skill control intake template](./docs/current/skill-control-intake-template.md)
+- [Vector memory storage](./docs/current/vector-memory-storage-v0.19.md)
+- [Local vector store](./docs/current/local-vector-store-v0.21.md)
+- [Zilliz vector adapter](./docs/current/zilliz-vector-adapter-v0.19.md)
+- [Retrieval lineage](./docs/current/retrieval-lineage-v0.19.md)
+- [Vector retrieval ranker](./docs/current/vector-retrieval-ranker-v0.20.md)
+- [Evolution tournament v0.18](./docs/current/evolution-tournament-gate-v0.18.md)
+- [Current-line calibration v0.21](./docs/current/current-line-calibration-v0.21.md)
 
 Bridge docs:
 
-- [Hermes/Zilliz mapping](./docs/hermes-distillation-mapping-v0.15.md)
-- [LangGraph/Qianxuesen bridge](./docs/langgraph-qianxuesen-bridge-v0.15.md)
-- [OmniAgent footprint bridge](./docs/omniagent-footprint-bridge-v0.16.md)
+- [Hermes/Zilliz mapping](./docs/current/hermes-distillation-mapping-v0.15.md)
+- [LangGraph/Qianxuesen bridge](./docs/current/langgraph-qianxuesen-bridge-v0.15.md)
+- [OmniAgent footprint bridge](./docs/current/omniagent-footprint-bridge-v0.16.md)
 
 History and calibration:
 
-- [Version changelog and calibration notes](./docs/changelog.md)
+- [Version changelog and calibration notes](./docs/history/changelog.md)
 
 ## Remotion Diagram Source
 

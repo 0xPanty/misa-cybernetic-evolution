@@ -103,8 +103,8 @@ Local model consistency check:
 - `schemas/evolution_tournament_gate.schema.json`
 - `test/evolution-tournament.test.mjs`
 - `test/loser-pressure-quant.test.mjs`
-- `docs/evolution-tournament-gate-v0.18.md`
-- `docs/loser-pressure-quant-v0.26.md`
+- `docs/current/evolution-tournament-gate-v0.18.md`
+- `docs/current/loser-pressure-quant-v0.26.md`
 
 ## Verification Run
 
