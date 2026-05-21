@@ -137,6 +137,87 @@ function phaseForStep(stepType) {
   }[stepType] ?? "launched";
 }
 
+function candidateResultRefs(candidateReducer) {
+  return (candidateReducer?.candidate_results ?? []).map((candidate) => ({
+    candidate_id: candidate.candidate_id,
+    source_work_order_id: candidate.source_work_order_id,
+    generator_id: candidate.generator_id,
+    deterministic_fingerprint: candidate.deterministic_fingerprint,
+    output_surface: candidate.output_surface,
+    execution_allowed: candidate.execution_allowed,
+    publication_allowed: candidate.publication_allowed
+  }));
+}
+
+function initialBusinessState(thread) {
+  const launchEvent = (thread.event_log ?? []).find((event) => event.event_type === "thread_launched");
+  return {
+    source_type: launchEvent?.payload?.source_type ?? thread.business_state?.source_type ?? "candidate_generation_context",
+    source_id: launchEvent?.refs?.source_id ?? thread.business_state?.source_id ?? null,
+    phase: "launched",
+    pending_human_escalation_ids: [],
+    approved_decision_count: 0,
+    completed_step_count: 0,
+    last_human_decision: null
+  };
+}
+
+function applyBusinessStateEvent(state, event) {
+  const next = clone(state);
+
+  if (event.event_type === "candidate_context_ready") {
+    next.phase = "context_ready";
+  }
+
+  if (event.event_type === "human_escalation_requested") {
+    const escalationId = event.refs?.human_escalation_id ?? event.payload?.human_escalation_id;
+    if (escalationId && !next.pending_human_escalation_ids.includes(escalationId)) {
+      next.pending_human_escalation_ids.push(escalationId);
+    }
+    next.phase = "waiting_for_human";
+  }
+
+  if (event.event_type === "human_decision_recorded") {
+    const decision = event.payload?.decision ?? null;
+    const escalationId = event.payload?.human_escalation_id ?? event.refs?.human_escalation_id;
+    next.last_human_decision = decision;
+    next.approved_decision_count += ["approve", "choose_executor", "release_safe_mode"].includes(decision) ? 1 : 0;
+    next.pending_human_escalation_ids = next.pending_human_escalation_ids
+      .filter((id) => id !== escalationId);
+    next.phase = decision === "hold" || decision === "reject" ? "held" : "resumed";
+  }
+
+  if (event.event_type === "local_gate_passed") {
+    next.completed_step_count += 1;
+    next.phase = "completed";
+  }
+
+  if (event.event_type === "thread_completed") {
+    next.phase = "completed";
+  }
+
+  if (event.event_type === "thread_held") {
+    next.phase = "held";
+  }
+
+  if (event.event_type === "runtime_error_compacted") {
+    next.phase = "failed";
+  }
+
+  return next;
+}
+
+function businessStateFromEvents(thread) {
+  return (thread.event_log ?? []).reduce(
+    (state, event) => applyBusinessStateEvent(state, event),
+    initialBusinessState(thread)
+  );
+}
+
+function boolCheck(value) {
+  return value === true;
+}
+
 function buildStep({
   thread,
   stepType,
@@ -378,11 +459,202 @@ export function recordNextStep(thread, nextStep, { now = DEFAULT_NOW } = {}) {
   };
 }
 
+export function replayRuntimeThread(thread, { now = DEFAULT_NOW } = {}) {
+  const replayedBase = {
+    ...clone(thread),
+    status: "running",
+    business_state: businessStateFromEvents(thread)
+  };
+  const nextStep = determineNextStep(replayedBase, { now });
+  const lastEvent = replayedBase.event_log.at(-1) ?? null;
+  const replayedThread = {
+    ...replayedBase,
+    status: statusForStep(nextStep.step_type),
+    updated_at: lastEvent?.created_at ?? replayedBase.updated_at,
+    business_state: {
+      ...replayedBase.business_state,
+      phase: phaseForStep(nextStep.step_type)
+    },
+    latest_next_step: nextStepSnapshot(nextStep)
+  };
+
+  return {
+    schema_version: "misa.runtime_thread_replay.v1",
+    mode: "runtime-thread-replay",
+    ok: true,
+    replayed_event_count: replayedThread.event_log.length,
+    thread: replayedThread,
+    next_step: nextStep,
+    warnings: [
+      "Replay rebuilds thread state from the event log only; it does not execute the next step."
+    ]
+  };
+}
+
+export function evaluateRuntimeLocalGate({
+  thread,
+  candidateContext,
+  candidateReducer,
+  now = DEFAULT_NOW
+} = {}) {
+  const eventTypes = new Set((thread?.event_log ?? []).map((event) => event.event_type));
+  const reducerEvent = [...(thread?.event_log ?? [])]
+    .reverse()
+    .find((event) => event.event_type === "candidate_reducer_ready") ?? null;
+  const reducerRefs = candidateResultRefs(candidateReducer);
+  const eventReducerRefs = reducerEvent?.payload?.candidate_result_refs ?? [];
+  const nextStep = determineNextStep(thread, { now });
+  const replayed = replayRuntimeThread(thread, { now });
+  const contextPolicy = candidateContext?.context_policy ?? {};
+  const reducerPolicy = candidateReducer?.reducer_policy ?? reducerEvent?.payload?.reducer_policy ?? {};
+  const candidateRefs = reducerRefs.length ? reducerRefs : eventReducerRefs;
+  const candidateCount = candidateReducer?.summary?.candidate_count ?? reducerEvent?.payload?.candidate_count ?? 0;
+  const checks = {
+    event_log_has_candidate_context: eventTypes.has("candidate_context_ready"),
+    event_log_has_candidate_reducer: eventTypes.has("candidate_reducer_ready"),
+    candidate_layer_connected: reducerEvent !== null && candidateRefs.length === candidateCount,
+    candidate_context_locked: contextPolicy.input_locked === true
+      && contextPolicy.runtime_fetch_allowed === false
+      && contextPolicy.llm_tool_calls_allowed === false
+      && contextPolicy.route_authority === false
+      && contextPolicy.winner_authority === false,
+    reducer_deterministic: reducerPolicy.same_input_same_seed_same_output === true,
+    reducer_no_runtime_fetch: reducerPolicy.runtime_fetch_allowed === false,
+    reducer_no_llm_tool_calls: reducerPolicy.llm_tool_calls_allowed === false,
+    reducer_no_route_or_winner_authority: reducerPolicy.route_or_winner_authority === false,
+    candidate_results_draft_only: candidateRefs.every((candidate) => (
+      candidate.output_surface === "draft_candidate_only"
+      && candidate.execution_allowed === false
+      && candidate.publication_allowed === false
+    )),
+    resumed_before_local_gate: eventTypes.has("human_decision_recorded")
+      && !unresolvedEscalationId(thread)
+      && nextStep.step_type === "run_local_gate",
+    replay_matches_current_next_step: replayed.next_step.step_type === nextStep.step_type
+      && replayed.thread.status === statusForStep(nextStep.step_type),
+    no_live_authority: Object.values(thread?.safety ?? {}).every((value) => value === false)
+  };
+  const ok = Object.values(checks).every(boolCheck);
+
+  return {
+    schema_version: "misa.runtime_thread_local_gate.v1",
+    mode: "runtime-thread-local-gate",
+    ok,
+    created_at: iso(now),
+    gate_id: `local-gate-${thread?.thread_id ?? "unknown"}-${String((thread?.event_log?.length ?? 0) + 1).padStart(4, "0")}`,
+    thread_ref: {
+      thread_id: thread?.thread_id ?? null,
+      event_count: thread?.event_log?.length ?? 0,
+      next_step_type: nextStep.step_type
+    },
+    summary: {
+      candidate_count: candidateCount,
+      event_candidate_ref_count: eventReducerRefs.length,
+      input_candidate_ref_count: reducerRefs.length,
+      failed_check_count: Object.values(checks).filter((value) => value !== true).length
+    },
+    checks,
+    safety: { ...SAFETY },
+    warnings: [
+      "Local gate checks candidate-layer handoff and replayability only.",
+      "Passing the gate does not execute the work order or grant production authority."
+    ]
+  };
+}
+
+export function recordRuntimeErrorSignal(thread, {
+  errorType = "runtime_error",
+  summary = "Runtime error compacted into the thread event log.",
+  refs = {},
+  payload = {},
+  now = DEFAULT_NOW
+} = {}) {
+  const errorSignal = {
+    error_type: errorType,
+    compacted: true,
+    execution_allowed: false,
+    repair_required: true
+  };
+  const withError = appendThreadEvent(thread, {
+    event_type: "runtime_error_compacted",
+    actor: "deterministic_runtime",
+    summary,
+    refs: {
+      error_type: errorType,
+      ...refs
+    },
+    payload: {
+      ...errorSignal,
+      ...payload
+    }
+  }, { now });
+  const nextStep = determineNextStep(withError, { now, eventCountOffset: 1 });
+  const recorded = recordNextStep(withError, nextStep, { now });
+
+  return {
+    thread: recorded,
+    nextStep,
+    errorSignal
+  };
+}
+
+export function recordRuntimeLocalGate(thread, {
+  candidateContext,
+  candidateReducer,
+  now = DEFAULT_NOW
+} = {}) {
+  const gate = evaluateRuntimeLocalGate({
+    thread,
+    candidateContext,
+    candidateReducer,
+    now
+  });
+
+  if (!gate.ok) {
+    const failedChecks = Object.entries(gate.checks)
+      .filter(([, passed]) => passed !== true)
+      .map(([name]) => name);
+    return {
+      ...recordRuntimeErrorSignal(thread, {
+        errorType: "local_gate_failed",
+        summary: "Runtime local gate failed; thread must stop for repair.",
+        payload: {
+          gate_id: gate.gate_id,
+          failed_checks: failedChecks,
+          gate
+        },
+        now
+      }),
+      gate
+    };
+  }
+
+  const withGate = appendThreadEvent(thread, {
+    event_type: "local_gate_passed",
+    actor: "deterministic_runtime",
+    summary: "Runtime local gate passed for replayed candidate-layer handoff.",
+    refs: {
+      gate_id: gate.gate_id
+    },
+    payload: gate
+  }, { now });
+  const nextStep = determineNextStep(withGate, { now, eventCountOffset: 1 });
+  const recorded = recordNextStep(withGate, nextStep, { now });
+
+  return {
+    thread: recorded,
+    nextStep,
+    gate
+  };
+}
+
 export function buildRuntimeThreadFromPackets({
   candidateContext,
   candidateReducer,
   humanEscalations = [],
   humanDecision = null,
+  runLocalGate = false,
+  runtimeError = null,
   now = DEFAULT_NOW
 } = {}) {
   let thread = createAgentThread({
@@ -416,7 +688,14 @@ export function buildRuntimeThreadFromPackets({
     },
     payload: {
       candidate_count: candidateReducer?.summary?.candidate_count ?? 0,
-      human_escalation_required_count: candidateReducer?.summary?.human_escalation_required_count ?? 0
+      human_escalation_required_count: candidateReducer?.summary?.human_escalation_required_count ?? 0,
+      candidate_result_refs: candidateResultRefs(candidateReducer),
+      reducer_policy: {
+        same_input_same_seed_same_output: candidateReducer?.reducer_policy?.same_input_same_seed_same_output ?? false,
+        runtime_fetch_allowed: candidateReducer?.reducer_policy?.runtime_fetch_allowed ?? null,
+        llm_tool_calls_allowed: candidateReducer?.reducer_policy?.llm_tool_calls_allowed ?? null,
+        route_or_winner_authority: candidateReducer?.reducer_policy?.route_or_winner_authority ?? null
+      }
     }
   }, { now });
 
@@ -454,14 +733,48 @@ export function buildRuntimeThreadFromPackets({
 
   const nextStep = determineNextStep(thread, { now, eventCountOffset: 1 });
   thread = recordNextStep(thread, nextStep, { now });
-  return { thread, nextStep };
+
+  let currentNextStep = nextStep;
+  let localGate = null;
+  let errorSignal = null;
+
+  if (runLocalGate) {
+    const gateResult = recordRuntimeLocalGate(thread, {
+      candidateContext,
+      candidateReducer,
+      now
+    });
+    thread = gateResult.thread;
+    currentNextStep = gateResult.nextStep;
+    localGate = gateResult.gate;
+    errorSignal = gateResult.errorSignal ?? null;
+  }
+
+  if (runtimeError) {
+    const errorResult = recordRuntimeErrorSignal(thread, {
+      ...(typeof runtimeError === "object" ? runtimeError : { errorType: String(runtimeError) }),
+      now
+    });
+    thread = errorResult.thread;
+    currentNextStep = errorResult.nextStep;
+    errorSignal = errorResult.errorSignal;
+  }
+
+  return {
+    thread,
+    nextStep: currentNextStep,
+    localGate,
+    errorSignal
+  };
 }
 
 export async function buildDefaultRuntimeThreadReview({
   repoRoot = process.cwd(),
   now = DEFAULT_NOW,
   seed = "runtime-thread-v1",
-  humanDecision = null
+  humanDecision = null,
+  runLocalGate = false,
+  runtimeError = null
 } = {}) {
   const workOrderRouting = await routeWorkOrders({ repoRoot, now });
   const candidateContext = await buildDefaultCandidateGenerationContext({
@@ -480,8 +793,11 @@ export async function buildDefaultRuntimeThreadReview({
     candidateReducer,
     humanEscalations,
     humanDecision,
+    runLocalGate,
+    runtimeError,
     now
   });
+  const replay = replayRuntimeThread(thread, { now });
 
   return {
     schema_version: "misa.runtime_thread_review.v1",
@@ -494,10 +810,14 @@ export async function buildDefaultRuntimeThreadReview({
       event_count: thread.event_log.length,
       next_step_type: nextStep.step_type,
       pending_human_escalation_count: thread.business_state.pending_human_escalation_ids.length,
-      human_decision_count: thread.event_log.filter((event) => event.event_type === "human_decision_recorded").length
+      human_decision_count: thread.event_log.filter((event) => event.event_type === "human_decision_recorded").length,
+      local_gate_passed_count: thread.event_log.filter((event) => event.event_type === "local_gate_passed").length,
+      runtime_error_count: thread.event_log.filter((event) => event.event_type === "runtime_error_compacted").length,
+      replay_next_step_type: replay.next_step.step_type
     },
     thread,
     next_step: nextStep,
+    replay,
     safety: { ...SAFETY },
     warnings: [
       "Runtime thread review is local and dry-run only.",

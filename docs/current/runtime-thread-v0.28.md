@@ -50,11 +50,27 @@ The default local fixture currently pauses because the example work order needs
 a human owner decision. Passing a human decision records a resume event and moves
 the next step to the local gate.
 
+Second-stage local wiring connects the v0.27 candidate reducer into the runtime
+thread event log. The reducer output is recorded as candidate result refs, then
+the runtime thread can:
+
+- replay the thread state from the event log;
+- run a deterministic local gate after a resume decision;
+- record `local_gate_passed` when the candidate-layer handoff is still locked
+  and no-effect;
+- compact runtime failures into `runtime_error_compacted`;
+- fail closed to `next_step.step_type = error` when an error signal is present.
+
+The local gate checks structure and authority only. It does not execute the
+candidate, call a tool, call a provider, write memory, or touch production.
+
 ## Commands
 
 ```bash
 npm run runtime:thread -- --json
 npm run runtime:thread -- --json --decision choose_executor
+npm run runtime:thread -- --json --decision choose_executor --run-local-gate
+npm run runtime:thread -- --json --error-signal candidate_replay_failed
 ```
 
 For strict machine handoff:

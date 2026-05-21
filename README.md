@@ -440,6 +440,10 @@ The local runtime thread now has:
 - `next_step` as the deterministic reducer output;
 - pause on `human_escalation`;
 - resume through a recorded human decision event;
+- v0.27 candidate reducer refs recorded in the event log;
+- deterministic event-log replay;
+- a local gate after resume;
+- compact error signals that fail closed;
 - no tool execution, provider call, service start, memory write, or VPS touch.
 
 Plain rule:

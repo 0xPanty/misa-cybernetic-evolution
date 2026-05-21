@@ -22,7 +22,9 @@ const result = await buildDefaultRuntimeThreadReview({
   repoRoot: process.cwd(),
   now,
   seed: readArg("seed") ?? "runtime-thread-v1",
-  humanDecision: readArg("decision") ?? null
+  humanDecision: readArg("decision") ?? null,
+  runLocalGate: hasArg("run-local-gate"),
+  runtimeError: readArg("error-signal")
 });
 
 await writeJsonOutFile(result, readArg("out-file"));
