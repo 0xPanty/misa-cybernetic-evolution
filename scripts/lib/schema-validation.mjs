@@ -29,6 +29,8 @@ export const SCHEMA_EXAMPLE_PAIRS = [
   ["schemas/human_escalation.schema.json", "examples/human_escalation.example.json"],
   ["schemas/prompt_template_manifest.schema.json", "prompts/candidate-layer/manifest.json"],
   ["schemas/factor_candidate_reducer.schema.json", "examples/factor_candidate_reducer.example.json"],
+  ["schemas/agent_thread.schema.json", "examples/agent_thread.example.json"],
+  ["schemas/next_step.schema.json", "examples/next_step.example.json"],
   ["schemas/skill_evolution_contract.schema.json", "examples/skill-evolution/farcaster_reply_operator.contract.json"],
   ["schemas/behavior_event.schema.json", "examples/behavior-events/farcaster_public_reply.event.json"],
   ["schemas/langgraph_qianxuesen_bridge.schema.json", "examples/langgraph_qianxuesen_bridge.example.json"],

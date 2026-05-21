@@ -1,0 +1,109 @@
+{
+  "schema_version": "misa.agent_thread.v1",
+  "mode": "runtime-thread",
+  "thread_id": "thread-example",
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "updated_at": "2026-05-21T00:00:00.000Z",
+  "status": "paused",
+  "runtime_policy": {
+    "launch_api": "local_cli_only",
+    "pause_resume_supported": true,
+    "trigger_from_anywhere_ready": false,
+    "allowed_trigger_sources": [
+      "cli",
+      "work_order_routing",
+      "candidate_generation_context",
+      "human_decision_event"
+    ],
+    "external_webhook_enabled": false,
+    "state_model": "event_log_plus_business_state",
+    "reducer": "determineNextStep(thread) -> next_step"
+  },
+  "business_state": {
+    "source_type": "candidate_generation_context",
+    "source_id": "example",
+    "phase": "waiting_for_human",
+    "pending_human_escalation_ids": [
+      "human-escalation-example"
+    ],
+    "approved_decision_count": 0,
+    "completed_step_count": 0,
+    "last_human_decision": null
+  },
+  "event_log": [
+    {
+      "event_id": "thread-example-0001",
+      "event_type": "thread_launched",
+      "created_at": "2026-05-21T00:00:00.000Z",
+      "actor": "system",
+      "summary": "Runtime thread launched from locked candidate context.",
+      "refs": {
+        "source_id": "example"
+      },
+      "payload": {
+        "source_type": "candidate_generation_context"
+      }
+    },
+    {
+      "event_id": "thread-example-0002",
+      "event_type": "candidate_context_ready",
+      "created_at": "2026-05-21T00:00:00.000Z",
+      "actor": "deterministic_runtime",
+      "summary": "Candidate context is locked for reducer replay.",
+      "refs": {
+        "schema_version": "misa.candidate_generation_context.v1"
+      },
+      "payload": {
+        "work_order_count": 1
+      }
+    },
+    {
+      "event_id": "thread-example-0003",
+      "event_type": "human_escalation_requested",
+      "created_at": "2026-05-21T00:00:00.000Z",
+      "actor": "deterministic_runtime",
+      "summary": "Human owner decision is required before execution.",
+      "refs": {
+        "human_escalation_id": "human-escalation-example"
+      },
+      "payload": {
+        "required_human_decision": "choose_executor"
+      }
+    },
+    {
+      "event_id": "thread-example-0004",
+      "event_type": "next_step_determined",
+      "created_at": "2026-05-21T00:00:00.000Z",
+      "actor": "deterministic_runtime",
+      "summary": "Next step is pause_for_human.",
+      "refs": {
+        "step_id": "next-step-thread-example-0004"
+      },
+      "payload": {
+        "step_type": "pause_for_human"
+      }
+    }
+  ],
+  "latest_next_step": {
+    "step_id": "next-step-thread-example-0004",
+    "step_type": "pause_for_human",
+    "reason": "A human escalation is pending, so the runtime thread must pause before any execution surface.",
+    "human_escalation_id": "human-escalation-example"
+  },
+  "safety": {
+    "production_authority": false,
+    "executes_work_orders": false,
+    "writes_persistent_memory": false,
+    "installs_skills": false,
+    "calls_model_providers": false,
+    "calls_external_api": false,
+    "touches_vps": false,
+    "starts_services": false,
+    "changes_route": false,
+    "changes_winner_authority": false
+  },
+  "warnings": [
+    "Runtime thread is a local event log and next-step reducer only.",
+    "Pause/resume records authority decisions; it does not grant execution authority."
+  ]
+}

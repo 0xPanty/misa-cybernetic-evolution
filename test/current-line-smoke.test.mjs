@@ -30,6 +30,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("hermes:adapt-runtime"), true);
   assert.equal(result.command_surface.includes("hermes:work-order"), true);
   assert.equal(result.command_surface.includes("hermes:plugin:doctor"), true);
+  assert.equal(result.command_surface.includes("runtime:thread"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
@@ -43,6 +44,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("hermes:adapt-runtime dry-run"));
   assert.ok(checkNames.has("hermes:work-order dry-run"));
   assert.ok(checkNames.has("hermes:plugin:doctor dry-run"));
+  assert.ok(checkNames.has("runtime:thread dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -282,6 +284,24 @@ function safeArtifacts() {
         blocks_runtime: false,
         llm_api_calls: 0,
         external_api_calls: 0
+      }
+    },
+    runtimeThreadReview: {
+      ok: true,
+      summary: {
+        status: "paused",
+        event_count: 4,
+        next_step_type: "pause_for_human",
+        pending_human_escalation_count: 1
+      },
+      safety: {
+        production_authority: false,
+        executes_work_orders: false,
+        writes_persistent_memory: false,
+        calls_model_providers: false,
+        calls_external_api: false,
+        touches_vps: false,
+        starts_services: false
       }
     }
   };

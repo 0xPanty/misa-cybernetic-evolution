@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/next_step.schema.json",
+  "title": "RuntimeNextStep",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "created_at",
+    "step_id",
+    "step_type",
+    "thread_ref",
+    "reason",
+    "input_refs",
+    "human_escalation_id",
+    "resume_policy",
+    "execution",
+    "authority",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.next_step.v1" },
+    "mode": { "type": "string", "const": "runtime-next-step" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "step_id": { "type": "string", "minLength": 1 },
+    "step_type": {
+      "type": "string",
+      "enum": [
+        "prepare_context",
+        "draft_candidate",
+        "pause_for_human",
+        "resume_after_human",
+        "run_local_gate",
+        "complete",
+        "hold",
+        "error"
+      ]
+    },
+    "thread_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["thread_id", "status", "event_count"],
+      "properties": {
+        "thread_id": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["running", "paused", "completed", "held", "failed"] },
+        "event_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "reason": { "type": "string", "minLength": 1 },
+    "input_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "human_escalation_id": { "type": ["string", "null"] },
+    "resume_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resume_requires_human_event",
+        "accepted_decisions",
+        "replay_from_event_log",
+        "rebuild_context_after_resume"
+      ],
+      "properties": {
+        "resume_requires_human_event": { "type": "boolean" },
+        "accepted_decisions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["approve", "reject", "modify", "choose_executor", "release_safe_mode", "hold"]
+          }
+        },
+        "replay_from_event_log": { "type": "boolean", "const": true },
+        "rebuild_context_after_resume": { "type": "boolean" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_call_allowed",
+        "provider_call_allowed",
+        "external_api_allowed",
+        "live_effect_allowed",
+        "vps_touch_allowed",
+        "writes_persistent_memory",
+        "starts_service"
+      ],
+      "properties": {
+        "tool_call_allowed": { "type": "boolean", "const": false },
+        "provider_call_allowed": { "type": "boolean", "const": false },
+        "external_api_allowed": { "type": "boolean", "const": false },
+        "live_effect_allowed": { "type": "boolean", "const": false },
+        "vps_touch_allowed": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "starts_service": { "type": "boolean", "const": false }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_owner",
+        "llm_may_choose_next_step",
+        "route_authority",
+        "winner_authority",
+        "human_owner_required_before_execution"
+      ],
+      "properties": {
+        "control_owner": { "type": "string", "const": "qianxuesen" },
+        "llm_may_choose_next_step": { "type": "boolean", "const": false },
+        "route_authority": { "type": "boolean", "const": false },
+        "winner_authority": { "type": "boolean", "const": false },
+        "human_owner_required_before_execution": { "type": "boolean", "const": true }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

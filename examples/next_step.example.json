@@ -1,0 +1,49 @@
+{
+  "schema_version": "misa.next_step.v1",
+  "mode": "runtime-next-step",
+  "created_at": "2026-05-21T00:00:00.000Z",
+  "step_id": "next-step-thread-example-0004",
+  "step_type": "pause_for_human",
+  "thread_ref": {
+    "thread_id": "thread-example",
+    "status": "paused",
+    "event_count": 4
+  },
+  "reason": "A human escalation is pending, so the runtime thread must pause before any execution surface.",
+  "input_refs": [
+    "human-escalation-example"
+  ],
+  "human_escalation_id": "human-escalation-example",
+  "resume_policy": {
+    "resume_requires_human_event": true,
+    "accepted_decisions": [
+      "approve",
+      "reject",
+      "modify",
+      "choose_executor",
+      "release_safe_mode",
+      "hold"
+    ],
+    "replay_from_event_log": true,
+    "rebuild_context_after_resume": true
+  },
+  "execution": {
+    "tool_call_allowed": false,
+    "provider_call_allowed": false,
+    "external_api_allowed": false,
+    "live_effect_allowed": false,
+    "vps_touch_allowed": false,
+    "writes_persistent_memory": false,
+    "starts_service": false
+  },
+  "authority": {
+    "control_owner": "qianxuesen",
+    "llm_may_choose_next_step": false,
+    "route_authority": false,
+    "winner_authority": false,
+    "human_owner_required_before_execution": true
+  },
+  "warnings": [
+    "Next step is a runtime control decision, not execution authority."
+  ]
+}

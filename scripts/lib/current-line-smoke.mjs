@@ -8,6 +8,7 @@ import { reviewLangGraphQianxuesenBridge } from "./langgraph-qianxuesen-bridge.m
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { buildPerceptionDigest } from "./perception-sidecar.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
+import { buildDefaultRuntimeThreadReview } from "./runtime-thread.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
@@ -213,6 +214,21 @@ function summarizeHermesWorkOrderPipeline(pipeline) {
   };
 }
 
+function summarizeRuntimeThread(review) {
+  return {
+    ok: review.ok,
+    status: review.summary.status,
+    events: review.summary.event_count,
+    next_step: review.summary.next_step_type,
+    pending_human_escalations: review.summary.pending_human_escalation_count,
+    production_authority: review.safety.production_authority,
+    executes_work_orders: review.safety.executes_work_orders,
+    calls_model_providers: review.safety.calls_model_providers,
+    calls_external_api: review.safety.calls_external_api,
+    touches_vps: review.safety.touches_vps
+  };
+}
+
 function noLiveWritesOrProviderCallsCheck({
   routing,
   sessionReview,
@@ -227,7 +243,8 @@ function noLiveWritesOrProviderCallsCheck({
   curiosityGate,
   hermesRuntimeAdapter,
   hermesWorkOrderPipeline,
-  hermesRuntimePluginDoctor
+  hermesRuntimePluginDoctor,
+  runtimeThreadReview
 }) {
   const details = {
     durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
@@ -278,7 +295,14 @@ function noLiveWritesOrProviderCallsCheck({
     hermes_plugin_writes_skills: hermesRuntimePluginDoctor.safety.writes_skills,
     hermes_plugin_blocks_runtime: hermesRuntimePluginDoctor.safety.blocks_runtime,
     hermes_plugin_llm_api_calls: hermesRuntimePluginDoctor.safety.llm_api_calls,
-    hermes_plugin_external_api_calls: hermesRuntimePluginDoctor.safety.external_api_calls
+    hermes_plugin_external_api_calls: hermesRuntimePluginDoctor.safety.external_api_calls,
+    runtime_thread_production_authority: runtimeThreadReview.safety.production_authority,
+    runtime_thread_executes_work_orders: runtimeThreadReview.safety.executes_work_orders,
+    runtime_thread_writes_persistent_memory: runtimeThreadReview.safety.writes_persistent_memory,
+    runtime_thread_calls_model_providers: runtimeThreadReview.safety.calls_model_providers,
+    runtime_thread_calls_external_api: runtimeThreadReview.safety.calls_external_api,
+    runtime_thread_touches_vps: runtimeThreadReview.safety.touches_vps,
+    runtime_thread_starts_services: runtimeThreadReview.safety.starts_services
   };
 
   return checkResult("no live writes or provider calls", (
@@ -331,6 +355,13 @@ function noLiveWritesOrProviderCallsCheck({
     && details.hermes_plugin_blocks_runtime === false
     && details.hermes_plugin_llm_api_calls === 0
     && details.hermes_plugin_external_api_calls === 0
+    && details.runtime_thread_production_authority === false
+    && details.runtime_thread_executes_work_orders === false
+    && details.runtime_thread_writes_persistent_memory === false
+    && details.runtime_thread_calls_model_providers === false
+    && details.runtime_thread_calls_external_api === false
+    && details.runtime_thread_touches_vps === false
+    && details.runtime_thread_starts_services === false
   ), details);
 }
 
@@ -348,7 +379,8 @@ function buildCurrentLineSmokeChecks({
   curiosityGate,
   hermesRuntimeAdapter,
   hermesWorkOrderPipeline,
-  hermesRuntimePluginDoctor
+  hermesRuntimePluginDoctor,
+  runtimeThreadReview
 }) {
   return [
     checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
@@ -363,6 +395,7 @@ function buildCurrentLineSmokeChecks({
     checkResult("hermes:adapt-runtime dry-run", hermesRuntimeAdapter.ok, summarizeHermesRuntimeAdapter(hermesRuntimeAdapter)),
     checkResult("hermes:work-order dry-run", hermesWorkOrderPipeline.ok, summarizeHermesWorkOrderPipeline(hermesWorkOrderPipeline)),
     checkResult("hermes:plugin:doctor dry-run", hermesRuntimePluginDoctor.ok, summarizeHermesRuntimePluginDoctor(hermesRuntimePluginDoctor)),
+    checkResult("runtime:thread dry-run", runtimeThreadReview.ok, summarizeRuntimeThread(runtimeThreadReview)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
     checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
     noLiveWritesOrProviderCallsCheck({
@@ -379,7 +412,8 @@ function buildCurrentLineSmokeChecks({
       curiosityGate,
       hermesRuntimeAdapter,
       hermesWorkOrderPipeline,
-      hermesRuntimePluginDoctor
+      hermesRuntimePluginDoctor,
+      runtimeThreadReview
     })
   ];
 }
@@ -471,6 +505,11 @@ export async function runCurrentLineSmoke({
     eventLogFile: path.join("examples", "hermes-runtime-plugin", "sample-events.ndjson"),
     now
   });
+  const runtimeThreadReview = await buildDefaultRuntimeThreadReview({
+    repoRoot,
+    now,
+    seed: "current-line-smoke"
+  });
 
   const checks = buildCurrentLineSmokeChecks({
     routing,
@@ -486,7 +525,8 @@ export async function runCurrentLineSmoke({
     curiosityGate,
     hermesRuntimeAdapter,
     hermesWorkOrderPipeline,
-    hermesRuntimePluginDoctor
+    hermesRuntimePluginDoctor,
+    runtimeThreadReview
   });
 
   return {
@@ -504,6 +544,7 @@ export async function runCurrentLineSmoke({
       "hermes:adapt-runtime",
       "hermes:work-order",
       "hermes:plugin:doctor",
+      "runtime:thread",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -535,7 +576,8 @@ export function buildCurrentLineSmokeFromArtifacts({
   curiosityGate,
   hermesRuntimeAdapter,
   hermesWorkOrderPipeline,
-  hermesRuntimePluginDoctor
+  hermesRuntimePluginDoctor,
+  runtimeThreadReview
 }) {
   const checks = buildCurrentLineSmokeChecks({
     routing: workOrderRouting,
@@ -551,7 +593,8 @@ export function buildCurrentLineSmokeFromArtifacts({
     curiosityGate,
     hermesRuntimeAdapter,
     hermesWorkOrderPipeline,
-    hermesRuntimePluginDoctor
+    hermesRuntimePluginDoctor,
+    runtimeThreadReview
   });
 
   return {

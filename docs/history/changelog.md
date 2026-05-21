@@ -103,6 +103,13 @@ candidate reducer, route-focused generator charters, and an explicit control
 boundary document. It does not import HumanLayer, BAML, launch/pause/resume
 runtime state, multi-entry triggers, provider calls, or production/VPS authority.
 
+The v0.28 runtime thread starts the launch/pause/resume layer as a local event
+log and deterministic next-step reducer. It adds `agent_thread` and `next_step`
+contracts, pauses on unified human escalation packets, records human decisions as
+resume events, and routes resumed work to a local gate. It does not enable
+webhooks, cron triggers, tool execution, provider calls, memory writes, service
+starts, or production/VPS authority.
+
 ## Version History
 
 Rows before v0.25 are historical anchors for retained behavior. They should not
@@ -138,6 +145,7 @@ chain above.
 | v0.25 | Issue/PR-shaped external work-order samples, dev/test holdout, work-order quality replacement, medium-risk diversity guard, risk-adaptive candidate budget, zero-call LLM mutation/crossover gate, and Evolution/Task model split | local fixture adapter only, no external fetch, execution, model call, external API, winner authority, or task-model call |
 | v0.26 | Cybernetic architecture closeout plus P4 hardening: plant model, measurable setpoints, deterministic sensor, post-deploy review, stability monitor, outer-loop review, control-path provider guards, docs current/history split, sidecar status broadcast, and work-order quality golden snapshot | local control-plane contracts and reports only; no production/VPS authority, provider call, webhook push, execution, memory write, or route/winner authority change |
 | v0.27 | Factor-compliant candidate layer: locked context, versioned prompts, unified human escalation, deterministic reducer, small route-focused generator charters, and documented dumb zone / authority matrix | candidate-generation discipline only; no runtime autonomy, HumanLayer, BAML, provider call, execution, memory write, skill install, production/VPS authority, or route/winner authority change |
+| v0.28 | Runtime thread contract: local event log, unified execution/business state, deterministic next-step reducer, pause on human escalation, and resume via recorded human decision | local orchestration skeleton only; no webhook/cron trigger, tool execution, provider call, memory write, service start, production/VPS authority, or route/winner authority change |
 
 ## Historical Sample Validation
 

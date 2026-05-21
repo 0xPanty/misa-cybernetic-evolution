@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/agent_thread.schema.json",
+  "title": "AgentThread",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "thread_id",
+    "created_at",
+    "updated_at",
+    "status",
+    "runtime_policy",
+    "business_state",
+    "event_log",
+    "latest_next_step",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.agent_thread.v1" },
+    "mode": { "type": "string", "const": "runtime-thread" },
+    "thread_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["running", "paused", "completed", "held", "failed"] },
+    "runtime_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "launch_api",
+        "pause_resume_supported",
+        "trigger_from_anywhere_ready",
+        "allowed_trigger_sources",
+        "external_webhook_enabled",
+        "state_model",
+        "reducer"
+      ],
+      "properties": {
+        "launch_api": { "type": "string", "const": "local_cli_only" },
+        "pause_resume_supported": { "type": "boolean", "const": true },
+        "trigger_from_anywhere_ready": { "type": "boolean", "const": false },
+        "allowed_trigger_sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "cli",
+              "work_order_routing",
+              "candidate_generation_context",
+              "human_decision_event"
+            ]
+          }
+        },
+        "external_webhook_enabled": { "type": "boolean", "const": false },
+        "state_model": { "type": "string", "const": "event_log_plus_business_state" },
+        "reducer": { "type": "string", "const": "determineNextStep(thread) -> next_step" }
+      }
+    },
+    "business_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "source_id",
+        "phase",
+        "pending_human_escalation_ids",
+        "approved_decision_count",
+        "completed_step_count",
+        "last_human_decision"
+      ],
+      "properties": {
+        "source_type": { "type": "string", "minLength": 1 },
+        "source_id": { "type": ["string", "null"] },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "launched",
+            "context_ready",
+            "waiting_for_human",
+            "resumed",
+            "local_gate",
+            "completed",
+            "held",
+            "failed"
+          ]
+        },
+        "pending_human_escalation_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "approved_decision_count": { "type": "integer", "minimum": 0 },
+        "completed_step_count": { "type": "integer", "minimum": 0 },
+        "last_human_decision": {
+          "type": ["string", "null"],
+          "enum": ["approve", "reject", "modify", "choose_executor", "release_safe_mode", "hold", null]
+        }
+      }
+    },
+    "event_log": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/thread_event" }
+    },
+    "latest_next_step": { "$ref": "#/$defs/next_step_snapshot" },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "installs_skills",
+        "calls_model_providers",
+        "calls_external_api",
+        "touches_vps",
+        "starts_services",
+        "changes_route",
+        "changes_winner_authority"
+      ],
+      "properties": {
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "installs_skills": { "type": "boolean", "const": false },
+        "calls_model_providers": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false },
+        "starts_services": { "type": "boolean", "const": false },
+        "changes_route": { "type": "boolean", "const": false },
+        "changes_winner_authority": { "type": "boolean", "const": false }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "thread_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "event_type",
+        "created_at",
+        "actor",
+        "summary",
+        "refs",
+        "payload"
+      ],
+      "properties": {
+        "event_id": { "type": "string", "minLength": 1 },
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "thread_launched",
+            "candidate_context_ready",
+            "candidate_reducer_ready",
+            "human_escalation_requested",
+            "human_decision_recorded",
+            "next_step_determined",
+            "local_gate_passed",
+            "thread_completed",
+            "thread_held",
+            "runtime_error_compacted"
+          ]
+        },
+        "created_at": { "type": "string", "format": "date-time" },
+        "actor": {
+          "type": "string",
+          "enum": ["system", "deterministic_runtime", "human_owner", "agent"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "refs": { "type": "object", "additionalProperties": true },
+        "payload": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "next_step_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "step_type", "reason", "human_escalation_id"],
+      "properties": {
+        "step_id": { "type": "string", "minLength": 1 },
+        "step_type": {
+          "type": "string",
+          "enum": [
+            "prepare_context",
+            "draft_candidate",
+            "pause_for_human",
+            "resume_after_human",
+            "run_local_gate",
+            "complete",
+            "hold",
+            "error"
+          ]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "human_escalation_id": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

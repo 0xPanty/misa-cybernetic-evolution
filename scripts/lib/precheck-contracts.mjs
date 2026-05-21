@@ -20,7 +20,9 @@ const CURRENT_LINE_SCHEMA_RELS = new Set([
   "schemas/skill_evolution_contract.schema.json",
   "schemas/behavior_event.schema.json",
   "schemas/vector_memory_storage.schema.json",
-  "schemas/zilliz_vector_adapter.schema.json"
+  "schemas/zilliz_vector_adapter.schema.json",
+  "schemas/agent_thread.schema.json",
+  "schemas/next_step.schema.json"
 ]);
 
 const CURRENT_LINE_DATA_RELS = new Set([
@@ -28,6 +30,8 @@ const CURRENT_LINE_DATA_RELS = new Set([
   "examples/behavior-events/farcaster_public_reply.event.json",
   "examples/vector_memory_storage.example.json",
   "examples/zilliz_vector_adapter.example.json",
+  "examples/agent_thread.example.json",
+  "examples/next_step.example.json",
   "examples/misa-distillation/local_window_zilliz_boundary.window.json"
 ]);
 

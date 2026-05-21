@@ -48,6 +48,7 @@ export const CORE_REQUIRED_FILES = [
   "scripts/candidate-generation-context.mjs",
   "scripts/factor-candidate-reducer.mjs",
   "scripts/human-escalation.mjs",
+  "scripts/runtime-thread.mjs",
   "scripts/vector-memory-storage.mjs",
   "scripts/vector-retrieval-ranker.mjs",
   "scripts/local-vector-store.mjs",
@@ -102,6 +103,7 @@ export const CORE_REQUIRED_FILES = [
   "scripts/lib/human-escalation.mjs",
   "scripts/lib/prompt-templates.mjs",
   "scripts/lib/route-focused-candidate-generators.mjs",
+  "scripts/lib/runtime-thread.mjs",
   "scripts/lib/vector-memory-storage.mjs",
   "scripts/lib/vector-retrieval-ranker.mjs",
   "scripts/lib/local-vector-store.mjs",
@@ -123,6 +125,7 @@ export const REFERENCE_FILES = [
   "docs/current/work-order-external-samples-v0.25.md",
   "docs/current/factor-compliant-candidate-layer-v0.27.md",
   "docs/current/control-boundaries.md",
+  "docs/current/runtime-thread-v0.28.md",
   "docs/current/skill-evolution-adapter-v0.22.md",
   "docs/current/skill-control-intake-template.md",
   "docs/current/vector-memory-storage-v0.19.md",
@@ -191,6 +194,8 @@ export const MACHINE_CONTRACT_FILES = [
   "schemas/human_escalation.schema.json",
   "schemas/prompt_template_manifest.schema.json",
   "schemas/factor_candidate_reducer.schema.json",
+  "schemas/agent_thread.schema.json",
+  "schemas/next_step.schema.json",
   "schemas/work_order_variants.schema.json",
   "schemas/work_order_quality_eval.schema.json",
   "schemas/external_work_order_sample.schema.json",
@@ -235,6 +240,8 @@ export const MACHINE_CONTRACT_FILES = [
   "examples/candidate_generation_context.example.json",
   "examples/human_escalation.example.json",
   "examples/factor_candidate_reducer.example.json",
+  "examples/agent_thread.example.json",
+  "examples/next_step.example.json",
   "prompts/candidate-layer/manifest.json",
   "prompts/candidate-layer/work-order-variant.prompt.md",
   "examples/work-order-quality/external-issue-pr/dev-auth-boundary-regression.sample.json",
@@ -290,7 +297,8 @@ export const CONTROL_NO_PROVIDER_CALL_FILES = Object.freeze([
   "scripts/lib/post-deploy-measurement.mjs",
   "scripts/lib/stability-monitor.mjs",
   "scripts/lib/outer-loop-review.mjs",
-  "scripts/lib/evolution-tournament-validation.mjs"
+  "scripts/lib/evolution-tournament-validation.mjs",
+  "scripts/lib/runtime-thread.mjs"
 ]);
 
 const CONTROL_PROVIDER_CALL_PATTERNS = [

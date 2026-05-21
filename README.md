@@ -9,6 +9,7 @@ adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
 contract, adds seeded work-order variants, adds work-order quality evaluation,
 adds issue/PR-shaped dev/test work-order samples,
 adds the v0.27 factor-compliant candidate layer,
+starts the v0.28 runtime thread contract,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 
@@ -167,6 +168,7 @@ Two rules matter most:
 | Candidate context | `npm run candidate:context -- --json` | locks the context, prompt refs, metric refs, and generator scope for factor-compliant candidate generation |
 | Candidate reducer | `npm run candidate:reduce -- --json --seed stable-review` | deterministic draft candidate fingerprints from locked context; no execution or provider calls |
 | Human escalation | `npm run human:escalation -- --json` | unified human-review packets for high-risk work-order decisions |
+| Runtime thread | `npm run runtime:thread -- --json` | local launch/pause/resume event log and deterministic next step; no tool execution or live effects |
 | Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
@@ -174,7 +176,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, runtime thread, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -426,6 +428,27 @@ Qianxuesen owns route, metric, stability, winner, and authority.
 The factor layer only makes candidate generation cleaner and easier to review.
 ```
 
+## Runtime Thread
+
+v0.28 starts the runtime execution-orchestration layer as a local event-log
+contract. It models launch, pause, resume, and next-step selection without
+starting a live runtime.
+
+The local runtime thread now has:
+
+- `agent_thread` as one packet for event log plus business state;
+- `next_step` as the deterministic reducer output;
+- pause on `human_escalation`;
+- resume through a recorded human decision event;
+- no tool execution, provider call, service start, memory write, or VPS touch.
+
+Plain rule:
+
+```text
+The thread can say what should happen next.
+It cannot do the thing by itself.
+```
+
 ## Validation
 
 The canonical validation chain lives in
@@ -441,6 +464,7 @@ npm run smoke:current-line
 npm run calibrate:current-line
 npm run candidate:context -- --json
 npm run candidate:reduce -- --json --seed stable-review
+npm run runtime:thread -- --json
 npm run precheck
 npm test
 ```
@@ -510,6 +534,7 @@ tracks; use the command map and validation chain above for the current surface.
 - [Work-order external samples](./docs/current/work-order-external-samples-v0.25.md)
 - [Factor-compliant candidate layer](./docs/current/factor-compliant-candidate-layer-v0.27.md)
 - [Control boundaries](./docs/current/control-boundaries.md)
+- [Runtime thread](./docs/current/runtime-thread-v0.28.md)
 - [Skill evolution adapter](./docs/current/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/current/skill-control-intake-template.md)
 - [Vector memory storage](./docs/current/vector-memory-storage-v0.19.md)

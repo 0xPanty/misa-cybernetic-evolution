@@ -1,6 +1,7 @@
 import path from "node:path";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
+import { buildDefaultRuntimeThreadReview } from "./runtime-thread.mjs";
 import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 import { buildVectorMemoryStoragePlan } from "./vector-memory-storage.mjs";
 import { evaluateVectorRetrievalScenarios } from "./vector-retrieval-ranker.mjs";
@@ -172,6 +173,33 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     externalApiCalls: vectorRetrievalEval.safety.external_api_calls
   }));
 
+  const runtimeThreadReview = await buildDefaultRuntimeThreadReview({
+    repoRoot,
+    now: new Date("2026-05-21T00:00:00Z"),
+    seed: "precheck-runtime-thread"
+  });
+  checks.push(currentLineCheck("Runtime thread reducer dry-run check", runtimeThreadReview.ok, {
+    status: runtimeThreadReview.summary.status,
+    events: runtimeThreadReview.summary.event_count,
+    nextStep: runtimeThreadReview.summary.next_step_type,
+    pendingHumanEscalations: runtimeThreadReview.summary.pending_human_escalation_count,
+    executesWorkOrders: runtimeThreadReview.safety.executes_work_orders,
+    callsModelProviders: runtimeThreadReview.safety.calls_model_providers,
+    touchesVps: runtimeThreadReview.safety.touches_vps
+  }));
+  checks.push(await currentLineValidation({
+    repoRoot,
+    schemaRel: "schemas/agent_thread.schema.json",
+    data: runtimeThreadReview.thread,
+    name: "validate runtime agent thread dry-run"
+  }));
+  checks.push(await currentLineValidation({
+    repoRoot,
+    schemaRel: "schemas/next_step.schema.json",
+    data: runtimeThreadReview.next_step,
+    name: "validate runtime next step dry-run"
+  }));
+
   return {
     checks,
     artifacts: {
@@ -182,7 +210,8 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
       localVectorStore,
       skillEvolution,
       zillizVectorAdapter,
-      vectorRetrievalEval
+      vectorRetrievalEval,
+      runtimeThreadReview
     }
   };
 }

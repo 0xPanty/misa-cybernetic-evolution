@@ -63,6 +63,7 @@ npm run work-order:evaluate -- --json --dry-run
 npm run candidate:context -- --json
 npm run candidate:reduce -- --json --seed stable-review
 npm run human:escalation -- --json
+npm run runtime:thread -- --json
 npm run skill:evolution -- --json
 npm run vector-memory:classify -- --json
 npm run vector-store:local -- --mode upsert --dry-run
@@ -113,6 +114,7 @@ The current-line additions are documented in:
 - [work-order-external-samples-v0.25.md](./work-order-external-samples-v0.25.md)
 - [factor-compliant-candidate-layer-v0.27.md](./factor-compliant-candidate-layer-v0.27.md)
 - [control-boundaries.md](./control-boundaries.md)
+- [runtime-thread-v0.28.md](./runtime-thread-v0.28.md)
 - [skill-evolution-adapter-v0.22.md](./skill-evolution-adapter-v0.22.md)
 - [hermes-runtime-adapter-v0.22.md](./hermes-runtime-adapter-v0.22.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)
