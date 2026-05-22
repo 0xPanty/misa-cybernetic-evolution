@@ -13,6 +13,7 @@ const DOCS_TO_CHECK = [
   "docs/current/work-order-quality-eval-v0.24.md",
   "docs/current/work-order-external-samples-v0.25.md",
   "docs/current/local-vector-store-v0.21.md",
+  "docs/current/component-health-diagnostics-v0.29.md",
   "docs/current/current-line-calibration-v0.21.md",
   "docs/current/qianxuesen-full-loop-health-v0.21.md",
   "docs/current/evolution-tournament-gate-v0.18.md",

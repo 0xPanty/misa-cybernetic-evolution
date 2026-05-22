@@ -1,4 +1,8 @@
 import path from "node:path";
+import {
+  buildComponentHealthDiagnostics,
+  summarizeComponentHealthForSmoke
+} from "./component-health.mjs";
 import { buildCuriositySignalGateFromDigest } from "./curiosity-signal-gate.mjs";
 import { reviewEvolutionTournamentGate } from "./evolution-tournament-gate.mjs";
 import { runHermesRuntimeAdapter } from "./hermes-runtime-adapter.mjs";
@@ -244,7 +248,8 @@ function noLiveWritesOrProviderCallsCheck({
   hermesRuntimeAdapter,
   hermesWorkOrderPipeline,
   hermesRuntimePluginDoctor,
-  runtimeThreadReview
+  runtimeThreadReview,
+  componentHealth
 }) {
   const details = {
     durable_or_public_effect_allowed: routing.safety.durable_or_public_effect_allowed,
@@ -302,7 +307,12 @@ function noLiveWritesOrProviderCallsCheck({
     runtime_thread_calls_model_providers: runtimeThreadReview.safety.calls_model_providers,
     runtime_thread_calls_external_api: runtimeThreadReview.safety.calls_external_api,
     runtime_thread_touches_vps: runtimeThreadReview.safety.touches_vps,
-    runtime_thread_starts_services: runtimeThreadReview.safety.starts_services
+    runtime_thread_starts_services: runtimeThreadReview.safety.starts_services,
+    component_health_auto_execute: componentHealth.safety.auto_execute,
+    component_health_executes_work_orders: componentHealth.safety.executes_work_orders,
+    component_health_writes_persistent_memory: componentHealth.safety.writes_persistent_memory,
+    component_health_calls_external_api: componentHealth.safety.calls_external_api,
+    component_health_touches_vps: componentHealth.safety.touches_vps
   };
 
   return checkResult("no live writes or provider calls", (
@@ -362,6 +372,11 @@ function noLiveWritesOrProviderCallsCheck({
     && details.runtime_thread_calls_external_api === false
     && details.runtime_thread_touches_vps === false
     && details.runtime_thread_starts_services === false
+    && details.component_health_auto_execute === false
+    && details.component_health_executes_work_orders === false
+    && details.component_health_writes_persistent_memory === false
+    && details.component_health_calls_external_api === false
+    && details.component_health_touches_vps === false
   ), details);
 }
 
@@ -380,9 +395,10 @@ function buildCurrentLineSmokeChecks({
   hermesRuntimeAdapter,
   hermesWorkOrderPipeline,
   hermesRuntimePluginDoctor,
-  runtimeThreadReview
+  runtimeThreadReview,
+  now = DEFAULT_NOW
 }) {
-  return [
+  const baseChecks = [
     checkResult("work-order:route dry-run", routing.ok, summarizeWorkOrderRouting(routing)),
     checkResult("session-distiller:review dry-run", sessionReview.ok, summarizeSessionReview(sessionReview)),
     checkResult("evolution:tournament:misa dry-run", tournament.ok, summarizeTournament(tournament)),
@@ -397,7 +413,16 @@ function buildCurrentLineSmokeChecks({
     checkResult("hermes:plugin:doctor dry-run", hermesRuntimePluginDoctor.ok, summarizeHermesRuntimePluginDoctor(hermesRuntimePluginDoctor)),
     checkResult("runtime:thread dry-run", runtimeThreadReview.ok, summarizeRuntimeThread(runtimeThreadReview)),
     checkResult("zilliz:adapt dry-run", zillizAdapter.ok, summarizeZillizAdapter(zillizAdapter)),
-    checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker)),
+    checkResult("vector-memory:rank dry-run", retrievalRanker.ok, summarizeRetrievalRanker(retrievalRanker))
+  ];
+  const componentHealth = buildComponentHealthDiagnostics({
+    componentChecks: baseChecks,
+    now
+  });
+
+  return [
+    ...baseChecks,
+    checkResult("health:components dry-run", componentHealth.ok, summarizeComponentHealthForSmoke(componentHealth)),
     noLiveWritesOrProviderCallsCheck({
       routing,
       sessionReview,
@@ -413,7 +438,8 @@ function buildCurrentLineSmokeChecks({
       hermesRuntimeAdapter,
       hermesWorkOrderPipeline,
       hermesRuntimePluginDoctor,
-      runtimeThreadReview
+      runtimeThreadReview,
+      componentHealth
     })
   ];
 }
@@ -526,7 +552,8 @@ export async function runCurrentLineSmoke({
     hermesRuntimeAdapter,
     hermesWorkOrderPipeline,
     hermesRuntimePluginDoctor,
-    runtimeThreadReview
+    runtimeThreadReview,
+    now
   });
 
   return {
@@ -545,6 +572,7 @@ export async function runCurrentLineSmoke({
       "hermes:work-order",
       "hermes:plugin:doctor",
       "runtime:thread",
+      "health:components",
       "zilliz:adapt",
       "work-order:route",
       "evolution:tournament:misa"
@@ -594,7 +622,8 @@ export function buildCurrentLineSmokeFromArtifacts({
     hermesRuntimeAdapter,
     hermesWorkOrderPipeline,
     hermesRuntimePluginDoctor,
-    runtimeThreadReview
+    runtimeThreadReview,
+    now: DEFAULT_NOW
   });
 
   return {

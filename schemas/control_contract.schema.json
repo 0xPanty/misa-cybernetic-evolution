@@ -92,7 +92,15 @@
           "vps.config_change",
           "vector.upsert",
           "vector.delete",
-          "audit.write"
+          "audit.write",
+          "runtime.prepare_context",
+          "runtime.draft_candidate",
+          "runtime.pause_for_human",
+          "runtime.resume_after_human",
+          "runtime.run_local_gate",
+          "runtime.complete",
+          "runtime.hold",
+          "runtime.error"
         ]
       },
       "minItems": 1

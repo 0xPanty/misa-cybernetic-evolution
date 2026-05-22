@@ -45,6 +45,7 @@
     "candidate:reduce": "node scripts/factor-candidate-reducer.mjs",
     "human:escalation": "node scripts/human-escalation.mjs",
     "runtime:thread": "node scripts/runtime-thread.mjs",
+    "health:components": "node scripts/component-health.mjs",
     "experiments:external:adapt": "node experiments/external-trajectory/scripts/external-trajectory-adapter.mjs",
     "experiments:external:command-stress": "node experiments/external-trajectory/scripts/external-trajectory-command-stress.mjs",
     "experiments:external:side-by-side": "node experiments/external-trajectory/scripts/external-trajectory-side-by-side.mjs",

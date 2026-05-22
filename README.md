@@ -10,6 +10,7 @@ contract, adds seeded work-order variants, adds work-order quality evaluation,
 adds issue/PR-shaped dev/test work-order samples,
 adds the v0.27 factor-compliant candidate layer,
 starts the v0.28 runtime thread contract,
+adds local component-health diagnostics,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 
@@ -170,6 +171,7 @@ Two rules matter most:
 | Candidate reducer | `npm run candidate:reduce -- --json --seed stable-review` | deterministic draft candidate fingerprints from locked context; no execution or provider calls |
 | Human escalation | `npm run human:escalation -- --json` | unified human-review packets for high-risk work-order decisions |
 | Runtime thread | `npm run runtime:thread -- --json` | local launch/pause/resume event log and deterministic next step; no tool execution or live effects |
+| Component health diagnostics | `npm run health:components -- --json` | deterministic local health reducers, positive feedback, and replayable diagnostic candidates for the human owner only |
 | Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
 | Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
 | Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
@@ -177,7 +179,7 @@ Two rules matter most:
 | Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
 | LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
 | OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, runtime thread, local vector store, ranker, and Zilliz adapter |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, runtime thread, component health, local vector store, ranker, and Zilliz adapter |
 | Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
 | Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
 
@@ -474,6 +476,12 @@ The local runtime thread now has:
 - compact error signals that fail closed;
 - no tool execution, provider call, service start, memory write, or VPS touch.
 
+`health:components` adds the Aeon-inspired part that fits this repo: pure local
+health reducers with positive feedback, registered setpoints, falsifiable
+degradation evidence, and cooldown-aware diagnostic candidates. Those candidates
+stay inside `damping`, `policy`, or `ignore`, go to `human_escalation`, and are
+replay-required before any repair path can be chosen.
+
 Plain rule:
 
 ```text
@@ -567,6 +575,7 @@ tracks; use the command map and validation chain above for the current surface.
 - [Factor-compliant candidate layer](./docs/current/factor-compliant-candidate-layer-v0.27.md)
 - [Control boundaries](./docs/current/control-boundaries.md)
 - [Runtime thread](./docs/current/runtime-thread-v0.28.md)
+- [Component health diagnostics](./docs/current/component-health-diagnostics-v0.29.md)
 - [Skill evolution adapter](./docs/current/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/current/skill-control-intake-template.md)
 - [Vector memory storage](./docs/current/vector-memory-storage-v0.19.md)

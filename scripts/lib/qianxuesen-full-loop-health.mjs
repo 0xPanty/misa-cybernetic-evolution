@@ -112,6 +112,15 @@ function componentStatus(calibration, smoke) {
       && check.calls_external_api === false
       && check.touches_vps === false
     ))),
+    component_health: statusFor(smoke.checks.some((check) => (
+      check.name === "health:components dry-run"
+      && check.ok
+      && check.auto_execute === false
+      && check.executes_work_orders === false
+      && check.writes_persistent_memory === false
+      && check.calls_external_api === false
+      && check.touches_vps === false
+    ))),
     source_distillation: statusFor(sourceSamplesOk),
     signal_extraction: statusFor(calibration.summary.observed_signal_count > 0 && sourceSamplesOk),
     qianxuesen_route_decision: statusFor(
@@ -282,6 +291,7 @@ function componentSummaries(calibration, smoke, components) {
   const hermesRuntimeAdapterCheck = smoke.checks.find((check) => check.name === "hermes:adapt-runtime dry-run");
   const hermesWorkOrderCheck = smoke.checks.find((check) => check.name === "hermes:work-order dry-run");
   const runtimeThreadCheck = smoke.checks.find((check) => check.name === "runtime:thread dry-run");
+  const componentHealthCheck = smoke.checks.find((check) => check.name === "health:components dry-run");
   const curiosityLayer = layers.get("curiosity_llm_value_gate");
   const curiosityCheck = smoke.checks.find((check) => check.name === "curiosity:signals dry-run");
 
@@ -347,6 +357,18 @@ function componentSummaries(calibration, smoke, components) {
       production_authority: runtimeThreadCheck?.production_authority ?? null,
       executes_work_orders: runtimeThreadCheck?.executes_work_orders ?? null,
       touches_vps: runtimeThreadCheck?.touches_vps ?? null
+    },
+    component_health: {
+      status: components.component_health,
+      health_status: componentHealthCheck?.status ?? "unknown",
+      components: componentHealthCheck?.components ?? 0,
+      healthy: componentHealthCheck?.healthy ?? 0,
+      warnings: componentHealthCheck?.warnings ?? 0,
+      degraded: componentHealthCheck?.degraded ?? 0,
+      critical: componentHealthCheck?.critical ?? 0,
+      diagnostic_candidates: componentHealthCheck?.diagnostic_candidates ?? componentHealthCheck?.diagnostic_work_orders ?? 0,
+      positive_feedback: componentHealthCheck?.positive_feedback ?? 0,
+      auto_execute: componentHealthCheck?.auto_execute ?? null
     },
     qianxuesen_route_decision: {
       status: components.qianxuesen_route_decision,
@@ -566,6 +588,7 @@ export function renderQianxuesenFullLoopHealthMarkdown(report) {
     `- hermes_runtime_adapter: events=${report.component_summaries.hermes_runtime_adapter.events}, digests=${report.component_summaries.hermes_runtime_adapter.research_digests}, candidates=${report.component_summaries.hermes_runtime_adapter.evolution_candidates}`,
     `- hermes_work_order: orders=${report.component_summaries.hermes_work_order.work_orders}, variants=${report.component_summaries.hermes_work_order.variants}, avg_delta=${report.component_summaries.hermes_work_order.avg_delta}`,
     `- runtime_thread: status=${report.component_summaries.runtime_thread.thread_status}, next_step=${report.component_summaries.runtime_thread.next_step}, events=${report.component_summaries.runtime_thread.events}`,
+    `- component_health: status=${report.component_summaries.component_health.health_status}, components=${report.component_summaries.component_health.components}, diagnostic_candidates=${report.component_summaries.component_health.diagnostic_candidates}, positive_feedback=${report.component_summaries.component_health.positive_feedback}`,
     `- routing: owner=${report.component_summaries.qianxuesen_route_decision.owner}, authority=${report.component_summaries.qianxuesen_route_decision.authority}`,
     `- repair_ticket: ${report.component_summaries.repair_ticket.total_tickets} tickets`,
     `- work_order: ${report.component_summaries.work_order_routing.total_work_orders} orders, auto_executable=${report.component_summaries.work_order_routing.auto_executable_count}`,

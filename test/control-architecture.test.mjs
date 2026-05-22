@@ -75,6 +75,29 @@ test("metric registry maps measurable setpoints onto plant state", async () => {
   assert.ok(metricIds.has("skill.replay_pass_rate"));
 });
 
+test("component health metrics are registered as plant-state components", () => {
+  const plantModel = loadDefaultPlantModel();
+  const registry = loadDefaultMetricRegistry();
+  const plantIds = new Set(plantModel.state_variables.map((item) => item.id));
+  const metrics = new Map(registry.metrics.map((metric) => [metric.metric_id, metric]));
+  const expected = [
+    "session_distiller.health_schema_pass_rate",
+    "runtime_thread.health_registered_actuator_rate",
+    "work_order_inbox.health_dead_letter_rate",
+    "work_order_inbox.health_median_ack_latency_ms",
+    "vector_store.health_hit_rate",
+    "vector_store.health_write_failure_count",
+    "component_health.escalation_threshold"
+  ];
+
+  for (const metricId of expected) {
+    const metric = metrics.get(metricId);
+    assert.ok(metric, `${metricId} should be in metric registry`);
+    assert.equal(metric.plant_state_component, metricId);
+    assert.ok(plantIds.has(metric.plant_state_component), `${metricId} should map to plant model state`);
+  }
+});
+
 test("control contracts reject free-text or unregistered setpoints", () => {
   const freeText = evaluateControlContract(baseControlContract({
     primary_setpoint: "make the agent better"

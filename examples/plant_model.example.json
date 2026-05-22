@@ -75,6 +75,55 @@
       "default_sampling_window": "current local check"
     },
     {
+      "id": "session_distiller.health_schema_pass_rate",
+      "description": "Share of recent session-distiller outputs that pass deterministic schema validation.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current run or local health history window"
+    },
+    {
+      "id": "runtime_thread.health_registered_actuator_rate",
+      "description": "Share of runtime-thread next-step decisions that map to registered local runtime actuators.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current runtime-thread health window"
+    },
+    {
+      "id": "work_order_inbox.health_dead_letter_rate",
+      "description": "Dead-letter rate for human-acknowledged work-order inbox items.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current inbox health window"
+    },
+    {
+      "id": "work_order_inbox.health_median_ack_latency_ms",
+      "description": "Median human ACK latency for work-order inbox items.",
+      "unit": "milliseconds",
+      "observable": true,
+      "default_sampling_window": "current inbox health window"
+    },
+    {
+      "id": "vector_store.health_hit_rate",
+      "description": "Retrieval hit rate for the local vector-store/ranker path.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current vector retrieval health window"
+    },
+    {
+      "id": "vector_store.health_write_failure_count",
+      "description": "Count of local vector-store write failures or forbidden external vector writes in the health window.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current vector-store health window"
+    },
+    {
+      "id": "component_health.escalation_threshold",
+      "description": "Configured consecutive-failure threshold that turns degraded health into critical diagnostic escalation.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current component-health setpoint review"
+    },
+    {
       "id": "controller.precheck_failure_count",
       "description": "Count of failing local precheck items.",
       "unit": "count",
@@ -141,6 +190,21 @@
       "id": "audit_records",
       "description": "Local audit and report writes.",
       "allowed_actuators": ["audit.write"],
+      "default_authority": "draft_only"
+    },
+    {
+      "id": "runtime_thread_local_control",
+      "description": "Local runtime-thread next-step decisions. These are audit/control records, not live execution.",
+      "allowed_actuators": [
+        "runtime.prepare_context",
+        "runtime.draft_candidate",
+        "runtime.pause_for_human",
+        "runtime.resume_after_human",
+        "runtime.run_local_gate",
+        "runtime.complete",
+        "runtime.hold",
+        "runtime.error"
+      ],
       "default_authority": "draft_only"
     }
   ],

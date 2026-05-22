@@ -64,12 +64,18 @@ npm run candidate:context -- --json
 npm run candidate:reduce -- --json --seed stable-review
 npm run human:escalation -- --json
 npm run runtime:thread -- --json
+npm run health:components -- --json
 npm run skill:evolution -- --json
 npm run vector-memory:classify -- --json
 npm run vector-store:local -- --mode upsert --dry-run
 npm run vector-memory:rank -- --eval-fixtures
 npm run zilliz:adapt -- --json
 ```
+
+`health:components` is part of the local shadow gate only as a deterministic
+sensor. It emits pure reducer values and replayable diagnostic candidates for
+`human_escalation`; it does not execute repairs, call providers, write memory,
+write Zilliz, or consume its own candidates.
 
 For Misa specifically, L0 also checks the launch profile:
 
@@ -115,6 +121,7 @@ The current-line additions are documented in:
 - [factor-compliant-candidate-layer-v0.27.md](./factor-compliant-candidate-layer-v0.27.md)
 - [control-boundaries.md](./control-boundaries.md)
 - [runtime-thread-v0.28.md](./runtime-thread-v0.28.md)
+- [component-health-diagnostics-v0.29.md](./component-health-diagnostics-v0.29.md)
 - [skill-evolution-adapter-v0.22.md](./skill-evolution-adapter-v0.22.md)
 - [hermes-runtime-adapter-v0.22.md](./hermes-runtime-adapter-v0.22.md)
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)

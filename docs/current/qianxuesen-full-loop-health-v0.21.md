@@ -47,6 +47,7 @@ calibration reports. Together they cover:
 - source distillation and signal extraction;
 - deterministic Qianxuesen route ownership;
 - memory layer, repair-ticket, and work-order routing checks;
+- component-health pure reducers and replayable diagnostic-candidate boundary checks;
 - perception as hint-only shadow input;
 - retrieval ranking with requested-kind priority;
 - tournament and judge boundaries;
@@ -61,8 +62,8 @@ The top-level report includes:
 - `key_findings`: the short facts a reviewer should read first;
 - `component_status`: pass/fail by loop stage;
 - `component_summaries`: compact metrics for smoke, source distillation,
-  Qianxuesen routing, repair tickets, work orders, perception, retrieval,
-  tournament, judge, and sample sets;
+  Qianxuesen routing, repair tickets, work orders, component health,
+  perception, retrieval, tournament, judge, and sample sets;
 - `safety`: authority and live-effect flags;
 - `coverage`: sample, source, route, retrieval, perception, and judge counts;
 - `artifacts`: paths to the detailed component JSON files.

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { buildComponentHealthDiagnostics } from "./component-health.mjs";
 import { upsertDistillationToLocalVectorStore } from "./local-vector-store.mjs";
 import { reviewSessionDistillerOutput } from "./session-distiller-review.mjs";
 import { buildDefaultRuntimeThreadReview } from "./runtime-thread.mjs";
@@ -200,6 +201,24 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
     name: "validate runtime next step dry-run"
   }));
 
+  const componentHealth = buildComponentHealthDiagnostics({
+    componentChecks: checks.filter((check) => check.phase === PHASES.currentLine),
+    now: new Date("2026-05-22T00:00:00Z")
+  });
+  checks.push(currentLineCheck("Component health diagnostics check", componentHealth.ok, {
+    status: componentHealth.status,
+    components: componentHealth.summary.component_count,
+    healthy: componentHealth.summary.healthy_count,
+    degraded: componentHealth.summary.degraded_count,
+    critical: componentHealth.summary.critical_count,
+    diagnosticCandidates: componentHealth.summary.diagnostic_candidate_count,
+    positiveFeedback: componentHealth.summary.positive_feedback_count,
+    autoExecute: componentHealth.summary.auto_execute,
+    executesWorkOrders: componentHealth.safety.executes_work_orders,
+    callsExternalApi: componentHealth.safety.calls_external_api,
+    touchesVps: componentHealth.safety.touches_vps
+  }));
+
   return {
     checks,
     artifacts: {
@@ -211,7 +230,8 @@ export async function runCurrentLinePrecheck({ repoRoot, workOrderRouting, langG
       skillEvolution,
       zillizVectorAdapter,
       vectorRetrievalEval,
-      runtimeThreadReview
+      runtimeThreadReview,
+      componentHealth
     }
   };
 }

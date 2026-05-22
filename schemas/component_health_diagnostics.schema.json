@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/misa-cybernetic-evolution/component_health_diagnostics.schema.json",
+  "title": "ComponentHealthDiagnostics",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "mode",
+    "ok",
+    "created_at",
+    "status",
+    "summary",
+    "reducer_policy",
+    "setpoints",
+    "health_reducers",
+    "components",
+    "diagnostic_candidates",
+    "diagnostic_work_orders",
+    "suppressed_diagnostics",
+    "next_history",
+    "safety",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "misa.component_health_diagnostics.v1" },
+    "mode": { "type": "string", "const": "component-health-diagnostics" },
+    "ok": { "type": "boolean" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["HEALTHY", "WARNING", "DEGRADED", "CRITICAL"] },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "component_count",
+        "healthy_count",
+        "warning_count",
+        "degraded_count",
+        "critical_count",
+        "diagnostic_work_order_count",
+        "diagnostic_candidate_count",
+        "suppressed_diagnostic_count",
+        "positive_feedback_count",
+        "auto_execute"
+      ],
+      "properties": {
+        "component_count": { "type": "integer", "minimum": 0 },
+        "healthy_count": { "type": "integer", "minimum": 0 },
+        "warning_count": { "type": "integer", "minimum": 0 },
+        "degraded_count": { "type": "integer", "minimum": 0 },
+        "critical_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_work_order_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_candidate_count": { "type": "integer", "minimum": 0 },
+        "suppressed_diagnostic_count": { "type": "integer", "minimum": 0 },
+        "positive_feedback_count": { "type": "integer", "minimum": 0 },
+        "auto_execute": { "type": "boolean", "const": false }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "diagnostic_candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic_candidate" }
+    },
+    "diagnostic_work_orders": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic_candidate" }
+    },
+    "health_reducers": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/health_reducer" }
+    },
+    "reducer_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "pure_reducer",
+        "llm_scoring_allowed",
+        "llm_generated_recommendations_allowed",
+        "allowed_candidate_routes",
+        "human_owner_is_only_consumer"
+      ],
+      "properties": {
+        "pure_reducer": { "type": "boolean", "const": true },
+        "llm_scoring_allowed": { "type": "boolean", "const": false },
+        "llm_generated_recommendations_allowed": { "type": "boolean", "const": false },
+        "allowed_candidate_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["damping", "policy", "ignore"] }
+        },
+        "human_owner_is_only_consumer": { "type": "boolean", "const": true }
+      }
+    },
+    "setpoints": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "escalation_threshold",
+        "session_distiller_schema_pass_rate",
+        "runtime_thread_registered_actuator_rate",
+        "work_order_inbox_dead_letter_rate",
+        "work_order_inbox_median_ack_latency_ms",
+        "vector_store_hit_rate",
+        "vector_store_write_failure_count"
+      ],
+      "properties": {
+        "escalation_threshold": { "$ref": "#/$defs/health_setpoint" },
+        "session_distiller_schema_pass_rate": { "$ref": "#/$defs/health_setpoint" },
+        "runtime_thread_registered_actuator_rate": { "$ref": "#/$defs/health_setpoint" },
+        "work_order_inbox_dead_letter_rate": { "$ref": "#/$defs/health_setpoint" },
+        "work_order_inbox_median_ack_latency_ms": { "$ref": "#/$defs/health_setpoint" },
+        "vector_store_hit_rate": { "$ref": "#/$defs/health_setpoint" },
+        "vector_store_write_failure_count": { "$ref": "#/$defs/health_setpoint" }
+      }
+    },
+    "suppressed_diagnostics": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "next_history": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["schema_version", "updated_at", "components"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.component_health_history.v1" },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "components": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "safety": { "$ref": "#/$defs/safety" },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "component_id",
+        "label",
+        "source_check",
+        "status",
+        "ok",
+        "consecutive_failures",
+        "risks",
+        "positive_feedback",
+        "degradation_evidence",
+        "setpoint_refs",
+        "cooldown",
+        "evidence"
+      ],
+      "properties": {
+        "component_id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "source_check": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["HEALTHY", "WARNING", "DEGRADED", "CRITICAL"] },
+        "ok": { "type": "boolean" },
+        "consecutive_failures": { "type": "integer", "minimum": 0 },
+        "risks": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "positive_feedback": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "degradation_evidence": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["falsifiable", "reducer_kind", "no_llm_scoring", "explanation", "counterfactual"],
+          "properties": {
+            "falsifiable": { "type": "boolean", "const": true },
+            "reducer_kind": { "type": "string", "const": "pure_deterministic_reducer" },
+            "no_llm_scoring": { "type": "boolean", "const": true },
+            "explanation": { "type": "string", "minLength": 1 },
+            "counterfactual": { "type": "string", "minLength": 1 }
+          }
+        },
+        "setpoint_refs": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["escalation_threshold"],
+          "properties": {
+            "escalation_threshold": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["metric_id", "target_value"],
+              "properties": {
+                "metric_id": { "type": "string", "const": "component_health.escalation_threshold" },
+                "target_value": { "type": "number", "minimum": 1 }
+              }
+            }
+          }
+        },
+        "cooldown": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["active", "last_diagnostic_at", "window_hours"],
+          "properties": {
+            "active": { "type": "boolean" },
+            "last_diagnostic_at": { "type": ["string", "null"] },
+            "window_hours": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "evidence": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "health_reducer": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "reducer_id",
+        "metric_id",
+        "plant_state_component",
+        "formula",
+        "target_value",
+        "status",
+        "inputs",
+        "pure_reducer",
+        "llm_scoring_allowed"
+      ],
+      "properties": {
+        "reducer_id": {
+          "type": "string",
+          "enum": [
+            "session_distiller_health",
+            "runtime_thread_health",
+            "work_order_inbox_health",
+            "vector_store_health"
+          ]
+        },
+        "metric_id": { "type": "string", "minLength": 1 },
+        "metric_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "plant_state_component": { "type": "string", "minLength": 1 },
+        "plant_state_components": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "formula": { "type": "string", "minLength": 1 },
+        "value": { "type": ["number", "null"] },
+        "target_value": { "type": "number" },
+        "status": { "type": "string", "enum": ["HEALTHY", "WARNING", "DEGRADED", "CRITICAL", "NO_DATA"] },
+        "inputs": { "type": "object", "additionalProperties": true },
+        "window_size": { "type": "integer", "minimum": 0 },
+        "pure_reducer": { "type": "boolean", "const": true },
+        "llm_scoring_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "diagnostic_candidate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "candidate_id",
+        "created_at",
+        "severity",
+        "status",
+        "candidate_kind",
+        "route",
+        "allowed_routes",
+        "title",
+        "problem_statement",
+        "source",
+        "evidence_ref",
+        "evidence",
+        "recommended_next_actions",
+        "acceptance_criteria",
+        "non_goals",
+        "delivery",
+        "human_escalation",
+        "execution_policy",
+        "replay",
+        "cooldown",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "misa.component_health_diagnostic_candidate.v1" },
+        "candidate_id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "severity": { "type": "string", "enum": ["P1", "P2", "P3"] },
+        "status": { "type": "string", "const": "diagnostic_candidate" },
+        "candidate_kind": { "type": "string", "const": "component_health_diagnostic" },
+        "route": { "type": "string", "enum": ["damping", "policy", "ignore"] },
+        "allowed_routes": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["damping", "policy", "ignore"] }
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "problem_statement": { "type": "string", "minLength": 1 },
+        "source": { "type": "object", "additionalProperties": true },
+        "evidence_ref": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["kind", "replay_key", "component_id", "metric_id"],
+          "properties": {
+            "kind": { "type": "string", "const": "health_sequence" },
+            "replay_key": { "type": "string", "minLength": 1 },
+            "component_id": { "type": "string", "minLength": 1 },
+            "metric_id": { "type": "string", "minLength": 1 }
+          }
+        },
+        "evidence": { "type": "object", "additionalProperties": true },
+        "recommended_next_actions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "non_goals": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "delivery": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["receiver_type"],
+          "properties": {
+            "receiver_type": { "type": "string", "const": "human_owner" }
+          }
+        },
+        "human_escalation": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["required", "queue", "consumer"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "queue": { "type": "string", "const": "human_escalation" },
+            "consumer": { "type": "string", "const": "human_owner" }
+          }
+        },
+        "execution_policy": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["auto_execute", "agent_self_review_allowed"],
+          "properties": {
+            "auto_execute": { "type": "boolean", "const": false },
+            "agent_self_review_allowed": { "type": "boolean", "const": false }
+          }
+        },
+        "replay": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["replay_required", "replay_key", "deterministic_fingerprint", "llm_generated"],
+          "properties": {
+            "replay_required": { "type": "boolean", "const": true },
+            "replay_key": { "type": "string", "minLength": 1 },
+            "deterministic_fingerprint": { "type": "string", "minLength": 1 },
+            "llm_generated": { "type": "boolean", "const": false }
+          }
+        },
+        "cooldown": { "type": "object", "additionalProperties": true },
+        "safety": { "$ref": "#/$defs/safety" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "auto_execute",
+        "production_authority",
+        "executes_work_orders",
+        "writes_persistent_memory",
+        "calls_model_providers",
+        "calls_external_api",
+        "touches_vps"
+      ],
+      "properties": {
+        "auto_execute": { "type": "boolean", "const": false },
+        "production_authority": { "type": "boolean", "const": false },
+        "executes_work_orders": { "type": "boolean", "const": false },
+        "writes_persistent_memory": { "type": "boolean", "const": false },
+        "calls_model_providers": { "type": "boolean", "const": false },
+        "calls_external_api": { "type": "boolean", "const": false },
+        "touches_vps": { "type": "boolean", "const": false }
+      }
+    },
+    "health_setpoint": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["metric_id", "target_value", "tolerance", "direction"],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "target_value": { "type": "number" },
+        "tolerance": { "type": "number", "minimum": 0 },
+        "direction": { "type": "string", "enum": ["maximize", "minimize", "hold_within"] }
+      }
+    }
+  }
+}

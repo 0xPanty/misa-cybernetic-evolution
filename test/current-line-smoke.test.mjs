@@ -31,6 +31,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.equal(result.command_surface.includes("hermes:work-order"), true);
   assert.equal(result.command_surface.includes("hermes:plugin:doctor"), true);
   assert.equal(result.command_surface.includes("runtime:thread"), true);
+  assert.equal(result.command_surface.includes("health:components"), true);
   assert.equal(result.command_surface.includes("zilliz:adapt"), true);
   assert.ok(checkNames.has("session-distiller:review dry-run"));
   assert.ok(checkNames.has("work-order:route dry-run"));
@@ -45,6 +46,7 @@ test("current-line smoke covers dry-run public command surface", async () => {
   assert.ok(checkNames.has("hermes:work-order dry-run"));
   assert.ok(checkNames.has("hermes:plugin:doctor dry-run"));
   assert.ok(checkNames.has("runtime:thread dry-run"));
+  assert.ok(checkNames.has("health:components dry-run"));
   assert.ok(checkNames.has("vector-memory:rank dry-run"));
   assert.ok(checkNames.has("zilliz:adapt dry-run"));
   assert.ok(checkNames.has("no live writes or provider calls"));
@@ -303,6 +305,28 @@ function safeArtifacts() {
         touches_vps: false,
         starts_services: false
       }
+    },
+    componentHealth: {
+      ok: true,
+      status: "HEALTHY",
+      summary: {
+        component_count: 15,
+        healthy_count: 15,
+        warning_count: 0,
+        degraded_count: 0,
+        critical_count: 0,
+        diagnostic_work_order_count: 0,
+        suppressed_diagnostic_count: 0,
+        positive_feedback_count: 30,
+        auto_execute: false
+      },
+      safety: {
+        auto_execute: false,
+        executes_work_orders: false,
+        writes_persistent_memory: false,
+        calls_external_api: false,
+        touches_vps: false
+      }
     }
   };
 }
@@ -313,10 +337,13 @@ test("artifact smoke builder fails if artifacts show live effects", () => {
 
   const result = buildCurrentLineSmokeFromArtifacts(artifacts);
   const noLiveEffectCheck = result.checks.find((check) => check.name === "no live writes or provider calls");
+  const componentHealthCheck = result.checks.find((check) => check.name === "health:components dry-run");
 
   assert.equal(result.ok, false);
-  assert.equal(result.summary.failed, 1);
+  assert.equal(result.summary.failed, 2);
   assert.equal(result.summary.zilliz_written, true);
+  assert.equal(componentHealthCheck.ok, false);
+  assert.equal(componentHealthCheck.critical, 1);
   assert.equal(noLiveEffectCheck.ok, false);
   assert.equal(noLiveEffectCheck.adapter_zilliz_written, true);
 });
