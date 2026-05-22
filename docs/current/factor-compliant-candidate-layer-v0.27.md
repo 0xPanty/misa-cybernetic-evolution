@@ -49,6 +49,33 @@ The first implementation is intentionally local and zero-call. It creates
 machine-readable context and reducer outputs so future LLM-backed candidate
 generation can be reviewed against the same contracts before it is enabled.
 
+## Candidate Discipline
+
+The context packet now includes a control world:
+
+```text
+world.datasets
+world.metrics
+world.constraints
+world.budgets
+```
+
+The reducer admits candidates only when that world is parseable. A missing world
+returns an accepted schema shape with `ok=false`, `admission_gate.decision =
+rejected`, and zero candidate results.
+
+Every reducer candidate also carries one control intent:
+
+```text
+control_intent.intent_kind
+control_intent.affected_setpoints
+control_intent.affected_actuators
+```
+
+Schema validation enforces exactly one affected setpoint or one affected
+actuator. The current draft surface uses `runtime.draft_candidate` as the single
+actuator, so candidate generation stays a draft-only control action.
+
 ## Implementation Order
 
 1. `context-curator`: build `misa.candidate_generation_context.v1`.

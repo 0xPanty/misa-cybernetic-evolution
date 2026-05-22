@@ -70,7 +70,7 @@
     },
     "health_reducers": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 5,
       "items": { "$ref": "#/$defs/health_reducer" }
     },
     "reducer_policy": {
@@ -104,7 +104,10 @@
         "work_order_inbox_dead_letter_rate",
         "work_order_inbox_median_ack_latency_ms",
         "vector_store_hit_rate",
-        "vector_store_write_failure_count"
+        "vector_store_write_failure_count",
+        "tool_loop_integrity_rate",
+        "tool_loop_evidence_ref_rate",
+        "tool_loop_failure_count"
       ],
       "properties": {
         "escalation_threshold": { "$ref": "#/$defs/health_setpoint" },
@@ -113,7 +116,10 @@
         "work_order_inbox_dead_letter_rate": { "$ref": "#/$defs/health_setpoint" },
         "work_order_inbox_median_ack_latency_ms": { "$ref": "#/$defs/health_setpoint" },
         "vector_store_hit_rate": { "$ref": "#/$defs/health_setpoint" },
-        "vector_store_write_failure_count": { "$ref": "#/$defs/health_setpoint" }
+        "vector_store_write_failure_count": { "$ref": "#/$defs/health_setpoint" },
+        "tool_loop_integrity_rate": { "$ref": "#/$defs/health_setpoint" },
+        "tool_loop_evidence_ref_rate": { "$ref": "#/$defs/health_setpoint" },
+        "tool_loop_failure_count": { "$ref": "#/$defs/health_setpoint" }
       }
     },
     "suppressed_diagnostics": {
@@ -231,7 +237,8 @@
             "session_distiller_health",
             "runtime_thread_health",
             "work_order_inbox_health",
-            "vector_store_health"
+            "vector_store_health",
+            "tool_loop_health"
           ]
         },
         "metric_id": { "type": "string", "minLength": 1 },

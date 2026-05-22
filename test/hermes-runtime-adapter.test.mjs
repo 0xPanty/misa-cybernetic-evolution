@@ -40,11 +40,15 @@ test("Hermes runtime adapter turns self-improvement traces into replay-gated pre
   assert.equal(result.safety.writes_persistent_memory, false);
   assert.equal(result.safety.writes_skills, false);
   assert.equal(result.safety.blocks_runtime, false);
+  assert.equal(result.control_plane_write_deny.default_decision, "deny");
+  assert.equal(result.control_plane_write_deny.direct_writes_allowed, false);
+  assert.equal(result.control_plane_write_deny.bypass_allowed, false);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
   assert.ok(checkNames.has("Hermes hook surface is mapped"));
   assert.ok(checkNames.has("skill_manage changes become replay-gated candidates"));
   assert.ok(checkNames.has("external information becomes research digest evidence"));
+  assert.ok(checkNames.has("control-plane write-deny is explicit and closed"));
 });
 
 test("Hermes runtime adapter output validates against the universal adapter schema", async () => {

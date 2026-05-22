@@ -38,15 +38,16 @@ It must not:
 
 ## Pure Reducers
 
-The health layer exposes four pure reducers. They use only local check fields
+The health layer exposes five pure reducers. They use only local check fields
 and optional local history. There is no model call and no 1-5 LLM rating.
 
 | Reducer | Plant component | Metric id | Formula |
 | --- | --- | --- | --- |
 | `session_distiller_health` | `session_distiller.health_schema_pass_rate` | `session_distiller.health_schema_pass_rate` | schema-valid outputs / total distiller outputs |
 | `runtime_thread_health` | `runtime_thread.health_registered_actuator_rate` | `runtime_thread.health_registered_actuator_rate` | registered next-step actuator hits / total next-step decisions |
-| `work_order_inbox_health` | `work_order_inbox.health_dead_letter_rate`, `work_order_inbox.health_median_ack_latency_ms` | both matching metric ids | dead letters / total inbox items, plus median human ACK latency |
+| `work_order_inbox_health` | `work_order_inbox.health_dead_letter_rate`, `work_order_inbox.health_median_ack_latency_ms` | both matching metric ids | dead letters / total inbox items, plus median human ACK latency and `last_sample_ts` for future liveness checks |
 | `vector_store_health` | `vector_store.health_hit_rate`, `vector_store.health_write_failure_count` | both matching metric ids | retrieval hit rate plus write-failure count |
+| `tool_loop_health` | `tool_loop.health_integrity_rate`, `tool_loop.health_evidence_ref_rate`, `tool_loop.health_failure_count` | matching metric ids | one minus failed tool results, unmatched intents, and missing evidence refs divided by observed tool events |
 
 Each metric id is registered in
 [examples/metric_registry.example.json](../../examples/metric_registry.example.json),
@@ -97,6 +98,17 @@ falsifiable:
 
 If those inputs change, the reducer result must change. That keeps health as a
 control signal instead of a dashboard color.
+
+Control-plane write-deny drift is also treated as hard health evidence. If a
+runtime adapter reports `control_plane_write_deny_failed=true`, component health
+classifies that component as critical because the sidecar boundary is no longer
+closed.
+
+Tool-loop drift is treated as local health evidence too. Failed tool results,
+unmatched tool intents, or tool events without concrete evidence refs degrade
+the affected component and can open a replay-required damping diagnostic. This
+does not execute or repair the tool loop; it only makes the failure visible and
+reviewable.
 
 ## Commands
 

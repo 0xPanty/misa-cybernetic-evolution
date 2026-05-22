@@ -9,6 +9,7 @@ import {
   runSkillEvolutionSupervisor,
   superviseSkillEvolution
 } from "../scripts/lib/skill-evolution-supervisor.mjs";
+import { buildSkillEvolutionTournamentBridge } from "../scripts/lib/skill-evolution-tournament-bridge.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -50,6 +51,35 @@ test("skill evolution supervisor accepts safe behavior and keeps evolution repla
   assert.equal(candidate.status, "replay_required");
   assert.equal(candidate.allowed_space_match, true);
   assert.equal(candidate.promotion_gate.can_promote_now, false);
+});
+
+test("skill evolution bridge keeps drafts replay-gated before tournament", async () => {
+  const supervision = await runSkillEvolutionSupervisor({
+    now: new Date("2026-05-14T12:50:00Z")
+  });
+  const result = buildSkillEvolutionTournamentBridge({ supervision });
+
+  assert.equal(result.bridge.enabled, true);
+  assert.equal(result.bridge.summary.admitted_candidate_count, 1);
+  assert.equal(result.bridge.admission.can_promote_now, false);
+  assert.equal(result.bridge.admission.llm_judge_allowed, false);
+  assert.equal(result.tournamentCandidates.length, 1);
+
+  const ref = result.bridge.candidate_refs[0];
+  const candidate = result.tournamentCandidates[0];
+  assert.equal(ref.replay_required, true);
+  assert.equal(ref.tournament_required, true);
+  assert.equal(ref.can_promote_now, false);
+  assert.equal(ref.agentskills_format, "agentskills.io-compatible-draft");
+  assert.equal(candidate.skill_draft.format, "agentskills.io-compatible-draft");
+  assert.equal(candidate.skill_draft.replay_required, true);
+  assert.equal(candidate.skill_draft.tournament_required, true);
+  assert.equal(candidate.skill_draft.can_promote_now, false);
+  assert.equal(candidate.skill_draft.install_allowed, false);
+  assert.equal(candidate.skill_draft.publication_allowed, false);
+  assert.equal(candidate.local_preflight.report_to_huan, true);
+  assert.equal(candidate.safety.production_authority, false);
+  assert.equal(candidate.safety.publication_allowed, false);
 });
 
 test("skill evolution supervisor blocks private memory in public behavior", async () => {

@@ -172,6 +172,42 @@
       "bounds": { "min": 0 }
     },
     {
+      "metric_id": "tool_loop.health_integrity_rate",
+      "plant_state_component": "tool_loop.health_integrity_rate",
+      "measurement_kind": "dry_run_health",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Pure reducer: one minus failed tool results, unmatched intents, and missing evidence refs divided by observed tool-loop events.",
+      "sampling_window": "current tool-loop health window",
+      "owner": "component health",
+      "description": "Deterministic health metric for local tool-loop integrity.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "tool_loop.health_evidence_ref_rate",
+      "plant_state_component": "tool_loop.health_evidence_ref_rate",
+      "measurement_kind": "dry_run_health",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Pure reducer: tool-loop events with concrete evidence refs divided by observed tool-loop events.",
+      "sampling_window": "current tool-loop health window",
+      "owner": "component health",
+      "description": "Deterministic health metric for tool-loop evidence traceability.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "tool_loop.health_failure_count",
+      "plant_state_component": "tool_loop.health_failure_count",
+      "measurement_kind": "guardrail",
+      "unit": "count",
+      "direction": "minimize",
+      "sampling_method": "Pure reducer: count failed tool results, unmatched intents, and missing evidence refs in the health window.",
+      "sampling_window": "current tool-loop health window",
+      "owner": "component health",
+      "description": "Guardrail metric for tool-loop failures and ungrounded tool events.",
+      "bounds": { "min": 0 }
+    },
+    {
       "metric_id": "component_health.escalation_threshold",
       "plant_state_component": "component_health.escalation_threshold",
       "measurement_kind": "dry_run_health",
@@ -182,6 +218,18 @@
       "owner": "component health",
       "description": "Setpoint for consecutive-failure escalation; changes require slow-loop evidence.",
       "bounds": { "min": 1 }
+    },
+    {
+      "metric_id": "evolution_tournament.deterministic_score",
+      "plant_state_component": "evolution_tournament.deterministic_score",
+      "measurement_kind": "dry_run_health",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Record deterministic proxy scores from local tournament variants for honest-ledger review.",
+      "sampling_window": "current tournament run",
+      "owner": "evolution plane",
+      "description": "Flat ledger metric for replayable candidate comparison; it does not promote winners by itself.",
+      "bounds": { "min": 0, "max": 1 }
     },
     {
       "metric_id": "controller.precheck_failure_count",

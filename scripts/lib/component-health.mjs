@@ -45,6 +45,24 @@ const DEFAULT_SETPOINTS = Object.freeze({
     target_value: 0,
     tolerance: 0,
     direction: "minimize"
+  },
+  tool_loop_integrity_rate: {
+    metric_id: "tool_loop.health_integrity_rate",
+    target_value: 1,
+    tolerance: 0,
+    direction: "maximize"
+  },
+  tool_loop_evidence_ref_rate: {
+    metric_id: "tool_loop.health_evidence_ref_rate",
+    target_value: 1,
+    tolerance: 0,
+    direction: "maximize"
+  },
+  tool_loop_failure_count: {
+    metric_id: "tool_loop.health_failure_count",
+    target_value: 0,
+    tolerance: 0,
+    direction: "minimize"
   }
 });
 
@@ -178,7 +196,8 @@ function riskSignalsForCheck(check) {
     "changes_winner",
     "changes_winner_authority",
     "controller_authority",
-    "supervisor_changes_skill"
+    "supervisor_changes_skill",
+    "control_plane_write_deny_failed"
   ];
 
   for (const field of criticalTrueFields) {
@@ -209,6 +228,29 @@ function riskSignalsForCheck(check) {
     if (numberValue(check[field]) > 0) {
       pushRisk(risks, "degraded", field, `${field} is above zero`, { value: check[field] });
     }
+  }
+
+  for (const field of [
+    "failed_tool_result_count",
+    "unmatched_tool_intent_count",
+    "tool_events_missing_evidence_count",
+    "tool_loop_failure_count"
+  ]) {
+    if (numberValue(check[field]) > 0) {
+      pushRisk(risks, "degraded", field, `${field} is above zero`, { value: check[field] });
+    }
+  }
+
+  if (typeof check.tool_loop_integrity_rate === "number" && check.tool_loop_integrity_rate < 1) {
+    pushRisk(risks, "degraded", "tool_loop_integrity_rate", "tool loop integrity is below the registered setpoint", {
+      value: check.tool_loop_integrity_rate
+    });
+  }
+
+  if (typeof check.tool_loop_evidence_ref_rate === "number" && check.tool_loop_evidence_ref_rate < 1) {
+    pushRisk(risks, "degraded", "tool_loop_evidence_ref_rate", "tool loop evidence refs are incomplete", {
+      value: check.tool_loop_evidence_ref_rate
+    });
   }
 
   if (numberValue(check.repair_work_orders) > 0) {
@@ -331,6 +373,9 @@ function positiveFeedbackForCheck(check, risks) {
   if (check.positive_lift_rate === 1) feedback.push("candidate winner kept positive lift");
   if (typeof check.avg_delta === "number" && check.avg_delta > 0) feedback.push("winner beat baseline score");
   if (check.safety_regressions === 0) feedback.push("no safety regression");
+  if (check.tool_loop_integrity_rate === 1) feedback.push("tool loop integrity preserved");
+  if (check.tool_loop_evidence_ref_rate === 1) feedback.push("tool loop events have evidence refs");
+  if (check.tool_loop_failure_count === 0 || check.failed_tool_result_count === 0) feedback.push("no tool-loop failure");
   if (check.no_write === true) feedback.push("no-write supervisor mode");
   if (check.blocks_runtime === false) feedback.push("does not block runtime");
   if (check.touches_vps === false) feedback.push("does not touch VPS");
@@ -477,6 +522,10 @@ function buildHealthReducers(checks, { history = {}, setpoints = DEFAULT_SETPOIN
   const inbox = findCheck(checks, "work-order:inbox dry-run");
   const vectorStore = findCheck(checks, "vector-store:local dry-run");
   const vectorRank = findCheck(checks, "vector-memory:rank dry-run");
+  const explicitToolLoop = findCheck(checks, "tool-loop dry-run");
+  const toolLoop = explicitToolLoop.name
+    ? explicitToolLoop
+    : findCheck(checks, "hermes:adapt-runtime dry-run");
   const runtimeActuator = registeredRuntimeActuatorForStep(runtime.next_step);
   const sessionValidOutputs = numberValue(
     session.schema_valid_outputs
@@ -503,6 +552,10 @@ function buildHealthReducers(checks, { history = {}, setpoints = DEFAULT_SETPOIN
   const inboxMedian = inboxAckLatencies.length
     ? inboxAckLatencies[Math.floor(inboxAckLatencies.length / 2)]
     : null;
+  const inboxLastSampleTs = inbox.last_sample_ts
+    ?? inbox.last_ack_at
+    ?? inbox.updated_at
+    ?? null;
   const inboxDeadLetters = numberValue(inbox.dead_letters);
   const inboxTotal = numberValue(inbox.total_messages ?? inbox.total_work_orders ?? inboxAckLatencies.length + inboxDeadLetters);
   const inboxLatencyTarget = setpointTarget(setpoints, "work_order_inbox_median_ack_latency_ms");
@@ -519,6 +572,27 @@ function buildHealthReducers(checks, { history = {}, setpoints = DEFAULT_SETPOIN
   const vectorHitRate = optionalNumber(vectorRank.top1_exact_recall)
     ?? optionalNumber(vectorStore.hit_rate);
   const hasVectorHitSample = vectorHitRate !== null;
+  const toolEventCount = numberValue(toolLoop.tool_event_count);
+  const toolResultCount = numberValue(toolLoop.tool_result_count);
+  const failedToolResultCount = numberValue(
+    toolLoop.failed_tool_result_count
+    ?? toolLoop.tool_loop_failure_count
+  );
+  const unmatchedToolIntentCount = numberValue(toolLoop.unmatched_tool_intent_count);
+  const toolEventsMissingEvidenceCount = numberValue(toolLoop.tool_events_missing_evidence_count);
+  const toolEventsWithEvidenceCount = numberValue(toolLoop.tool_events_with_evidence_refs);
+  const toolLoopFailureCount = failedToolResultCount + unmatchedToolIntentCount + toolEventsMissingEvidenceCount;
+  const toolLoopIntegrityRate = toolEventCount > 0
+    ? Number((1 - Math.min(toolLoopFailureCount, toolEventCount) / toolEventCount).toFixed(3))
+    : null;
+  const toolLoopEvidenceRefRate = toolEventCount > 0
+    ? ratio(toolEventsWithEvidenceCount, toolEventCount)
+    : null;
+  const toolLoopHealthOk = toolLoop.name
+    && toolEventCount > 0
+    && toolLoopIntegrityRate >= setpoints.tool_loop_integrity_rate.target_value
+    && toolLoopEvidenceRefRate >= setpoints.tool_loop_evidence_ref_rate.target_value
+    && toolLoopFailureCount <= setpoints.tool_loop_failure_count.target_value;
 
   return [
     {
@@ -584,7 +658,8 @@ function buildHealthReducers(checks, { history = {}, setpoints = DEFAULT_SETPOIN
         median_ack_latency_metric_id: setpoints.work_order_inbox_median_ack_latency_ms.metric_id,
         median_ack_latency_target_ms: inboxLatencyTarget,
         dead_letters: inbox.name ? inboxDeadLetters : null,
-        total_messages: inbox.name ? inboxTotal : null
+        total_messages: inbox.name ? inboxTotal : null,
+        last_sample_ts: inbox.name ? inboxLastSampleTs : null
       },
       window_size: inbox.name ? inboxTotal : 0,
       pure_reducer: true,
@@ -617,6 +692,47 @@ function buildHealthReducers(checks, { history = {}, setpoints = DEFAULT_SETPOIN
       window_size: numberValue(vectorRank.scenarios ?? vectorRank.scenario_count ?? vectorStore.records),
       pure_reducer: true,
       llm_scoring_allowed: false
+    },
+    {
+      reducer_id: "tool_loop_health",
+      metric_id: setpoints.tool_loop_integrity_rate.metric_id,
+      metric_ids: [
+        setpoints.tool_loop_integrity_rate.metric_id,
+        setpoints.tool_loop_evidence_ref_rate.metric_id,
+        setpoints.tool_loop_failure_count.metric_id
+      ],
+      plant_state_component: "tool_loop.health_integrity_rate",
+      plant_state_components: [
+        "tool_loop.health_integrity_rate",
+        "tool_loop.health_evidence_ref_rate",
+        "tool_loop.health_failure_count"
+      ],
+      formula: "1 - (failed_tool_results + unmatched_tool_intents + missing_evidence_refs) / observed_tool_events",
+      value: toolLoopIntegrityRate,
+      target_value: setpoints.tool_loop_integrity_rate.target_value,
+      status: toolLoop.name
+        ? toolEventCount > 0
+          ? toolLoopHealthOk ? "HEALTHY" : "DEGRADED"
+          : "NO_DATA"
+        : "NO_DATA",
+      inputs: {
+        tool_event_count: toolLoop.name ? toolEventCount : null,
+        tool_intent_count: toolLoop.name ? numberValue(toolLoop.tool_intent_count) : null,
+        tool_result_count: toolLoop.name ? toolResultCount : null,
+        failed_tool_result_count: toolLoop.name ? failedToolResultCount : null,
+        unmatched_tool_intent_count: toolLoop.name ? unmatchedToolIntentCount : null,
+        tool_events_with_evidence_refs: toolLoop.name ? toolEventsWithEvidenceCount : null,
+        tool_events_missing_evidence_count: toolLoop.name ? toolEventsMissingEvidenceCount : null,
+        evidence_ref_rate: toolLoopEvidenceRefRate,
+        failure_count: toolLoop.name ? toolLoopFailureCount : null,
+        failure_metric_id: setpoints.tool_loop_failure_count.metric_id,
+        evidence_ref_metric_id: setpoints.tool_loop_evidence_ref_rate.metric_id,
+        last_sample_ts: toolLoop.name ? toolLoop.last_sample_ts ?? null : null
+      },
+      window_size: toolLoop.name ? toolEventCount : 0,
+      pure_reducer: true,
+      llm_scoring_allowed: false,
+      no_data_policy: "does_not_degrade_current_line"
     }
   ];
 }

@@ -7,13 +7,20 @@
   "context_ref": {
     "schema_version": "misa.candidate_generation_context.v1",
     "source_id": "example",
-    "work_order_count": 1
+    "work_order_count": 1,
+    "world_id": "world-example"
   },
   "reducer_policy": {
     "same_input_same_seed_same_output": true,
     "runtime_fetch_allowed": false,
     "llm_tool_calls_allowed": false,
     "route_or_winner_authority": false
+  },
+  "admission_gate": {
+    "world_required": true,
+    "world_parseable": true,
+    "decision": "accepted",
+    "reason": "Current control world includes datasets, metrics, constraints, and budgets."
   },
   "summary": {
     "candidate_count": 1,
@@ -29,6 +36,14 @@
       "generator_id": "work-order-candidate-generator",
       "deterministic_fingerprint": "fp-example",
       "output_surface": "draft_candidate_only",
+      "world_admission_required": true,
+      "control_intent": {
+        "intent_kind": "draft_candidate",
+        "affected_setpoints": [],
+        "affected_actuators": [
+          "runtime.draft_candidate"
+        ]
+      },
       "execution_allowed": false,
       "publication_allowed": false,
       "human_escalation_required": false

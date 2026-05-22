@@ -9,6 +9,7 @@ import { buildTournamentExperienceLedger } from "./evolution-tournament-ledger.m
 import { buildLoserReviewContext } from "./evolution-tournament-loser-context.mjs";
 import { buildQualityAssessment } from "./evolution-tournament-quality.mjs";
 import { buildTournament } from "./evolution-tournament-scoring.mjs";
+import { loadSkillEvolutionTournamentBridge } from "./skill-evolution-tournament-bridge.mjs";
 import {
   commonSafety,
   countBy,
@@ -262,17 +263,31 @@ export async function reviewEvolutionTournamentGate({
   judgeEscalationThreshold,
   loserRuntimeProfile,
   historicalPostDeployResults = [],
-  llmJudge
+  llmJudge,
+  includeSkillEvolutionCandidates = false,
+  skillEvolutionContractFile,
+  skillEvolutionEventFile
 } = {}) {
   const preflight = sourceDir || vpsRawDir
     ? await evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir })
     : await evaluateMisaEvolution({ repoRoot });
-  const candidates = reportableCandidates(preflight);
+  const preflightCandidates = reportableCandidates(preflight);
+  const skillEvolutionBridge = await loadSkillEvolutionTournamentBridge({
+    repoRoot,
+    enabled: includeSkillEvolutionCandidates,
+    contractFile: skillEvolutionContractFile,
+    eventFile: skillEvolutionEventFile,
+    now
+  });
+  const candidates = [
+    ...preflightCandidates,
+    ...skillEvolutionBridge.tournamentCandidates
+  ];
   const tournaments = candidates.map((candidate) => buildTournament(candidate, { now }));
   const variantList = tournaments.flatMap((tournament) => tournament.variants);
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
-  const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments });
+  const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments, now });
   const postDeployHistory = summarizeHistoricalPostDeployResults(historicalPostDeployResults, { now });
   const loserReviewContext = buildLoserReviewContext({
     tournaments,
@@ -327,6 +342,14 @@ export async function reviewEvolutionTournamentGate({
       loser_policy: "advisory_pressure_only_no_hard_filter",
       production_effect: "blocked"
     },
+    tournament_ranking: {
+      rule: "deterministic_reducer",
+      scorer: "deterministic_proxy_v1",
+      llm_judge_allowed: false,
+      decision_authority: "deterministic_qianxuesen_gate_only",
+      optional_llm_review_role: "critique_only_no_winner_authority"
+    },
+    skill_evolution_bridge: skillEvolutionBridge.bridge,
     summary: {
       tournament_count: tournaments.length,
       variant_count: variantList.length,

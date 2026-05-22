@@ -44,6 +44,15 @@ function iso(value) {
   return Number.isNaN(date.getTime()) ? DEFAULT_NOW.toISOString() : date.toISOString();
 }
 
+function stableHash(text) {
+  let hash = 2166136261;
+  for (const char of String(text)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 async function readJson(repoRoot, rel) {
   const raw = await fs.readFile(path.join(repoRoot, rel), "utf8");
   return JSON.parse(raw);
@@ -95,6 +104,63 @@ function metricContextFromRegistry(registry) {
   }));
 }
 
+function buildControlWorld({
+  source,
+  metricContext,
+  workOrderContexts,
+  generatorScope
+}) {
+  const datasetRefs = [...new Set(workOrderContexts.flatMap((order) => order.source_refs ?? []))].sort();
+  const forbiddenScopes = [...new Set(workOrderContexts.flatMap((order) => order.forbidden_scope ?? []))].sort();
+  const metricIds = metricContext.map((metric) => metric.metric_id).sort();
+  const maxGeneratorSteps = Math.max(0, ...generatorScope.charters.map((charter) => charter.max_steps ?? 0));
+  const worldSeed = {
+    source,
+    datasetRefs,
+    metricIds,
+    forbiddenScopes,
+    work_order_count: workOrderContexts.length,
+    maxGeneratorSteps
+  };
+
+  return {
+    schema_version: "misa.control_world.v1",
+    world_id: `world-${stableHash(JSON.stringify(worldSeed))}`,
+    datasets: [
+      {
+        dataset_id: "work_order_contexts",
+        source_type: source.source_type,
+        source_id: source.source_id,
+        record_count: workOrderContexts.length,
+        source_refs: datasetRefs
+      }
+    ],
+    metrics: metricContext.map((metric) => ({
+      metric_id: metric.metric_id,
+      direction: metric.direction,
+      owner: metric.owner
+    })),
+    constraints: {
+      red_lines: [
+        "production_authority=false",
+        "runtime_fetch_allowed=false",
+        "llm_tool_calls_allowed=false",
+        "single_control_intent_required",
+        ...CONTEXT_POLICY.forbidden_context_sources.map((item) => `forbidden_context:${item}`),
+        ...forbiddenScopes.map((item) => `forbidden_scope:${item}`)
+      ],
+      forbidden_context_sources: [...CONTEXT_POLICY.forbidden_context_sources],
+      forbidden_scope: forbiddenScopes
+    },
+    budgets: {
+      iteration_budget: 1,
+      max_candidate_count: workOrderContexts.length,
+      max_generator_steps: maxGeneratorSteps,
+      risk_budget: "single_intent_only"
+    }
+  };
+}
+
 export function buildCandidateGenerationContext({
   workOrderRouting,
   metricRegistry,
@@ -109,19 +175,27 @@ export function buildCandidateGenerationContext({
   const generatorScope = buildRouteGeneratorScope({
     routeKinds: routeKinds.length ? routeKinds : ["work_order"]
   });
+  const source = {
+    source_type: "work_order_routing",
+    source_id: sourceId ?? workOrderRouting?.mode ?? null
+  };
+  const metricContext = metricContextFromRegistry(metricRegistry);
 
   return {
     schema_version: "misa.candidate_generation_context.v1",
     mode: "factor-compliant-candidate-context",
     created_at: iso(now),
-    source: {
-      source_type: "work_order_routing",
-      source_id: sourceId ?? workOrderRouting?.mode ?? null
-    },
+    source,
     context_policy: { ...CONTEXT_POLICY },
     prompt_templates: promptTemplates,
-    metric_context: metricContextFromRegistry(metricRegistry),
+    metric_context: metricContext,
     work_order_contexts: workOrderContexts,
+    world: buildControlWorld({
+      source,
+      metricContext,
+      workOrderContexts,
+      generatorScope
+    }),
     generator_scope: generatorScope,
     safety: { ...SAFETY },
     warnings: [

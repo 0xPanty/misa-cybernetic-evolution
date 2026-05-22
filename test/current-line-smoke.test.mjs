@@ -232,6 +232,11 @@ function safeArtifacts() {
         evolution_candidate_count: 4,
         replay_required_count: 4
       },
+      control_plane_write_deny: {
+        default_decision: "deny",
+        direct_writes_allowed: false,
+        bypass_allowed: false
+      },
       safety: {
         writes_persistent_memory: false,
         writes_skills: false,

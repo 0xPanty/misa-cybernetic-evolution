@@ -552,6 +552,31 @@ function buildPluginContract() {
   };
 }
 
+function buildControlPlaneWriteDeny() {
+  return {
+    policy_id: "misa.control_plane_write_deny.v1",
+    default_decision: "deny",
+    allowed_surface: "observe_and_emit_replay_required_candidates",
+    direct_writes_allowed: false,
+    bypass_allowed: false,
+    applies_to: [
+      "qianxuesen_routes",
+      "qianxuesen_memory",
+      "qianxuesen_skills",
+      "candidate_promotion",
+      "hermes_memory",
+      "hermes_skills",
+      "runtime_blocking"
+    ],
+    enforced_by: [
+      "adapter_safety_summary",
+      "effect_boundary.direct_qianxuesen_write_allowed=false",
+      "candidate_replay_required_before_promotion",
+      "plugin_contract.default_mode=observe_only"
+    ]
+  };
+}
+
 function safetySummary() {
   return {
     production_authority: false,
@@ -574,7 +599,8 @@ function buildChecks({
   researchDigests,
   evolutionCandidates,
   safety,
-  pluginContract
+  pluginContract,
+  controlPlaneWriteDeny
 }) {
   const hooks = new Set(hookMapping.map((item) => item.hook));
   const skillEvents = normalizedEvents.filter((event) => event.tool_name === "skill_manage");
@@ -641,6 +667,16 @@ function buildChecks({
       safety
     },
     {
+      name: "control-plane write-deny is explicit and closed",
+      ok: controlPlaneWriteDeny.default_decision === "deny"
+        && controlPlaneWriteDeny.direct_writes_allowed === false
+        && controlPlaneWriteDeny.bypass_allowed === false
+        && pluginContract.default_mode === "observe_only"
+        && normalizedEvents.every((event) => event.effect_boundary.direct_qianxuesen_write_allowed === false),
+      control_plane_write_deny_failed: false,
+      control_plane_write_deny: controlPlaneWriteDeny
+    },
+    {
       name: "plugin contract is thin runtime glue",
       ok: pluginContract.adapter_boundary.universal_contract_stays_qianxuesen_owned === true
         && pluginContract.adapter_boundary.framework_specific_code_required === true
@@ -670,13 +706,15 @@ export function buildHermesRuntimeAdapterReport({
   const evolutionCandidates = buildEvolutionCandidates(normalizedEvents);
   const safety = safetySummary();
   const pluginContract = buildPluginContract();
+  const controlPlaneWriteDeny = buildControlPlaneWriteDeny();
   const checks = buildChecks({
     hookMapping,
     normalizedEvents,
     researchDigests,
     evolutionCandidates,
     safety,
-    pluginContract
+    pluginContract,
+    controlPlaneWriteDeny
   });
   const violations = violationsForChecks(checks);
 
@@ -707,6 +745,7 @@ export function buildHermesRuntimeAdapterReport({
     normalized_events: normalizedEvents,
     research_digests: researchDigests,
     evolution_candidates: evolutionCandidates,
+    control_plane_write_deny: controlPlaneWriteDeny,
     plugin_contract: pluginContract,
     summary: {
       event_count: normalizedEvents.length,

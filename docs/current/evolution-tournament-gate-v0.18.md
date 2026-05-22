@@ -25,6 +25,63 @@ The tournament now also emits `experience_ledger`. This is not a memory write.
 It is a local shadow ledger for source-backed preflight entries, safe
 non-winning variants, and rejected unsafe variants.
 
+## Deterministic Ranking
+
+Tournament ranking is explicit:
+
+```text
+tournament_ranking.rule = deterministic_reducer
+tournament_ranking.scorer = deterministic_proxy_v1
+tournament_ranking.llm_judge_allowed = false
+tournament_ranking.decision_authority = deterministic_qianxuesen_gate_only
+```
+
+An optional LLM reviewer may add critique notes only when the deterministic
+escalation gate allows it. It cannot rank winners, change routes, or promote a
+candidate.
+
+## Skill Evolution Bridge
+
+The tournament can optionally include replay-required candidates from
+`skill:evolution`:
+
+```bash
+npm run evolution:tournament:misa -- --include-skill-evolution
+```
+
+The bridge is deliberately narrow:
+
+- it accepts only supervisor candidates that are already `replay_required`;
+- it maps them onto an existing Qianxuesen route, usually `skill`;
+- it exposes `agentskills.io-compatible-draft` metadata only;
+- it sets `tournament_required=true` and `can_promote_now=false`;
+- it does not create `skills/`, install skills, publish skills, write memory, or
+  call providers.
+
+Plain version: skill evolution can now hand tournament a better draft candidate,
+but tournament still only picks a local draft recommendation.
+
+## Honest Ledger Fields
+
+The flat ledger fields are now present on each `experience_ledger` entry:
+
+```text
+iteration_id
+change_diff_hash
+plant_model_version
+metric_registry_version
+metric_id
+metric_value
+decision
+reason_ref
+timestamp
+last_sample_ts
+```
+
+`plant_model_version` and `metric_registry_version` keep the old score
+replayable after the plant model or metric registry grows. `last_sample_ts` is
+reserved for future liveness checks and does not create a new memory system.
+
 ## Loser Contrast Ledger
 
 Losers are not treated as a blacklist or hard filter.

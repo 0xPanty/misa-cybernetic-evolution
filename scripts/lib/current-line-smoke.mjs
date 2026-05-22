@@ -176,13 +176,67 @@ function summarizeCuriosityGate(curiosityGate) {
   };
 }
 
+function summarizeAdapterToolLoop(adapter) {
+  const normalizedEvents = adapter.normalized_events ?? [];
+  const toolEvents = normalizedEvents.filter((event) => (
+    event.runtime_surface === "tool_call"
+    || String(event.runtime_hook ?? "").includes("tool")
+  ));
+  const summary = adapter.summary ?? {};
+  const toolIntentCount = toolEvents.length
+    ? toolEvents.filter((event) => event.runtime_hook === "pre_tool_call").length
+    : summary.tool_intent_count ?? 0;
+  const toolResultCount = toolEvents.length
+    ? toolEvents.filter((event) => event.runtime_hook === "post_tool_call").length
+    : summary.tool_result_count ?? 0;
+  const failedToolResultCount = toolEvents.length
+    ? toolEvents.filter((event) => (event.observed_signals ?? []).includes("tool_failure")).length
+    : summary.failed_tool_result_count ?? 0;
+  const toolEventsWithEvidenceRefs = toolEvents.length
+    ? toolEvents.filter((event) => (event.evidence_refs ?? []).length > 1).length
+    : summary.tool_events_with_evidence_refs ?? 0;
+  const toolEventCount = toolEvents.length || summary.tool_event_count || toolIntentCount + toolResultCount;
+  const toolEventsMissingEvidenceCount = toolEventCount > 0
+    ? toolEventCount - toolEventsWithEvidenceRefs
+    : 0;
+  const unmatchedToolIntentCount = summary.unmatched_tool_intent_count ?? 0;
+  const failureCount = failedToolResultCount + unmatchedToolIntentCount + toolEventsMissingEvidenceCount;
+  const toolLoopIntegrityRate = toolEventCount > 0
+    ? Math.round((1 - Math.min(failureCount, toolEventCount) / toolEventCount) * 1000) / 1000
+    : null;
+  const toolLoopEvidenceRefRate = toolEventCount > 0
+    ? Math.round((toolEventsWithEvidenceRefs / toolEventCount) * 1000) / 1000
+    : null;
+
+  return {
+    tool_event_count: toolEventCount,
+    tool_intent_count: toolIntentCount,
+    tool_result_count: toolResultCount,
+    failed_tool_result_count: failedToolResultCount,
+    unmatched_tool_intent_count: unmatchedToolIntentCount,
+    tool_events_with_evidence_refs: toolEventsWithEvidenceRefs,
+    tool_events_missing_evidence_count: toolEventsMissingEvidenceCount,
+    tool_loop_failure_count: failureCount,
+    tool_loop_integrity_rate: toolLoopIntegrityRate,
+    tool_loop_evidence_ref_rate: toolLoopEvidenceRefRate,
+    last_sample_ts: adapter.created_at ?? null
+  };
+}
+
 function summarizeHermesRuntimeAdapter(adapter) {
+  const writeDeny = adapter.control_plane_write_deny ?? {};
   return {
     ok: adapter.ok,
     events: adapter.summary.event_count,
     research_digests: adapter.summary.research_digest_count,
     evolution_candidates: adapter.summary.evolution_candidate_count,
     replay_required: adapter.summary.replay_required_count,
+    control_plane_write_deny_failed: !(
+      writeDeny.default_decision === "deny"
+      && writeDeny.direct_writes_allowed === false
+      && writeDeny.bypass_allowed === false
+    ),
+    ...summarizeAdapterToolLoop(adapter),
     writes_skills: adapter.safety.writes_skills,
     writes_persistent_memory: adapter.safety.writes_persistent_memory,
     blocks_runtime: adapter.safety.blocks_runtime,
@@ -288,6 +342,9 @@ function noLiveWritesOrProviderCallsCheck({
     hermes_adapter_writes_persistent_memory: hermesRuntimeAdapter.safety.writes_persistent_memory,
     hermes_adapter_writes_skills: hermesRuntimeAdapter.safety.writes_skills,
     hermes_adapter_blocks_runtime: hermesRuntimeAdapter.safety.blocks_runtime,
+    hermes_adapter_control_plane_write_deny_failed: hermesRuntimeAdapter.control_plane_write_deny?.direct_writes_allowed !== false
+      || hermesRuntimeAdapter.control_plane_write_deny?.bypass_allowed !== false
+      || hermesRuntimeAdapter.control_plane_write_deny?.default_decision !== "deny",
     hermes_adapter_llm_api_calls: hermesRuntimeAdapter.safety.llm_api_calls,
     hermes_adapter_external_api_calls: hermesRuntimeAdapter.safety.external_api_calls,
     hermes_work_order_executes_work_orders: hermesWorkOrderPipeline.safety.executes_work_orders,
@@ -352,6 +409,7 @@ function noLiveWritesOrProviderCallsCheck({
     && details.hermes_adapter_writes_persistent_memory === false
     && details.hermes_adapter_writes_skills === false
     && details.hermes_adapter_blocks_runtime === false
+    && details.hermes_adapter_control_plane_write_deny_failed === false
     && details.hermes_adapter_llm_api_calls === 0
     && details.hermes_adapter_external_api_calls === 0
     && details.hermes_work_order_executes_work_orders === false

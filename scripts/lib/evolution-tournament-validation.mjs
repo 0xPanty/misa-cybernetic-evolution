@@ -19,6 +19,51 @@ export function evaluateEvolutionTournamentGate(result) {
   if (result.control_boundary?.llm_route_decision_allowed !== false) {
     violations.push("llm_route_decision_must_be_false");
   }
+  if (result.tournament_ranking?.rule !== "deterministic_reducer") {
+    violations.push("tournament_ranking_must_use_deterministic_reducer");
+  }
+  if (result.tournament_ranking?.llm_judge_allowed !== false) {
+    violations.push("llm_judge_must_not_rank_tournament_winners");
+  }
+  if (result.tournament_ranking?.decision_authority !== "deterministic_qianxuesen_gate_only") {
+    violations.push("tournament_ranking_authority_must_stay_deterministic");
+  }
+  const bridge = result.skill_evolution_bridge;
+  if (!bridge) {
+    violations.push("skill_evolution_bridge_missing");
+  }
+  if (bridge?.admission?.requires_replay !== true
+    || bridge?.admission?.requires_tournament !== true
+    || bridge?.admission?.can_promote_now !== false
+    || bridge?.admission?.publication_allowed !== false
+    || bridge?.admission?.production_authority !== false
+    || bridge?.admission?.llm_judge_allowed !== false) {
+    violations.push("skill_evolution_bridge_admission_boundary_invalid");
+  }
+  if (bridge?.summary?.llm_api_calls !== 0) {
+    violations.push("skill_evolution_bridge_must_not_call_llm");
+  }
+  for (const ref of bridge?.candidate_refs ?? []) {
+    if (ref.replay_required !== true || ref.tournament_required !== true || ref.can_promote_now !== false) {
+      violations.push(`${ref.candidate_id}:skill_bridge_candidate_must_remain_replay_gated`);
+    }
+    if (ref.agentskills_format !== "agentskills.io-compatible-draft") {
+      violations.push(`${ref.candidate_id}:skill_bridge_candidate_missing_agentskills_draft_format`);
+    }
+  }
+  if (bridge?.enabled === true && bridge.summary?.admitted_candidate_count > 0) {
+    const admittedIds = new Set(
+      bridge.candidate_refs
+        .filter((ref) => ref.status === "admitted")
+        .map((ref) => ref.candidate_id)
+    );
+    const tournamentIds = new Set((result.tournaments ?? []).map((tournament) => tournament.candidate_id));
+    for (const candidateId of admittedIds) {
+      if (!tournamentIds.has(candidateId)) {
+        violations.push(`${candidateId}:skill_bridge_admitted_candidate_missing_tournament`);
+      }
+    }
+  }
   if (result.safety?.production_authority !== false) {
     violations.push("production_authority_must_be_false");
   }
@@ -40,6 +85,36 @@ export function evaluateEvolutionTournamentGate(result) {
   }
   if (!Array.isArray(result.experience_ledger)) {
     violations.push("experience_ledger_must_be_array");
+  }
+  for (const entry of result.experience_ledger ?? []) {
+    for (const key of [
+      "iteration_id",
+      "change_diff_hash",
+      "plant_model_version",
+      "metric_registry_version",
+      "metric_id",
+      "metric_value",
+      "decision",
+      "reason_ref",
+      "timestamp",
+      "last_sample_ts"
+    ]) {
+      if (!(key in entry)) {
+        violations.push(`${entry.ledger_id ?? "ledger_entry"}:missing_honest_ledger_field_${key}`);
+      }
+    }
+    if (entry.plant_model_version !== "misa.plant_model.v1") {
+      violations.push(`${entry.ledger_id}:invalid_plant_model_version`);
+    }
+    if (entry.metric_registry_version !== "misa.metric_registry.v1") {
+      violations.push(`${entry.ledger_id}:invalid_metric_registry_version`);
+    }
+    if (entry.metric_id !== "evolution_tournament.deterministic_score") {
+      violations.push(`${entry.ledger_id}:invalid_ledger_metric_id`);
+    }
+    if (!["keep", "revert", "skip"].includes(entry.decision)) {
+      violations.push(`${entry.ledger_id}:invalid_ledger_decision`);
+    }
   }
   const postDeployHistory = result.historical_post_deploy_results;
   if (postDeployHistory?.safety?.production_authority !== false

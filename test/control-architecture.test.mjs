@@ -73,6 +73,7 @@ test("metric registry maps measurable setpoints onto plant state", async () => {
   assert.ok(metricIds.has("signal_extractor.recall"));
   assert.ok(metricIds.has("signal_extractor.precision"));
   assert.ok(metricIds.has("skill.replay_pass_rate"));
+  assert.ok(metricIds.has("evolution_tournament.deterministic_score"));
 });
 
 test("component health metrics are registered as plant-state components", () => {
@@ -87,6 +88,9 @@ test("component health metrics are registered as plant-state components", () => 
     "work_order_inbox.health_median_ack_latency_ms",
     "vector_store.health_hit_rate",
     "vector_store.health_write_failure_count",
+    "tool_loop.health_integrity_rate",
+    "tool_loop.health_evidence_ref_rate",
+    "tool_loop.health_failure_count",
     "component_health.escalation_threshold"
   ];
 

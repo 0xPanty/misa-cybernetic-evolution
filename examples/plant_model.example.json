@@ -117,11 +117,39 @@
       "default_sampling_window": "current vector-store health window"
     },
     {
+      "id": "tool_loop.health_integrity_rate",
+      "description": "Share of observed tool-loop events that avoid failed results, unmatched intents, and missing evidence refs.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current tool-loop health window"
+    },
+    {
+      "id": "tool_loop.health_evidence_ref_rate",
+      "description": "Share of observed tool-loop events that carry a concrete non-source evidence ref.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current tool-loop health window"
+    },
+    {
+      "id": "tool_loop.health_failure_count",
+      "description": "Count of failed tool results, unmatched tool intents, or evidence-missing tool events in the health window.",
+      "unit": "count",
+      "observable": true,
+      "default_sampling_window": "current tool-loop health window"
+    },
+    {
       "id": "component_health.escalation_threshold",
       "description": "Configured consecutive-failure threshold that turns degraded health into critical diagnostic escalation.",
       "unit": "count",
       "observable": true,
       "default_sampling_window": "current component-health setpoint review"
+    },
+    {
+      "id": "evolution_tournament.deterministic_score",
+      "description": "Deterministic tournament score recorded in the local honest ledger for candidate review.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current tournament run"
     },
     {
       "id": "controller.precheck_failure_count",

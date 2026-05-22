@@ -12,6 +12,8 @@
     "source",
     "algorithm_adaptation",
     "tournament_policy",
+    "tournament_ranking",
+    "skill_evolution_bridge",
     "summary",
     "tournaments",
     "winner_queue",
@@ -104,6 +106,25 @@
         "production_effect": { "type": "string", "const": "blocked" }
       }
     },
+    "tournament_ranking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "scorer",
+        "llm_judge_allowed",
+        "decision_authority",
+        "optional_llm_review_role"
+      ],
+      "properties": {
+        "rule": { "type": "string", "const": "deterministic_reducer" },
+        "scorer": { "type": "string", "const": "deterministic_proxy_v1" },
+        "llm_judge_allowed": { "type": "boolean", "const": false },
+        "decision_authority": { "type": "string", "const": "deterministic_qianxuesen_gate_only" },
+        "optional_llm_review_role": { "type": "string", "const": "critique_only_no_winner_authority" }
+      }
+    },
+    "skill_evolution_bridge": { "$ref": "#/$defs/skill_evolution_bridge" },
     "summary": {
       "type": "object",
       "additionalProperties": false,
@@ -206,6 +227,110 @@
     }
   },
   "$defs": {
+    "skill_evolution_bridge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "enabled", "source", "summary", "admission", "candidate_refs", "warnings"],
+      "properties": {
+        "mode": { "type": "string", "const": "skill-evolution-to-tournament-bridge" },
+        "enabled": { "type": "boolean" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["supervisor_mode", "skill_id", "event_id", "contract_file", "event_file"],
+          "properties": {
+            "supervisor_mode": { "type": ["string", "null"] },
+            "skill_id": { "type": ["string", "null"] },
+            "event_id": { "type": ["string", "null"] },
+            "contract_file": { "type": "string", "minLength": 1 },
+            "event_file": { "type": "string", "minLength": 1 }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "supervisor_ok",
+            "supervisor_candidate_count",
+            "admitted_candidate_count",
+            "blocked_candidate_count",
+            "replay_required_count",
+            "tournament_required_count",
+            "agentskills_compatible_draft_count",
+            "llm_api_calls"
+          ],
+          "properties": {
+            "supervisor_ok": { "type": ["boolean", "null"] },
+            "supervisor_candidate_count": { "type": "integer", "minimum": 0 },
+            "admitted_candidate_count": { "type": "integer", "minimum": 0 },
+            "blocked_candidate_count": { "type": "integer", "minimum": 0 },
+            "replay_required_count": { "type": "integer", "minimum": 0 },
+            "tournament_required_count": { "type": "integer", "minimum": 0 },
+            "agentskills_compatible_draft_count": { "type": "integer", "minimum": 0 },
+            "llm_api_calls": { "type": "integer", "const": 0 }
+          }
+        },
+        "admission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "output_surface",
+            "requires_replay",
+            "requires_tournament",
+            "can_promote_now",
+            "publication_allowed",
+            "production_authority",
+            "llm_judge_allowed"
+          ],
+          "properties": {
+            "output_surface": { "type": "string", "const": "tournament_input_candidates_only" },
+            "requires_replay": { "type": "boolean", "const": true },
+            "requires_tournament": { "type": "boolean", "const": true },
+            "can_promote_now": { "type": "boolean", "const": false },
+            "publication_allowed": { "type": "boolean", "const": false },
+            "production_authority": { "type": "boolean", "const": false },
+            "llm_judge_allowed": { "type": "boolean", "const": false }
+          }
+        },
+        "candidate_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidate_id",
+              "source_event_id",
+              "route_target",
+              "skill_id",
+              "target",
+              "status",
+              "replay_required",
+              "tournament_required",
+              "can_promote_now",
+              "agentskills_format",
+              "reason_ref"
+            ],
+            "properties": {
+              "candidate_id": { "type": "string", "minLength": 1 },
+              "source_event_id": { "type": "string", "minLength": 1 },
+              "route_target": { "type": "string", "enum": ["skill", "memory", "case", "policy", "damping"] },
+              "skill_id": { "type": "string", "minLength": 1 },
+              "target": { "type": "string", "minLength": 1 },
+              "status": { "type": "string", "enum": ["admitted", "blocked"] },
+              "replay_required": { "type": "boolean", "const": true },
+              "tournament_required": { "type": "boolean", "const": true },
+              "can_promote_now": { "type": "boolean", "const": false },
+              "agentskills_format": { "type": "string", "const": "agentskills.io-compatible-draft" },
+              "reason_ref": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "historical_post_deploy_results": {
       "type": "object",
       "additionalProperties": false,
@@ -670,6 +795,7 @@
       "additionalProperties": false,
       "required": [
         "ledger_id",
+        "iteration_id",
         "source",
         "candidate_id",
         "source_event_id",
@@ -677,6 +803,15 @@
         "status",
         "retained_as",
         "lesson",
+        "change_diff_hash",
+        "plant_model_version",
+        "metric_registry_version",
+        "metric_id",
+        "metric_value",
+        "decision",
+        "reason_ref",
+        "timestamp",
+        "last_sample_ts",
         "score",
         "evidence_count",
         "risk_level",
@@ -690,6 +825,7 @@
       ],
       "properties": {
         "ledger_id": { "type": "string", "minLength": 1 },
+        "iteration_id": { "type": "string", "minLength": 1 },
         "source": {
           "type": "string",
           "enum": ["candidate_preflight", "source_backed_preflight", "tournament_variant"]
@@ -703,6 +839,15 @@
         "status": { "type": "string", "minLength": 1 },
         "retained_as": { "type": "string", "minLength": 1 },
         "lesson": { "type": "string", "minLength": 1 },
+        "change_diff_hash": { "type": "string", "minLength": 1 },
+        "plant_model_version": { "type": "string", "const": "misa.plant_model.v1" },
+        "metric_registry_version": { "type": "string", "const": "misa.metric_registry.v1" },
+        "metric_id": { "type": "string", "const": "evolution_tournament.deterministic_score" },
+        "metric_value": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "decision": { "type": "string", "enum": ["keep", "revert", "skip"] },
+        "reason_ref": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "last_sample_ts": { "type": "string", "format": "date-time" },
         "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "evidence_count": { "type": ["integer", "null"], "minimum": 0 },
         "risk_level": { "type": ["string", "null"] },

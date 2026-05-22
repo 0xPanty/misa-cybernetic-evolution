@@ -54,6 +54,11 @@ test("v0.27 candidate context locks what generators can see", async () => {
   assert.equal(context.context_policy.route_authority, false);
   assert.equal(context.safety.calls_model_providers, false);
   assert.equal(context.work_order_contexts.length, 1);
+  assert.equal(context.world.schema_version, "misa.control_world.v1");
+  assert.equal(context.world.datasets.length, 1);
+  assert.ok(context.world.metrics.some((metric) => metric.metric_id === "skill.replay_pass_rate"));
+  assert.ok(context.world.constraints.red_lines.includes("single_control_intent_required"));
+  assert.equal(context.world.budgets.risk_budget, "single_intent_only");
   assert.equal(context.work_order_contexts[0].human_escalation_required, true);
   assert.ok(context.metric_context.some((metric) => metric.metric_id === "skill.replay_pass_rate"));
   assert.equal(context.prompt_templates[0].template_id, "candidate-layer.work-order-variant.v1");
@@ -127,10 +132,89 @@ test("factor candidate reducer is deterministic for the same locked context and 
   assert.deepEqual(second, first);
   assert.equal(first.reducer_policy.same_input_same_seed_same_output, true);
   assert.equal(first.reducer_policy.runtime_fetch_allowed, false);
+  assert.equal(first.admission_gate.decision, "accepted");
+  assert.equal(first.context_ref.world_id, context.world.world_id);
   assert.equal(first.summary.candidate_count, 1);
   assert.equal(first.summary.human_escalation_required_count, 1);
+  assert.deepEqual(first.candidate_results[0].control_intent, {
+    intent_kind: "draft_candidate",
+    affected_setpoints: [],
+    affected_actuators: ["runtime.draft_candidate"]
+  });
   assert.equal(first.candidate_results[0].execution_allowed, false);
   assert.equal(first.candidate_results[0].publication_allowed, false);
+});
+
+test("factor candidate reducer refuses candidates when control world is missing", async () => {
+  const { workOrderRouting, metricRegistry, promptManifest } = await exampleInputs();
+  const context = buildCandidateGenerationContext({
+    workOrderRouting,
+    metricRegistry,
+    promptManifest,
+    now: FIXED_NOW,
+    sourceId: "test-context"
+  });
+  const withoutWorld = { ...context };
+  delete withoutWorld.world;
+
+  const result = buildFactorCandidateReducer({
+    candidateContext: withoutWorld,
+    seed: "stable-review",
+    now: FIXED_NOW
+  });
+  const schemaCheck = await validateJsonData({
+    schemaRel: "schemas/factor_candidate_reducer.schema.json",
+    data: result,
+    name: "factor candidate reducer missing world"
+  });
+
+  assert.equal(schemaCheck.ok, true, JSON.stringify(schemaCheck.errors ?? [], null, 2));
+  assert.equal(result.ok, false);
+  assert.equal(result.admission_gate.decision, "rejected");
+  assert.equal(result.summary.candidate_count, 0);
+  assert.deepEqual(result.candidate_results, []);
+});
+
+test("factor candidate schema rejects multi-intent candidate outputs", async () => {
+  const { workOrderRouting, metricRegistry, promptManifest } = await exampleInputs();
+  const context = buildCandidateGenerationContext({
+    workOrderRouting,
+    metricRegistry,
+    promptManifest,
+    now: FIXED_NOW,
+    sourceId: "test-context"
+  });
+  const result = buildFactorCandidateReducer({
+    candidateContext: context,
+    seed: "stable-review",
+    now: FIXED_NOW
+  });
+  const multiIntent = JSON.parse(JSON.stringify(result));
+  multiIntent.candidate_results[0].control_intent = {
+    intent_kind: "draft_candidate",
+    affected_setpoints: ["skill.replay_pass_rate"],
+    affected_actuators: ["runtime.draft_candidate"]
+  };
+  const noIntent = JSON.parse(JSON.stringify(result));
+  noIntent.candidate_results[0].control_intent = {
+    intent_kind: "draft_candidate",
+    affected_setpoints: [],
+    affected_actuators: []
+  };
+
+  const multiIntentSchemaCheck = await validateJsonData({
+    schemaRel: "schemas/factor_candidate_reducer.schema.json",
+    data: multiIntent,
+    name: "factor candidate reducer multi-intent"
+  });
+  const noIntentSchemaCheck = await validateJsonData({
+    schemaRel: "schemas/factor_candidate_reducer.schema.json",
+    data: noIntent,
+    name: "factor candidate reducer no-intent"
+  });
+
+  assert.equal(multiIntentSchemaCheck.ok, false);
+  assert.equal(noIntentSchemaCheck.ok, false);
 });
 
 test("route-focused generator charters stay small, disposable, and no-effect", () => {

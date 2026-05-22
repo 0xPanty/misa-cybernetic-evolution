@@ -72,6 +72,54 @@
       "prompt_template_id": "candidate-layer.work-order-variant.v1"
     }
   ],
+  "world": {
+    "schema_version": "misa.control_world.v1",
+    "world_id": "world-example",
+    "datasets": [
+      {
+        "dataset_id": "work_order_contexts",
+        "source_type": "work_order_routing",
+        "source_id": "example",
+        "record_count": 1,
+        "source_refs": [
+          "repair_ticket:repair-example"
+        ]
+      }
+    ],
+    "metrics": [
+      {
+        "metric_id": "skill.replay_pass_rate",
+        "direction": "maximize",
+        "owner": "evolution plane"
+      }
+    ],
+    "constraints": {
+      "red_lines": [
+        "production_authority=false",
+        "runtime_fetch_allowed=false",
+        "llm_tool_calls_allowed=false",
+        "single_control_intent_required",
+        "forbidden_context:vps_state",
+        "forbidden_scope:production services"
+      ],
+      "forbidden_context_sources": [
+        "raw_private_memory",
+        "provider_runtime",
+        "unredacted_logs",
+        "vps_state",
+        "live_channel_state"
+      ],
+      "forbidden_scope": [
+        "production services"
+      ]
+    },
+    "budgets": {
+      "iteration_budget": 1,
+      "max_candidate_count": 1,
+      "max_generator_steps": 10,
+      "risk_budget": "single_intent_only"
+    }
+  },
   "generator_scope": {
     "routing": "small-focused-route-generators",
     "charters": [

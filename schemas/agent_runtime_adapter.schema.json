@@ -15,6 +15,7 @@
     "normalized_events",
     "research_digests",
     "evolution_candidates",
+    "control_plane_write_deny",
     "plugin_contract",
     "summary",
     "safety",
@@ -99,6 +100,7 @@
       "type": "array",
       "items": { "$ref": "#/$defs/evolution_candidate" }
     },
+    "control_plane_write_deny": { "$ref": "#/$defs/control_plane_write_deny" },
     "plugin_contract": { "$ref": "#/$defs/plugin_contract" },
     "summary": {
       "type": "object",
@@ -390,6 +392,36 @@
             "framework_specific_code_is_thin": { "type": "boolean", "const": true },
             "runtime_install_required_before_live_capture": { "type": "boolean", "const": true }
           }
+        }
+      }
+    },
+    "control_plane_write_deny": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "default_decision",
+        "allowed_surface",
+        "direct_writes_allowed",
+        "bypass_allowed",
+        "applies_to",
+        "enforced_by"
+      ],
+      "properties": {
+        "policy_id": { "type": "string", "const": "misa.control_plane_write_deny.v1" },
+        "default_decision": { "type": "string", "const": "deny" },
+        "allowed_surface": { "type": "string", "const": "observe_and_emit_replay_required_candidates" },
+        "direct_writes_allowed": { "type": "boolean", "const": false },
+        "bypass_allowed": { "type": "boolean", "const": false },
+        "applies_to": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "enforced_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
         }
       }
     },

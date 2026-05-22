@@ -20,6 +20,22 @@ Hermes hook/tool trace
 
 Hermes stays the carrier runtime. Qianxuesen stays the learning controller.
 
+## Control-Plane Write-Deny
+
+The adapter output includes `misa.control_plane_write_deny.v1`:
+
+```text
+default_decision=deny
+direct_writes_allowed=false
+bypass_allowed=false
+allowed_surface=observe_and_emit_replay_required_candidates
+```
+
+This is the explicit form of the observe-only boundary. Hermes runtime events
+may become research digests or replay-required candidates, but they cannot
+directly write Hermes memory, Hermes skills, Qianxuesen state, or candidate
+promotion state.
+
 ## Plugin Install And Doctor
 
 ```bash

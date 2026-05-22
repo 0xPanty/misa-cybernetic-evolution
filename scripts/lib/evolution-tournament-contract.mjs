@@ -1,6 +1,9 @@
 export const NOUS_SELF_EVOLUTION_COMMIT = "4693c8f0eed21e39f065c6f38d98d2a403a04095";
 export const MAX_VARIANTS_PER_CANDIDATE = 4;
 export const JUDGE_NEAR_THRESHOLD_MARGIN = 0.03;
+export const PLANT_MODEL_VERSION = "misa.plant_model.v1";
+export const METRIC_REGISTRY_VERSION = "misa.metric_registry.v1";
+export const TOURNAMENT_LEDGER_METRIC_ID = "evolution_tournament.deterministic_score";
 
 export const LIVE_EFFECTS_OFF = Object.freeze({
   writes_persistent_memory: false,
@@ -35,6 +38,7 @@ export const LOCAL_COMMAND_ALLOWLIST = Object.freeze([
   "npm run post-deploy:measure",
   "npm run stability:monitor",
   "npm run outer-loop:review",
+  "npm run skill:evolution",
   "npm run validate:schemas",
   "npm run precheck",
   "npm test"
@@ -54,6 +58,8 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "source",
     "algorithm_adaptation",
     "tournament_policy",
+    "tournament_ranking",
+    "skill_evolution_bridge",
     "summary",
     "tournaments",
     "winner_queue",
@@ -88,6 +94,48 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "winner_surface",
     "loser_policy",
     "production_effect"
+  ]),
+  tournament_ranking_keys: Object.freeze([
+    "rule",
+    "scorer",
+    "llm_judge_allowed",
+    "decision_authority",
+    "optional_llm_review_role"
+  ]),
+  skill_evolution_bridge_keys: Object.freeze([
+    "mode",
+    "enabled",
+    "source",
+    "summary",
+    "admission",
+    "candidate_refs",
+    "warnings"
+  ]),
+  skill_evolution_bridge_source_keys: Object.freeze([
+    "supervisor_mode",
+    "skill_id",
+    "event_id",
+    "contract_file",
+    "event_file"
+  ]),
+  skill_evolution_bridge_summary_keys: Object.freeze([
+    "supervisor_ok",
+    "supervisor_candidate_count",
+    "admitted_candidate_count",
+    "blocked_candidate_count",
+    "replay_required_count",
+    "tournament_required_count",
+    "agentskills_compatible_draft_count",
+    "llm_api_calls"
+  ]),
+  skill_evolution_bridge_admission_keys: Object.freeze([
+    "output_surface",
+    "requires_replay",
+    "requires_tournament",
+    "can_promote_now",
+    "publication_allowed",
+    "production_authority",
+    "llm_judge_allowed"
   ]),
   summary_keys: Object.freeze([
     "tournament_count",

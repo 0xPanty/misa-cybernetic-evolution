@@ -13,6 +13,7 @@ skill doc or runtime notes
   -> behavior event
   -> Qianxuesen skill evolution supervisor
   -> pass / warn / fail + replay-required evolution candidates
+  -> optional tournament bridge as agentskills-compatible draft metadata
 ```
 
 The adapter is deterministic by default. It does not require an LLM key. A model
@@ -52,6 +53,17 @@ Use explicit files like this:
 npm run skill:evolution -- --contract-file examples/skill-evolution/farcaster_reply_operator.contract.json --event-file examples/behavior-events/farcaster_public_reply.event.json --json
 ```
 
+To feed safe replay-required skill candidates into the deterministic tournament:
+
+```bash
+npm run evolution:tournament:misa -- --include-skill-evolution
+```
+
+That bridge does not write a `skills/` directory, install a skill, publish a
+skill, or let an LLM choose the winner. It only converts the supervisor output
+into tournament input candidates with `agentskills.io-compatible-draft`
+metadata.
+
 ## Boundary
 
 The supervisor can inspect a behavior event and propose an evolution candidate.
@@ -63,6 +75,8 @@ It cannot:
 - change route ownership
 - call providers
 - promote a candidate without replay
+- enter tournament unless the bridge keeps `replay_required=true`,
+  `tournament_required=true`, and `can_promote_now=false`
 
 The event itself may describe a live or durable behavior. The supervisor still
 has `no_write: true`; unsafe event effects become violations or review

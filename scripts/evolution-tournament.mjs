@@ -18,6 +18,10 @@ function readNumberArg(name) {
   return Number.isFinite(number) ? number : undefined;
 }
 
+function hasArg(name) {
+  return process.argv.includes(`--${name}`);
+}
+
 const asJson = process.argv.includes("--json");
 const result = await reviewEvolutionTournamentGate({
   sourceDir: readArg("source-dir"),
@@ -25,7 +29,10 @@ const result = await reviewEvolutionTournamentGate({
   judgeMode: readArg("judge-mode") ?? "advise",
   judgeModel: readArg("judge-model"),
   judgeEscalationThreshold: readNumberArg("judge-escalation-threshold"),
-  loserRuntimeProfile: readArg("loser-runtime-profile")
+  loserRuntimeProfile: readArg("loser-runtime-profile"),
+  includeSkillEvolutionCandidates: hasArg("include-skill-evolution"),
+  skillEvolutionContractFile: readArg("skill-evolution-contract-file"),
+  skillEvolutionEventFile: readArg("skill-evolution-event-file")
 });
 
 if (asJson) {
@@ -41,6 +48,7 @@ if (asJson) {
   console.log(`rejected_variants: ${result.summary.rejected_variant_count}`);
   console.log(`experience_ledger: ${result.summary.experience_ledger_count}`);
   console.log(`historical_post_deploy_results: ${result.summary.historical_post_deploy_result_count}`);
+  console.log(`skill_evolution_bridge: ${result.skill_evolution_bridge.enabled ? "enabled" : "disabled"} (${result.skill_evolution_bridge.summary.admitted_candidate_count} admitted)`);
   console.log(`loser_review_context: ${result.loser_review_context.summary.packed_counterexample_count} packed, ${result.loser_review_context.summary.strong_review_sample_count} L4 samples`);
   console.log(`loser_review_deployment: ${result.loser_review_context.deployment_readiness.status} (${result.loser_review_context.deployment_readiness.runtime_profile})`);
   console.log(`production_authority: ${result.summary.production_authority}`);

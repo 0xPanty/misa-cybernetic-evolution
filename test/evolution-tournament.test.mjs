@@ -5,6 +5,7 @@ import {
   reviewEvolutionTournamentGate
 } from "../scripts/lib/evolution-tournament-gate.mjs";
 import { EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT } from "../scripts/lib/evolution-tournament-contract.mjs";
+import { buildTournamentExperienceLedger } from "../scripts/lib/evolution-tournament-ledger.mjs";
 
 test("v0.17 tournament gate optimizes candidates without production authority", async () => {
   const result = await reviewEvolutionTournamentGate();
@@ -15,6 +16,11 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.deepEqual(Object.keys(result), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.top_level_keys);
   assert.deepEqual(Object.keys(result.source), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.source_keys);
   assert.deepEqual(Object.keys(result.tournament_policy), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.tournament_policy_keys);
+  assert.deepEqual(Object.keys(result.tournament_ranking), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.tournament_ranking_keys);
+  assert.deepEqual(Object.keys(result.skill_evolution_bridge), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.skill_evolution_bridge_keys);
+  assert.deepEqual(Object.keys(result.skill_evolution_bridge.source), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.skill_evolution_bridge_source_keys);
+  assert.deepEqual(Object.keys(result.skill_evolution_bridge.summary), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.skill_evolution_bridge_summary_keys);
+  assert.deepEqual(Object.keys(result.skill_evolution_bridge.admission), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.skill_evolution_bridge_admission_keys);
   assert.deepEqual(Object.keys(result.summary), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.summary_keys);
   assert.deepEqual(Object.keys(result.control_boundary), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.control_boundary_keys);
   assert.deepEqual(Object.keys(result.safety), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.safety_keys);
@@ -25,6 +31,13 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.tournament_policy.candidate_generation, "multi_variant_local");
   assert.equal(result.tournament_policy.winner_surface, "draft_recommendation_only");
   assert.equal(result.tournament_policy.loser_policy, "advisory_pressure_only_no_hard_filter");
+  assert.equal(result.tournament_ranking.rule, "deterministic_reducer");
+  assert.equal(result.tournament_ranking.llm_judge_allowed, false);
+  assert.equal(result.tournament_ranking.decision_authority, "deterministic_qianxuesen_gate_only");
+  assert.equal(result.skill_evolution_bridge.enabled, false);
+  assert.equal(result.skill_evolution_bridge.summary.admitted_candidate_count, 0);
+  assert.equal(result.skill_evolution_bridge.admission.can_promote_now, false);
+  assert.equal(result.skill_evolution_bridge.admission.llm_judge_allowed, false);
   assert.equal(result.control_boundary.optimizer_role, "candidate_layer_only");
   assert.equal(result.control_boundary.llm_route_decision_allowed, false);
   assert.equal(result.control_boundary.automatic_promotion_allowed, false);
@@ -93,6 +106,15 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
       && item.hard_filter_allowed === false
       && item.agent_review_required === true
       && item.candidate_pool_action
+      && item.iteration_id
+      && item.change_diff_hash
+      && item.plant_model_version === "misa.plant_model.v1"
+      && item.metric_registry_version === "misa.metric_registry.v1"
+      && item.metric_id === "evolution_tournament.deterministic_score"
+      && ["keep", "revert", "skip"].includes(item.decision)
+      && item.reason_ref
+      && item.timestamp
+      && item.last_sample_ts
       && item.review_path
       && item.review_trigger
       && item.reactivation_conditions.length > 0
@@ -181,6 +203,100 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   }
 
   assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("skill evolution bridge admits replay-required drafts into deterministic tournament only", async () => {
+  const result = await reviewEvolutionTournamentGate({
+    includeSkillEvolutionCandidates: true,
+    now: new Date("2026-05-14T12:50:00Z")
+  });
+
+  const bridge = result.skill_evolution_bridge;
+  const admittedRefs = bridge.candidate_refs.filter((ref) => ref.status === "admitted");
+  const admittedIds = new Set(admittedRefs.map((ref) => ref.candidate_id));
+  const bridgedTournaments = result.tournaments.filter((tournament) => admittedIds.has(tournament.candidate_id));
+
+  assert.equal(result.ok, true);
+  assert.equal(bridge.enabled, true);
+  assert.equal(bridge.source.supervisor_mode, "skill-evolution-supervisor");
+  assert.equal(bridge.source.skill_id, "farcaster_reply_operator");
+  assert.equal(bridge.source.event_id, "behavior-farcaster-public-reply-001");
+  assert.equal(bridge.summary.supervisor_ok, true);
+  assert.equal(bridge.summary.supervisor_candidate_count, 1);
+  assert.equal(bridge.summary.admitted_candidate_count, 1);
+  assert.equal(bridge.summary.blocked_candidate_count, 0);
+  assert.equal(bridge.summary.replay_required_count, 1);
+  assert.equal(bridge.summary.tournament_required_count, 1);
+  assert.equal(bridge.summary.agentskills_compatible_draft_count, 1);
+  assert.equal(bridge.summary.llm_api_calls, 0);
+  assert.equal(bridge.admission.output_surface, "tournament_input_candidates_only");
+  assert.equal(bridge.admission.requires_replay, true);
+  assert.equal(bridge.admission.requires_tournament, true);
+  assert.equal(bridge.admission.can_promote_now, false);
+  assert.equal(bridge.admission.publication_allowed, false);
+  assert.equal(bridge.admission.production_authority, false);
+  assert.equal(bridge.admission.llm_judge_allowed, false);
+  assert.equal(admittedRefs.every((ref) => (
+    ref.replay_required === true
+      && ref.tournament_required === true
+      && ref.can_promote_now === false
+      && ref.agentskills_format === "agentskills.io-compatible-draft"
+  )), true);
+  assert.equal(result.source.tournament_candidate_count, result.source.report_queue_count + admittedRefs.length);
+  assert.equal(result.summary.tournament_count, result.source.tournament_candidate_count);
+  assert.equal(bridgedTournaments.length, admittedRefs.length);
+  assert.equal(result.tournament_ranking.rule, "deterministic_reducer");
+  assert.equal(result.tournament_ranking.llm_judge_allowed, false);
+  assert.equal(result.quality_assessment.llm_api_calls, 0);
+  assert.equal(result.judge.llm_api_calls, 0);
+
+  for (const tournament of bridgedTournaments) {
+    assert.equal(tournament.source_event_id, "behavior-farcaster-public-reply-001");
+    assert.equal(tournament.route_target, "skill");
+    assert.equal(tournament.winner.recommended_surface, "local_draft_report_only");
+    assert.equal(tournament.winner.publication_allowed, false);
+    assert.equal(tournament.winner.production_authority, false);
+    assert.equal(tournament.variants.every((variant) => (
+      variant.safety.production_authority === false
+        && variant.safety.publication_allowed === false
+        && variant.safety.automatic_write_allowed === false
+        && variant.safety.llm_route_decision_allowed === false
+        && Object.values(variant.safety.live_effects).every((value) => value === false)
+    )), true);
+  }
+
+  assert.deepEqual(evaluateEvolutionTournamentGate(result), []);
+});
+
+test("honest ledger versions are injected by writer, not accepted from candidates", () => {
+  const ledger = buildTournamentExperienceLedger({
+    preflight: {
+      experience_ledger: [
+        {
+          ledger_id: "exp-bogus-version",
+          source: "candidate_preflight",
+          candidate_id: "candidate-bogus-version",
+          source_event_id: "source-bogus-version",
+          route_target: "skill",
+          status: "shadow_reportable",
+          retained_as: "source_backed_shadow_evidence",
+          lesson: "candidate supplied stale world versions",
+          plant_model_version: "misa.plant_model.v0",
+          metric_registry_version: "misa.metric_registry.v0",
+          metric_id: "stale.metric",
+          score: 0.7
+        }
+      ]
+    },
+    tournaments: [],
+    now: new Date("2026-05-14T13:00:00Z")
+  });
+
+  assert.equal(ledger.length, 1);
+  assert.equal(ledger[0].plant_model_version, "misa.plant_model.v1");
+  assert.equal(ledger[0].metric_registry_version, "misa.metric_registry.v1");
+  assert.equal(ledger[0].metric_id, "evolution_tournament.deterministic_score");
+  assert.equal(ledger[0].decision, "keep");
 });
 
 test("loser review context fails closed for unsupported runtime profiles", async () => {

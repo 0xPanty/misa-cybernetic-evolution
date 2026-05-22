@@ -37,6 +37,45 @@
     "loser_policy": "advisory_pressure_only_no_hard_filter",
     "production_effect": "blocked"
   },
+  "tournament_ranking": {
+    "rule": "deterministic_reducer",
+    "scorer": "deterministic_proxy_v1",
+    "llm_judge_allowed": false,
+    "decision_authority": "deterministic_qianxuesen_gate_only",
+    "optional_llm_review_role": "critique_only_no_winner_authority"
+  },
+  "skill_evolution_bridge": {
+    "mode": "skill-evolution-to-tournament-bridge",
+    "enabled": false,
+    "source": {
+      "supervisor_mode": null,
+      "skill_id": null,
+      "event_id": null,
+      "contract_file": "examples/skill-evolution/farcaster_reply_operator.contract.json",
+      "event_file": "examples/behavior-events/farcaster_public_reply.event.json"
+    },
+    "summary": {
+      "supervisor_ok": null,
+      "supervisor_candidate_count": 0,
+      "admitted_candidate_count": 0,
+      "blocked_candidate_count": 0,
+      "replay_required_count": 0,
+      "tournament_required_count": 0,
+      "agentskills_compatible_draft_count": 0,
+      "llm_api_calls": 0
+    },
+    "admission": {
+      "output_surface": "tournament_input_candidates_only",
+      "requires_replay": true,
+      "requires_tournament": true,
+      "can_promote_now": false,
+      "publication_allowed": false,
+      "production_authority": false,
+      "llm_judge_allowed": false
+    },
+    "candidate_refs": [],
+    "warnings": []
+  },
   "summary": {
     "tournament_count": 1,
     "variant_count": 3,
@@ -465,6 +504,7 @@
   "experience_ledger": [
     {
       "ledger_id": "exp-variant-adaptive-skill-sample-baseline",
+      "iteration_id": "tournament-adaptive-skill-sample",
       "source": "tournament_variant",
       "candidate_id": "adaptive-skill-sample",
       "source_event_id": "sample-skill-event",
@@ -472,6 +512,15 @@
       "status": "loser",
       "retained_as": "non_winning_experience",
       "lesson": "Safe non-winning variants stay as comparison experience, not publication candidates.",
+      "change_diff_hash": "diff-example-baseline",
+      "plant_model_version": "misa.plant_model.v1",
+      "metric_registry_version": "misa.metric_registry.v1",
+      "metric_id": "evolution_tournament.deterministic_score",
+      "metric_value": 0.93,
+      "decision": "skip",
+      "reason_ref": "adaptive-skill-sample:baseline",
+      "timestamp": "2026-05-18T00:00:00.000Z",
+      "last_sample_ts": "2026-05-18T00:00:00.000Z",
       "score": 0.93,
       "evidence_count": 4,
       "risk_level": null,
@@ -534,6 +583,7 @@
     },
     {
       "ledger_id": "exp-variant-adaptive-skill-sample-aggressive-auto-publish",
+      "iteration_id": "tournament-adaptive-skill-sample",
       "source": "tournament_variant",
       "candidate_id": "adaptive-skill-sample",
       "source_event_id": "sample-skill-event",
@@ -541,6 +591,15 @@
       "status": "rejected",
       "retained_as": "damping_or_case_evidence",
       "lesson": "Rejected variants stay as damping or case evidence; do not retry them without changed evidence or gates.",
+      "change_diff_hash": "diff-example-aggressive-auto-publish",
+      "plant_model_version": "misa.plant_model.v1",
+      "metric_registry_version": "misa.metric_registry.v1",
+      "metric_id": "evolution_tournament.deterministic_score",
+      "metric_value": 0.37,
+      "decision": "revert",
+      "reason_ref": "adaptive-skill-sample:aggressive-auto-publish",
+      "timestamp": "2026-05-18T00:00:00.000Z",
+      "last_sample_ts": "2026-05-18T00:00:00.000Z",
       "score": 0.37,
       "evidence_count": 4,
       "risk_level": null,

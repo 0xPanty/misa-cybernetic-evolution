@@ -56,6 +56,48 @@ dynamic provider imports inside the registered control files.
 | Metric registry expansion | outer-loop review | recommendation only | registry is changed |
 | Production or VPS rollout | human owner | no | always |
 
+## Candidate Admission
+
+Every candidate must enter the control loop with a parseable control world:
+
+```text
+datasets
+metrics
+constraints
+budgets
+```
+
+If `misa.candidate_generation_context.v1.world` cannot provide that four-part
+world, the factor candidate reducer refuses to inject candidates. This is a
+schema and reducer gate, not an LLM judgment.
+
+Each candidate also carries one control intent. The hard rule is:
+
+```text
+affected_setpoints.length + affected_actuators.length == 1
+```
+
+This does not mean every implementation PR must touch only one file. It means
+one candidate may change only one setpoint or one actuator intent. Supporting
+schema, docs, and tests may move together when they prove that one intent.
+
+## Control-Plane Write-Deny
+
+Runtime adapters must expose `misa.control_plane_write_deny.v1`.
+
+Required defaults:
+
+```text
+default_decision=deny
+direct_writes_allowed=false
+bypass_allowed=false
+allowed_surface=observe_and_emit_replay_required_candidates
+```
+
+The Hermes adapter can observe runtime events and emit replay-required
+candidates. It cannot directly write Qianxuesen memory, skills, route state,
+candidate promotion state, Hermes memory, or Hermes skills.
+
 ## v0.27 Rule
 
 The factor-compliant candidate layer can make candidate generation cleaner, but

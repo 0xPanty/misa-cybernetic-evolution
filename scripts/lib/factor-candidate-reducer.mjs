@@ -34,6 +34,29 @@ function countBy(items, keyFn) {
   }, {});
 }
 
+function worldAdmissionGate(world) {
+  const missing = [];
+  if (!world || typeof world !== "object") {
+    missing.push("world");
+  } else {
+    for (const key of ["datasets", "metrics", "constraints", "budgets"]) {
+      const value = world[key];
+      if (Array.isArray(value) ? value.length === 0 : !value || typeof value !== "object") {
+        missing.push(key);
+      }
+    }
+  }
+
+  return {
+    world_required: true,
+    world_parseable: missing.length === 0,
+    decision: missing.length === 0 ? "accepted" : "rejected",
+    reason: missing.length === 0
+      ? "Current control world includes datasets, metrics, constraints, and budgets."
+      : `Missing control world fields: ${missing.join(", ")}`
+  };
+}
+
 function candidateFromContext(workOrderContext, { seed }) {
   const generator = generatorForWorkOrderContext(workOrderContext);
   const fingerprint = stableHash(JSON.stringify({
@@ -50,6 +73,12 @@ function candidateFromContext(workOrderContext, { seed }) {
     generator_id: generator.generator_id,
     deterministic_fingerprint: fingerprint,
     output_surface: "draft_candidate_only",
+    world_admission_required: true,
+    control_intent: {
+      intent_kind: "draft_candidate",
+      affected_setpoints: [],
+      affected_actuators: ["runtime.draft_candidate"]
+    },
     execution_allowed: false,
     publication_allowed: false,
     human_escalation_required: workOrderContext.human_escalation_required
@@ -61,17 +90,21 @@ export function buildFactorCandidateReducer({
   seed = "factor-candidate-reducer-v1",
   now = DEFAULT_NOW
 } = {}) {
-  const results = (candidateContext?.work_order_contexts ?? []).map((context) => candidateFromContext(context, { seed }));
+  const admissionGate = worldAdmissionGate(candidateContext?.world);
+  const results = admissionGate.decision === "accepted"
+    ? (candidateContext?.work_order_contexts ?? []).map((context) => candidateFromContext(context, { seed }))
+    : [];
   return {
     schema_version: "misa.factor_candidate_reducer.v1",
     mode: "factor-candidate-reducer",
-    ok: true,
+    ok: admissionGate.decision === "accepted",
     created_at: iso(now),
     seed,
     context_ref: {
       schema_version: "misa.candidate_generation_context.v1",
       source_id: candidateContext?.source?.source_id ?? null,
-      work_order_count: candidateContext?.work_order_contexts?.length ?? 0
+      work_order_count: candidateContext?.work_order_contexts?.length ?? 0,
+      world_id: candidateContext?.world?.world_id ?? null
     },
     reducer_policy: {
       same_input_same_seed_same_output: true,
@@ -79,6 +112,7 @@ export function buildFactorCandidateReducer({
       llm_tool_calls_allowed: false,
       route_or_winner_authority: false
     },
+    admission_gate: admissionGate,
     summary: {
       candidate_count: results.length,
       human_escalation_required_count: results.filter((item) => item.human_escalation_required).length,
