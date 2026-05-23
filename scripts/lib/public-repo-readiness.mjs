@@ -24,6 +24,8 @@ const REQUIRED_PUBLIC_SCRIPTS = [
   "deploy:local",
   "setup:full-shadow",
   "deploy:full-shadow",
+  "deploy:vps-shadow",
+  "update:vps-shadow",
   "doctor",
   "bootstrap:local",
   "distill:misa",

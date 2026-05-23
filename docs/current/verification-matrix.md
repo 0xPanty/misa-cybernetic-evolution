@@ -20,6 +20,7 @@ samples, and still passing the full local test suite.
 ```bash
 npm run deploy:local
 npm run deploy:full-shadow
+npm run update:vps-shadow -- --dry-run
 npm run doctor
 npm run validate:schemas
 npm run smoke:current-line
@@ -45,6 +46,13 @@ Hermes work-order generation, session-distiller cybernetic review, and
 work-order inbox export on top of the local path. It mirrors the VPS sidecar
 shape, but still does not start a new service, write production memory, mutate
 Hermes skills, call providers, write Zilliz, or promote candidates.
+
+`update:vps-shadow` is the one-command VPS update path. It checks for tracked
+local changes, fast-forwards the checkout from `origin/main`, runs `npm ci`,
+runs `deploy:full-shadow`, and then refreshes the VPS session-distiller hook
+through `deploy:vps-shadow`. The dry-run form is safe for CI/local review
+because it prints the update sequence without changing git state or system
+files.
 
 `health:qianxuesen` adds a small ignored run manifest under
 `runs/qianxuesen-full-loop/`. It keeps `latest.json` / `latest.md` for quick
@@ -101,7 +109,7 @@ Passing this means the local sidecar is coherent as a dry-run/shadow-ready
 control-learning layer. The local vector store can persist ignored runtime
 records when explicitly asked, but the gate does not turn the repo into a
 background runtime service, production memory writer, Zilliz writer, public
-publisher, or VPS updater.
+publisher, or autonomous VPS updater.
 
 Historical simulator pieces are documented in:
 

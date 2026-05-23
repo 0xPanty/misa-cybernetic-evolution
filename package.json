@@ -1,6 +1,6 @@
 {
   "name": "misa-cybernetic-evolution",
-  "version": "0.27.0",
+  "version": "0.27.1",
   "description": "A control-theoretic learning plane for Hermes-style AI agents.",
   "type": "module",
   "license": "Apache-2.0",
@@ -15,6 +15,7 @@
     "setup:full-shadow": "node scripts/setup-full-shadow.mjs",
     "deploy:full-shadow": "node scripts/full-shadow-deploy.mjs",
     "deploy:vps-shadow": "bash scripts/deploy/install-vps-full-shadow.sh",
+    "update:vps-shadow": "bash scripts/deploy/update-vps-shadow.sh",
     "doctor": "node scripts/public-repo-doctor.mjs",
     "bootstrap:local": "node scripts/bootstrap-local.mjs",
     "validate:schemas": "node scripts/validate-schemas.mjs",

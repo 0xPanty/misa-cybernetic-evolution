@@ -74,6 +74,29 @@ the VPS-style `ExecStartPost` hook:
 npm run deploy:vps-shadow
 ```
 
+To update an existing VPS checkout safely:
+
+```bash
+npm run update:vps-shadow
+```
+
+That command does:
+
+```text
+tracked-change guard
+-> git fetch
+-> git merge --ff-only
+-> npm ci
+-> deploy:full-shadow
+-> deploy:vps-shadow
+```
+
+It refuses to continue if tracked local files are modified. Dry-run:
+
+```bash
+npm run update:vps-shadow -- --dry-run
+```
+
 Dry-run first:
 
 ```bash

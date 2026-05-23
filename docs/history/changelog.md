@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.27.0`.
+The package is currently `0.27.1`.
 
 The current direction is v0.26 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -54,6 +54,11 @@ generation, session-distiller cybernetic review, work-order inbox export, and
 value proof. `npm run deploy:vps-shadow` installs the existing VPS-style
 session-distiller `ExecStartPost` hook on Linux hosts that already run
 `misa-session-distiller.service`.
+
+v0.27.1 adds `npm run update:vps-shadow`, the safe one-command VPS updater. It
+refuses tracked local changes, fast-forwards from `origin/main`, runs `npm ci`,
+runs the full-shadow self-check, and refreshes the VPS session-distiller hook.
+`--dry-run` prints the sequence without changing git state or system files.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,

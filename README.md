@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.27.0`. The current line keeps source-lineage and
+Current package version: `0.27.1`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
@@ -114,7 +114,7 @@ The safety boundary is deliberate:
 | Provider route changes | not enabled |
 | Discord/Farcaster live behavior changes | not enabled |
 | Background timers or services | not enabled |
-| VPS update authority | not enabled |
+| VPS update authority | explicit `update:vps-shadow` only; no autonomous VPS update |
 | LLM route or winner authority | not enabled |
 | Local vector-store writes | explicit command only, under ignored `runs/local-vector-store/` |
 | Skill evolution changes | replay-required candidates only, no automatic skill mutation |
@@ -178,6 +178,7 @@ Two rules matter most:
 | --- | --- | --- |
 | One-command local sidecar | `node scripts/setup-local.mjs` or `npm run deploy:local` | installs dependencies when needed, runs doctor/bootstrap/value-proof locally only |
 | One-command full shadow | `node scripts/setup-full-shadow.mjs` or `npm run deploy:full-shadow` | local sidecar plus window distillation, Hermes plugin, event-log replay, session review, work-order inbox, and value proof; no production authority |
+| One-command VPS shadow update | `npm run update:vps-shadow` | fast-forward repo update, `npm ci`, full-shadow self-check, and VPS hook refresh; refuses tracked local changes |
 | Public repo doctor | `npm run doctor` | clone-time readiness check; read-only |
 | Local bootstrap | `npm run bootstrap:local` | initializes ignored local vector store and local report only |
 | Learning-loop simulation | `npm run simulate:misa` | local fixtures only |
@@ -270,6 +271,17 @@ On a Linux/VPS host with that service already present:
 ```bash
 npm run deploy:vps-shadow
 ```
+
+To update an existing VPS checkout and refresh the shadow hook in one command:
+
+```bash
+npm run update:vps-shadow
+```
+
+The updater refuses to run when tracked local files are modified. It then runs
+`git fetch`, `git merge --ff-only`, `npm ci`, `deploy:full-shadow`, and
+`deploy:vps-shadow`. Use `--dry-run` to print the same sequence without changing
+the checkout or system files.
 
 For review without writing system files:
 
