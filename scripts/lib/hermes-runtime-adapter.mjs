@@ -104,6 +104,71 @@ function uniqueStrings(values = []) {
     .sort((left, right) => left.localeCompare(right));
 }
 
+function round3(value) {
+  return Math.round(value * 1000) / 1000;
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function stringOrNull(value) {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function riskOrUnknown(value) {
+  const risk = String(value ?? "unknown").trim().toLowerCase();
+  return ["low", "medium", "high"].includes(risk) ? risk : "unknown";
+}
+
+function normalizeEvolutionEvidence(event, sourceEventId) {
+  const raw = event.evolution_evidence ?? event.context?.evolution_evidence;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+
+  const beforeScore = numberOrNull(raw.before_score ?? raw.baseline_score ?? raw.before?.score);
+  const afterScore = numberOrNull(raw.after_score ?? raw.candidate_score ?? raw.after?.score);
+  const explicitDelta = numberOrNull(raw.delta ?? raw.score_delta);
+  const delta = beforeScore !== null && afterScore !== null
+    ? round3(afterScore - beforeScore)
+    : explicitDelta !== null
+      ? round3(explicitDelta)
+      : null;
+  const sampleCount = Math.max(0, Math.trunc(numberOrNull(
+    raw.sample_count ?? raw.holdout_sample_count ?? raw.samples
+  ) ?? 0));
+  const metricGamingRisk = riskOrUnknown(raw.metric_gaming_risk ?? raw.gaming_risk);
+  const baselineSnapshotId = stringOrNull(raw.baseline_snapshot_id ?? raw.baseline?.snapshot_id);
+  const holdoutSplitId = stringOrNull(raw.holdout_split_id ?? raw.holdout?.split_id);
+  const positiveDirection = delta !== null && delta > 0;
+  const holdoutBacked = Boolean(baselineSnapshotId && holdoutSplitId && sampleCount > 0);
+
+  return {
+    evidence_id: stringOrNull(raw.evidence_id) ?? `hermes-evolution-evidence-${stableSlug(sourceEventId)}`,
+    metric: stringOrNull(raw.metric ?? raw.metric_id) ?? "unspecified",
+    baseline_snapshot_id: baselineSnapshotId,
+    holdout_split_id: holdoutSplitId,
+    before_score: beforeScore,
+    after_score: afterScore,
+    delta,
+    sample_count: sampleCount,
+    metric_gaming_risk: metricGamingRisk,
+    failure_refs: uniqueStrings([
+      ...(raw.failure_refs ?? []),
+      ...(raw.before?.failure_refs ?? [])
+    ]),
+    evidence_refs: uniqueStrings([
+      ...(raw.evidence_refs ?? []),
+      ...(raw.after?.evidence_refs ?? [])
+    ]),
+    positive_direction: positiveDirection,
+    holdout_backed: holdoutBacked,
+    can_support_optimization: positiveDirection && holdoutBacked && metricGamingRisk !== "high"
+  };
+}
+
 function hasAny(values = [], expected) {
   return values.some((value) => expected.has(value));
 }
@@ -327,6 +392,7 @@ function normalizeHermesEvent(event, index) {
   const routeTarget = routeTargetFor(event, signals);
   const effectBoundary = effectBoundaryFor(event, signals);
   const sourceEventId = event.event_id ?? `hermes-event-${index + 1}`;
+  const evolutionEvidence = normalizeEvolutionEvidence(event, sourceEventId);
   const sourcePayloadFingerprint = stableHash({
     hook: event.hook,
     tool_name: event.tool_name,
@@ -352,6 +418,7 @@ function normalizeHermesEvent(event, index) {
       ...(event.context?.evidence_refs ?? [])
     ]),
     source_payload_fingerprint: sourcePayloadFingerprint,
+    ...(evolutionEvidence ? { evolution_evidence: evolutionEvidence } : {}),
     effect_boundary: effectBoundary,
     control_decision: controlDecisionFor(event, routeTarget, effectBoundary, signals)
   };
@@ -459,6 +526,7 @@ function buildEvolutionCandidates(normalizedEvents) {
       evidence_refs: event.evidence_refs,
       proposed_change: proposedChangeFor(event),
       expected_gain: expectedGainFor(event),
+      ...(event.evolution_evidence ? { evolution_evidence: event.evolution_evidence } : {}),
       status: "replay_required",
       replay_required: true,
       tournament_required: true,
@@ -704,6 +772,9 @@ export function buildHermesRuntimeAdapterReport({
   const normalizedEvents = events.map(normalizeHermesEvent);
   const researchDigests = buildResearchDigests(normalizedEvents, events);
   const evolutionCandidates = buildEvolutionCandidates(normalizedEvents);
+  const evolutionEvidence = normalizedEvents
+    .map((event) => event.evolution_evidence)
+    .filter(Boolean);
   const safety = safetySummary();
   const pluginContract = buildPluginContract();
   const controlPlaneWriteDeny = buildControlPlaneWriteDeny();
@@ -757,6 +828,9 @@ export function buildHermesRuntimeAdapterReport({
       skill_manage_event_count: normalizedEvents.filter((event) => event.tool_name === "skill_manage").length,
       memory_write_event_count: normalizedEvents.filter((event) => event.effect_boundary.persistent_memory_write_requested).length,
       external_information_event_count: normalizedEvents.filter((event) => event.effect_boundary.external_information_channel).length,
+      evolution_evidence_count: evolutionEvidence.length,
+      holdout_evidence_count: evolutionEvidence.filter((item) => item.holdout_backed).length,
+      positive_optimization_evidence_count: evolutionEvidence.filter((item) => item.can_support_optimization).length,
       default_mode: "observe_only",
       verifier: violations.length === 0 ? "passed" : "failed"
     },

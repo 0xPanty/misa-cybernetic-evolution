@@ -152,6 +152,13 @@
       "default_sampling_window": "current tournament run"
     },
     {
+      "id": "evolution_tournament.metric_gaming_risk",
+      "description": "Deterministic advisory risk that a tournament score gain is proxy-metric gaming rather than durable improvement.",
+      "unit": "ratio",
+      "observable": true,
+      "default_sampling_window": "current tournament restraint review"
+    },
+    {
       "id": "evolution_tournament.synthesis_metric_regression_tolerance",
       "description": "Setpoint for maximum tolerated synthesis score regression against the revision candidate.",
       "unit": "ratio",

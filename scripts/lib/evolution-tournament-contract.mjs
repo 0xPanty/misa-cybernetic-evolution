@@ -6,6 +6,7 @@ export const PLANT_MODEL_VERSION = "misa.plant_model.v1";
 export const METRIC_REGISTRY_VERSION = "misa.metric_registry.v1";
 export const TOURNAMENT_LEDGER_METRIC_ID = "evolution_tournament.deterministic_score";
 export const SYNTHESIS_METRIC_REGRESSION_TOLERANCE_ID = "evolution_tournament.synthesis_metric_regression_tolerance";
+export const METRIC_GAMING_RISK_ID = "evolution_tournament.metric_gaming_risk";
 export const SAFETY_CRITICAL_METRIC_IDS = Object.freeze([
   "evolution_tournament.safety_score",
   "evolution_tournament.holdout_score",

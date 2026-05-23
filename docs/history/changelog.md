@@ -5,9 +5,9 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.25.0`.
+The package is currently `0.26.0`.
 
-The current direction is v0.25 convergence: keep the control boundary stable,
+The current direction is v0.26 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
 hits by requested kind before same-source context, let the session-distiller ask
 Qianxuesen for read-only work-order review, calibrate the current line on
@@ -32,6 +32,13 @@ as explicit zero-call gates: review-worthy boundary signals go straight into
 the current primary agent's inline review context, while any external or
 stronger-model mutation/crossover still requires explicit enablement. Route,
 score, selection, safety, and execution stay outside LLM authority.
+
+v0.26 adds Hermes evolution-grade evidence and a local value proof command.
+Hermes runtime events can now carry frozen baseline, held-out split, before/after
+score, sample count, and metric-gaming-risk evidence into replay-required work
+orders. `npm run hermes:value-proof` replays the local work-order corpus, Hermes
+adapter samples, the evolution-grade fixture, and a bad-evidence control group
+across deterministic seeds before reporting the Hermes intake as value-positive.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,

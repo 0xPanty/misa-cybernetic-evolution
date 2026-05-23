@@ -47,6 +47,13 @@ export function evaluateEvolutionTournamentGate(result) {
     || restraintContract?.scope_drift_risk?.llm_api_calls !== 0) {
     violations.push("scope_drift_risk_must_be_deterministic_zero_call");
   }
+  if (restraintContract?.metric_gaming_risk?.mode !== "deterministic_reducer"
+    || restraintContract?.metric_gaming_risk?.metric_id !== "evolution_tournament.metric_gaming_risk"
+    || restraintContract?.metric_gaming_risk?.llm_api_calls !== 0
+    || restraintContract?.metric_gaming_risk?.decision_authority !== "none"
+    || restraintContract?.metric_gaming_risk?.changes_winner !== false) {
+    violations.push("metric_gaming_risk_must_be_deterministic_advisory_only");
+  }
   const critiqueSummary = result.tournament_ranking?.critique_summary;
   if (critiqueSummary?.decision_authority !== "none"
     || critiqueSummary?.ranking_authority !== false
@@ -122,11 +129,28 @@ export function evaluateEvolutionTournamentGate(result) {
       "decision",
       "reason_ref",
       "timestamp",
-      "last_sample_ts"
+      "last_sample_ts",
+      "replay_proof"
     ]) {
       if (!(key in entry)) {
         violations.push(`${entry.ledger_id ?? "ledger_entry"}:missing_honest_ledger_field_${key}`);
       }
+    }
+    if (entry.replay_proof?.mode !== "tournament_replay_proof.v1"
+      || typeof entry.replay_proof?.repo_commit !== "string"
+      || entry.replay_proof.repo_commit.length === 0
+      || typeof entry.replay_proof?.worktree_dirty !== "boolean"
+      || entry.replay_proof?.eval_command !== "npm run evolution:tournament:misa -- --json"
+      || entry.replay_proof?.replay_command !== "npm run evolution:tournament:misa -- --json"
+      || entry.replay_proof?.replay_idempotent !== true
+      || entry.replay_proof?.replay_writes_ledger !== false
+      || entry.replay_proof?.iteration_id !== entry.iteration_id
+      || entry.replay_proof?.schema_ref !== "schemas/evolution_tournament_gate.schema.json"
+      || entry.replay_proof?.proof_surface !== "local_dry_run_only"
+      || entry.replay_proof?.human_approval_required !== true
+      || entry.replay_proof?.can_promote_now !== false
+      || entry.replay_proof?.advisory_only !== true) {
+      violations.push(`${entry.ledger_id}:invalid_replay_proof`);
     }
     if (!Number.isInteger(entry.consecutive_no_change_count) || entry.consecutive_no_change_count < 0) {
       violations.push(`${entry.ledger_id}:invalid_consecutive_no_change_count`);
@@ -229,6 +253,13 @@ export function evaluateEvolutionTournamentGate(result) {
     if (tournament.restraint?.scope_drift_risk?.mode !== "deterministic_reducer"
       || tournament.restraint?.scope_drift_risk?.llm_api_calls !== 0) {
       violations.push(`${tournament.tournament_id}:scope_drift_risk_must_be_deterministic`);
+    }
+    if (tournament.restraint?.metric_gaming_risk?.mode !== "deterministic_reducer"
+      || tournament.restraint?.metric_gaming_risk?.metric_id !== "evolution_tournament.metric_gaming_risk"
+      || tournament.restraint?.metric_gaming_risk?.llm_api_calls !== 0
+      || tournament.restraint?.metric_gaming_risk?.decision_authority !== "none"
+      || tournament.restraint?.metric_gaming_risk?.changes_winner !== false) {
+      violations.push(`${tournament.tournament_id}:metric_gaming_risk_must_be_advisory_only`);
     }
     if (tournament.restraint?.critique_summary?.decision_authority !== "none"
       || tournament.restraint?.critique_summary?.ranking_authority !== false) {

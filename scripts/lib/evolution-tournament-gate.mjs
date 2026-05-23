@@ -30,6 +30,7 @@ import {
   CONVERGENCE_K,
   DEFAULT_RESTRAINT_SETPOINTS,
   MAX_VARIANTS_PER_CANDIDATE,
+  METRIC_GAMING_RISK_ID,
   NOUS_SELF_EVOLUTION_COMMIT
 } from "./evolution-tournament-contract.mjs";
 
@@ -276,6 +277,32 @@ function aggregateScopeDriftRisk(tournaments) {
   };
 }
 
+function aggregateMetricGamingRisk(tournaments) {
+  const risks = tournaments
+    .map((tournament) => tournament.restraint?.metric_gaming_risk)
+    .filter(Boolean);
+  const maxRisk = risks.reduce((selected, risk) => (
+    !selected || risk.score > selected.score ? risk : selected
+  ), null);
+
+  return maxRisk ?? {
+    mode: "deterministic_reducer",
+    metric_id: METRIC_GAMING_RISK_ID,
+    llm_api_calls: 0,
+    decision_authority: "none",
+    changes_winner: false,
+    window_size: 0,
+    level: "none",
+    score: 0,
+    composite_gain_over_incumbent: 0,
+    metric_only_gain_count: 0,
+    safety_critical_regression_count: 0,
+    hard_gate_rejected_high_score_count: 0,
+    low_evidence_winner: false,
+    reasons: ["no_tournaments"]
+  };
+}
+
 function aggregateConvergenceStatus({ maxNoChangeCount, scopeDriftRisk }) {
   if (scopeDriftRisk.level === "high") return "scope_drift_suspected";
   if (maxNoChangeCount >= CONVERGENCE_K) return "incumbent_retained_x2";
@@ -298,6 +325,7 @@ function buildRestraintContract(tournaments, { experienceLedger = [] } = {}) {
     ...tournaments.map((tournament) => tournament.restraint?.consecutive_no_change_count ?? 0)
   );
   const scopeDriftRisk = aggregateScopeDriftRisk(tournaments);
+  const metricGamingRisk = aggregateMetricGamingRisk(tournaments);
 
   return {
     mode: "tournament_restraint_contract.v1",
@@ -312,6 +340,7 @@ function buildRestraintContract(tournaments, { experienceLedger = [] } = {}) {
     }),
     scope_drift_calculator: "deterministic_reducer",
     scope_drift_risk: scopeDriftRisk,
+    metric_gaming_risk: metricGamingRisk,
     tie_breaker: "incumbent_unchanged_on_exact_tie"
   };
 }
@@ -369,7 +398,7 @@ export async function reviewEvolutionTournamentGate({
   const variantList = tournaments.flatMap((tournament) => tournament.variants);
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
-  const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments, now });
+  const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments, now, repoRoot });
   const restraintContract = buildRestraintContract(tournaments, { experienceLedger });
   const postDeployHistory = summarizeHistoricalPostDeployResults(historicalPostDeployResults, { now });
   const loserReviewContext = buildLoserReviewContext({

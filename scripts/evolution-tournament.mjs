@@ -55,6 +55,7 @@ if (asJson) {
   console.log(`quality_score: ${result.quality_assessment.overall_quality_score}`);
   console.log(`convergence_status: ${result.tournament_ranking.restraint_contract.convergence_status}`);
   console.log(`scope_drift_risk: ${result.tournament_ranking.restraint_contract.scope_drift_risk.level} (${result.tournament_ranking.restraint_contract.scope_drift_risk.score})`);
+  console.log(`metric_gaming_risk: ${result.tournament_ranking.restraint_contract.metric_gaming_risk.level} (${result.tournament_ranking.restraint_contract.metric_gaming_risk.score})`);
   console.log(`judge_escalation: ${result.judge_escalation.recommended ? "recommended" : "not_recommended"} (score ${result.judge_escalation.score})`);
   console.log(`llm_review_value: ${result.judge_escalation.llm_review_value.level} (${result.judge_escalation.llm_review_value.call_policy}, waste_risk ${result.judge_escalation.llm_review_value.waste_risk})`);
   console.log(`judge: ${result.judge.mode} (${result.judge.status}, calls ${result.judge.llm_api_calls})`);

@@ -1,9 +1,54 @@
+import { execFileSync } from "node:child_process";
 import { safeId, stableHash } from "./evolution-tournament-utils.mjs";
 import {
   METRIC_REGISTRY_VERSION,
   PLANT_MODEL_VERSION,
   TOURNAMENT_LEDGER_METRIC_ID
 } from "./evolution-tournament-contract.mjs";
+
+const REPLAY_PROOF_MODE = "tournament_replay_proof.v1";
+const REPLAY_COMMAND = "npm run evolution:tournament:misa -- --json";
+const REPLAY_SCHEMA_REF = "schemas/evolution_tournament_gate.schema.json";
+
+function readGitOutput(repoRoot, args) {
+  try {
+    return execFileSync("git", args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function buildRepoState(repoRoot) {
+  const repoCommit = readGitOutput(repoRoot, ["rev-parse", "--verify", "HEAD"]);
+  const status = readGitOutput(repoRoot, ["status", "--porcelain"]);
+
+  return {
+    repo_commit: repoCommit ?? "unknown",
+    worktree_dirty: repoCommit ? (status ?? "git_status_unavailable").length > 0 : true
+  };
+}
+
+function buildReplayProof({ repoState, iterationId }) {
+  return {
+    mode: REPLAY_PROOF_MODE,
+    repo_commit: repoState.repo_commit,
+    worktree_dirty: repoState.worktree_dirty,
+    eval_command: REPLAY_COMMAND,
+    replay_command: REPLAY_COMMAND,
+    replay_idempotent: true,
+    replay_writes_ledger: false,
+    iteration_id: iterationId,
+    schema_ref: REPLAY_SCHEMA_REF,
+    proof_surface: "local_dry_run_only",
+    human_approval_required: true,
+    can_promote_now: false,
+    advisory_only: true
+  };
+}
 
 function decisionForStatus(status) {
   if (["shadow_reportable", "winner", "kept"].includes(status)) return "keep";
@@ -15,12 +60,13 @@ function ledgerHash(fields) {
   return `diff-${stableHash(JSON.stringify(fields))}`;
 }
 
-function normalizePreflightExperience(entry, { timestamp }) {
+function normalizePreflightExperience(entry, { timestamp, repoState }) {
   const status = entry.status ?? "suppressed";
   const ledgerId = entry.ledger_id ?? `exp-preflight-${safeId(entry.candidate_id ?? entry.source_event_id)}`;
+  const iterationId = entry.iteration_id ?? ledgerId;
   return {
     ledger_id: ledgerId,
-    iteration_id: entry.iteration_id ?? ledgerId,
+    iteration_id: iterationId,
     source: entry.source ?? "candidate_preflight",
     candidate_id: entry.candidate_id,
     source_event_id: entry.source_event_id,
@@ -43,6 +89,7 @@ function normalizePreflightExperience(entry, { timestamp }) {
     reason_ref: entry.reason_ref ?? ledgerId,
     timestamp: entry.timestamp ?? entry.observed_at ?? timestamp,
     last_sample_ts: entry.last_sample_ts ?? entry.last_triggered_at ?? entry.observed_at ?? timestamp,
+    replay_proof: buildReplayProof({ repoState, iterationId }),
     score: entry.score ?? null,
     evidence_count: entry.evidence_count ?? null,
     risk_level: entry.risk_level ?? null,
@@ -95,10 +142,16 @@ function previousNoChangeCount({ preflightLedger, tournament }) {
   return Math.max(0, ...matching.map((entry) => entry.consecutive_no_change_count ?? 0));
 }
 
-export function buildTournamentExperienceLedger({ preflight, tournaments, now = new Date() }) {
+export function buildTournamentExperienceLedger({
+  preflight,
+  tournaments,
+  now = new Date(),
+  repoRoot = process.cwd()
+}) {
   const timestamp = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
+  const repoState = buildRepoState(repoRoot);
   const preflightLedger = (preflight.experience_ledger ?? [])
-    .map((entry) => normalizePreflightExperience(entry, { timestamp }));
+    .map((entry) => normalizePreflightExperience(entry, { timestamp, repoState }));
   const variantLedger = [];
 
   for (const tournament of tournaments) {
@@ -139,6 +192,7 @@ export function buildTournamentExperienceLedger({ preflight, tournaments, now = 
       reason_ref: tournament.winner.variant_id,
       timestamp,
       last_sample_ts: timestamp,
+      replay_proof: buildReplayProof({ repoState, iterationId: tournament.tournament_id }),
       score: winnerVariant?.scores?.composite ?? tournament.winner.composite_score ?? null,
       evidence_count: null,
       risk_level: null,
@@ -203,6 +257,7 @@ export function buildTournamentExperienceLedger({ preflight, tournaments, now = 
         reason_ref: loser.variant_id,
         timestamp: loser.observed_at ?? timestamp,
         last_sample_ts: loser.last_triggered_at ?? loser.observed_at ?? timestamp,
+        replay_proof: buildReplayProof({ repoState, iterationId: tournament.tournament_id }),
         score: variant?.scores?.composite ?? null,
         evidence_count: loser.evidence_count ?? null,
         risk_level: null,

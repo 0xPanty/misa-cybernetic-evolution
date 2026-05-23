@@ -7,6 +7,7 @@ import {
 import {
   DEFAULT_RESTRAINT_SETPOINTS,
   EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT,
+  METRIC_GAMING_RISK_ID,
   SAFETY_CRITICAL_METRIC_IDS
 } from "../scripts/lib/evolution-tournament-contract.mjs";
 import { buildTournamentExperienceLedger } from "../scripts/lib/evolution-tournament-ledger.mjs";
@@ -59,6 +60,12 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.tournament_ranking.restraint_contract.scope_drift_risk.llm_api_calls, 0);
   assert.ok(["none", "low", "medium", "high"].includes(result.tournament_ranking.restraint_contract.scope_drift_risk.level));
   assert.equal(typeof result.tournament_ranking.restraint_contract.scope_drift_risk.score, "number");
+  assert.equal(result.tournament_ranking.restraint_contract.metric_gaming_risk.mode, "deterministic_reducer");
+  assert.equal(result.tournament_ranking.restraint_contract.metric_gaming_risk.metric_id, METRIC_GAMING_RISK_ID);
+  assert.equal(result.tournament_ranking.restraint_contract.metric_gaming_risk.llm_api_calls, 0);
+  assert.equal(result.tournament_ranking.restraint_contract.metric_gaming_risk.decision_authority, "none");
+  assert.equal(result.tournament_ranking.restraint_contract.metric_gaming_risk.changes_winner, false);
+  assert.ok(["none", "low", "medium", "high"].includes(result.tournament_ranking.restraint_contract.metric_gaming_risk.level));
   assert.equal(result.tournament_ranking.critique_summary.mode, "critique_summary.v1");
   assert.equal(result.tournament_ranking.critique_summary.decision_authority, "none");
   assert.equal(result.tournament_ranking.critique_summary.ranking_authority, false);
@@ -126,6 +133,21 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "damping_or_case_evidence"));
   assert.ok(result.experience_ledger.some((item) => item.retained_as === "non_winning_experience"));
   assert.equal(result.experience_ledger.every((item) => item.production_authority === false && item.publication_allowed === false), true);
+  assert.equal(result.experience_ledger.every((item) => (
+    item.replay_proof.mode === "tournament_replay_proof.v1"
+      && item.replay_proof.repo_commit.length > 0
+      && typeof item.replay_proof.worktree_dirty === "boolean"
+      && item.replay_proof.eval_command === "npm run evolution:tournament:misa -- --json"
+      && item.replay_proof.replay_command === "npm run evolution:tournament:misa -- --json"
+      && item.replay_proof.replay_idempotent === true
+      && item.replay_proof.replay_writes_ledger === false
+      && item.replay_proof.iteration_id === item.iteration_id
+      && item.replay_proof.schema_ref === "schemas/evolution_tournament_gate.schema.json"
+      && item.replay_proof.proof_surface === "local_dry_run_only"
+      && item.replay_proof.human_approval_required === true
+      && item.replay_proof.can_promote_now === false
+      && item.replay_proof.advisory_only === true
+  )), true);
   assert.ok(result.experience_ledger.some((item) => item.loser_class === "unsafe"));
   assert.ok(result.experience_ledger.some((item) => item.loser_class === "promising" || item.loser_class === "weak"));
   const tournamentWinnerLedger = result.experience_ledger.filter((item) => (
@@ -216,6 +238,11 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.equal(tournament.restraint.convergence_k, 2);
     assert.equal(tournament.restraint.scope_drift_risk.mode, "deterministic_reducer");
     assert.equal(tournament.restraint.scope_drift_risk.llm_api_calls, 0);
+    assert.equal(tournament.restraint.metric_gaming_risk.mode, "deterministic_reducer");
+    assert.equal(tournament.restraint.metric_gaming_risk.metric_id, METRIC_GAMING_RISK_ID);
+    assert.equal(tournament.restraint.metric_gaming_risk.llm_api_calls, 0);
+    assert.equal(tournament.restraint.metric_gaming_risk.decision_authority, "none");
+    assert.equal(tournament.restraint.metric_gaming_risk.changes_winner, false);
     assert.equal(tournament.restraint.critique_summary.decision_authority, "none");
     assert.equal(tournament.restraint.critique_summary.ranking_authority, false);
     assert.ok(tournament.restraint.a_b_ab_shape.incumbent_variant_id);
@@ -360,6 +387,21 @@ test("honest ledger versions are injected by writer, not accepted from candidate
           plant_model_version: "misa.plant_model.v0",
           metric_registry_version: "misa.metric_registry.v0",
           metric_id: "stale.metric",
+          replay_proof: {
+            mode: "candidate_supplied_fake_proof",
+            repo_commit: "fake",
+            worktree_dirty: false,
+            eval_command: "fake",
+            replay_command: "fake",
+            replay_idempotent: false,
+            replay_writes_ledger: true,
+            iteration_id: "fake",
+            schema_ref: "fake",
+            proof_surface: "fake",
+            human_approval_required: false,
+            can_promote_now: true,
+            advisory_only: false
+          },
           score: 0.7
         }
       ]
@@ -373,20 +415,42 @@ test("honest ledger versions are injected by writer, not accepted from candidate
   assert.equal(ledger[0].metric_registry_version, "misa.metric_registry.v1");
   assert.equal(ledger[0].metric_id, "evolution_tournament.deterministic_score");
   assert.equal(ledger[0].decision, "keep");
+  assert.equal(ledger[0].replay_proof.mode, "tournament_replay_proof.v1");
+  assert.notEqual(ledger[0].replay_proof.repo_commit, "fake");
+  assert.equal(ledger[0].replay_proof.eval_command, "npm run evolution:tournament:misa -- --json");
+  assert.equal(ledger[0].replay_proof.replay_idempotent, true);
+  assert.equal(ledger[0].replay_proof.replay_writes_ledger, false);
+  assert.equal(ledger[0].replay_proof.iteration_id, "exp-bogus-version");
+  assert.equal(ledger[0].replay_proof.human_approval_required, true);
+  assert.equal(ledger[0].replay_proof.can_promote_now, false);
+  assert.equal(ledger[0].replay_proof.advisory_only, true);
 });
 
 test("tournament restraint setpoints and safety subset are registered metrics", () => {
   const registry = loadDefaultMetricRegistry();
   const metrics = new Map(registry.metrics.map((metric) => [metric.metric_id, metric]));
   const tolerance = metrics.get(DEFAULT_RESTRAINT_SETPOINTS.metric_regression_tolerance.metric_id);
+  const metricGamingRisk = metrics.get(METRIC_GAMING_RISK_ID);
 
   assert.equal(tolerance.direction, "hold_within");
   assert.equal(tolerance.bounds.min, 0);
   assert.equal(tolerance.bounds.max, 1);
+  assert.equal(metricGamingRisk.direction, "minimize");
+  assert.equal(metricGamingRisk.measurement_kind, "guardrail");
+  assert.equal(metricGamingRisk.bounds.min, 0);
+  assert.equal(metricGamingRisk.bounds.max, 1);
+  assert.equal(metricGamingRisk.source_contract.reducer_id, "buildMetricGamingRisk");
+  assert.equal(metricGamingRisk.source_contract.deterministic_only, true);
+  assert.equal(metricGamingRisk.source_contract.provider_calls_allowed, false);
+  assert.equal(metricGamingRisk.source_contract.external_api_allowed, false);
   for (const metricId of SAFETY_CRITICAL_METRIC_IDS) {
     const metric = metrics.get(metricId);
     assert.equal(metric.safety_critical, true);
     assert.equal(metric.direction, "maximize");
+    assert.equal(metric.source_contract.reducer_id, "scoreVariant");
+    assert.equal(metric.source_contract.deterministic_only, true);
+    assert.equal(metric.source_contract.provider_calls_allowed, false);
+    assert.equal(metric.source_contract.external_api_allowed, false);
   }
 });
 

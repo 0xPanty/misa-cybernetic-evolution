@@ -3,6 +3,7 @@ import {
   CONVERGENCE_K,
   LOCAL_COMMAND_ALLOWLIST,
   MAX_VARIANTS_PER_CANDIDATE,
+  METRIC_GAMING_RISK_ID,
   SAFETY_CRITICAL_METRIC_IDS,
   SYNTHESIS_METRIC_EPSILON
 } from "./evolution-tournament-contract.mjs";
@@ -740,6 +741,99 @@ function buildScopeDriftRisk(variants, winner) {
   };
 }
 
+function hasSafetyCriticalRegression(variant, incumbent) {
+  return ["safety", "holdout", "regression"].some((key) => (
+    (variant.scores?.[key] ?? 0) < (incumbent.scores?.[key] ?? 0)
+  ));
+}
+
+function hasMetricOnlyGain(variant, incumbent) {
+  const compositeGain = (variant.scores?.composite ?? 0) > (incumbent.scores?.composite ?? 0);
+  const safetyCriticalFlat = ["safety", "holdout", "regression"].every((key) => (
+    (variant.scores?.[key] ?? 0) === (incumbent.scores?.[key] ?? 0)
+  ));
+  const splitFlat = ["train", "validation"].every((key) => (
+    (variant.scores?.[key] ?? 0) === (incumbent.scores?.[key] ?? 0)
+  ));
+  const evidenceNotStronger = (variant.scores?.evidence_fit ?? 0) <= (incumbent.scores?.evidence_fit ?? 0);
+
+  return compositeGain && safetyCriticalFlat && splitFlat && evidenceNotStronger;
+}
+
+function buildMetricGamingRisk(variants, winner) {
+  const incumbent = variants.find((variant) => variant.control_footprint.role === "incumbent_unchanged");
+  const safeChanged = variants.filter((variant) => (
+    variant.constraints.hard_gate_passed
+    && variant.control_footprint.role !== "incumbent_unchanged"
+    && variant.control_footprint.role !== "negative_probe"
+  ));
+  const defaultRisk = {
+    mode: "deterministic_reducer",
+    metric_id: METRIC_GAMING_RISK_ID,
+    llm_api_calls: 0,
+    decision_authority: "none",
+    changes_winner: false,
+    window_size: safeChanged.length,
+    level: "none",
+    score: 0,
+    composite_gain_over_incumbent: 0,
+    metric_only_gain_count: 0,
+    safety_critical_regression_count: 0,
+    hard_gate_rejected_high_score_count: 0,
+    low_evidence_winner: false,
+    reasons: ["no_incumbent_for_metric_gaming_comparison"]
+  };
+
+  if (!incumbent) return defaultRisk;
+
+  const compositeGain = round(Math.max(0, winner.scores.composite - incumbent.scores.composite));
+  const metricOnlyGainCount = safeChanged.filter((variant) => hasMetricOnlyGain(variant, incumbent)).length;
+  const safetyCriticalRegressionCount = safeChanged.filter((variant) => (
+    (variant.scores.composite > incumbent.scores.composite)
+    && hasSafetyCriticalRegression(variant, incumbent)
+  )).length;
+  const hardGateRejectedHighScoreCount = variants.filter((variant) => (
+    !variant.constraints.hard_gate_passed
+    && variant.scores.composite > incumbent.scores.composite
+  )).length;
+  const lowEvidenceWinner = winner.control_footprint.role !== "incumbent_unchanged"
+    && winner.scores.evidence_fit < 0.75;
+  const winnerMetricOnlyGain = winner.control_footprint.role !== "incumbent_unchanged"
+    && hasMetricOnlyGain(winner, incumbent);
+  const score = round(clamp01(
+    (winnerMetricOnlyGain ? 0.1 : 0)
+      + Math.min(0.2, metricOnlyGainCount * 0.04)
+      + Math.min(0.25, hardGateRejectedHighScoreCount * 0.08)
+      + Math.min(0.35, safetyCriticalRegressionCount * 0.18)
+      + (lowEvidenceWinner ? 0.12 : 0)
+  ));
+  const reasons = [];
+
+  if (winnerMetricOnlyGain) reasons.push("winner_gain_is_proxy_metric_only");
+  if (metricOnlyGainCount > 0) reasons.push("metric_only_gain_candidates_need_heldout_review");
+  if (safetyCriticalRegressionCount > 0) reasons.push("composite_gain_hides_safety_critical_regression");
+  if (hardGateRejectedHighScoreCount > 0) reasons.push("high_scoring_variant_failed_hard_gate");
+  if (lowEvidenceWinner) reasons.push("winner_evidence_fit_below_review_band");
+  if (reasons.length === 0) reasons.push("no_metric_gaming_pressure_detected");
+
+  return {
+    mode: "deterministic_reducer",
+    metric_id: METRIC_GAMING_RISK_ID,
+    llm_api_calls: 0,
+    decision_authority: "none",
+    changes_winner: false,
+    window_size: safeChanged.length,
+    level: riskLevel(score),
+    score,
+    composite_gain_over_incumbent: compositeGain,
+    metric_only_gain_count: metricOnlyGainCount,
+    safety_critical_regression_count: safetyCriticalRegressionCount,
+    hard_gate_rejected_high_score_count: hardGateRejectedHighScoreCount,
+    low_evidence_winner: lowEvidenceWinner,
+    reasons
+  };
+}
+
 function convergenceStatus({ incumbentRetained, consecutiveNoChangeCount, scopeDriftRisk }) {
   if (scopeDriftRisk.level === "high") return "scope_drift_suspected";
   if (consecutiveNoChangeCount >= CONVERGENCE_K) return "incumbent_retained_x2";
@@ -755,6 +849,7 @@ function buildTournamentRestraint({ variants, winner }) {
   const incumbentRetained = winner.control_footprint.role === "incumbent_unchanged";
   const consecutiveNoChangeCount = incumbentRetained ? 1 : 0;
   const scopeDriftRisk = buildScopeDriftRisk(variants, winner);
+  const metricGamingRisk = buildMetricGamingRisk(variants, winner);
   const status = convergenceStatus({
     incumbentRetained,
     consecutiveNoChangeCount,
@@ -774,6 +869,7 @@ function buildTournamentRestraint({ variants, winner }) {
     consecutive_no_change_count: consecutiveNoChangeCount,
     convergence_status: status,
     scope_drift_risk: scopeDriftRisk,
+    metric_gaming_risk: metricGamingRisk,
     restraint_comparison: synthesisComparison(variants),
     critique_summary: {
       mode: "critique_summary.v1",

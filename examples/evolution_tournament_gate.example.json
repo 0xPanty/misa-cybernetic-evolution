@@ -70,6 +70,25 @@
         "complexity_growth_over_initial_baseline": 2.83,
         "reasons": ["deterministic_counts_within_restraint_band"]
       },
+      "metric_gaming_risk": {
+        "mode": "deterministic_reducer",
+        "metric_id": "evolution_tournament.metric_gaming_risk",
+        "llm_api_calls": 0,
+        "decision_authority": "none",
+        "changes_winner": false,
+        "window_size": 1,
+        "level": "low",
+        "score": 0.14,
+        "composite_gain_over_incumbent": 0.04,
+        "metric_only_gain_count": 1,
+        "safety_critical_regression_count": 0,
+        "hard_gate_rejected_high_score_count": 0,
+        "low_evidence_winner": false,
+        "reasons": [
+          "winner_gain_is_proxy_metric_only",
+          "metric_only_gain_candidates_need_heldout_review"
+        ]
+      },
       "tie_breaker": "incumbent_unchanged_on_exact_tie"
     },
     "critique_summary": {
@@ -566,6 +585,25 @@
           "complexity_growth_over_initial_baseline": 2.83,
           "reasons": ["deterministic_counts_within_restraint_band"]
         },
+        "metric_gaming_risk": {
+          "mode": "deterministic_reducer",
+          "metric_id": "evolution_tournament.metric_gaming_risk",
+          "llm_api_calls": 0,
+          "decision_authority": "none",
+          "changes_winner": false,
+          "window_size": 1,
+          "level": "low",
+          "score": 0.14,
+          "composite_gain_over_incumbent": 0.04,
+          "metric_only_gain_count": 1,
+          "safety_critical_regression_count": 0,
+          "hard_gate_rejected_high_score_count": 0,
+          "low_evidence_winner": false,
+          "reasons": [
+            "winner_gain_is_proxy_metric_only",
+            "metric_only_gain_candidates_need_heldout_review"
+          ]
+        },
         "restraint_comparison": {
           "revision_variant_id": null,
           "synthesis_variant_id": "adaptive-skill-sample:pareto-compact",
@@ -658,6 +696,21 @@
       "reason_ref": "adaptive-skill-sample:baseline",
       "timestamp": "2026-05-18T00:00:00.000Z",
       "last_sample_ts": "2026-05-18T00:00:00.000Z",
+      "replay_proof": {
+        "mode": "tournament_replay_proof.v1",
+        "repo_commit": "example-commit",
+        "worktree_dirty": false,
+        "eval_command": "npm run evolution:tournament:misa -- --json",
+        "replay_command": "npm run evolution:tournament:misa -- --json",
+        "replay_idempotent": true,
+        "replay_writes_ledger": false,
+        "iteration_id": "tournament-adaptive-skill-sample",
+        "schema_ref": "schemas/evolution_tournament_gate.schema.json",
+        "proof_surface": "local_dry_run_only",
+        "human_approval_required": true,
+        "can_promote_now": false,
+        "advisory_only": true
+      },
       "score": 0.93,
       "evidence_count": 4,
       "risk_level": null,
@@ -739,6 +792,21 @@
       "reason_ref": "adaptive-skill-sample:aggressive-auto-publish",
       "timestamp": "2026-05-18T00:00:00.000Z",
       "last_sample_ts": "2026-05-18T00:00:00.000Z",
+      "replay_proof": {
+        "mode": "tournament_replay_proof.v1",
+        "repo_commit": "example-commit",
+        "worktree_dirty": false,
+        "eval_command": "npm run evolution:tournament:misa -- --json",
+        "replay_command": "npm run evolution:tournament:misa -- --json",
+        "replay_idempotent": true,
+        "replay_writes_ledger": false,
+        "iteration_id": "tournament-adaptive-skill-sample",
+        "schema_ref": "schemas/evolution_tournament_gate.schema.json",
+        "proof_surface": "local_dry_run_only",
+        "human_approval_required": true,
+        "can_promote_now": false,
+        "advisory_only": true
+      },
       "score": 0.37,
       "evidence_count": 4,
       "risk_level": null,

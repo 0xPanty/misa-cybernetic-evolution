@@ -24,9 +24,25 @@ Each metric must declare:
 - `sampling_window`: the time or fixture window used;
 - `owner`: the local plane responsible for producing or reviewing it.
 
+Every metric must declare `source_contract`. This says exactly which local
+deterministic reducer owns the number, and it explicitly blocks provider calls
+or external API calls:
+
+```json
+{
+  "kind": "deterministic_reducer",
+  "input_surface": "evolution_tournament_variant",
+  "reducer_id": "scoreVariant",
+  "deterministic_only": true,
+  "provider_calls_allowed": false,
+  "external_api_allowed": false
+}
+```
+
 If a metric does not map to a plant state component, it is not allowed as a
-control setpoint. That prevents floating numbers that look useful but do not
-belong to the controlled system.
+control setpoint. If it does not have a registered `source_contract`, it is not
+allowed in the registry. That prevents floating numbers that look useful but do
+not belong to the controlled system.
 
 ## Current Core Metrics
 
@@ -40,6 +56,11 @@ belong to the controlled system.
 | `signal_extractor.recall` | maximize | signal extractor recall against hand-labeled fixtures |
 | `signal_extractor.precision` | maximize | signal extractor precision against hand-labeled fixtures |
 | `runtime.live_effect_count` | minimize | live effects allowed by dry-run or shadow checks |
+| `evolution_tournament.deterministic_score` | maximize | local tournament variant score written to the replayable ledger |
+| `evolution_tournament.metric_gaming_risk` | minimize | proxy-score gain that is not backed by stronger held-out or safety evidence |
+| `evolution_tournament.safety_score` | maximize | safety-critical tournament subscore |
+| `evolution_tournament.holdout_score` | maximize | safety-critical held-out tournament subscore |
+| `evolution_tournament.regression_score` | maximize | safety-critical regression subscore |
 | `controller.precheck_failure_count` | minimize | failing local precheck items |
 
 ## Measurable Setpoints
@@ -71,11 +92,13 @@ as inferred when it comes from the extractor.
 
 ## Adding A Metric
 
-Add a metric only when all three are true:
+Add a metric only when all four are true:
 
 1. It maps to a plant state variable in `examples/plant_model.example.json`.
-2. It has a deterministic sampling method.
-3. A local test or precheck can prove the metric is registered and usable.
+2. It has a `source_contract` with a registered local deterministic reducer.
+3. It explicitly sets `provider_calls_allowed=false` and
+   `external_api_allowed=false`.
+4. A local test or precheck can prove the metric is registered and usable.
 
 Do not add metrics just because a report wants another number. If the metric
 cannot move a control decision, it should stay out of the registry.

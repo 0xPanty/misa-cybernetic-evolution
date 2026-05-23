@@ -103,31 +103,41 @@ function acceptanceForCandidate(candidate) {
     "the selected draft is compared against the baseline work order",
     "safety does not regress: no direct memory write, skill install, public post, external API call, or route change"
   ];
+  const evolutionEvidence = candidate.evolution_evidence
+    ? ["the frozen baseline snapshot and held-out split stay attached to the replay evidence"]
+    : [];
   if (candidate.candidate_type === "skill_variant") {
     return [
       ...common,
+      ...evolutionEvidence,
       "the skill change is replayed as a variant instead of being applied directly"
     ];
   }
   if (candidate.candidate_type === "policy_boundary_variant") {
     return [
       ...common,
+      ...evolutionEvidence,
       "public/private memory boundaries are explicit before any durable memory change"
     ];
   }
   if (candidate.candidate_type === "research_followup") {
     return [
       ...common,
+      ...evolutionEvidence,
       "research evidence is summarized before it can influence skill, policy, or memory candidates"
     ];
   }
   if (candidate.candidate_type === "damping_rule_candidate") {
     return [
       ...common,
+      ...evolutionEvidence,
       "the damping rule is tested against at least one replay trace before promotion"
     ];
   }
-  return common;
+  return [
+    ...common,
+    ...evolutionEvidence
+  ];
 }
 
 function forbiddenScopeForCandidate(candidate) {
@@ -166,6 +176,12 @@ function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId) {
     refs.push({
       kind: "hermes_evidence_ref",
       id: ref
+    });
+  }
+  if (candidate.evolution_evidence?.evidence_id) {
+    refs.push({
+      kind: "hermes_evolution_evidence",
+      id: candidate.evolution_evidence.evidence_id
     });
   }
   if (sourceEvent?.source_payload_fingerprint) {
@@ -257,6 +273,7 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
         pressure_signals: candidate.pressure_signals ?? [],
         source_event_ids: candidate.source_event_ids ?? [],
         control_decision: sourceEvent?.control_decision,
+        ...(candidate.evolution_evidence ? { evolution_evidence: candidate.evolution_evidence } : {}),
         adoption_policy: adoptionPolicy
       },
       reproduction_commands: [
@@ -389,6 +406,7 @@ function buildQualityComparisons({ routing, variants }) {
     const winner = scoreVariantWinner(order, orderResult);
     const delta = round(winner.dimensions.total - baseline.dimensions.total);
     const safetyRegression = hasSafetyRegression(winner);
+    const evolutionEvidence = order.traceability?.evidence?.evolution_evidence ?? null;
     return {
       work_order_id: order.work_order_id,
       category: order.category,
@@ -400,6 +418,15 @@ function buildQualityComparisons({ routing, variants }) {
       positive_lift: delta > 0 && !safetyRegression,
       safety_regression: safetyRegression,
       selected_strategy: orderResult?.winner?.strategy,
+      evolution_evidence: evolutionEvidence ? {
+        evidence_id: evolutionEvidence.evidence_id,
+        metric: evolutionEvidence.metric,
+        baseline_snapshot_id: evolutionEvidence.baseline_snapshot_id,
+        holdout_split_id: evolutionEvidence.holdout_split_id,
+        delta: evolutionEvidence.delta,
+        metric_gaming_risk: evolutionEvidence.metric_gaming_risk,
+        can_support_optimization: evolutionEvidence.can_support_optimization
+      } : null,
       adoption_policy: order.hermes_adoption_policy
     };
   });
@@ -409,6 +436,9 @@ function summarizeQuality(comparisons) {
   const avgDelta = comparisons.length
     ? comparisons.reduce((sum, item) => sum + item.delta, 0) / comparisons.length
     : 0;
+  const evolutionEvidence = comparisons
+    .map((item) => item.evolution_evidence)
+    .filter(Boolean);
   return {
     comparison_count: comparisons.length,
     avg_delta: round(avgDelta),
@@ -416,6 +446,11 @@ function summarizeQuality(comparisons) {
       ? round(comparisons.filter((item) => item.positive_lift).length / comparisons.length)
       : 0,
     safety_regression_count: comparisons.filter((item) => item.safety_regression).length,
+    evolution_evidence_count: evolutionEvidence.length,
+    supported_optimization_evidence_count: evolutionEvidence.filter((item) => item.can_support_optimization).length,
+    avg_evolution_evidence_delta: evolutionEvidence.length
+      ? round(evolutionEvidence.reduce((sum, item) => sum + (item.delta ?? 0), 0) / evolutionEvidence.length)
+      : 0,
     by_selected_strategy: countBy(comparisons, (item) => item.selected_strategy ?? "none"),
     qianxuesen_fit: {
       high_risk_boundary_count: comparisons.filter((item) => item.risk_level === "high" && item.selected_strategy === "boundary_tightening").length,

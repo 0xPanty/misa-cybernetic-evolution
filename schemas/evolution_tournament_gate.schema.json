@@ -275,6 +275,46 @@
         }
       }
     },
+    "metric_gaming_risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "metric_id",
+        "llm_api_calls",
+        "decision_authority",
+        "changes_winner",
+        "window_size",
+        "level",
+        "score",
+        "composite_gain_over_incumbent",
+        "metric_only_gain_count",
+        "safety_critical_regression_count",
+        "hard_gate_rejected_high_score_count",
+        "low_evidence_winner",
+        "reasons"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "deterministic_reducer" },
+        "metric_id": { "type": "string", "const": "evolution_tournament.metric_gaming_risk" },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "decision_authority": { "type": "string", "const": "none" },
+        "changes_winner": { "type": "boolean", "const": false },
+        "window_size": { "type": "integer", "minimum": 0 },
+        "level": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "composite_gain_over_incumbent": { "type": "number", "minimum": 0, "maximum": 1 },
+        "metric_only_gain_count": { "type": "integer", "minimum": 0 },
+        "safety_critical_regression_count": { "type": "integer", "minimum": 0 },
+        "hard_gate_rejected_high_score_count": { "type": "integer", "minimum": 0 },
+        "low_evidence_winner": { "type": "boolean" },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "critique_summary": {
       "type": "object",
       "additionalProperties": false,
@@ -328,6 +368,7 @@
         "convergence_status",
         "scope_drift_calculator",
         "scope_drift_risk",
+        "metric_gaming_risk",
         "tie_breaker"
       ],
       "properties": {
@@ -340,6 +381,7 @@
         "convergence_status": { "$ref": "#/$defs/convergence_status" },
         "scope_drift_calculator": { "type": "string", "const": "deterministic_reducer" },
         "scope_drift_risk": { "$ref": "#/$defs/scope_drift_risk" },
+        "metric_gaming_risk": { "$ref": "#/$defs/metric_gaming_risk" },
         "tie_breaker": { "type": "string", "const": "incumbent_unchanged_on_exact_tie" }
       }
     },
@@ -928,6 +970,7 @@
         "reason_ref",
         "timestamp",
         "last_sample_ts",
+        "replay_proof",
         "score",
         "evidence_count",
         "risk_level",
@@ -966,6 +1009,7 @@
         "reason_ref": { "type": "string", "minLength": 1 },
         "timestamp": { "type": "string", "format": "date-time" },
         "last_sample_ts": { "type": "string", "format": "date-time" },
+        "replay_proof": { "$ref": "#/$defs/replay_proof" },
         "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "evidence_count": { "type": ["integer", "null"], "minimum": 0 },
         "risk_level": { "type": ["string", "null"] },
@@ -1035,6 +1079,40 @@
         },
         "production_authority": { "type": "boolean", "const": false },
         "publication_allowed": { "type": "boolean", "const": false }
+      }
+    },
+    "replay_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "repo_commit",
+        "worktree_dirty",
+        "eval_command",
+        "replay_command",
+        "replay_idempotent",
+        "replay_writes_ledger",
+        "iteration_id",
+        "schema_ref",
+        "proof_surface",
+        "human_approval_required",
+        "can_promote_now",
+        "advisory_only"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "tournament_replay_proof.v1" },
+        "repo_commit": { "type": "string", "minLength": 1 },
+        "worktree_dirty": { "type": "boolean" },
+        "eval_command": { "type": "string", "minLength": 1 },
+        "replay_command": { "type": "string", "minLength": 1 },
+        "replay_idempotent": { "type": "boolean", "const": true },
+        "replay_writes_ledger": { "type": "boolean", "const": false },
+        "iteration_id": { "type": "string", "minLength": 1 },
+        "schema_ref": { "type": "string", "const": "schemas/evolution_tournament_gate.schema.json" },
+        "proof_surface": { "type": "string", "const": "local_dry_run_only" },
+        "human_approval_required": { "type": "boolean", "const": true },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "advisory_only": { "type": "boolean", "const": true }
       }
     },
     "tournament": {
@@ -1184,6 +1262,7 @@
         "consecutive_no_change_count",
         "convergence_status",
         "scope_drift_risk",
+        "metric_gaming_risk",
         "restraint_comparison",
         "critique_summary"
       ],
@@ -1210,6 +1289,7 @@
         "consecutive_no_change_count": { "type": "integer", "minimum": 0 },
         "convergence_status": { "$ref": "#/$defs/convergence_status" },
         "scope_drift_risk": { "$ref": "#/$defs/scope_drift_risk" },
+        "metric_gaming_risk": { "$ref": "#/$defs/metric_gaming_risk" },
         "restraint_comparison": { "$ref": "#/$defs/restraint_comparison" },
         "critique_summary": { "$ref": "#/$defs/critique_summary" }
       }

@@ -13,7 +13,18 @@
       "sampling_window": "last replay suite",
       "owner": "evolution plane",
       "description": "Primary skill-quality metric for measurable skill setpoints.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "local_replay_suite",
+        "reducer_id": "computeSkillReplayPassRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "memory.pollution_rate",
@@ -25,7 +36,18 @@
       "sampling_window": "last local replay batch",
       "owner": "memory layer",
       "description": "Guardrail against weak-evidence memory promotion.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "memory_candidate_audit",
+        "reducer_id": "computeMemoryPollutionRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "public_channel.safety_incident_count",
@@ -37,7 +59,17 @@
       "sampling_window": "session or audit batch",
       "owner": "policy route",
       "description": "Guardrail for public channel safety.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "public_channel_audit",
+        "reducer_id": "countPublicSafetyIncidents",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     },
     {
       "metric_id": "provider.timeout_rate",
@@ -49,7 +81,18 @@
       "sampling_window": "1 hour or one validation batch",
       "owner": "case route",
       "description": "Known-failure metric for provider stability.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "provider_failure_evidence",
+        "reducer_id": "computeProviderTimeoutRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "learning.route_coverage_count",
@@ -61,7 +104,18 @@
       "sampling_window": "current local test suite",
       "owner": "learning loop",
       "description": "Dry-run health metric for route coverage.",
-      "bounds": { "min": 0, "max": 6 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "learning_fixture_set",
+        "reducer_id": "countLearningRouteCoverage",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 6
+      }
     },
     {
       "metric_id": "signal_extractor.recall",
@@ -73,7 +127,18 @@
       "sampling_window": "examples/misa-learning fixture review",
       "owner": "observation plane",
       "description": "Recall of rule-based signal extraction against fixture truth.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "hand_labeled_signal_fixtures",
+        "reducer_id": "computeSignalExtractorRecall",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "signal_extractor.precision",
@@ -85,7 +150,18 @@
       "sampling_window": "examples/misa-learning fixture review",
       "owner": "observation plane",
       "description": "Precision of rule-based signal extraction against fixture truth.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "hand_labeled_signal_fixtures",
+        "reducer_id": "computeSignalExtractorPrecision",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "runtime.live_effect_count",
@@ -97,7 +173,17 @@
       "sampling_window": "current local check",
       "owner": "governance plane",
       "description": "Hard guardrail for no-production-effect claims.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "dry_run_shadow_report",
+        "reducer_id": "countRuntimeLiveEffects",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     },
     {
       "metric_id": "session_distiller.health_schema_pass_rate",
@@ -109,7 +195,18 @@
       "sampling_window": "current run or local health history window",
       "owner": "component health",
       "description": "Deterministic health metric for session-distiller schema validity.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeSessionDistillerSchemaPassRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "runtime_thread.health_registered_actuator_rate",
@@ -121,7 +218,18 @@
       "sampling_window": "current runtime-thread health window",
       "owner": "component health",
       "description": "Deterministic health metric for runtime-thread next-step reducer registration.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeRuntimeThreadRegisteredActuatorRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "work_order_inbox.health_dead_letter_rate",
@@ -133,7 +241,18 @@
       "sampling_window": "current inbox health window",
       "owner": "component health",
       "description": "Deterministic health metric for work-order inbox dead letters.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeWorkOrderInboxDeadLetterRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "work_order_inbox.health_median_ack_latency_ms",
@@ -145,7 +264,17 @@
       "sampling_window": "current inbox health window",
       "owner": "component health",
       "description": "Diagnostic context metric for human ACK delay on work-order inbox items.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeWorkOrderInboxMedianAckLatencyMs",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     },
     {
       "metric_id": "vector_store.health_hit_rate",
@@ -157,7 +286,18 @@
       "sampling_window": "current vector retrieval health window",
       "owner": "component health",
       "description": "Deterministic health metric for vector retrieval hit rate.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeVectorStoreHitRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "vector_store.health_write_failure_count",
@@ -169,7 +309,17 @@
       "sampling_window": "current vector-store health window",
       "owner": "component health",
       "description": "Guardrail metric for vector-store write failures and forbidden external writes.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeVectorStoreWriteFailureCount",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     },
     {
       "metric_id": "tool_loop.health_integrity_rate",
@@ -181,7 +331,18 @@
       "sampling_window": "current tool-loop health window",
       "owner": "component health",
       "description": "Deterministic health metric for local tool-loop integrity.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeToolLoopIntegrityRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "tool_loop.health_evidence_ref_rate",
@@ -193,7 +354,18 @@
       "sampling_window": "current tool-loop health window",
       "owner": "component health",
       "description": "Deterministic health metric for tool-loop evidence traceability.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeToolLoopEvidenceRefRate",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "tool_loop.health_failure_count",
@@ -205,7 +377,17 @@
       "sampling_window": "current tool-loop health window",
       "owner": "component health",
       "description": "Guardrail metric for tool-loop failures and ungrounded tool events.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "component_health_window",
+        "reducer_id": "computeToolLoopFailureCount",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     },
     {
       "metric_id": "component_health.escalation_threshold",
@@ -217,7 +399,17 @@
       "sampling_window": "current component-health setpoint review",
       "owner": "component health",
       "description": "Setpoint for consecutive-failure escalation; changes require slow-loop evidence.",
-      "bounds": { "min": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "metric_registry_setpoint",
+        "reducer_id": "readComponentHealthEscalationThreshold",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 1
+      }
     },
     {
       "metric_id": "evolution_tournament.deterministic_score",
@@ -229,7 +421,41 @@
       "sampling_window": "current tournament run",
       "owner": "evolution plane",
       "description": "Flat ledger metric for replayable candidate comparison; it does not promote winners by itself.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "evolution_tournament_variant",
+        "reducer_id": "scoreVariant",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    {
+      "metric_id": "evolution_tournament.metric_gaming_risk",
+      "plant_state_component": "evolution_tournament.metric_gaming_risk",
+      "measurement_kind": "guardrail",
+      "unit": "ratio",
+      "direction": "minimize",
+      "sampling_method": "Count deterministic warning signals where composite score gains are not backed by stronger holdout, safety, regression, or evidence-fit signals.",
+      "sampling_window": "current tournament restraint review",
+      "owner": "evolution plane",
+      "description": "Advisory guardrail for proxy-metric gaming pressure inside local tournament selection; it cannot change the winner by itself.",
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "evolution_tournament_restraint",
+        "reducer_id": "buildMetricGamingRisk",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "evolution_tournament.synthesis_metric_regression_tolerance",
@@ -241,7 +467,18 @@
       "sampling_window": "current tournament restraint review",
       "owner": "evolution plane",
       "description": "Maximum tolerated deterministic-score regression when a synthesis candidate is more restrained than the revision candidate.",
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "metric_registry_setpoint",
+        "reducer_id": "readTournamentRegressionToleranceSetpoint",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "evolution_tournament.safety_score",
@@ -254,7 +491,18 @@
       "owner": "evolution plane",
       "description": "Safety-critical subscore: synthesis cannot win by reducing hard-gate safety.",
       "safety_critical": true,
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "evolution_tournament_variant",
+        "reducer_id": "scoreVariant",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "evolution_tournament.holdout_score",
@@ -267,7 +515,18 @@
       "owner": "evolution plane",
       "description": "Safety-critical subscore: synthesis cannot win by regressing holdout boundary checks.",
       "safety_critical": true,
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "evolution_tournament_variant",
+        "reducer_id": "scoreVariant",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "evolution_tournament.regression_score",
@@ -280,7 +539,18 @@
       "owner": "evolution plane",
       "description": "Safety-critical subscore: synthesis cannot win by hiding regression behind compactness or novelty.",
       "safety_critical": true,
-      "bounds": { "min": 0, "max": 1 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "evolution_tournament_variant",
+        "reducer_id": "scoreVariant",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0,
+        "max": 1
+      }
     },
     {
       "metric_id": "controller.precheck_failure_count",
@@ -292,7 +562,17 @@
       "sampling_window": "current precheck run",
       "owner": "verification plane",
       "description": "Local health metric for contract, smoke, bridge, and current-line checks.",
-      "bounds": { "min": 0 }
+      "source_contract": {
+        "kind": "deterministic_reducer",
+        "input_surface": "precheck_report",
+        "reducer_id": "countPrecheckFailures",
+        "deterministic_only": true,
+        "provider_calls_allowed": false,
+        "external_api_allowed": false
+      },
+      "bounds": {
+        "min": 0
+      }
     }
   ]
 }

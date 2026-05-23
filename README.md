@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.25.0`. The current line keeps source-lineage and
+Current package version: `0.26.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
@@ -11,6 +11,7 @@ adds issue/PR-shaped dev/test work-order samples,
 adds the v0.27 factor-compliant candidate layer,
 starts the v0.28 runtime thread contract,
 adds local component-health diagnostics,
+adds Hermes evolution-grade evidence and the `hermes:value-proof` local value check,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 
@@ -363,6 +364,30 @@ That command keeps Hermes' self-evolution advantage by moving signals directly
 into work orders, seeded variants, selected winners, and quality comparisons.
 It still does not write Hermes memory, mutate skills, publish, call models, or
 call external APIs.
+
+For "does this actually improve behavior?" checks, use the evolution-grade
+fixture. It carries frozen baseline, held-out split, before/after scores, sample
+count, and metric-gaming risk:
+
+```bash
+npm run hermes:work-order -- --fixture-file test/fixtures/hermes-runtime-adapter/hermes-evolution-grade-events.json --json --dry-run
+```
+
+That evidence can support optimization, but it still only produces
+replay-required work orders. It does not promote, write, or execute.
+
+For an open-source release check, `hermes:value-proof` runs the local
+work-order corpus, Hermes adapter samples, the evolution-grade fixture, and a
+bad-evidence control group across deterministic seeds:
+
+```bash
+npm run hermes:value-proof
+npm run hermes:value-proof -- --seed-count 500 --json
+```
+
+The command must report positive lift, held-out pass, zero safety regressions,
+zero provider/API calls, and rejection of negative/high-gaming/missing-holdout
+evidence before the Hermes intake should be described as value-positive.
 
 ## Evolution Tournament
 

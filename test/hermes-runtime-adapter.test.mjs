@@ -27,6 +27,9 @@ test("Hermes runtime adapter turns self-improvement traces into replay-gated pre
   assert.equal(result.summary.skill_manage_event_count, 1);
   assert.equal(result.summary.memory_write_event_count, 1);
   assert.equal(result.summary.external_information_event_count, 2);
+  assert.equal(result.summary.evolution_evidence_count, 0);
+  assert.equal(result.summary.holdout_evidence_count, 0);
+  assert.equal(result.summary.positive_optimization_evidence_count, 0);
   assert.equal(result.summary.research_digest_count, 2);
   assert.equal(result.summary.evolution_candidate_count, 4);
   assert.equal(result.summary.replay_required_count, 4);
@@ -59,6 +62,35 @@ test("Hermes runtime adapter output validates against the universal adapter sche
     name: "validate Hermes runtime adapter report"
   });
 
+  assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+});
+
+test("Hermes runtime adapter preserves evolution-grade before/after evidence", async () => {
+  const result = await runHermesRuntimeAdapter({
+    fixtureFile: "test/fixtures/hermes-runtime-adapter/hermes-evolution-grade-events.json",
+    now: new Date("2026-05-16T00:00:00Z")
+  });
+  const evidence = result.evolution_candidates.map((candidate) => candidate.evolution_evidence);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.event_count, 3);
+  assert.equal(result.summary.evolution_candidate_count, 3);
+  assert.equal(result.summary.evolution_evidence_count, 3);
+  assert.equal(result.summary.holdout_evidence_count, 3);
+  assert.equal(result.summary.positive_optimization_evidence_count, 3);
+  assert.equal(evidence.every((item) => item?.baseline_snapshot_id), true);
+  assert.equal(evidence.every((item) => item?.holdout_split_id), true);
+  assert.equal(evidence.every((item) => item?.can_support_optimization), true);
+  assert.deepEqual(
+    evidence.map((item) => item.delta),
+    [0.16, 0.17, 0.2]
+  );
+
+  const validation = await validateJsonData({
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: result,
+    name: "validate Hermes evolution-grade adapter report"
+  });
   assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
 });
 
@@ -109,6 +141,7 @@ test("Hermes runtime adapter can read observe-only plugin NDJSON event logs", as
   assert.equal(result.summary.event_count, 2);
   assert.equal(result.summary.evolution_candidate_count, 2);
   assert.equal(result.summary.research_digest_count, 2);
+  assert.equal(result.summary.evolution_evidence_count, 0);
   assert.equal(result.safety.writes_skills, false);
   assert.equal(result.safety.llm_api_calls, 0);
 });
@@ -128,6 +161,7 @@ test("empty Hermes event capture stays observe-only", () => {
   assert.equal(result.ok, true);
   assert.equal(result.summary.event_count, 0);
   assert.equal(result.summary.evolution_candidate_count, 0);
+  assert.equal(result.summary.evolution_evidence_count, 0);
   assert.equal(result.safety.production_authority, false);
   assert.equal(result.safety.llm_api_calls, 0);
 });

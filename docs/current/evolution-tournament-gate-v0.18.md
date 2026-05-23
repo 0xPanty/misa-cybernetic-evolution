@@ -80,6 +80,13 @@ complexity_growth_over_initial_baseline
 No model calculates this risk. An optional model may critique the already-built
 numbers, but it cannot change the score, winner, route, or authority boundary.
 
+The restraint layer also reports `metric_gaming_risk`. This is a deterministic
+advisory guardrail for a simple failure mode: a candidate wins the proxy score
+without stronger evidence, holdout, safety, or regression signals. The field
+uses registered metric `evolution_tournament.metric_gaming_risk`, calls no LLM,
+has `decision_authority=none`, and cannot change the winner. It only tells the
+next reviewer when a score gain needs more held-out evidence.
+
 The synthesis candidate can beat the revision candidate only when all three
 checks pass:
 
@@ -154,6 +161,7 @@ decision
 reason_ref
 timestamp
 last_sample_ts
+replay_proof
 consecutive_no_change_count
 convergence_status
 ```
@@ -165,6 +173,28 @@ reserved for future liveness checks and does not create a new memory system.
 it does not create an automatic cooldown by itself. The count is assigned by the
 ledger writer from prior ledger evidence when `incumbent_unchanged` wins; it is
 not accepted from candidate self-report.
+
+`replay_proof` is the Helix-style evidence anchor adapted to MISA's boundary.
+The ledger writer injects it at write time from local git state; candidates do
+not get to self-report it. It records `repo_commit`, `worktree_dirty`, the JSON
+eval/replay command, the schema reference, and the ledger `iteration_id`.
+
+The command is intentionally the same local dry-run JSON command for eval and
+replay:
+
+```text
+npm run evolution:tournament:misa -- --json
+```
+
+The proof makes that shared command explicit instead of relying on naming:
+`replay_idempotent=true` and `replay_writes_ledger=false`. Replay means rerun
+the deterministic local report for comparison; it must not append a ledger entry
+or mutate the world.
+
+If the worktree is dirty, the proof stays honest: the surface is still
+`local_dry_run_only`, `human_approval_required=true`, `can_promote_now=false`,
+and `advisory_only=true`. A candidate can win a local tournament, but the ledger
+does not say it is promotable.
 
 ## Loser Contrast Ledger
 

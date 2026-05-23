@@ -92,10 +92,28 @@ All evolution candidates are marked:
 This keeps the useful Hermes self-improvement signal without letting runtime
 events directly rewrite Qianxuesen memory, skills, policy, or route state.
 
+## Evolution-Grade Samples
+
+The adapter can also preserve a compact `evolution_evidence` block when Hermes
+emits before/after replay evidence. This is the minimum useful proof shape:
+
+- `baseline_snapshot_id`: the frozen behavior being compared against;
+- `holdout_split_id`: the held-out sample split, not the same sample used to
+  notice the issue;
+- `before_score` / `after_score`: the measured direction of change;
+- `sample_count`: how much replay pressure backed the claim;
+- `metric_gaming_risk`: whether the metric looks easy to game.
+
+Qualified evidence can support optimization only when the direction is positive,
+the baseline and held-out split are present, and the gaming risk is not high.
+It still creates replay-required candidates only; it does not promote anything.
+
 ## Verification
 
 ```bash
 npm run hermes:adapt-runtime -- --json
+npm run hermes:adapt-runtime -- --fixture-file test/fixtures/hermes-runtime-adapter/hermes-evolution-grade-events.json --json
+npm run hermes:work-order -- --fixture-file test/fixtures/hermes-runtime-adapter/hermes-evolution-grade-events.json --json --dry-run
 npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json
 npm run hermes:plugin:doctor
 npm run validate:schemas
@@ -107,6 +125,10 @@ npm test
 The default fixture is:
 
 - `test/fixtures/hermes-runtime-adapter/hermes-self-improvement-events.json`
+
+The evolution-grade fixture is:
+
+- `test/fixtures/hermes-runtime-adapter/hermes-evolution-grade-events.json`
 
 The output schema is:
 

@@ -115,6 +115,9 @@
         "skill_manage_event_count",
         "memory_write_event_count",
         "external_information_event_count",
+        "evolution_evidence_count",
+        "holdout_evidence_count",
+        "positive_optimization_evidence_count",
         "default_mode",
         "verifier"
       ],
@@ -128,6 +131,9 @@
         "skill_manage_event_count": { "type": "integer", "minimum": 0 },
         "memory_write_event_count": { "type": "integer", "minimum": 0 },
         "external_information_event_count": { "type": "integer", "minimum": 0 },
+        "evolution_evidence_count": { "type": "integer", "minimum": 0 },
+        "holdout_evidence_count": { "type": "integer", "minimum": 0 },
+        "positive_optimization_evidence_count": { "type": "integer", "minimum": 0 },
         "default_mode": { "type": "string", "const": "observe_only" },
         "verifier": { "type": "string", "enum": ["passed", "failed"] }
       }
@@ -210,6 +216,7 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         },
+        "evolution_evidence": { "$ref": "#/$defs/evolution_evidence" },
         "effect_boundary": { "$ref": "#/$defs/effect_boundary" },
         "control_decision": { "$ref": "#/$defs/control_decision" }
       }
@@ -315,6 +322,7 @@
         "evidence_refs": { "$ref": "#/$defs/string_array" },
         "proposed_change": { "type": "string" },
         "expected_gain": { "type": "string" },
+        "evolution_evidence": { "$ref": "#/$defs/evolution_evidence" },
         "status": { "type": "string", "const": "replay_required" },
         "replay_required": { "type": "boolean", "const": true },
         "tournament_required": { "type": "boolean", "const": true },
@@ -332,6 +340,45 @@
             "reason": { "type": "string" }
           }
         }
+      }
+    },
+    "evolution_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "metric",
+        "baseline_snapshot_id",
+        "holdout_split_id",
+        "before_score",
+        "after_score",
+        "delta",
+        "sample_count",
+        "metric_gaming_risk",
+        "failure_refs",
+        "evidence_refs",
+        "positive_direction",
+        "holdout_backed",
+        "can_support_optimization"
+      ],
+      "properties": {
+        "evidence_id": { "type": "string" },
+        "metric": { "type": "string" },
+        "baseline_snapshot_id": { "type": ["string", "null"] },
+        "holdout_split_id": { "type": ["string", "null"] },
+        "before_score": { "type": ["number", "null"] },
+        "after_score": { "type": ["number", "null"] },
+        "delta": { "type": ["number", "null"] },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "metric_gaming_risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "unknown"]
+        },
+        "failure_refs": { "$ref": "#/$defs/string_array" },
+        "evidence_refs": { "$ref": "#/$defs/string_array" },
+        "positive_direction": { "type": "boolean" },
+        "holdout_backed": { "type": "boolean" },
+        "can_support_optimization": { "type": "boolean" }
       }
     },
     "plugin_contract": {

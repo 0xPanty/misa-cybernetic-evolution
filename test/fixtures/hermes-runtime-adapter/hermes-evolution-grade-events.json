@@ -1,0 +1,141 @@
+{
+  "fixture_id": "hermes-evolution-grade-events",
+  "source": {
+    "runtime": "hermes-agent",
+    "runtime_commit": "hermes-evolution-grade-local-sample",
+    "source_url": "https://github.com/NousResearch/hermes-agent"
+  },
+  "events": [
+    {
+      "event_id": "hermes-evo-skill-heldout-001",
+      "hook": "pre_tool_call",
+      "timestamp": "2026-05-16T00:00:00Z",
+      "session_id": "s-hermes-evolution-grade",
+      "tool_name": "skill_manage",
+      "args": {
+        "action": "patch",
+        "name": "farcaster-reply",
+        "old_string": "Reply from recent context only.",
+        "new_string": "Check protocol drift, public boundary, and replay result before drafting a public reply."
+      },
+      "context": {
+        "platform": "cli",
+        "topic": "Farcaster public reply skill held-out replay",
+        "terms": ["Hermes", "Farcaster", "skill_manage"],
+        "conversation_signals": [
+          "external_framework_change",
+          "knowledge_gap",
+          "user_correction"
+        ],
+        "evidence_refs": [
+          "hermes-evo-skill-heldout-source",
+          "hermes-source-tools-skill-manager-tool-py"
+        ],
+        "evolution_evidence": {
+          "evidence_id": "evo-proof-farcaster-skill-heldout-001",
+          "metric": "heldout_public_reply_success",
+          "baseline_snapshot_id": "baseline-farcaster-reply-2026-05-14",
+          "holdout_split_id": "holdout-farcaster-public-reply-v1",
+          "before_score": 0.58,
+          "after_score": 0.74,
+          "sample_count": 12,
+          "metric_gaming_risk": "medium",
+          "failure_refs": [
+            "failure-private-memory-boundary-01",
+            "failure-protocol-drift-02"
+          ],
+          "evidence_refs": [
+            "replay-before-after-farcaster-skill-001"
+          ]
+        }
+      }
+    },
+    {
+      "event_id": "hermes-evo-policy-boundary-002",
+      "hook": "pre_tool_call",
+      "timestamp": "2026-05-16T00:01:00Z",
+      "session_id": "s-hermes-evolution-grade",
+      "tool_name": "memory",
+      "args": {
+        "action": "add",
+        "target": "memory",
+        "content": "Public replies should cite public context and keep private owner memory out."
+      },
+      "context": {
+        "platform": "cli",
+        "topic": "public/private memory boundary replay",
+        "terms": ["Hermes", "memory", "Farcaster"],
+        "conversation_signals": [
+          "public_posting_boundary",
+          "explicit_user_boundary",
+          "farcaster_public_memory_risk"
+        ],
+        "evidence_refs": [
+          "hermes-evo-policy-boundary-source",
+          "hermes-source-tools-memory-tool-py"
+        ],
+        "evolution_evidence": {
+          "evidence_id": "evo-proof-policy-boundary-heldout-002",
+          "metric": "heldout_boundary_precision",
+          "baseline_snapshot_id": "baseline-public-boundary-2026-05-14",
+          "holdout_split_id": "holdout-public-private-boundary-v1",
+          "before_score": 0.62,
+          "after_score": 0.79,
+          "sample_count": 10,
+          "metric_gaming_risk": "low",
+          "failure_refs": [
+            "failure-public-private-leak-risk-01"
+          ],
+          "evidence_refs": [
+            "replay-before-after-policy-boundary-002"
+          ]
+        }
+      }
+    },
+    {
+      "event_id": "hermes-evo-damping-replay-003",
+      "hook": "post_tool_call",
+      "timestamp": "2026-05-16T00:02:00Z",
+      "session_id": "s-hermes-evolution-grade",
+      "tool_name": "local_task_runner",
+      "args": {
+        "action": "run",
+        "name": "session-recovery-smoke"
+      },
+      "result": {
+        "success": false,
+        "status": "failed",
+        "error_class": "missing_recovery_anchor"
+      },
+      "context": {
+        "platform": "cli",
+        "topic": "bounded retry and recovery-anchor damping",
+        "terms": ["Hermes", "Qianxuesen"],
+        "conversation_signals": [
+          "repeated_failure_pattern",
+          "research_needed"
+        ],
+        "evidence_refs": [
+          "hermes-evo-damping-replay-source"
+        ],
+        "evolution_evidence": {
+          "evidence_id": "evo-proof-damping-replay-heldout-003",
+          "metric": "heldout_recovery_success",
+          "baseline_snapshot_id": "baseline-recovery-smoke-2026-05-14",
+          "holdout_split_id": "holdout-recovery-anchor-v1",
+          "before_score": 0.5,
+          "after_score": 0.7,
+          "sample_count": 8,
+          "metric_gaming_risk": "medium",
+          "failure_refs": [
+            "failure-missing-recovery-anchor-01",
+            "failure-repeat-run-without-stop-condition-02"
+          ],
+          "evidence_refs": [
+            "replay-before-after-damping-003"
+          ]
+        }
+      }
+    }
+  ]
+}
