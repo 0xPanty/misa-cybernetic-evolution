@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.27.1`.
+The package is currently `0.27.2`.
 
 The current direction is v0.26 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -59,6 +59,11 @@ v0.27.1 adds `npm run update:vps-shadow`, the safe one-command VPS updater. It
 refuses tracked local changes, fast-forwards from `origin/main`, runs `npm ci`,
 runs the full-shadow self-check, and refreshes the VPS session-distiller hook.
 `--dry-run` prints the sequence without changing git state or system files.
+
+v0.27.2 makes the VPS hook refresh complete by updating
+`MISA_CYBERNETIC_EXPECT_COMMIT` in the session-distiller env file to the current
+repo commit when `deploy:vps-shadow` installs the hook. This keeps the Hermes
+wrapper pin aligned after one-command updates.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
