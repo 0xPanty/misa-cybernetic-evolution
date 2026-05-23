@@ -27,6 +27,8 @@ import {
 import { simulateLearningCycle } from "./learning-loop.mjs";
 import { loadVpsConversationSources } from "./vps-conversation-sources.mjs";
 import {
+  CONVERGENCE_K,
+  DEFAULT_RESTRAINT_SETPOINTS,
   MAX_VARIANTS_PER_CANDIDATE,
   NOUS_SELF_EVOLUTION_COMMIT
 } from "./evolution-tournament-contract.mjs";
@@ -251,6 +253,86 @@ async function evaluateSourceBackedEvolution({ repoRoot, sourceDir, vpsRawDir })
   };
 }
 
+function aggregateScopeDriftRisk(tournaments) {
+  const risks = tournaments
+    .map((tournament) => tournament.restraint?.scope_drift_risk)
+    .filter(Boolean);
+  const maxRisk = risks.reduce((selected, risk) => (
+    !selected || risk.score > selected.score ? risk : selected
+  ), null);
+
+  return maxRisk ?? {
+    mode: "deterministic_reducer",
+    llm_api_calls: 0,
+    window_size: 0,
+    level: "none",
+    score: 0,
+    affected_setpoints_unique_count: 0,
+    affected_actuators_unique_count: 0,
+    diff_hash_unique_count: 0,
+    metric_gain_over_initial_baseline: 0,
+    complexity_growth_over_initial_baseline: 0,
+    reasons: ["no_tournaments"]
+  };
+}
+
+function aggregateConvergenceStatus({ maxNoChangeCount, scopeDriftRisk }) {
+  if (scopeDriftRisk.level === "high") return "scope_drift_suspected";
+  if (maxNoChangeCount >= CONVERGENCE_K) return "incumbent_retained_x2";
+  if (maxNoChangeCount === 1) return "incumbent_retained_x1";
+  return "running";
+}
+
+function maxNoChangeCountFromLedger(experienceLedger) {
+  return Math.max(
+    0,
+    ...experienceLedger
+      .filter((entry) => entry.source === "tournament_variant" && entry.status === "winner")
+      .map((entry) => entry.consecutive_no_change_count ?? 0)
+  );
+}
+
+function buildRestraintContract(tournaments, { experienceLedger = [] } = {}) {
+  const maxNoChangeCount = Math.max(
+    maxNoChangeCountFromLedger(experienceLedger),
+    ...tournaments.map((tournament) => tournament.restraint?.consecutive_no_change_count ?? 0)
+  );
+  const scopeDriftRisk = aggregateScopeDriftRisk(tournaments);
+
+  return {
+    mode: "tournament_restraint_contract.v1",
+    incumbent_role: "incumbent_unchanged",
+    do_nothing_candidate_required: true,
+    convergence_k: CONVERGENCE_K,
+    metric_regression_tolerance: { ...DEFAULT_RESTRAINT_SETPOINTS.metric_regression_tolerance },
+    consecutive_no_change_count: maxNoChangeCount,
+    convergence_status: aggregateConvergenceStatus({
+      maxNoChangeCount,
+      scopeDriftRisk
+    }),
+    scope_drift_calculator: "deterministic_reducer",
+    scope_drift_risk: scopeDriftRisk,
+    tie_breaker: "incumbent_unchanged_on_exact_tie"
+  };
+}
+
+function buildCritiqueSummary({ judge, judgeEscalation }) {
+  return {
+    mode: "critique_summary.v1",
+    role: "advisory_notes_only",
+    decision_authority: "none",
+    fresh_context_required: true,
+    ranking_authority: false,
+    llm_api_calls: judge?.llm_api_calls ?? 0,
+    notes: [
+      "This field replaces any Borda-style naming; critique is not a ranking authority.",
+      judgeEscalation?.recommended
+        ? "Escalation can request optional fresh-context critique, but deterministic ranking keeps authority."
+        : "Deterministic reducer found no high-value reason to call an optional critique model."
+    ]
+  };
+}
+
 export async function reviewEvolutionTournamentGate({
   repoRoot = process.cwd(),
   now = new Date(),
@@ -288,6 +370,7 @@ export async function reviewEvolutionTournamentGate({
   const rejected = variantList.filter((variant) => variant.tournament_status === "rejected");
   const winners = tournaments.map((tournament) => tournament.winner);
   const experienceLedger = buildTournamentExperienceLedger({ preflight, tournaments, now });
+  const restraintContract = buildRestraintContract(tournaments, { experienceLedger });
   const postDeployHistory = summarizeHistoricalPostDeployResults(historicalPostDeployResults, { now });
   const loserReviewContext = buildLoserReviewContext({
     tournaments,
@@ -347,7 +430,9 @@ export async function reviewEvolutionTournamentGate({
       scorer: "deterministic_proxy_v1",
       llm_judge_allowed: false,
       decision_authority: "deterministic_qianxuesen_gate_only",
-      optional_llm_review_role: "critique_only_no_winner_authority"
+      optional_llm_review_role: "critique_only_no_winner_authority",
+      restraint_contract: restraintContract,
+      critique_summary: null
     },
     skill_evolution_bridge: skillEvolutionBridge.bridge,
     summary: {
@@ -404,6 +489,10 @@ export async function reviewEvolutionTournamentGate({
     judgeBaseUrl,
     judgeEscalation: result.judge_escalation,
     llmJudge
+  });
+  result.tournament_ranking.critique_summary = buildCritiqueSummary({
+    judge: result.judge,
+    judgeEscalation: result.judge_escalation
   });
   result.quality_comparison = buildQualityComparison(result.quality_assessment, result.judge);
   result.violations = evaluateEvolutionTournamentGate(result);

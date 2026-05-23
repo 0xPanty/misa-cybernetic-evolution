@@ -40,6 +40,84 @@ An optional LLM reviewer may add critique notes only when the deterministic
 escalation gate allows it. It cannot rank winners, change routes, or promote a
 candidate.
 
+## Tournament Restraint Contract
+
+The gate now makes restraint explicit instead of assuming that every tournament
+should move. Each tournament carries an Autoreason-inspired A/B/AB shape, but it
+stays inside the existing deterministic reducer:
+
+- `incumbent_unchanged` is the first-class do-nothing candidate;
+- `revision_candidate` is the stronger change pressure;
+- `synthesis_candidate` is the smaller A+B style compromise;
+- negative probes still exist only to prove the hard gate rejects unsafe shapes.
+
+`convergence_status` is an enum, never a free string:
+
+```text
+running
+incumbent_retained_x1
+incumbent_retained_x2
+scope_drift_suspected
+awaiting_new_evidence
+```
+
+The ledger records `consecutive_no_change_count` and `convergence_status` so a
+later reducer can see whether the same component is repeatedly saying "hold".
+This is observation only. It does not start timers, write memory, or create an
+automatic cooldown.
+
+`scope_drift_risk` is also deterministic. It counts recent tournament-window
+pressure from control-footprint fields:
+
+```text
+affected_setpoints_unique_count
+affected_actuators_unique_count
+diff_hash_unique_count
+metric_gain_over_initial_baseline
+complexity_growth_over_initial_baseline
+```
+
+No model calculates this risk. An optional model may critique the already-built
+numbers, but it cannot change the score, winner, route, or authority boundary.
+
+The synthesis candidate can beat the revision candidate only when all three
+checks pass:
+
+```text
+restraint(synthesis) <= restraint(revision)
+metric(synthesis) >= metric(revision) * (1 - epsilon)
+safety(synthesis) >= safety(revision)
+```
+
+`epsilon` is the registered setpoint
+`evolution_tournament.synthesis_metric_regression_tolerance`, currently `0.03`.
+Changing it should go through the same slow-loop evidence path as other
+setpoints, not an unreviewed scorer tweak.
+
+`restraint(candidate)` is computed from the variant control footprint:
+
+```text
+affected_setpoints.length
++ affected_actuators.length
++ setpoint_delta_l1
+```
+
+The optional review field is named `critique_summary`, not `borda_summary`,
+because it is human-readable critique only. The deterministic reducer remains
+the only winner authority.
+
+The safety no-regression check uses a metric-registry-tagged safety subset:
+
+```text
+evolution_tournament.safety_score
+evolution_tournament.holdout_score
+evolution_tournament.regression_score
+```
+
+Those metrics are marked `safety_critical: true` in the registry. A synthesis
+candidate cannot win by trading any of them away for compactness, novelty, or a
+small composite-score gain.
+
 ## Skill Evolution Bridge
 
 The tournament can optionally include replay-required candidates from
@@ -76,11 +154,17 @@ decision
 reason_ref
 timestamp
 last_sample_ts
+consecutive_no_change_count
+convergence_status
 ```
 
 `plant_model_version` and `metric_registry_version` keep the old score
 replayable after the plant model or metric registry grows. `last_sample_ts` is
 reserved for future liveness checks and does not create a new memory system.
+`consecutive_no_change_count` is only a replayable observation for the reducer;
+it does not create an automatic cooldown by itself. The count is assigned by the
+ledger writer from prior ledger evidence when `incumbent_unchanged` wins; it is
+not accepted from candidate self-report.
 
 ## Loser Contrast Ledger
 

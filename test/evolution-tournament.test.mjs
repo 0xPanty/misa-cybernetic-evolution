@@ -4,8 +4,14 @@ import {
   evaluateEvolutionTournamentGate,
   reviewEvolutionTournamentGate
 } from "../scripts/lib/evolution-tournament-gate.mjs";
-import { EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT } from "../scripts/lib/evolution-tournament-contract.mjs";
+import {
+  DEFAULT_RESTRAINT_SETPOINTS,
+  EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT,
+  SAFETY_CRITICAL_METRIC_IDS
+} from "../scripts/lib/evolution-tournament-contract.mjs";
 import { buildTournamentExperienceLedger } from "../scripts/lib/evolution-tournament-ledger.mjs";
+import { buildTournament } from "../scripts/lib/evolution-tournament-scoring.mjs";
+import { loadDefaultMetricRegistry } from "../scripts/lib/metric-registry.mjs";
 
 test("v0.17 tournament gate optimizes candidates without production authority", async () => {
   const result = await reviewEvolutionTournamentGate();
@@ -34,6 +40,30 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.tournament_ranking.rule, "deterministic_reducer");
   assert.equal(result.tournament_ranking.llm_judge_allowed, false);
   assert.equal(result.tournament_ranking.decision_authority, "deterministic_qianxuesen_gate_only");
+  assert.equal(result.tournament_ranking.restraint_contract.mode, "tournament_restraint_contract.v1");
+  assert.equal(result.tournament_ranking.restraint_contract.do_nothing_candidate_required, true);
+  assert.equal(result.tournament_ranking.restraint_contract.convergence_k, 2);
+  assert.deepEqual(
+    result.tournament_ranking.restraint_contract.metric_regression_tolerance,
+    DEFAULT_RESTRAINT_SETPOINTS.metric_regression_tolerance
+  );
+  assert.ok([
+    "running",
+    "incumbent_retained_x1",
+    "incumbent_retained_x2",
+    "scope_drift_suspected",
+    "awaiting_new_evidence"
+  ].includes(result.tournament_ranking.restraint_contract.convergence_status));
+  assert.equal(result.tournament_ranking.restraint_contract.scope_drift_calculator, "deterministic_reducer");
+  assert.equal(result.tournament_ranking.restraint_contract.scope_drift_risk.mode, "deterministic_reducer");
+  assert.equal(result.tournament_ranking.restraint_contract.scope_drift_risk.llm_api_calls, 0);
+  assert.ok(["none", "low", "medium", "high"].includes(result.tournament_ranking.restraint_contract.scope_drift_risk.level));
+  assert.equal(typeof result.tournament_ranking.restraint_contract.scope_drift_risk.score, "number");
+  assert.equal(result.tournament_ranking.critique_summary.mode, "critique_summary.v1");
+  assert.equal(result.tournament_ranking.critique_summary.decision_authority, "none");
+  assert.equal(result.tournament_ranking.critique_summary.ranking_authority, false);
+  assert.equal(result.tournament_ranking.critique_summary.fresh_context_required, true);
+  assert.equal("borda_summary" in result.tournament_ranking, false);
   assert.equal(result.skill_evolution_bridge.enabled, false);
   assert.equal(result.skill_evolution_bridge.summary.admitted_candidate_count, 0);
   assert.equal(result.skill_evolution_bridge.admission.can_promote_now, false);
@@ -98,7 +128,31 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
   assert.equal(result.experience_ledger.every((item) => item.production_authority === false && item.publication_allowed === false), true);
   assert.ok(result.experience_ledger.some((item) => item.loser_class === "unsafe"));
   assert.ok(result.experience_ledger.some((item) => item.loser_class === "promising" || item.loser_class === "weak"));
-  assert.equal(result.experience_ledger.filter((item) => item.source === "tournament_variant").every((item) => (
+  const tournamentWinnerLedger = result.experience_ledger.filter((item) => (
+    item.source === "tournament_variant" && item.status === "winner"
+  ));
+  const tournamentLoserLedger = result.experience_ledger.filter((item) => (
+    item.source === "tournament_variant" && item.status !== "winner"
+  ));
+  assert.equal(tournamentWinnerLedger.length, result.summary.tournament_count);
+  assert.equal(tournamentWinnerLedger.every((item) => (
+    (
+      item.retained_as === "selected_draft_experience"
+        || item.retained_as === "incumbent_unchanged_retained"
+    )
+      && Number.isInteger(item.consecutive_no_change_count)
+      && [
+        "running",
+        "incumbent_retained_x1",
+        "incumbent_retained_x2",
+        "scope_drift_suspected",
+        "awaiting_new_evidence"
+      ].includes(item.convergence_status)
+      && item.production_authority === false
+      && item.publication_allowed === false
+      && item.decision === "keep"
+  )), true);
+  assert.equal(tournamentLoserLedger.every((item) => (
     item.candidate_pool_effect
       && item.failure_type
       && item.selection_hint
@@ -126,6 +180,8 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
       && typeof item.decay_weight === "number"
       && typeof item.confidence === "number"
       && item.contrast?.winner_variant_id
+      && item.consecutive_no_change_count === 0
+      && item.convergence_status === "running"
   )), true);
   assert.equal(result.safety.production_authority, false);
   assert.equal(result.safety.publication_allowed, false);
@@ -156,6 +212,13 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.equal(tournament.winner.production_authority, false);
     assert.equal(tournament.variants.some((variant) => variant.tournament_status === "rejected"), true);
     assert.deepEqual(Object.keys(tournament.winner), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.winner_keys);
+    assert.equal(tournament.restraint.mode, "tournament_restraint_layer.v1");
+    assert.equal(tournament.restraint.convergence_k, 2);
+    assert.equal(tournament.restraint.scope_drift_risk.mode, "deterministic_reducer");
+    assert.equal(tournament.restraint.scope_drift_risk.llm_api_calls, 0);
+    assert.equal(tournament.restraint.critique_summary.decision_authority, "none");
+    assert.equal(tournament.restraint.critique_summary.ranking_authority, false);
+    assert.ok(tournament.restraint.a_b_ab_shape.incumbent_variant_id);
 
     const winner = tournament.variants.find((variant) => variant.variant_id === tournament.winner.variant_id);
     assert.ok(winner);
@@ -163,7 +226,20 @@ test("v0.17 tournament gate optimizes candidates without production authority", 
     assert.equal(winner.route_target, tournament.route_target);
     assert.deepEqual(Object.keys(winner.scores), EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT.variant_score_keys);
     assert.equal(typeof winner.scores.strategy_fit, "number");
+    assert.equal(typeof winner.control_footprint.restraint_score, "number");
     assert.equal(Object.values(winner.safety.live_effects).some(Boolean), false);
+    assert.ok(tournament.variants.some((variant) => variant.control_footprint.role === "incumbent_unchanged"));
+    if (winner.control_footprint.role === "synthesis_candidate") {
+      assert.equal(tournament.restraint.restraint_comparison.synthesis_can_beat_revision, true);
+    }
+    assert.deepEqual(
+      tournament.restraint.restraint_comparison.safety_metric_subset.metric_ids,
+      SAFETY_CRITICAL_METRIC_IDS
+    );
+    assert.deepEqual(
+      tournament.restraint.restraint_comparison.safety_metric_subset.score_keys,
+      ["safety", "holdout", "regression"]
+    );
 
     const unsafeLosers = tournament.loser_ledger.filter((loser) => loser.loser_class === "unsafe");
     const nonUnsafeLosers = tournament.loser_ledger.filter((loser) => loser.loser_class !== "unsafe");
@@ -297,6 +373,85 @@ test("honest ledger versions are injected by writer, not accepted from candidate
   assert.equal(ledger[0].metric_registry_version, "misa.metric_registry.v1");
   assert.equal(ledger[0].metric_id, "evolution_tournament.deterministic_score");
   assert.equal(ledger[0].decision, "keep");
+});
+
+test("tournament restraint setpoints and safety subset are registered metrics", () => {
+  const registry = loadDefaultMetricRegistry();
+  const metrics = new Map(registry.metrics.map((metric) => [metric.metric_id, metric]));
+  const tolerance = metrics.get(DEFAULT_RESTRAINT_SETPOINTS.metric_regression_tolerance.metric_id);
+
+  assert.equal(tolerance.direction, "hold_within");
+  assert.equal(tolerance.bounds.min, 0);
+  assert.equal(tolerance.bounds.max, 1);
+  for (const metricId of SAFETY_CRITICAL_METRIC_IDS) {
+    const metric = metrics.get(metricId);
+    assert.equal(metric.safety_critical, true);
+    assert.equal(metric.direction, "maximize");
+  }
+});
+
+test("ledger writer records enum convergence status and ignores candidate no-change self-report", () => {
+  const tournament = buildTournament({
+    candidate_id: "candidate-damping-no-change",
+    source_event_id: "source-damping-no-change",
+    route_target: "damping",
+    proposed_optimization: {
+      reason: "Hold the damping candidate unless new evidence appears."
+    },
+    local_preflight: {
+      score: 0.72,
+      commands: ["npm run evolution:evaluate:misa"]
+    },
+    evidence: {
+      evidence_count: 1,
+      risk_level: "low",
+      normalized_signals: []
+    },
+    restraint_state: {
+      consecutive_no_change_count: 99
+    }
+  }, {
+    now: new Date("2026-05-14T13:10:00Z")
+  });
+
+  assert.equal(tournament.winner.strategy, "baseline");
+  assert.equal(tournament.restraint.incumbent_retained, true);
+  assert.equal(tournament.restraint.consecutive_no_change_count, 1);
+  assert.equal(tournament.restraint.convergence_status, "incumbent_retained_x1");
+  assert.equal(tournament.restraint.scope_drift_risk.mode, "deterministic_reducer");
+  assert.equal(tournament.restraint.scope_drift_risk.llm_api_calls, 0);
+
+  const ledger = buildTournamentExperienceLedger({
+    preflight: {
+      experience_ledger: [
+        {
+          ledger_id: "exp-previous-incumbent",
+          source: "tournament_variant",
+          candidate_id: "candidate-damping-no-change",
+          source_event_id: "source-damping-no-change",
+          route_target: "damping",
+          status: "winner",
+          retained_as: "incumbent_unchanged_retained",
+          lesson: "Previous ledger-owned no-change decision.",
+          consecutive_no_change_count: 1,
+          convergence_status: "incumbent_retained_x1",
+          score: 0.9
+        }
+      ]
+    },
+    tournaments: [tournament],
+    now: new Date("2026-05-14T13:10:00Z")
+  });
+  const winnerEntry = ledger.find((entry) => (
+    entry.source === "tournament_variant"
+    && entry.status === "winner"
+    && entry.tournament_id === tournament.tournament_id
+  ));
+
+  assert.equal(winnerEntry.retained_as, "incumbent_unchanged_retained");
+  assert.equal(winnerEntry.consecutive_no_change_count, 2);
+  assert.equal(winnerEntry.convergence_status, "incumbent_retained_x2");
+  assert.equal(winnerEntry.change_diff_hash, "diff-empty");
 });
 
 test("loser review context fails closed for unsupported runtime profiles", async () => {

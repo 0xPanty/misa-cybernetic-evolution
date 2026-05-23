@@ -74,6 +74,7 @@ test("metric registry maps measurable setpoints onto plant state", async () => {
   assert.ok(metricIds.has("signal_extractor.precision"));
   assert.ok(metricIds.has("skill.replay_pass_rate"));
   assert.ok(metricIds.has("evolution_tournament.deterministic_score"));
+  assert.ok(metricIds.has("evolution_tournament.synthesis_metric_regression_tolerance"));
 });
 
 test("component health metrics are registered as plant-state components", () => {
@@ -100,6 +101,29 @@ test("component health metrics are registered as plant-state components", () => 
     assert.equal(metric.plant_state_component, metricId);
     assert.ok(plantIds.has(metric.plant_state_component), `${metricId} should map to plant model state`);
   }
+});
+
+test("tournament restraint metrics register tolerance and safety-critical subset", () => {
+  const plantModel = loadDefaultPlantModel();
+  const registry = loadDefaultMetricRegistry();
+  const plantIds = new Set(plantModel.state_variables.map((item) => item.id));
+  const metrics = new Map(registry.metrics.map((metric) => [metric.metric_id, metric]));
+  const tolerance = metrics.get("evolution_tournament.synthesis_metric_regression_tolerance");
+  const safetyCritical = [
+    "evolution_tournament.safety_score",
+    "evolution_tournament.holdout_score",
+    "evolution_tournament.regression_score"
+  ].map((metricId) => metrics.get(metricId));
+
+  assert.equal(tolerance.direction, "hold_within");
+  assert.equal(tolerance.bounds.min, 0);
+  assert.equal(tolerance.bounds.max, 1);
+  assert.ok(plantIds.has(tolerance.plant_state_component));
+  assert.equal(safetyCritical.every((metric) => (
+    metric?.safety_critical === true
+      && metric.direction === "maximize"
+      && plantIds.has(metric.plant_state_component)
+  )), true);
 });
 
 test("control contracts reject free-text or unregistered setpoints", () => {

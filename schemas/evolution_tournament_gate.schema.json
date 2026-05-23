@@ -114,14 +114,18 @@
         "scorer",
         "llm_judge_allowed",
         "decision_authority",
-        "optional_llm_review_role"
+        "optional_llm_review_role",
+        "restraint_contract",
+        "critique_summary"
       ],
       "properties": {
         "rule": { "type": "string", "const": "deterministic_reducer" },
         "scorer": { "type": "string", "const": "deterministic_proxy_v1" },
         "llm_judge_allowed": { "type": "boolean", "const": false },
         "decision_authority": { "type": "string", "const": "deterministic_qianxuesen_gate_only" },
-        "optional_llm_review_role": { "type": "string", "const": "critique_only_no_winner_authority" }
+        "optional_llm_review_role": { "type": "string", "const": "critique_only_no_winner_authority" },
+        "restraint_contract": { "$ref": "#/$defs/restraint_contract" },
+        "critique_summary": { "$ref": "#/$defs/critique_summary" }
       }
     },
     "skill_evolution_bridge": { "$ref": "#/$defs/skill_evolution_bridge" },
@@ -227,6 +231,118 @@
     }
   },
   "$defs": {
+    "convergence_status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "incumbent_retained_x1",
+        "incumbent_retained_x2",
+        "scope_drift_suspected",
+        "awaiting_new_evidence"
+      ]
+    },
+    "scope_drift_risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "llm_api_calls",
+        "window_size",
+        "level",
+        "score",
+        "affected_setpoints_unique_count",
+        "affected_actuators_unique_count",
+        "diff_hash_unique_count",
+        "metric_gain_over_initial_baseline",
+        "complexity_growth_over_initial_baseline",
+        "reasons"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "deterministic_reducer" },
+        "llm_api_calls": { "type": "integer", "const": 0 },
+        "window_size": { "type": "integer", "minimum": 0 },
+        "level": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "affected_setpoints_unique_count": { "type": "integer", "minimum": 0 },
+        "affected_actuators_unique_count": { "type": "integer", "minimum": 0 },
+        "diff_hash_unique_count": { "type": "integer", "minimum": 0 },
+        "metric_gain_over_initial_baseline": { "type": "number", "minimum": 0, "maximum": 1 },
+        "complexity_growth_over_initial_baseline": { "type": "number", "minimum": 0 },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "critique_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "role",
+        "decision_authority",
+        "fresh_context_required",
+        "ranking_authority",
+        "llm_api_calls",
+        "notes"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "critique_summary.v1" },
+        "role": { "type": "string", "const": "advisory_notes_only" },
+        "decision_authority": { "type": "string", "const": "none" },
+        "fresh_context_required": { "type": "boolean", "const": true },
+        "ranking_authority": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "minimum": 0 },
+        "notes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "setpoint_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric_id", "target_value", "tolerance", "direction"],
+      "properties": {
+        "metric_id": { "type": "string", "minLength": 1 },
+        "target_value": { "type": "number" },
+        "tolerance": { "type": "number", "minimum": 0 },
+        "direction": {
+          "type": "string",
+          "enum": ["minimize", "maximize", "hold_within"]
+        }
+      }
+    },
+    "restraint_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "incumbent_role",
+        "do_nothing_candidate_required",
+        "convergence_k",
+        "metric_regression_tolerance",
+        "consecutive_no_change_count",
+        "convergence_status",
+        "scope_drift_calculator",
+        "scope_drift_risk",
+        "tie_breaker"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "tournament_restraint_contract.v1" },
+        "incumbent_role": { "type": "string", "const": "incumbent_unchanged" },
+        "do_nothing_candidate_required": { "type": "boolean", "const": true },
+        "convergence_k": { "type": "integer", "const": 2 },
+        "metric_regression_tolerance": { "$ref": "#/$defs/setpoint_ref" },
+        "consecutive_no_change_count": { "type": "integer", "minimum": 0 },
+        "convergence_status": { "$ref": "#/$defs/convergence_status" },
+        "scope_drift_calculator": { "type": "string", "const": "deterministic_reducer" },
+        "scope_drift_risk": { "$ref": "#/$defs/scope_drift_risk" },
+        "tie_breaker": { "type": "string", "const": "incumbent_unchanged_on_exact_tie" }
+      }
+    },
     "skill_evolution_bridge": {
       "type": "object",
       "additionalProperties": false,
@@ -820,6 +936,8 @@
         "strategy",
         "blocked_requests",
         "violations",
+        "consecutive_no_change_count",
+        "convergence_status",
         "production_authority",
         "publication_allowed"
       ],
@@ -886,6 +1004,8 @@
           "enum": ["advisory_pressure_only", null]
         },
         "candidate_pool_action": { "type": ["string", "null"] },
+        "consecutive_no_change_count": { "type": "integer", "minimum": 0 },
+        "convergence_status": { "$ref": "#/$defs/convergence_status" },
         "hard_filter_allowed": { "type": "boolean", "const": false },
         "agent_review_required": { "type": "boolean" },
         "l4_review_required": { "type": "boolean" },
@@ -930,6 +1050,7 @@
         "variants",
         "winner",
         "loser_ledger",
+        "restraint",
         "safety"
       ],
       "properties": {
@@ -1048,7 +1169,140 @@
             }
           }
         },
+        "restraint": { "$ref": "#/$defs/tournament_restraint" },
         "safety": { "$ref": "#/$defs/safety" }
+      }
+    },
+    "tournament_restraint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "a_b_ab_shape",
+        "incumbent_retained",
+        "convergence_k",
+        "consecutive_no_change_count",
+        "convergence_status",
+        "scope_drift_risk",
+        "restraint_comparison",
+        "critique_summary"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "tournament_restraint_layer.v1" },
+        "a_b_ab_shape": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "incumbent_variant_id",
+            "revision_variant_id",
+            "synthesis_variant_id",
+            "negative_probe_variant_id"
+          ],
+          "properties": {
+            "incumbent_variant_id": { "type": ["string", "null"] },
+            "revision_variant_id": { "type": ["string", "null"] },
+            "synthesis_variant_id": { "type": ["string", "null"] },
+            "negative_probe_variant_id": { "type": ["string", "null"] }
+          }
+        },
+        "incumbent_retained": { "type": "boolean" },
+        "convergence_k": { "type": "integer", "const": 2 },
+        "consecutive_no_change_count": { "type": "integer", "minimum": 0 },
+        "convergence_status": { "$ref": "#/$defs/convergence_status" },
+        "scope_drift_risk": { "$ref": "#/$defs/scope_drift_risk" },
+        "restraint_comparison": { "$ref": "#/$defs/restraint_comparison" },
+        "critique_summary": { "$ref": "#/$defs/critique_summary" }
+      }
+    },
+    "restraint_comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revision_variant_id",
+        "synthesis_variant_id",
+        "metric_epsilon",
+        "safety_metric_subset",
+        "revision_restraint_score",
+        "synthesis_restraint_score",
+        "synthesis_more_restrained_than_revision",
+        "synthesis_metric_within_epsilon",
+        "synthesis_safety_at_least_revision",
+        "synthesis_can_beat_revision"
+      ],
+      "properties": {
+        "revision_variant_id": { "type": ["string", "null"] },
+        "synthesis_variant_id": { "type": ["string", "null"] },
+        "metric_epsilon": { "type": "number", "minimum": 0, "maximum": 1 },
+        "safety_metric_subset": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "safety_critical_required", "metric_ids", "score_keys"],
+          "properties": {
+            "source": { "type": "string", "const": "metric_registry" },
+            "safety_critical_required": { "type": "boolean", "const": true },
+            "metric_ids": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "score_keys": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "revision_restraint_score": { "type": ["number", "null"], "minimum": 0 },
+        "synthesis_restraint_score": { "type": ["number", "null"], "minimum": 0 },
+        "synthesis_more_restrained_than_revision": { "type": "boolean" },
+        "synthesis_metric_within_epsilon": { "type": "boolean" },
+        "synthesis_safety_at_least_revision": { "type": "boolean" },
+        "synthesis_can_beat_revision": { "type": "boolean" }
+      }
+    },
+    "control_footprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "affected_setpoints",
+        "affected_actuators",
+        "setpoint_delta",
+        "setpoint_delta_l1",
+        "restraint_score",
+        "change_diff_hash"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "incumbent_unchanged",
+            "revision_candidate",
+            "synthesis_candidate",
+            "negative_probe"
+          ]
+        },
+        "affected_setpoints": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "affected_actuators": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "setpoint_delta": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route_pressure", "surface_pressure", "blocked_operation_pressure"],
+          "properties": {
+            "route_pressure": { "type": "number", "minimum": 0, "maximum": 1 },
+            "surface_pressure": { "type": "number", "minimum": 0, "maximum": 1 },
+            "blocked_operation_pressure": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "setpoint_delta_l1": { "type": "number", "minimum": 0 },
+        "restraint_score": { "type": "number", "minimum": 0 },
+        "change_diff_hash": { "type": "string", "minLength": 1 }
       }
     },
     "failure_type": {
@@ -1383,6 +1637,7 @@
         "safety",
         "scores",
         "constraints",
+        "control_footprint",
         "case_results",
         "tournament_status",
         "pareto"
@@ -1466,6 +1721,7 @@
             }
           }
         },
+        "control_footprint": { "$ref": "#/$defs/control_footprint" },
         "case_results": {
           "type": "array",
           "minItems": 1,

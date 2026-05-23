@@ -1,7 +1,10 @@
 import {
   BLOCKED_OPERATIONS,
+  CONVERGENCE_K,
   LOCAL_COMMAND_ALLOWLIST,
-  MAX_VARIANTS_PER_CANDIDATE
+  MAX_VARIANTS_PER_CANDIDATE,
+  SAFETY_CRITICAL_METRIC_IDS,
+  SYNTHESIS_METRIC_EPSILON
 } from "./evolution-tournament-contract.mjs";
 import {
   clamp01,
@@ -9,6 +12,7 @@ import {
   estimateTokens,
   round,
   safeId,
+  stableHash,
   uniqueStrings
 } from "./evolution-tournament-utils.mjs";
 
@@ -119,7 +123,7 @@ function buildVariants(candidate) {
         "Hold for human review only."
       ],
       requested_operations: [],
-      changed_surfaces: ["draft_report", "local_eval_metadata"],
+      changed_surfaces: ["draft_report"],
       verification_commands: commands,
       novelty_score: 0.58,
       safety: commonSafety()
@@ -308,6 +312,120 @@ function scoreVariant(candidate, variant, evalCases) {
     constraints,
     case_results: caseResults
   };
+}
+
+function roleForStrategy(strategy) {
+  if (strategy === "baseline") return "incumbent_unchanged";
+  if (strategy === "trace_reflective") return "revision_candidate";
+  if (strategy === "pareto_compact") return "synthesis_candidate";
+  return "negative_probe";
+}
+
+function buildControlFootprint(candidate, variant) {
+  const role = roleForStrategy(variant.strategy);
+  const affectedSetpoints = role === "incumbent_unchanged"
+    ? []
+    : uniqueStrings([
+        `route:${variant.route_target}`,
+        role === "negative_probe" ? "promotion_surface" : null
+      ]);
+  const affectedActuators = role === "incumbent_unchanged"
+    ? []
+    : uniqueStrings([
+        ...(variant.changed_surfaces ?? []).map((surface) => `surface:${surface}`),
+        ...(variant.requested_operations ?? []).map((operation) => `operation:${operation}`)
+      ]);
+  const blockedOperationCount = (variant.requested_operations ?? [])
+    .filter((operation) => BLOCKED_OPERATIONS.includes(operation))
+    .length;
+  const setpointDelta = {
+    route_pressure: role === "incumbent_unchanged" ? 0 : round(variant.novelty_score ?? 0),
+    surface_pressure: role === "incumbent_unchanged"
+      ? 0
+      : round(Math.min(1, affectedActuators.length / 4)),
+    blocked_operation_pressure: round(Math.min(1, blockedOperationCount / 3))
+  };
+  const setpointDeltaL1 = round(Object.values(setpointDelta).reduce((sum, value) => sum + Math.abs(value), 0));
+  const changeDiffHash = role === "incumbent_unchanged"
+    ? "diff-empty"
+    : `diff-${stableHash(JSON.stringify({
+        candidate_id: candidate.candidate_id,
+        variant_id: variant.variant_id,
+        role,
+        affectedSetpoints,
+        affectedActuators,
+        setpointDelta
+      }))}`;
+
+  return {
+    role,
+    affected_setpoints: affectedSetpoints,
+    affected_actuators: affectedActuators,
+    setpoint_delta: setpointDelta,
+    setpoint_delta_l1: setpointDeltaL1,
+    restraint_score: round(affectedSetpoints.length + affectedActuators.length + setpointDeltaL1),
+    change_diff_hash: changeDiffHash
+  };
+}
+
+function synthesisComparison(variants) {
+  const revision = variants.find((variant) => variant.control_footprint.role === "revision_candidate");
+  const synthesis = variants.find((variant) => variant.control_footprint.role === "synthesis_candidate");
+  const metricEpsilon = SYNTHESIS_METRIC_EPSILON;
+  const safetyScoreKeys = ["safety", "holdout", "regression"];
+
+  if (!revision || !synthesis) {
+    return {
+      revision_variant_id: revision?.variant_id ?? null,
+      synthesis_variant_id: synthesis?.variant_id ?? null,
+      metric_epsilon: metricEpsilon,
+      safety_metric_subset: {
+        source: "metric_registry",
+        safety_critical_required: true,
+        metric_ids: [...SAFETY_CRITICAL_METRIC_IDS],
+        score_keys: safetyScoreKeys
+      },
+      revision_restraint_score: revision?.control_footprint.restraint_score ?? null,
+      synthesis_restraint_score: synthesis?.control_footprint.restraint_score ?? null,
+      synthesis_more_restrained_than_revision: false,
+      synthesis_metric_within_epsilon: false,
+      synthesis_safety_at_least_revision: false,
+      synthesis_can_beat_revision: false
+    };
+  }
+
+  const moreRestrained = synthesis.control_footprint.restraint_score <= revision.control_footprint.restraint_score;
+  const metricWithinEpsilon = synthesis.scores.composite >= revision.scores.composite * (1 - metricEpsilon);
+  const safetyAtLeastRevision = safetyScoreKeys.every((key) => synthesis.scores[key] >= revision.scores[key]);
+
+  return {
+    revision_variant_id: revision.variant_id,
+    synthesis_variant_id: synthesis.variant_id,
+    metric_epsilon: metricEpsilon,
+    safety_metric_subset: {
+      source: "metric_registry",
+      safety_critical_required: true,
+      metric_ids: [...SAFETY_CRITICAL_METRIC_IDS],
+      score_keys: safetyScoreKeys
+    },
+    revision_restraint_score: revision.control_footprint.restraint_score,
+    synthesis_restraint_score: synthesis.control_footprint.restraint_score,
+    synthesis_more_restrained_than_revision: moreRestrained,
+    synthesis_metric_within_epsilon: metricWithinEpsilon,
+    synthesis_safety_at_least_revision: safetyAtLeastRevision,
+    synthesis_can_beat_revision: moreRestrained && metricWithinEpsilon && safetyAtLeastRevision
+  };
+}
+
+function sortWinnerPool(pool) {
+  return [...pool].sort((a, b) => (
+    b.scores.composite - a.scores.composite
+    || b.scores.holdout - a.scores.holdout
+    || b.scores.safety - a.scores.safety
+    || (a.control_footprint.role === "incumbent_unchanged" ? -1 : 0)
+    || (b.control_footprint.role === "incumbent_unchanged" ? 1 : 0)
+    || a.variant_id.localeCompare(b.variant_id)
+  ));
 }
 
 function dominates(a, b) {
@@ -552,12 +670,124 @@ function classifyLoserAgainstWinner(winner, variant, { candidate, observedAt }) 
 function chooseWinner(scoredVariants) {
   const eligible = scoredVariants.filter((variant) => variant.constraints.hard_gate_passed);
   const pool = eligible.length > 0 ? eligible : scoredVariants;
-  return [...pool].sort((a, b) => (
-    b.scores.composite - a.scores.composite
-    || b.scores.holdout - a.scores.holdout
-    || b.scores.safety - a.scores.safety
-    || a.variant_id.localeCompare(b.variant_id)
-  ))[0];
+  const comparison = synthesisComparison(pool);
+
+  for (const variant of sortWinnerPool(pool)) {
+    if (
+      variant.control_footprint.role === "synthesis_candidate"
+      && comparison.revision_variant_id
+      && !comparison.synthesis_can_beat_revision
+    ) {
+      continue;
+    }
+    return variant;
+  }
+
+  return sortWinnerPool(pool)[0];
+}
+
+function riskLevel(score) {
+  if (score >= 0.7) return "high";
+  if (score >= 0.4) return "medium";
+  if (score > 0) return "low";
+  return "none";
+}
+
+function buildScopeDriftRisk(variants, winner) {
+  const incumbent = variants.find((variant) => variant.control_footprint.role === "incumbent_unchanged");
+  const safeChanged = variants.filter((variant) => (
+    variant.constraints.hard_gate_passed
+    && variant.control_footprint.role !== "incumbent_unchanged"
+    && variant.control_footprint.role !== "negative_probe"
+  ));
+  const affectedSetpoints = uniqueStrings(safeChanged.flatMap((variant) => variant.control_footprint.affected_setpoints));
+  const affectedActuators = uniqueStrings(safeChanged.flatMap((variant) => variant.control_footprint.affected_actuators));
+  const diffHashes = uniqueStrings(safeChanged.map((variant) => variant.control_footprint.change_diff_hash));
+  const metricGain = incumbent
+    ? round(Math.max(0, winner.scores.composite - incumbent.scores.composite))
+    : 0;
+  const complexityGrowth = incumbent
+    ? round(Math.max(0, winner.control_footprint.restraint_score - incumbent.control_footprint.restraint_score))
+    : 0;
+  const lowGainComplexityPressure = metricGain < 0.01 && complexityGrowth > 0 ? 1 : 0;
+  const score = round(clamp01(
+    Math.min(1, affectedSetpoints.length / 4) * 0.18
+      + Math.min(1, affectedActuators.length / 6) * 0.18
+      + Math.min(1, diffHashes.length / 6) * 0.14
+      + Math.min(1, complexityGrowth / 8) * 0.15
+      + lowGainComplexityPressure * 0.35
+  ));
+  const reasons = [];
+  if (affectedSetpoints.length > 1) reasons.push("multiple_setpoints_in_window");
+  if (affectedActuators.length > 3) reasons.push("broad_actuator_surface");
+  if (diffHashes.length > 3) reasons.push("many_distinct_diffs");
+  if (complexityGrowth > 3) reasons.push("complexity_growth_over_baseline");
+  if (lowGainComplexityPressure) reasons.push("complexity_growth_without_metric_gain");
+  if (reasons.length === 0) reasons.push("deterministic_counts_within_restraint_band");
+
+  return {
+    mode: "deterministic_reducer",
+    llm_api_calls: 0,
+    window_size: safeChanged.length,
+    level: riskLevel(score),
+    score,
+    affected_setpoints_unique_count: affectedSetpoints.length,
+    affected_actuators_unique_count: affectedActuators.length,
+    diff_hash_unique_count: diffHashes.length,
+    metric_gain_over_initial_baseline: metricGain,
+    complexity_growth_over_initial_baseline: complexityGrowth,
+    reasons
+  };
+}
+
+function convergenceStatus({ incumbentRetained, consecutiveNoChangeCount, scopeDriftRisk }) {
+  if (scopeDriftRisk.level === "high") return "scope_drift_suspected";
+  if (consecutiveNoChangeCount >= CONVERGENCE_K) return "incumbent_retained_x2";
+  if (incumbentRetained) return "incumbent_retained_x1";
+  return "running";
+}
+
+function buildTournamentRestraint({ variants, winner }) {
+  const incumbent = variants.find((variant) => variant.control_footprint.role === "incumbent_unchanged");
+  const revision = variants.find((variant) => variant.control_footprint.role === "revision_candidate");
+  const synthesis = variants.find((variant) => variant.control_footprint.role === "synthesis_candidate");
+  const negativeProbe = variants.find((variant) => variant.control_footprint.role === "negative_probe");
+  const incumbentRetained = winner.control_footprint.role === "incumbent_unchanged";
+  const consecutiveNoChangeCount = incumbentRetained ? 1 : 0;
+  const scopeDriftRisk = buildScopeDriftRisk(variants, winner);
+  const status = convergenceStatus({
+    incumbentRetained,
+    consecutiveNoChangeCount,
+    scopeDriftRisk
+  });
+
+  return {
+    mode: "tournament_restraint_layer.v1",
+    a_b_ab_shape: {
+      incumbent_variant_id: incumbent?.variant_id ?? null,
+      revision_variant_id: revision?.variant_id ?? null,
+      synthesis_variant_id: synthesis?.variant_id ?? null,
+      negative_probe_variant_id: negativeProbe?.variant_id ?? null
+    },
+    incumbent_retained: incumbentRetained,
+    convergence_k: CONVERGENCE_K,
+    consecutive_no_change_count: consecutiveNoChangeCount,
+    convergence_status: status,
+    scope_drift_risk: scopeDriftRisk,
+    restraint_comparison: synthesisComparison(variants),
+    critique_summary: {
+      mode: "critique_summary.v1",
+      role: "advisory_notes_only",
+      decision_authority: "none",
+      fresh_context_required: true,
+      ranking_authority: false,
+      llm_api_calls: 0,
+      notes: [
+        "No Borda ranking is used for winner selection.",
+        "Optional critique can explain deterministic scores but cannot change the winner."
+      ]
+    }
+  };
 }
 
 export function buildTournament(candidate, { now = new Date() } = {}) {
@@ -567,10 +797,14 @@ export function buildTournament(candidate, { now = new Date() } = {}) {
   const scored = rawVariants.map((variant) => ({
     ...variant,
     ...scoreVariant(candidate, variant, evalCases)
+  })).map((variant) => ({
+    ...variant,
+    control_footprint: buildControlFootprint(candidate, variant)
   }));
   const winner = chooseWinner(scored);
   const variants = annotatePareto(scored, winner.variant_id);
   const winnerVariant = variants.find((variant) => variant.variant_id === winner.variant_id) ?? winner;
+  const restraint = buildTournamentRestraint({ variants, winner: winnerVariant });
   const loserRecords = variants
     .filter((variant) => variant.variant_id !== winner.variant_id)
     .map((variant) => {
@@ -615,6 +849,7 @@ export function buildTournament(candidate, { now = new Date() } = {}) {
       rationale: winner.rationale
     },
     loser_ledger: loserRecords,
+    restraint,
     safety: commonSafety()
   };
 }

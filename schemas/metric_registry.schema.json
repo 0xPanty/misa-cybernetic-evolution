@@ -51,6 +51,7 @@
         "sampling_window": { "type": "string", "minLength": 1 },
         "owner": { "type": "string", "minLength": 1 },
         "description": { "type": "string", "minLength": 1 },
+        "safety_critical": { "type": "boolean" },
         "bounds": {
           "type": "object",
           "additionalProperties": false,

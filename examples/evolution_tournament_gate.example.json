@@ -42,7 +42,47 @@
     "scorer": "deterministic_proxy_v1",
     "llm_judge_allowed": false,
     "decision_authority": "deterministic_qianxuesen_gate_only",
-    "optional_llm_review_role": "critique_only_no_winner_authority"
+    "optional_llm_review_role": "critique_only_no_winner_authority",
+    "restraint_contract": {
+      "mode": "tournament_restraint_contract.v1",
+      "incumbent_role": "incumbent_unchanged",
+      "do_nothing_candidate_required": true,
+      "convergence_k": 2,
+      "metric_regression_tolerance": {
+        "metric_id": "evolution_tournament.synthesis_metric_regression_tolerance",
+        "target_value": 0.03,
+        "tolerance": 0,
+        "direction": "hold_within"
+      },
+      "consecutive_no_change_count": 0,
+      "convergence_status": "running",
+      "scope_drift_calculator": "deterministic_reducer",
+      "scope_drift_risk": {
+        "mode": "deterministic_reducer",
+        "llm_api_calls": 0,
+        "window_size": 1,
+        "level": "low",
+        "score": 0.23,
+        "affected_setpoints_unique_count": 1,
+        "affected_actuators_unique_count": 1,
+        "diff_hash_unique_count": 1,
+        "metric_gain_over_initial_baseline": 0.04,
+        "complexity_growth_over_initial_baseline": 2.83,
+        "reasons": ["deterministic_counts_within_restraint_band"]
+      },
+      "tie_breaker": "incumbent_unchanged_on_exact_tie"
+    },
+    "critique_summary": {
+      "mode": "critique_summary.v1",
+      "role": "advisory_notes_only",
+      "decision_authority": "none",
+      "fresh_context_required": true,
+      "ranking_authority": false,
+      "llm_api_calls": 0,
+      "notes": [
+        "This field replaces any Borda-style naming; critique is not a ranking authority."
+      ]
+    }
   },
   "skill_evolution_bridge": {
     "mode": "skill-evolution-to-tournament-bridge",
@@ -179,6 +219,19 @@
             "blocked_requests": [],
             "violations": []
           },
+          "control_footprint": {
+            "role": "incumbent_unchanged",
+            "affected_setpoints": [],
+            "affected_actuators": [],
+            "setpoint_delta": {
+              "route_pressure": 0,
+              "surface_pressure": 0,
+              "blocked_operation_pressure": 0
+            },
+            "setpoint_delta_l1": 0,
+            "restraint_score": 0,
+            "change_diff_hash": "diff-empty"
+          },
           "case_results": [
             {
               "case_id": "sample-train-route-preservation",
@@ -204,7 +257,7 @@
           "rationale": "Smallest safe candidate wins when holdout and safety remain equal.",
           "procedure_outline": ["Trim wording", "Keep evidence", "Hold for human review"],
           "requested_operations": [],
-          "changed_surfaces": ["draft_report", "local_eval_metadata"],
+          "changed_surfaces": ["draft_report"],
           "verification_commands": ["npm run evolution:evaluate:misa", "npm run evolution:tournament:misa"],
           "novelty_score": 0.58,
           "safety": {
@@ -246,6 +299,19 @@
             },
             "blocked_requests": [],
             "violations": []
+          },
+          "control_footprint": {
+            "role": "synthesis_candidate",
+            "affected_setpoints": ["route:skill"],
+            "affected_actuators": ["surface:draft_report"],
+            "setpoint_delta": {
+              "route_pressure": 0.58,
+              "surface_pressure": 0.25,
+              "blocked_operation_pressure": 0
+            },
+            "setpoint_delta_l1": 0.83,
+            "restraint_score": 2.83,
+            "change_diff_hash": "diff-example-pareto"
           },
           "case_results": [
             {
@@ -314,6 +380,19 @@
             },
             "blocked_requests": ["skill_publication"],
             "violations": ["no_blocked_operations", "blocked_operation_requested:skill_publication"]
+          },
+          "control_footprint": {
+            "role": "negative_probe",
+            "affected_setpoints": ["route:skill", "promotion_surface"],
+            "affected_actuators": ["surface:draft_report", "surface:skill_registry", "operation:skill_publication"],
+            "setpoint_delta": {
+              "route_pressure": 0.95,
+              "surface_pressure": 0.75,
+              "blocked_operation_pressure": 0.333
+            },
+            "setpoint_delta_l1": 2.033,
+            "restraint_score": 7.033,
+            "change_diff_hash": "diff-example-aggressive"
           },
           "case_results": [
             {
@@ -462,6 +541,64 @@
           "rationale": "Hard gate failed: blocked_operation_requested:skill_publication."
         }
       ],
+      "restraint": {
+        "mode": "tournament_restraint_layer.v1",
+        "a_b_ab_shape": {
+          "incumbent_variant_id": "adaptive-skill-sample:baseline",
+          "revision_variant_id": null,
+          "synthesis_variant_id": "adaptive-skill-sample:pareto-compact",
+          "negative_probe_variant_id": "adaptive-skill-sample:aggressive-auto-publish"
+        },
+        "incumbent_retained": false,
+        "convergence_k": 2,
+        "consecutive_no_change_count": 0,
+        "convergence_status": "running",
+        "scope_drift_risk": {
+          "mode": "deterministic_reducer",
+          "llm_api_calls": 0,
+          "window_size": 1,
+          "level": "low",
+          "score": 0.23,
+          "affected_setpoints_unique_count": 1,
+          "affected_actuators_unique_count": 1,
+          "diff_hash_unique_count": 1,
+          "metric_gain_over_initial_baseline": 0.04,
+          "complexity_growth_over_initial_baseline": 2.83,
+          "reasons": ["deterministic_counts_within_restraint_band"]
+        },
+        "restraint_comparison": {
+          "revision_variant_id": null,
+          "synthesis_variant_id": "adaptive-skill-sample:pareto-compact",
+          "metric_epsilon": 0.03,
+          "safety_metric_subset": {
+            "source": "metric_registry",
+            "safety_critical_required": true,
+            "metric_ids": [
+              "evolution_tournament.safety_score",
+              "evolution_tournament.holdout_score",
+              "evolution_tournament.regression_score"
+            ],
+            "score_keys": ["safety", "holdout", "regression"]
+          },
+          "revision_restraint_score": null,
+          "synthesis_restraint_score": 2.83,
+          "synthesis_more_restrained_than_revision": false,
+          "synthesis_metric_within_epsilon": false,
+          "synthesis_safety_at_least_revision": false,
+          "synthesis_can_beat_revision": false
+        },
+        "critique_summary": {
+          "mode": "critique_summary.v1",
+          "role": "advisory_notes_only",
+          "decision_authority": "none",
+          "fresh_context_required": true,
+          "ranking_authority": false,
+          "llm_api_calls": 0,
+          "notes": [
+            "No Borda ranking is used for winner selection."
+          ]
+        }
+      },
       "safety": {
         "production_authority": false,
         "publication_allowed": false,
@@ -534,6 +671,8 @@
       "candidate_pool_effect": "contextual_alternative",
       "candidate_pool_authority": "advisory_pressure_only",
       "candidate_pool_action": "retain_as_contextual_alternative",
+      "consecutive_no_change_count": 0,
+      "convergence_status": "running",
       "hard_filter_allowed": false,
       "agent_review_required": true,
       "l4_review_required": true,
@@ -613,6 +752,8 @@
       "candidate_pool_effect": "strong_suppression",
       "candidate_pool_authority": "advisory_pressure_only",
       "candidate_pool_action": "retain_with_strong_pressure",
+      "consecutive_no_change_count": 0,
+      "convergence_status": "running",
       "hard_filter_allowed": false,
       "agent_review_required": true,
       "l4_review_required": true,

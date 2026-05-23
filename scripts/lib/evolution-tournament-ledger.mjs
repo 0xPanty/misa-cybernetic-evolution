@@ -1,18 +1,9 @@
-import { safeId } from "./evolution-tournament-utils.mjs";
+import { safeId, stableHash } from "./evolution-tournament-utils.mjs";
 import {
   METRIC_REGISTRY_VERSION,
   PLANT_MODEL_VERSION,
   TOURNAMENT_LEDGER_METRIC_ID
 } from "./evolution-tournament-contract.mjs";
-
-function stableHash(text) {
-  let hash = 2166136261;
-  for (const char of String(text)) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).padStart(8, "0");
-}
 
 function decisionForStatus(status) {
   if (["shadow_reportable", "winner", "kept"].includes(status)) return "keep";
@@ -65,6 +56,8 @@ function normalizePreflightExperience(entry, { timestamp }) {
     candidate_pool_effect: entry.candidate_pool_effect ?? null,
     candidate_pool_authority: entry.candidate_pool_authority ?? null,
     candidate_pool_action: entry.candidate_pool_action ?? null,
+    consecutive_no_change_count: entry.consecutive_no_change_count ?? 0,
+    convergence_status: entry.convergence_status ?? "running",
     hard_filter_allowed: entry.hard_filter_allowed ?? false,
     agent_review_required: entry.agent_review_required ?? false,
     l4_review_required: entry.l4_review_required ?? false,
@@ -84,6 +77,24 @@ function normalizePreflightExperience(entry, { timestamp }) {
   };
 }
 
+function convergenceStatusFor({ noChangeCount, scopeDriftLevel }) {
+  if (scopeDriftLevel === "high") return "scope_drift_suspected";
+  if (noChangeCount >= 2) return "incumbent_retained_x2";
+  if (noChangeCount === 1) return "incumbent_retained_x1";
+  return "running";
+}
+
+function previousNoChangeCount({ preflightLedger, tournament }) {
+  const matching = preflightLedger.filter((entry) => (
+    entry.source === "tournament_variant"
+    && entry.status === "winner"
+    && entry.candidate_id === tournament.candidate_id
+    && entry.route_target === tournament.route_target
+    && entry.retained_as === "incumbent_unchanged_retained"
+  ));
+  return Math.max(0, ...matching.map((entry) => entry.consecutive_no_change_count ?? 0));
+}
+
 export function buildTournamentExperienceLedger({ preflight, tournaments, now = new Date() }) {
   const timestamp = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
   const preflightLedger = (preflight.experience_ledger ?? [])
@@ -91,6 +102,76 @@ export function buildTournamentExperienceLedger({ preflight, tournaments, now = 
   const variantLedger = [];
 
   for (const tournament of tournaments) {
+    const winnerVariant = tournament.variants.find((item) => item.variant_id === tournament.winner.variant_id);
+    const winnerLedgerId = `exp-variant-${safeId(tournament.winner.variant_id)}`;
+    const noChangeRetained = tournament.restraint?.incumbent_retained === true;
+    const noChangeCount = noChangeRetained
+      ? previousNoChangeCount({ preflightLedger, tournament }) + 1
+      : 0;
+    const convergenceStatus = convergenceStatusFor({
+      noChangeCount,
+      scopeDriftLevel: tournament.restraint?.scope_drift_risk?.level
+    });
+    variantLedger.push({
+      ledger_id: winnerLedgerId,
+      iteration_id: tournament.tournament_id,
+      source: "tournament_variant",
+      candidate_id: tournament.candidate_id,
+      source_event_id: tournament.source_event_id,
+      route_target: tournament.route_target,
+      status: "winner",
+      retained_as: noChangeRetained ? "incumbent_unchanged_retained" : "selected_draft_experience",
+      lesson: noChangeRetained
+        ? "The unchanged incumbent won this tournament; wait for new evidence before adding pressure."
+        : "The selected draft beat the incumbent locally but remains a human-review-only recommendation.",
+      change_diff_hash: winnerVariant?.control_footprint?.change_diff_hash ?? ledgerHash({
+        tournament_id: tournament.tournament_id,
+        candidate_id: tournament.candidate_id,
+        variant_id: tournament.winner.variant_id,
+        status: "winner",
+        strategy: tournament.winner.strategy
+      }),
+      plant_model_version: PLANT_MODEL_VERSION,
+      metric_registry_version: METRIC_REGISTRY_VERSION,
+      metric_id: TOURNAMENT_LEDGER_METRIC_ID,
+      metric_value: winnerVariant?.scores?.composite ?? tournament.winner.composite_score ?? null,
+      decision: "keep",
+      reason_ref: tournament.winner.variant_id,
+      timestamp,
+      last_sample_ts: timestamp,
+      score: winnerVariant?.scores?.composite ?? tournament.winner.composite_score ?? null,
+      evidence_count: null,
+      risk_level: null,
+      tournament_id: tournament.tournament_id,
+      variant_id: tournament.winner.variant_id,
+      strategy: tournament.winner.strategy,
+      blocked_requests: [],
+      violations: [],
+      loser_class: null,
+      failure_type: null,
+      candidate_pool_effect: null,
+      candidate_pool_authority: null,
+      candidate_pool_action: null,
+      consecutive_no_change_count: noChangeCount,
+      convergence_status: convergenceStatus,
+      hard_filter_allowed: false,
+      agent_review_required: false,
+      l4_review_required: false,
+      review_path: null,
+      review_trigger: null,
+      selection_hint: noChangeRetained ? "hold_until_new_evidence" : "human_review_before_any_promotion",
+      reactivation_conditions: [],
+      rehabilitation_record: null,
+      observed_at: timestamp,
+      last_triggered_at: timestamp,
+      source_count: null,
+      decay_weight: null,
+      confidence: null,
+      contrast: null,
+      production_authority: false,
+      publication_allowed: false
+    });
+
     for (const loser of tournament.loser_ledger) {
       const variant = tournament.variants.find((item) => item.variant_id === loser.variant_id);
       const ledgerId = `exp-variant-${safeId(loser.variant_id)}`;
@@ -135,6 +216,8 @@ export function buildTournamentExperienceLedger({ preflight, tournaments, now = 
         candidate_pool_effect: loser.candidate_pool_effect ?? null,
         candidate_pool_authority: loser.candidate_pool_authority ?? null,
         candidate_pool_action: loser.candidate_pool_action ?? null,
+        consecutive_no_change_count: 0,
+        convergence_status: "running",
         hard_filter_allowed: loser.hard_filter_allowed ?? false,
         agent_review_required: loser.agent_review_required ?? false,
         l4_review_required: loser.l4_review_required ?? false,

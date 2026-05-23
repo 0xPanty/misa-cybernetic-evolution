@@ -9,6 +9,13 @@ export function evaluateEvolutionTournamentGate(result) {
     "overfit_or_holdout_regression",
     "cost_or_operational_risk"
   ]);
+  const allowedConvergenceStatuses = new Set([
+    "running",
+    "incumbent_retained_x1",
+    "incumbent_retained_x2",
+    "scope_drift_suspected",
+    "awaiting_new_evidence"
+  ]);
 
   if (result.control_boundary?.route_owner !== "qianxuesen") {
     violations.push("route_owner_must_remain_qianxuesen");
@@ -27,6 +34,24 @@ export function evaluateEvolutionTournamentGate(result) {
   }
   if (result.tournament_ranking?.decision_authority !== "deterministic_qianxuesen_gate_only") {
     violations.push("tournament_ranking_authority_must_stay_deterministic");
+  }
+  if ("borda_summary" in (result.tournament_ranking ?? {})) {
+    violations.push("borda_summary_name_must_not_be_used_for_advisory_critique");
+  }
+  const restraintContract = result.tournament_ranking?.restraint_contract;
+  if (!allowedConvergenceStatuses.has(restraintContract?.convergence_status)) {
+    violations.push("convergence_status_must_be_enum");
+  }
+  if (restraintContract?.scope_drift_calculator !== "deterministic_reducer"
+    || restraintContract?.scope_drift_risk?.mode !== "deterministic_reducer"
+    || restraintContract?.scope_drift_risk?.llm_api_calls !== 0) {
+    violations.push("scope_drift_risk_must_be_deterministic_zero_call");
+  }
+  const critiqueSummary = result.tournament_ranking?.critique_summary;
+  if (critiqueSummary?.decision_authority !== "none"
+    || critiqueSummary?.ranking_authority !== false
+    || critiqueSummary?.fresh_context_required !== true) {
+    violations.push("critique_summary_must_remain_advisory_only");
   }
   const bridge = result.skill_evolution_bridge;
   if (!bridge) {
@@ -102,6 +127,12 @@ export function evaluateEvolutionTournamentGate(result) {
       if (!(key in entry)) {
         violations.push(`${entry.ledger_id ?? "ledger_entry"}:missing_honest_ledger_field_${key}`);
       }
+    }
+    if (!Number.isInteger(entry.consecutive_no_change_count) || entry.consecutive_no_change_count < 0) {
+      violations.push(`${entry.ledger_id}:invalid_consecutive_no_change_count`);
+    }
+    if (!allowedConvergenceStatuses.has(entry.convergence_status)) {
+      violations.push(`${entry.ledger_id}:invalid_convergence_status`);
     }
     if (entry.plant_model_version !== "misa.plant_model.v1") {
       violations.push(`${entry.ledger_id}:invalid_plant_model_version`);
@@ -192,10 +223,29 @@ export function evaluateEvolutionTournamentGate(result) {
     if (!tournament.winner?.variant_id) {
       violations.push(`${tournament.tournament_id}:missing_winner`);
     }
+    if (!allowedConvergenceStatuses.has(tournament.restraint?.convergence_status)) {
+      violations.push(`${tournament.tournament_id}:invalid_restraint_convergence_status`);
+    }
+    if (tournament.restraint?.scope_drift_risk?.mode !== "deterministic_reducer"
+      || tournament.restraint?.scope_drift_risk?.llm_api_calls !== 0) {
+      violations.push(`${tournament.tournament_id}:scope_drift_risk_must_be_deterministic`);
+    }
+    if (tournament.restraint?.critique_summary?.decision_authority !== "none"
+      || tournament.restraint?.critique_summary?.ranking_authority !== false) {
+      violations.push(`${tournament.tournament_id}:critique_summary_must_be_advisory_only`);
+    }
     const winner = tournament.variants.find((variant) => variant.variant_id === tournament.winner.variant_id);
     if (!winner) {
       violations.push(`${tournament.tournament_id}:winner_not_in_variants`);
       continue;
+    }
+    const incumbent = tournament.variants.find((variant) => variant.control_footprint?.role === "incumbent_unchanged");
+    if (!incumbent) {
+      violations.push(`${tournament.tournament_id}:missing_incumbent_unchanged_variant`);
+    }
+    if (winner.control_footprint?.role === "synthesis_candidate"
+      && tournament.restraint?.restraint_comparison?.synthesis_can_beat_revision !== true) {
+      violations.push(`${tournament.tournament_id}:synthesis_winner_must_be_more_restrained_than_revision`);
     }
     if (!winner.constraints.hard_gate_passed) {
       violations.push(`${tournament.tournament_id}:winner_failed_constraints`);

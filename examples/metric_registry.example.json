@@ -232,6 +232,57 @@
       "bounds": { "min": 0, "max": 1 }
     },
     {
+      "metric_id": "evolution_tournament.synthesis_metric_regression_tolerance",
+      "plant_state_component": "evolution_tournament.synthesis_metric_regression_tolerance",
+      "measurement_kind": "dry_run_health",
+      "unit": "ratio",
+      "direction": "hold_within",
+      "sampling_method": "Registered setpoint consumed by the tournament restraint reducer for AB-vs-B metric tolerance.",
+      "sampling_window": "current tournament restraint review",
+      "owner": "evolution plane",
+      "description": "Maximum tolerated deterministic-score regression when a synthesis candidate is more restrained than the revision candidate.",
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "evolution_tournament.safety_score",
+      "plant_state_component": "evolution_tournament.safety_score",
+      "measurement_kind": "guardrail",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Read the deterministic tournament safety subscore for synthesis-vs-revision no-regression checks.",
+      "sampling_window": "current tournament restraint review",
+      "owner": "evolution plane",
+      "description": "Safety-critical subscore: synthesis cannot win by reducing hard-gate safety.",
+      "safety_critical": true,
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "evolution_tournament.holdout_score",
+      "plant_state_component": "evolution_tournament.holdout_score",
+      "measurement_kind": "guardrail",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Read the deterministic tournament holdout subscore for synthesis-vs-revision no-regression checks.",
+      "sampling_window": "current tournament restraint review",
+      "owner": "evolution plane",
+      "description": "Safety-critical subscore: synthesis cannot win by regressing holdout boundary checks.",
+      "safety_critical": true,
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
+      "metric_id": "evolution_tournament.regression_score",
+      "plant_state_component": "evolution_tournament.regression_score",
+      "measurement_kind": "guardrail",
+      "unit": "ratio",
+      "direction": "maximize",
+      "sampling_method": "Read the deterministic tournament regression subscore for synthesis-vs-revision no-regression checks.",
+      "sampling_window": "current tournament restraint review",
+      "owner": "evolution plane",
+      "description": "Safety-critical subscore: synthesis cannot win by hiding regression behind compactness or novelty.",
+      "safety_critical": true,
+      "bounds": { "min": 0, "max": 1 }
+    },
+    {
       "metric_id": "controller.precheck_failure_count",
       "plant_state_component": "controller.precheck_failure_count",
       "measurement_kind": "dry_run_health",

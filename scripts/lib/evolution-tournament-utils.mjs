@@ -35,6 +35,15 @@ export function safeId(value) {
     .slice(0, 96) || "candidate";
 }
 
+export function stableHash(text) {
+  let hash = 2166136261;
+  for (const char of String(text)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 export function estimateTokens(text) {
   return String(text ?? "")
     .split(/[^\p{L}\p{N}_:/.-]+/u)

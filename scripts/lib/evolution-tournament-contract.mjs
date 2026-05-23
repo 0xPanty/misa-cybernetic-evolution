@@ -1,9 +1,34 @@
 export const NOUS_SELF_EVOLUTION_COMMIT = "4693c8f0eed21e39f065c6f38d98d2a403a04095";
 export const MAX_VARIANTS_PER_CANDIDATE = 4;
 export const JUDGE_NEAR_THRESHOLD_MARGIN = 0.03;
+export const CONVERGENCE_K = 2;
 export const PLANT_MODEL_VERSION = "misa.plant_model.v1";
 export const METRIC_REGISTRY_VERSION = "misa.metric_registry.v1";
 export const TOURNAMENT_LEDGER_METRIC_ID = "evolution_tournament.deterministic_score";
+export const SYNTHESIS_METRIC_REGRESSION_TOLERANCE_ID = "evolution_tournament.synthesis_metric_regression_tolerance";
+export const SAFETY_CRITICAL_METRIC_IDS = Object.freeze([
+  "evolution_tournament.safety_score",
+  "evolution_tournament.holdout_score",
+  "evolution_tournament.regression_score"
+]);
+
+export const DEFAULT_RESTRAINT_SETPOINTS = Object.freeze({
+  metric_regression_tolerance: Object.freeze({
+    metric_id: SYNTHESIS_METRIC_REGRESSION_TOLERANCE_ID,
+    target_value: 0.03,
+    tolerance: 0,
+    direction: "hold_within"
+  })
+});
+export const SYNTHESIS_METRIC_EPSILON = DEFAULT_RESTRAINT_SETPOINTS.metric_regression_tolerance.target_value;
+
+export const CONVERGENCE_STATUSES = Object.freeze([
+  "running",
+  "incumbent_retained_x1",
+  "incumbent_retained_x2",
+  "scope_drift_suspected",
+  "awaiting_new_evidence"
+]);
 
 export const LIVE_EFFECTS_OFF = Object.freeze({
   writes_persistent_memory: false,
@@ -100,7 +125,9 @@ export const EVOLUTION_TOURNAMENT_OUTPUT_CONTRACT = Object.freeze({
     "scorer",
     "llm_judge_allowed",
     "decision_authority",
-    "optional_llm_review_role"
+    "optional_llm_review_role",
+    "restraint_contract",
+    "critique_summary"
   ]),
   skill_evolution_bridge_keys: Object.freeze([
     "mode",
