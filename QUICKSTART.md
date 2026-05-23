@@ -10,6 +10,78 @@ or public-channel credential is required for the local path.
 
 ## Install
 
+One command after clone:
+
+```bash
+git clone https://github.com/0xPanty/misa-cybernetic-evolution.git
+cd misa-cybernetic-evolution
+node scripts/setup-local.mjs
+```
+
+That command runs `npm ci`, then runs the local sidecar quickstart. It creates
+only ignored local artifacts and prints the report path.
+
+If dependencies are already installed:
+
+```bash
+npm run deploy:local
+```
+
+The local deploy runs:
+
+```text
+doctor -> bootstrap:local -> hermes:value-proof
+```
+
+It proves the current clone is ready, initializes the ignored local vector store,
+and checks the committed work-order/Hermes samples for positive local value.
+
+## Full Shadow Deploy
+
+To attach the full observe-only sidecar chain:
+
+```bash
+node scripts/setup-full-shadow.mjs
+```
+
+If dependencies are already installed:
+
+```bash
+npm run deploy:full-shadow
+```
+
+That command runs:
+
+```text
+local quickstart
+-> deterministic window distillation
+-> Hermes observe-only plugin install
+-> Hermes event-log adapter replay
+-> Hermes work-order chain
+-> session-distiller cybernetic review
+-> work-order inbox export
+-> Hermes value proof
+```
+
+The first run may show `hermes_events: 0`. That is normal before Hermes has
+loaded the plugin and emitted hook events. The event log is already attached, so
+later Hermes events can be replayed through the same command.
+
+On a Linux/VPS host that already has `misa-session-distiller.service`, install
+the VPS-style `ExecStartPost` hook:
+
+```bash
+npm run deploy:vps-shadow
+```
+
+Dry-run first:
+
+```bash
+bash scripts/deploy/install-vps-full-shadow.sh --dry-run
+```
+
+Manual install path:
+
 ```bash
 git clone https://github.com/0xPanty/misa-cybernetic-evolution.git
 cd misa-cybernetic-evolution
@@ -91,9 +163,13 @@ The local quickstart does not:
 
 - write Zilliz;
 - call embedding providers;
+- call LLM providers;
 - read provider credentials;
 - touch VPS;
 - start background services;
+- deploy production services;
+- write Hermes memory;
+- mutate Hermes skills;
 - publish to Discord, Farcaster, or any public channel;
 - promote memory or change Qianxuesen routes automatically.
 

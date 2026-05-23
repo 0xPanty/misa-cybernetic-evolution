@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.26.0`. The current line keeps source-lineage and
+Current package version: `0.27.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
@@ -39,6 +39,45 @@ It is useful as:
 It is not a production autonomous brain.
 
 ## Quickstart
+
+One command after clone:
+
+```bash
+git clone https://github.com/0xPanty/misa-cybernetic-evolution.git
+cd misa-cybernetic-evolution
+node scripts/setup-local.mjs
+```
+
+If dependencies are already installed:
+
+```bash
+npm run deploy:local
+```
+
+That local deploy runs the public doctor, bootstraps the ignored local vector
+store, and runs the Hermes value proof. It does not deploy a production service,
+start a background worker, call providers, write Zilliz, write Hermes memory, or
+mutate Hermes skills.
+
+Full observe-only shadow path:
+
+```bash
+node scripts/setup-full-shadow.mjs
+```
+
+If dependencies are already installed:
+
+```bash
+npm run deploy:full-shadow
+```
+
+That path mirrors the VPS sidecar shape: local sidecar readiness, Hermes
+observe-only plugin install, event-log replay, deterministic window
+distillation, session-distiller review, work-order inbox export, and Hermes
+value proof. It still does not write Hermes memory, mutate Hermes skills,
+deploy production services, call providers, or promote candidates.
+
+Manual path:
 
 ```bash
 git clone https://github.com/0xPanty/misa-cybernetic-evolution.git
@@ -137,6 +176,8 @@ Two rules matter most:
 
 | Capability | Command | Boundary |
 | --- | --- | --- |
+| One-command local sidecar | `node scripts/setup-local.mjs` or `npm run deploy:local` | installs dependencies when needed, runs doctor/bootstrap/value-proof locally only |
+| One-command full shadow | `node scripts/setup-full-shadow.mjs` or `npm run deploy:full-shadow` | local sidecar plus window distillation, Hermes plugin, event-log replay, session review, work-order inbox, and value proof; no production authority |
 | Public repo doctor | `npm run doctor` | clone-time readiness check; read-only |
 | Local bootstrap | `npm run bootstrap:local` | initializes ignored local vector store and local report only |
 | Learning-loop simulation | `npm run simulate:misa` | local fixtures only |
@@ -223,6 +264,18 @@ or add runtime authority.
 The deploy helper in `scripts/deploy/misa-cybernetic-session-distiller-review.sh`
 can be installed as an `ExecStartPost` hook for the existing Hermes
 `misa-session-distiller.service`.
+
+On a Linux/VPS host with that service already present:
+
+```bash
+npm run deploy:vps-shadow
+```
+
+For review without writing system files:
+
+```bash
+bash scripts/deploy/install-vps-full-shadow.sh --dry-run
+```
 
 It reads the same session-distiller environment, calls the Hermes wrapper in
 `session-distiller-review` mode, and writes review evidence under the existing

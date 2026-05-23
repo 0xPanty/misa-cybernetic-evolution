@@ -19,6 +19,11 @@ import { runSkillEvolutionSupervisor } from "./skill-evolution-supervisor.mjs";
 export const DEFAULT_BOOTSTRAP_REPORT_ROOT = "runs/bootstrap-local";
 
 const REQUIRED_PUBLIC_SCRIPTS = [
+  "quickstart",
+  "setup:local",
+  "deploy:local",
+  "setup:full-shadow",
+  "deploy:full-shadow",
   "doctor",
   "bootstrap:local",
   "distill:misa",

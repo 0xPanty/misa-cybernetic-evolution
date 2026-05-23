@@ -230,11 +230,13 @@ function runNegativeControl(now) {
 }
 
 export async function runHermesValueProof({
+  repoRoot = process.cwd(),
   seedCount = DEFAULT_SEED_COUNT,
   now = DEFAULT_NOW
 } = {}) {
   const seeds = buildSeeds(seedCount);
   const workOrderEval = await runWorkOrderQualityEvaluation({
+    repoRoot,
     seeds,
     includeExternalSamples: true,
     now
@@ -246,6 +248,7 @@ export async function runHermesValueProof({
     for (const seed of seeds) {
       const result = await runHermesWorkOrderPipeline({
         ...input.options,
+        repoRoot,
         seed,
         now
       });
@@ -367,6 +370,7 @@ function printSummary(result) {
 async function main() {
   const nowArg = readArg("now");
   const result = await runHermesValueProof({
+    repoRoot: process.cwd(),
     seedCount: parseSeedCount(readArg("seed-count")),
     now: nowArg ? new Date(nowArg) : DEFAULT_NOW
   });

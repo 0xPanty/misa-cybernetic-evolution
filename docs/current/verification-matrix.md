@@ -18,6 +18,8 @@ repository is schema-valid, current-line dry-run safe, calibrated on redacted
 samples, and still passing the full local test suite.
 
 ```bash
+npm run deploy:local
+npm run deploy:full-shadow
 npm run doctor
 npm run validate:schemas
 npm run smoke:current-line
@@ -30,6 +32,19 @@ npm test
 This proves L0 repository consistency, L1 read-only replay, and L2 shadow-mode
 no-live-effect behavior over the committed fixture set. It does not prove canary
 safety or production readiness.
+
+`deploy:local` is the one-command local sidecar path. It runs the public doctor,
+initializes the ignored local vector store through `bootstrap:local`, and runs
+the Hermes value proof. It is still local-only: no production service, VPS
+change, provider call, Zilliz write, Hermes memory write, or Hermes skill
+mutation.
+
+`deploy:full-shadow` is the one-command observe-only integration path. It adds
+deterministic window distillation, Hermes plugin install, event-log replay,
+Hermes work-order generation, session-distiller cybernetic review, and
+work-order inbox export on top of the local path. It mirrors the VPS sidecar
+shape, but still does not start a new service, write production memory, mutate
+Hermes skills, call providers, write Zilliz, or promote candidates.
 
 `health:qianxuesen` adds a small ignored run manifest under
 `runs/qianxuesen-full-loop/`. It keeps `latest.json` / `latest.md` for quick

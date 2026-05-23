@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.26.0`.
+The package is currently `0.27.0`.
 
 The current direction is v0.26 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -40,6 +40,21 @@ orders. `npm run hermes:value-proof` replays the local work-order corpus, Hermes
 adapter samples, the evolution-grade fixture, and a bad-evidence control group
 across deterministic seeds before reporting the Hermes intake as value-positive.
 
+The open-source entry now also has a one-command local sidecar path:
+`node scripts/setup-local.mjs` for fresh clones and `npm run deploy:local` after
+dependencies are installed. It runs doctor, local bootstrap, and Hermes value
+proof while keeping production deploys, provider calls, Zilliz writes, Hermes
+memory writes, and skill mutation disabled.
+
+The one-command full-shadow path is also present: `node scripts/setup-full-shadow.mjs`
+for fresh clones and `npm run deploy:full-shadow` after dependencies are
+installed. It wires local sidecar readiness, deterministic window distillation,
+Hermes observe-only plugin install, event-log replay, Hermes work-order
+generation, session-distiller cybernetic review, work-order inbox export, and
+value proof. `npm run deploy:vps-shadow` installs the existing VPS-style
+session-distiller `ExecStartPost` hook on Linux hosts that already run
+`misa-session-distiller.service`.
+
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
 retrieval-ranker inputs, and tournament quality signals. This is a review
@@ -65,8 +80,11 @@ exposes upsert/query/stats/rollback, and keeps the backend swappable for Zilliz,
 Qdrant, LanceDB, Chroma, pgvector, or a custom adapter.
 
 Open-source readiness now has first-class entrypoints: `npm run doctor` for a
-read-only clone check and `npm run bootstrap:local` for initializing the ignored
-local vector store plus a bootstrap report.
+read-only clone check, `npm run bootstrap:local` for initializing the ignored
+local vector store plus a bootstrap report, and `npm run deploy:local` for the
+combined local sidecar setup. `npm run deploy:full-shadow` extends that into
+the full observe-only window-distillation/Hermes/session-distiller/work-order
+chain.
 
 The first skill-evolution adapter surface is now present. It adds
 `skill:evolution`, a skill control contract schema, a behavior event schema, and
