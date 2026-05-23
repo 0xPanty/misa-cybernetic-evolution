@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.27.2`. The current line keeps source-lineage and
+Current package version: `0.27.3`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter

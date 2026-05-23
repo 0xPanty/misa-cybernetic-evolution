@@ -15,6 +15,8 @@ test("VPS hook installer refreshes the wrapper expected-commit pin", async () =>
   assert.match(installer, /git -C "\$REPO_ROOT" rev-parse HEAD/);
   assert.match(installer, /refresh_expected_commit_pin/);
   assert.match(installer, /install -m 0600 "\$tmp" "\$ENV_FILE"/);
+  assert.match(installer, /20-cybernetic-review\.conf/);
+  assert.match(installer, /legacy_dropin_removed/);
 });
 
 test("VPS updater runs full-shadow proof before refreshing the hook", async () => {
