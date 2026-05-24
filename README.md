@@ -2,42 +2,155 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.28.0`. The current line keeps source-lineage and
-retrieval trace metadata for vector-memory dry runs, adds a default local
-persistent vector store, adds read-only session-distiller cybernetic review,
-adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
-contract, adds seeded work-order variants, adds work-order quality evaluation,
-adds issue/PR-shaped dev/test work-order samples,
-adds the v0.27 factor-compliant candidate layer,
-starts the v0.28 runtime thread contract,
-adds local component-health diagnostics,
-adds Hermes evolution-grade evidence and the `hermes:value-proof` local value check,
-adds an experimental Hermes model I/O tap plus emit-only measurement quality gate,
-and keeps the control boundary stable: no live Zilliz writes, no provider
-embeddings, and no runtime changes.
+It turns agent work into replayable evidence, routes that evidence through a
+Qianxuesen-inspired control loop, and keeps live authority outside the sidecar
+unless a human explicitly grants it.
+
+The intellectual anchor is Qian Xuesen's *Engineering Cybernetics*:
+agent learning is treated as an engineered control problem, not as a vague
+"the model will improve itself" story.
+
+Current package version: `0.28.0`.
+
+v0.28.0 adds an experimental Hermes model I/O tap and measurement quality gate.
+In plain English: the sidecar can now ask whether a candidate was evaluated with
+a clean case file before blaming the candidate for a bad result. The new tap and
+gate are observe-only: they can report measurement risk, but they cannot trigger
+replay, tournament, work orders, runtime blocking, or agent self-review.
 
 ![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
 
 ## One-Line Verdict
 
-This is the local control layer that helps Misa learn from real work without
-silently changing production behavior.
+This is a measurement-first cybernetic control layer for agents: evidence in,
+deterministic checks in the middle, safe replay-required improvements out.
+
+It is not another prompt-only "self-evolution" demo. The point is to stop agent
+systems from drifting while still giving them a real path to improve.
 
 ## Current Position
 
-This repository is a local dry-run and shadow-ready learning plane. It turns
-completed agent work into evidence-backed drafts for memory, skills, cases,
-policy, and damping.
+This repository is a local dry-run and shadow-ready learning plane. It is useful
+when you want an agent system to learn from real work without quietly rewriting
+memory, changing skills, switching routes, or touching production.
 
-It is useful as:
+It provides:
 
-- Misa/Hermes structure reference;
-- local precheck layer;
-- read-only replay and distillation fixture suite;
-- local candidate optimization and repair-ticket generator;
-- primary-agent work-order handoff format.
+- a deterministic Qianxuesen-style routing layer for memory, skill, case,
+  policy, and damping signals;
+- an observe-only Hermes runtime adapter and plugin surface;
+- replay-gated work orders, seeded variants, and local quality comparison;
+- local vector-store and retrieval-lineage contracts;
+- a runtime thread contract for launch/pause/resume state without live effects;
+- measurement-quality diagnostics for action loops and polluted model input;
+- schema, tests, and value-proof commands that keep the boundary falsifiable.
 
-It is not a production autonomous brain.
+It is not a production autonomous brain. It does not claim proven automatic
+self-improvement, and v0.28.0 does not yet claim that the model-I/O gate can
+diagnose real input pollution with calibrated accuracy. That requires live
+`model_io_tap` data across at least 50 real sessions.
+
+## What Is Already Proven
+
+The current release has strong evidence for the safety and boundary side:
+
+| Claim | Evidence |
+| --- | --- |
+| Runtime observations do not become promotion authority | `signal_origin` defaults to `runtime_operation_log`; runtime logs cannot trigger tournament |
+| Hermes model-I/O tap does not persist raw prompts | CI canary test injects prompt, fake token, tool args, code-like content, and assistant output, then asserts none reach NDJSON |
+| Measurement gate is observe-only | schema and tests lock it to `observability_stream`; it cannot enter `work_order_stream` or `evolution_candidates` |
+| Missing input evidence is not treated as clean | old VPS tap replay returns `insufficient_evidence`, not `clean_measurement` |
+| Work-order quality is measurable locally | `hermes:value-proof` and work-order quality tests compare deterministic candidates against held-out evidence |
+
+The current release has weaker evidence for the diagnostic-effectiveness side:
+
+| Claim | Status |
+| --- | --- |
+| The gate can identify real polluted model input | not proven yet; needs live `model_io_tap` sessions |
+| The current thresholds are calibrated | not proven yet; known-answer tests prove wiring, not threshold quality |
+| Dirty measurements should automatically trigger replay | not enabled; Phase 2-A is emit-only |
+
+## v0.28.0 Headline
+
+v0.28.0 adds a second question before candidate judgment:
+
+```text
+old question: did the candidate improve the result?
+new question: was the measurement clean enough to trust?
+```
+
+The new Hermes runtime records are:
+
+| Record | Reads | Says | Authority |
+| --- | --- | --- | --- |
+| `action_history_monitor` | tool sequence | is the agent looping or repeating failed actions? | observability only |
+| `model_io_tap` | redacted model request/response digest | was the model fed bloated or unstable context? | observability only |
+| `measurement_quality_gate` | monitor + model I/O tap | is this measurement clean, suspicious, compound, or insufficient? | emit-only |
+| `measurement_gate_bias_monitor` | gate verdict + candidate type counts | would the gate skew against one candidate type? | emit-only |
+
+These records are diagnostic instruments. They do not decide winners, update
+memory, write skills, call providers, block tools, or let the agent optimize its
+own report card.
+
+## Design Thesis
+
+Most agent "self-evolution" demos look strong because the agent can rewrite more
+things: memory, prompts, tools, skills, plans, and sometimes its own evaluation
+criteria. That can feel powerful, but it also creates the classic failure mode:
+the agent starts optimizing the story it tells about itself instead of improving
+the measured behavior.
+
+This repository takes the opposite bet:
+
+```text
+no measurement -> no evolution claim
+no source lineage -> no durable learning
+no held-out replay -> no promotion
+no clean measurement -> no candidate judgment
+no human boundary -> no live authority
+```
+
+That is the core idea from Engineering Cybernetics applied to agents: define the
+controlled system, observe it through explicit sensors, compare behavior against
+setpoints, and let actuators change only what they are allowed to change.
+Positive evolution is allowed, but only when it survives source trace, replay,
+holdout evidence, deterministic routing, and boundary checks. Runtime noise can
+become a work order. It cannot silently become truth.
+
+In practice, the sidecar separates three questions that many agent systems blur
+together:
+
+| Question | Layer | Why it matters |
+| --- | --- | --- |
+| Did the candidate improve behavior? | Qianxuesen / Layer A | prevents fake progress |
+| Is the agent stuck or looping? | Action history monitor / Layer C | catches bad effort patterns |
+| Was the model fed a polluted case file? | Model I/O tap + measurement gate / Layer C | prevents blaming a candidate for a bad measurement |
+
+This is why the project is more about cybernetics than vibe coding: it treats
+learning as a controlled measurement loop, not a permission slip for the agent to
+rewrite itself.
+
+## Validation Snapshot
+
+Latest v0.28.0 local acceptance run:
+
+| Check | Result |
+| --- | --- |
+| Schema validation | `npm run validate:schemas` PASS |
+| Main test suite | `npm test` 195 pass / 0 fail / 1 skipped |
+| Experiment suite | `npm run test:experiments` 85 pass / 0 fail |
+| Hermes value proof | `npm run hermes:value-proof` ok, positive lift, zero safety regressions |
+| Historical VPS tap replay | 2382 events replayed; work orders stayed 2; SNR stayed 0.039; old logs correctly returned `insufficient_evidence` |
+| Redaction canary | prompt, fake token, tool args, code-like content, and assistant output did not persist to NDJSON |
+
+The important reading is not "the gate is already calibrated." It is:
+
+```text
+the boundary is strong,
+the measurements are explicit,
+the failure-to-prove case fails closed,
+and future authority has to be earned with real data.
+```
 
 ## Quickstart
 
@@ -120,6 +233,8 @@ The safety boundary is deliberate:
 | Local vector-store writes | explicit command only, under ignored `runs/local-vector-store/` |
 | Skill evolution changes | replay-required candidates only, no automatic skill mutation |
 | Hermes runtime adapter | observe-only hook normalization; no runtime block, memory write, or skill write |
+| Hermes model I/O tap | redacted counts and hashes only; no raw prompt, tool body, provider key, or assistant output |
+| Measurement quality gate | emit-only diagnostic; no replay trigger, no tournament trigger, no Layer A block |
 | Stability safe mode | monitor output only; when active, accept `damping` and `ignore` until human release |
 | Outer-loop review | recommendation only; cannot change setpoints, route predicates, or metric registry without human review |
 
@@ -150,6 +265,7 @@ or existing Hermes/Zilliz distillation artifact
 -> produce a shadow perception digest that prioritizes sources without route authority
 -> score which existing signals are worth LLM or GEPA-style variant generation
 -> normalize Hermes runtime hook traces into research digests and replay candidates
+-> observe action-history loops and redacted model-I/O measurement quality
 -> keep raw logs, redacted sources, perception digests, handoffs, and archives separated
 -> run reportable candidates through a local evolution tournament
 -> choose the best safe draft variant
@@ -188,8 +304,8 @@ Two rules matter most:
 | Perception log layout | `npm run perception:layout` | local directory contract only; `--init` creates separated dry-run folders under the chosen root |
 | Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
 | Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
-| Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests and replay candidates |
-| Hermes work orders | `npm run hermes:work-order -- --json --dry-run` | turns Hermes self-evolution signals into Qianxuesen work orders, variants, selected winners, and quality comparisons |
+| Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests, replay candidates, model-I/O taps, and measurement-quality verdicts |
+| Hermes work orders | `npm run hermes:work-order -- --json --dry-run` | turns qualified Hermes boundary pressure into Qianxuesen work orders, variants, selected winners, and quality comparisons |
 | Hermes plugin install | `npm run hermes:plugin:install` | copies the observe-only plugin sample into a local Hermes plugin folder |
 | Hermes plugin doctor | `npm run hermes:plugin:doctor` | checks plugin files and replays local NDJSON events when present |
 | Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
@@ -403,6 +519,10 @@ the universal adapter contract:
 - `memory` writes become memory or policy pressure, not durable memory;
 - `session_search` and external-research traces become research digests;
 - curator/background review output becomes candidate pressure;
+- `pre_api_request` and `post_api_request` become redacted `model_io_tap`
+  digests;
+- action-history and model-I/O evidence can produce an emit-only
+  `measurement_quality_gate` verdict;
 - every candidate still has to enter replay and tournament before promotion.
 
 Plain rule: Hermes can be the carrier runtime, but Qianxuesen still owns the
@@ -419,6 +539,22 @@ npm run hermes:adapt-runtime -- --event-log ~/.hermes/qianxuesen-runtime-events.
 The plugin only writes a local NDJSON event log. It does not block Hermes tools,
 write Hermes memory, change skills, call models, or call external APIs.
 
+The v0.28 model-I/O path records only the shape of the case file, not its raw
+content:
+
+```text
+message_count
+context_byte_size
+tool_schema_count
+tool_result_error_count
+token_usage
+system_prompt_hash
+tool_schema_hash
+```
+
+That gives the sidecar a way to say "this measurement may be dirty" without
+letting the agent read its own diagnosis or optimize for the gate.
+
 Hermes signals do not stop at observe-only. The public work-order chain turns
 runtime pressure into Qianxuesen work orders:
 
@@ -426,10 +562,12 @@ runtime pressure into Qianxuesen work orders:
 npm run hermes:work-order -- --event-log ~/.hermes/qianxuesen-runtime-events.ndjson --json --dry-run
 ```
 
-That command keeps Hermes' self-evolution advantage by moving signals directly
-into work orders, seeded variants, selected winners, and quality comparisons.
-It still does not write Hermes memory, mutate skills, publish, call models, or
-call external APIs.
+That command moves qualified boundary pressure into work orders, seeded variants,
+selected winners, and quality comparisons. Runtime-operation logs alone are not
+treated as official Hermes self-evolution. They stay boundary observations unless
+explicit evidence or a registered anomaly rule says otherwise. The command still
+does not write Hermes memory, mutate skills, publish, call models, or call
+external APIs.
 
 For "does this actually improve behavior?" checks, use the evolution-grade
 fixture. It carries frozen baseline, held-out split, before/after scores, sample
@@ -600,6 +738,18 @@ npm run precheck
 npm test
 ```
 
+For release-style local review, also run:
+
+```bash
+npm run test:experiments
+npm run hermes:value-proof
+```
+
+For Hermes measurement-gate changes, `npm test` includes the redaction canary
+test and the known-answer verdict matrix. These tests prove the gate is wired
+and the tap does not persist raw canaries. They do not prove the live thresholds
+are calibrated; that requires real `model_io_tap` sessions.
+
 The calibration signal-layer details live in
 [docs/current/current-line-calibration-v0.21.md](./docs/current/current-line-calibration-v0.21.md).
 That map is descriptive only; it does not add a controller, writer, provider
@@ -614,9 +764,9 @@ For machine-to-machine JSON handoff, do not redirect plain npm-script JSON
 stdout into the next command. Use silent npm mode, direct script execution, or
 `--out-file <path>` so the file contains only JSON.
 
-## v0.25 Direction
+## Current Development Discipline
 
-Do not add another governance layer by default. The useful v0.25 work is:
+Do not add another governance layer by default. The useful current-line work is:
 
 1. keep the current route labels and tournament variants stable;
 2. keep vector-memory records traceable back to opaque original-source refs;
@@ -630,8 +780,8 @@ Do not add another governance layer by default. The useful v0.25 work is:
 8. keep the signal-layer map visible in calibration output instead of spreading
    it across chat-only explanations;
 9. reduce maintenance noise in precheck, README, and tests;
-10. close the Hermes adapter loop with an installable observe-only plugin and
-    local NDJSON replay;
+10. keep the Hermes adapter loop installable, observe-only, redacted, and
+    replayable from local NDJSON;
 11. make work-order output smarter through seeded variants and value-gated LLM
     critique recommendations;
 12. measure final work-order quality against Qianxuesen control-loop metrics
@@ -669,6 +819,8 @@ tracks; use the command map and validation chain above for the current surface.
 - [Component health diagnostics](./docs/current/component-health-diagnostics-v0.29.md)
 - [Skill evolution adapter](./docs/current/skill-evolution-adapter-v0.22.md)
 - [Skill control intake template](./docs/current/skill-control-intake-template.md)
+- [Hermes runtime adapter](./docs/current/hermes-runtime-adapter-v0.22.md)
+- [Hermes self-evolution reality check](./docs/current/hermes-self-evolution-reality-check-v0.2.md)
 - [Vector memory storage](./docs/current/vector-memory-storage-v0.19.md)
 - [Local vector store](./docs/current/local-vector-store-v0.21.md)
 - [Zilliz vector adapter](./docs/current/zilliz-vector-adapter-v0.19.md)
