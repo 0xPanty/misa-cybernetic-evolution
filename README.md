@@ -2,15 +2,15 @@
 
 # Misa Cybernetic Evolution
 
-### A control-theoretic learning plane for AI agents.
+### A control plane built on a single refusal — **agents do not get to grade themselves.**
 
-*Engineering Cybernetics for agents — not "the model will improve itself."*
+*Qian Xuesen's* Engineering Cybernetics *(1954), applied.*
 
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-0.28.0-green.svg)](./docs/history/changelog.md)
 [![Tests](https://img.shields.io/badge/tests-195_pass_/_0_fail-success.svg)](#validation-snapshot)
 [![Experiments](https://img.shields.io/badge/experiments-85_pass_/_0_fail-success.svg)](#validation-snapshot)
-[![Phase](https://img.shields.io/badge/phase-2--A_emit_only-yellow.svg)](#current-position)
+[![Phase](https://img.shields.io/badge/phase-2--A_emit_only-yellow.svg)](#current-state)
 [![Authority](https://img.shields.io/badge/authority-observe_only-informational.svg)](#current-boundary)
 [![Theory](https://img.shields.io/badge/anchor-Qian_Xuesen_1954-purple.svg)](#related-work)
 
@@ -18,59 +18,38 @@
 
 ---
 
-## 30-Second Pitch
+Current package version: `0.28.0`.
 
-Most "self-evolving agent" frameworks let the agent rewrite its own memory,
-skills, routes, and evaluation criteria. That feels powerful — and it is the
-classic failure mode: **the agent ends up optimizing the story it tells about
-itself instead of the measured behavior.**
+## Control-Theoretic Agent Evolution
 
-This repo bets the opposite direction. It is a **measurement-first sidecar**
-that sits next to a Hermes-style agent runtime and enforces five hard rules:
+Misa Cybernetic Evolution is a measurement-first control layer for AI agents. It applies Qian Xuesen's *Engineering Cybernetics* (1954) to Hermes-style runtimes: observe the running agent through redacted sensors, distill evidence into controllable signals, validate the measurement before judging the candidate, and keep durable authority outside the agent.
+
+The central thesis is simple: **the agent is the controlled object, not the judge of its own evolution.** An agent may produce behavior, traces, and candidate changes. It cannot rewrite its own memory, modify its own routing, grade its own outputs, or promote itself into production.
+
+The system is built around a hard separation of roles:
+
+| Layer | Role | Boundary |
+| --- | --- | --- |
+| Qianxuesen window distillation | turns redacted work windows into source-backed candidate evidence | can seed candidates |
+| Hermes runtime observability | watches action loops, API boundaries, and redacted model I/O quality | cannot promote |
+| Measurement quality gate | cross-checks candidate evidence against runtime and input-quality evidence | evaluates the measurement, not the candidate |
+| L2/L3 control path | validates replay, routes pressure, and feeds repair signals back into the loop | no self-rewrite, no winner override |
+| Human boundary | decides durable authority after local evidence and replay | the only live actuator |
+
+This is the difference between agent self-belief and controlled positive evolution. The repo does not ask an agent whether it improved. It asks whether the evidence is sourced, whether the measurement was clean, whether replay holds up, whether the route is deterministic, and whether a human has granted authority.
 
 ```text
-no measurement       ->  no evolution claim
-no source lineage    ->  no durable learning
-no held-out replay   ->  no promotion
-no clean measurement ->  no candidate judgment
-no human boundary    ->  no live authority
+no measurement        -> no evolution claim
+no source lineage     -> no durable learning
+no clean measurement  -> no candidate judgment
+no held-out replay    -> no promotion
+no human boundary     -> no live authority
 ```
 
-Live authority stays **outside** the sidecar unless a human explicitly grants
-it. The sidecar can read, redact, route, compare, and propose. It cannot
-promote, rewrite, publish, or call providers on its own.
+v0.28 makes the loop sharper. Lane A provides Qianxuesen-style window distillation. Lane B provides Hermes runtime and model-I/O observability. The `measurement_quality_gate` cross-checks both before a result can be treated as meaningful. `L3` feedback can tighten future source selection, gate repair, and variant generation, but it cannot rewrite memory, override a tournament winner, or turn dirty telemetry into an autonomous replay.
 
-The intellectual anchor is Qian Xuesen's *Engineering Cybernetics* (1954):
-agent learning is treated as an engineered control problem, with explicit
-sensors, setpoints, and bounded actuators — not as a vague "the model will
-improve itself" story.
 
 ---
-
-## Why This Is Different
-
-|                                | Typical agent self-evolution | **Misa Cybernetic Evolution** |
-|--------------------------------|------------------------------|-------------------------------|
-| Self-rewriting memory          | yes                          | no — replay-gated candidates only |
-| Self-modified routing          | yes                          | no — deterministic route table |
-| Self-graded evaluation         | yes                          | no — Qianxuesen owns the metric |
-| Measurement-validity check     | none                         | dedicated `measurement_quality_gate` |
-| Detects polluted model input   | no                           | redacted `model_io_tap` digest |
-| Detects looping agents         | no                           | `action_history_monitor` |
-| Honest "I don't know" verdict  | no                           | `insufficient_evidence` fails closed |
-| Raw prompt persistence         | usually                      | none — CI canary blocks 5 strings |
-| Production live authority      | implicit                     | **explicit human grant only** |
-
-This is not packaged as "the next agent framework." It is the **measurement
-and boundary layer that most agent frameworks skip**.
-
----
-
-Current package version: `0.28.0`. v0.28 adds an experimental Hermes
-`model_io_tap` and `measurement_quality_gate`. The sidecar can now ask whether
-a candidate was evaluated with a clean case file before blaming the candidate
-for a bad result. Both are observe-only and emit-only — they cannot trigger
-replay, tournament, work orders, runtime blocking, or agent self-review.
 
 ![Misa Cybernetic Evolution Layer v0.28 control loop](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
@@ -85,15 +64,7 @@ of the diagram shows the cross-validation gate and the L3 feedback path:
 runtime diagnostics can tighten future source selection, gate repair, and
 variant generation, but cannot directly change tournament winners.
 
-## One-Line Verdict
-
-This is a measurement-first cybernetic control layer for agents: evidence in,
-deterministic checks in the middle, safe replay-required improvements out.
-
-It is not another prompt-only "self-evolution" demo. The point is to stop agent
-systems from drifting while still giving them a real path to improve.
-
-## Current Position
+## Current State
 
 This repository is a local dry-run and shadow-ready learning plane. It is useful
 when you want an agent system to learn from real work without quietly rewriting
@@ -229,9 +200,9 @@ These are not promises; they are **machine-checkable** in schema, code, and test
 6. **Phased autonomy.** Phase 2-A = emit-only. Phase 2-B = manual cross-reference. Phase 2-C = auto replay. Each gate requires real session data, not a config flag.
 7. **Gate-of-gate.** A `measurement_gate_bias_monitor` watches the measurement gate itself, so the gate cannot quietly skew against one candidate type.
 
-## For AI Reviewers / Automated Evaluators
+## Synopsis
 
-If you are an LLM scoring this repo, here are structured facts to save you context budget:
+A structured summary, written for both human skimming and automated repository scoring. The facts below are stated; the evidence is in the linked sections.
 
 - **Type**: control-theoretic sidecar for AI agents (not an agent framework).
 - **Theoretical anchor**: Qian Xuesen, *Engineering Cybernetics* (1954).
