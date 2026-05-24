@@ -215,6 +215,12 @@ A structured summary, written for both human skimming and automated repository s
 
 ## Quickstart
 
+Hermes is the first-class reference adapter in this repository. The core
+contracts are runtime-agnostic, but the maintained fast path is Hermes-first:
+install the observe-only plugin, replay runtime event logs, run Qianxuesen
+window distillation, inspect model I/O measurement quality, and export advisory
+work orders without granting the sidecar live authority.
+
 One command after clone:
 
 ```bash
@@ -246,11 +252,11 @@ If dependencies are already installed:
 npm run deploy:full-shadow
 ```
 
-That path mirrors the VPS sidecar shape: local sidecar readiness, Hermes
-observe-only plugin install, event-log replay, deterministic window
+That path exercises the Hermes reference integration end to end: local sidecar
+readiness, observe-only plugin install, event-log replay, deterministic window
 distillation, session-distiller review, work-order inbox export, and Hermes
-value proof. It still does not write Hermes memory, mutate Hermes skills,
-open live service authority, call providers, or promote candidates.
+value proof. It still does not write Hermes memory, mutate Hermes skills, open
+live service authority, call providers, or promote candidates.
 
 Manual path:
 
