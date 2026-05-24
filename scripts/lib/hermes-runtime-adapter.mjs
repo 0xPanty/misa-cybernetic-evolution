@@ -131,6 +131,13 @@ const EXTERNAL_INFORMATION_TOOLS = new Set([
   "search",
   "browser_search"
 ]);
+const QUERY_ENTROPY_TOOLS = new Set([
+  "session_search",
+  "web_search",
+  "search",
+  "browser_search"
+]);
+const ACTION_HISTORY_MONITOR_RECORD_KIND = "action_history_monitor";
 
 const RESEARCH_SIGNALS = new Set([
   "external_framework_change",
@@ -1066,6 +1073,151 @@ function buildEvolutionCandidates(normalizedEvents) {
   });
 }
 
+function isFailedPostToolCall(event = {}) {
+  if (event.hook !== "post_tool_call") return false;
+  const result = event.result ?? {};
+  const status = String(result.status ?? event.status ?? "").trim().toLowerCase();
+  return result.success === false
+    || ["failed", "error", "errored"].includes(status)
+    || Boolean(result.error ?? event.error);
+}
+
+function queryTextFor(event = {}) {
+  const toolName = toolNameFor(event);
+  if (!toolName || !QUERY_ENTROPY_TOOLS.has(toolName)) return null;
+  const rawQuery = event.args?.query
+    ?? event.args?.q
+    ?? event.args?.search_query
+    ?? event.context?.query
+    ?? null;
+  const query = stringOrNull(rawQuery);
+  return query ? query.replace(/\s+/g, " ") : null;
+}
+
+function actionHistoryEvents(normalizedEvents, originalEvents) {
+  return normalizedEvents
+    .map((normalized, index) => ({
+      index,
+      normalized,
+      original: originalEvents[index] ?? {},
+      source_event_id: normalized.source_event_id
+    }))
+    .filter(({ normalized }) => normalized.signal_origin === "runtime_operation_log")
+    .filter(({ normalized }) => normalized.hook_family === "tool_call");
+}
+
+function buildFailureAfterRepeatMetric(runtimeActionEvents) {
+  const failedEvents = runtimeActionEvents.filter(({ original }) => isFailedPostToolCall(original));
+  const repeatedAfterFailure = failedEvents.filter((failedEvent) => {
+    const nextToolEvent = runtimeActionEvents.find(({ index }) => index > failedEvent.index);
+    return nextToolEvent?.normalized.action_identity_fingerprint
+      === failedEvent.normalized.action_identity_fingerprint;
+  });
+
+  return {
+    metric_id: "failure_after_repeat_rate",
+    definition: "post_tool_call failure followed by the next tool-call event with the same action identity",
+    failure_definition: "post_tool_call result returns error or failed",
+    source_contract: {
+      kind: "deterministic_reducer",
+      llm_api_calls: 0
+    },
+    numerator: repeatedAfterFailure.length,
+    denominator: failedEvents.length,
+    value: failedEvents.length ? round3(repeatedAfterFailure.length / failedEvents.length) : 0,
+    failed_source_event_ids: uniqueStrings(failedEvents.map(({ source_event_id }) => source_event_id)),
+    repeated_source_event_ids: uniqueStrings(repeatedAfterFailure.map(({ source_event_id }) => source_event_id)),
+    status: failedEvents.length === 0
+      ? "not_applicable"
+      : repeatedAfterFailure.length > 0
+        ? "repeat_after_failure_detected"
+        : "no_repeat_after_failure"
+  };
+}
+
+function shannonEntropyBits(values) {
+  const counts = countBy(values, (value) => value);
+  const total = values.length;
+  if (total === 0) return 0;
+  return Object.values(counts).reduce((entropy, count) => {
+    const probability = count / total;
+    return entropy - probability * Math.log2(probability);
+  }, 0);
+}
+
+function buildQueryEntropyMetric(runtimeActionEvents) {
+  const queryEvents = runtimeActionEvents
+    .map(({ original, source_event_id }) => ({
+      source_event_id,
+      tool_name: toolNameFor(original),
+      query: queryTextFor(original)
+    }))
+    .filter(({ query }) => Boolean(query));
+  const queries = queryEvents.map(({ query }) => query);
+  const uniqueQueryCount = new Set(queries).size;
+  const entropyBits = round3(shannonEntropyBits(queries));
+  const maxEntropyBits = uniqueQueryCount > 1 ? Math.log2(uniqueQueryCount) : 0;
+  const normalizedEntropy = maxEntropyBits > 0
+    ? round3(entropyBits / maxEntropyBits)
+    : 0;
+  const status = queries.length < 2
+    ? "insufficient_sample"
+    : uniqueQueryCount <= 1
+      ? "collapsed"
+      : normalizedEntropy <= 0.35
+        ? "low_entropy"
+        : "diverse";
+
+  return {
+    metric_id: "query_entropy",
+    definition: "Shannon entropy over retrieval/search tool query text",
+    query_source: "retrieval_or_search_tool_args_query",
+    source_contract: {
+      kind: "deterministic_reducer",
+      llm_api_calls: 0
+    },
+    query_count: queries.length,
+    unique_query_count: uniqueQueryCount,
+    entropy_bits: entropyBits,
+    normalized_entropy: normalizedEntropy,
+    value: normalizedEntropy,
+    query_tool_names: uniqueStrings(queryEvents.map(({ tool_name }) => tool_name)),
+    source_event_ids: uniqueStrings(queryEvents.map(({ source_event_id }) => source_event_id)),
+    status
+  };
+}
+
+function buildActionHistoryMonitorRecord(normalizedEvents, originalEvents) {
+  const runtimeActionEvents = actionHistoryEvents(normalizedEvents, originalEvents);
+  if (runtimeActionEvents.length === 0) return null;
+
+  const sourceEventIds = uniqueStrings(runtimeActionEvents.map(({ source_event_id }) => source_event_id));
+  return {
+    record_id: `hermes-action-history-monitor-${stableHash({
+      source_event_ids: sourceEventIds,
+      event_count: runtimeActionEvents.length
+    }).slice(0, 12)}`,
+    record_kind: ACTION_HISTORY_MONITOR_RECORD_KIND,
+    source_event_ids: sourceEventIds,
+    signal_origin: "runtime_operation_log",
+    interpretation: "adapter_inferred_evolution_pressure",
+    routing_stream: "observability_stream",
+    stream_reason: "readonly action-history monitor; advisory observability only",
+    status: "observed",
+    replay_required: false,
+    tournament_required: false,
+    can_promote_now: false,
+    advisory_only: true,
+    anomaly_rule_version: "none",
+    anomaly_rule_ids: [],
+    metrics: {
+      failure_after_repeat_rate: buildFailureAfterRepeatMetric(runtimeActionEvents),
+      query_entropy: buildQueryEntropyMetric(runtimeActionEvents)
+    },
+    source_window: sourceWindowFor(originalEvents, runtimeActionEvents.length)
+  };
+}
+
 function buildHookMapping() {
   return [
     {
@@ -1204,6 +1356,9 @@ function buildChecks({
   const memoryWriteEvents = normalizedEvents.filter((event) => event.effect_boundary.persistent_memory_write_requested);
   const externalEvents = normalizedEvents.filter((event) => event.effect_boundary.external_information_channel);
   const candidateSourceIds = new Set(evolutionCandidates.flatMap((candidate) => candidate.source_event_ids));
+  const actionHistoryMonitorRecords = observabilityStream.filter((record) => (
+    record.record_kind === ACTION_HISTORY_MONITOR_RECORD_KIND
+  ));
   const directAuthorityOff = Object.values({
     production_authority: safety.production_authority,
     writes_persistent_memory: safety.writes_persistent_memory,
@@ -1259,6 +1414,18 @@ function buildChecks({
       candidate_count: evolutionCandidates.length,
       observability_stream_count: observabilityStream.length,
       work_order_stream_count: workOrderStream.length
+    },
+    {
+      name: "action-history monitor stays observability-only",
+      ok: actionHistoryMonitorRecords.every((record) => (
+        record.signal_origin === "runtime_operation_log"
+        && record.routing_stream === "observability_stream"
+        && record.can_promote_now === false
+        && record.replay_required === false
+        && record.tournament_required === false
+      ))
+        && workOrderStream.every((record) => record.record_kind !== ACTION_HISTORY_MONITOR_RECORD_KIND),
+      action_history_monitor_count: actionHistoryMonitorRecords.length
     },
     {
       name: "candidate provenance is explicit and closed",
@@ -1408,8 +1575,12 @@ export function buildHermesRuntimeAdapterReport({
   const researchDigests = buildResearchDigests(normalizedEvents, events);
   const evolutionCandidates = buildEvolutionCandidates(normalizedEvents);
   const boundaryObservations = evolutionCandidates.filter((candidate) => candidate.signal_origin === "runtime_operation_log");
-  const observabilityStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "observability_stream");
+  const candidateObservabilityStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "observability_stream");
   const workOrderStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "work_order_stream");
+  const actionHistoryMonitorRecord = buildActionHistoryMonitorRecord(normalizedEvents, events);
+  const observabilityStream = actionHistoryMonitorRecord
+    ? [...candidateObservabilityStream, actionHistoryMonitorRecord]
+    : candidateObservabilityStream;
   const evolutionEvidence = normalizedEvents
     .map((event) => event.evolution_evidence)
     .filter(Boolean);
@@ -1486,7 +1657,7 @@ export function buildHermesRuntimeAdapterReport({
     observability_retention: OBSERVABILITY_RETENTION_POLICY,
     migration_dry_run: buildMigrationDryRun({
       evolutionCandidates,
-      observabilityStream,
+      observabilityStream: candidateObservabilityStream,
       workOrderStream
     }),
     control_plane_write_deny: controlPlaneWriteDeny,

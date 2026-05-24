@@ -20,11 +20,11 @@ test("Hermes boundary observations enter work orders only when anomaly rules fir
   assert.equal(result.adapter.summary.official_evolution_candidate_count, 0);
   assert.equal(result.adapter.summary.boundary_observation_count, 4);
   assert.equal(result.adapter.summary.work_order_stream_count, 1);
-  assert.equal(result.adapter.summary.observability_stream_count, 3);
+  assert.equal(result.adapter.summary.observability_stream_count, 4);
   assert.equal(result.routing.summary.work_order_count, 1);
   assert.equal(result.routing.summary.source_boundary_observation_count, 4);
   assert.equal(result.routing.summary.source_work_order_stream_count, 1);
-  assert.equal(result.routing.summary.source_observability_stream_count, 3);
+  assert.equal(result.routing.summary.source_observability_stream_count, 4);
   assert.equal(result.routing.summary.agent_self_review_count, 1);
   assert.equal(result.routing.summary.guarded_agent_adoption_ready_count, 0);
   assert.equal(result.variants.summary.work_order_count, 1);

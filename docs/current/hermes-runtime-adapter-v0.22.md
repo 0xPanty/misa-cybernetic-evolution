@@ -133,6 +133,32 @@ runtime_operation_log
 -> work_order_stream only on anomaly or explicit evidence
 ```
 
+## Action-History Monitor
+
+The adapter also emits one readonly `action_history_monitor` record when runtime
+operation logs contain tool-call history. This is not an anomaly rule and does
+not bump `hermes-boundary-anomaly-rules.v1`.
+
+The monitor has only two MVP metrics:
+
+- `failure_after_repeat_rate`: a `post_tool_call` returned `error` or `failed`,
+  then the next tool-call event repeated the same `action_identity_fingerprint`;
+- `query_entropy`: Shannon entropy over retrieval/search tool query text.
+
+Its output is schema-locked:
+
+```text
+record_kind = action_history_monitor
+signal_origin = runtime_operation_log
+routing_stream = observability_stream
+can_promote_now = false
+replay_required = false
+tournament_required = false
+```
+
+So it can explain loops or query collapse, but it cannot create work orders,
+trigger tournaments, or promote itself.
+
 The report also emits `sidecar_signal_to_noise_ratio`:
 
 ```text

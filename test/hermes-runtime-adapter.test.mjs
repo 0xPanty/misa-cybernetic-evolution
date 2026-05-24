@@ -34,7 +34,7 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.equal(result.summary.qianxuesen_replay_synthesis_count, 0);
   assert.equal(result.summary.inferred_evolution_pressure_count, 4);
   assert.equal(result.summary.boundary_observation_count, 4);
-  assert.equal(result.summary.observability_stream_count, 3);
+  assert.equal(result.summary.observability_stream_count, 4);
   assert.equal(result.summary.work_order_stream_count, 1);
   assert.equal(result.summary.sidecar_signal_to_noise_ratio.metric_id, "sidecar_signal_to_noise_ratio");
   assert.equal(result.summary.sidecar_signal_to_noise_ratio.value, 0.25);
@@ -53,7 +53,7 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.equal(result.evolution_candidates.every((candidate) => candidate.interpretation === "adapter_inferred_evolution_pressure"), true);
   assert.equal(result.work_order_stream.length, 1);
   assert.equal(result.work_order_stream[0].anomaly_rule_ids.includes("memory_write_boundary_pressure"), true);
-  assert.equal(result.observability_stream.length, 3);
+  assert.equal(result.observability_stream.length, 4);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.can_promote_now === false), true);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.evidence_quality === "insufficient_evidence"), true);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.advisory_only === true), true);
@@ -70,7 +70,110 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.ok(checkNames.has("external information becomes research digest evidence"));
   assert.ok(checkNames.has("candidate provenance is explicit and closed"));
   assert.ok(checkNames.has("runtime log pressure reaches inbox only through deterministic anomaly rules"));
+  assert.ok(checkNames.has("action-history monitor stays observability-only"));
   assert.ok(checkNames.has("control-plane write-deny is explicit and closed"));
+});
+
+test("Hermes action-history monitor is readonly observability and schema-locked", async () => {
+  const result = buildHermesRuntimeAdapterReport({
+    fixture: {
+      source: {
+        runtime: "hermes-agent",
+        runtime_commit: "action-history-monitor-local-sample",
+        source_url: "local-action-history-monitor"
+      },
+      events: [
+        {
+          event_id: "monitor-search-failed-001",
+          hook: "post_tool_call",
+          timestamp: "2026-05-20T00:00:00Z",
+          tool_name: "session_search",
+          args: {
+            query: "Hermes action monitor loop"
+          },
+          result: {
+            status: "failed"
+          }
+        },
+        {
+          event_id: "monitor-search-repeat-002",
+          hook: "pre_tool_call",
+          timestamp: "2026-05-20T00:00:10Z",
+          tool_name: "session_search",
+          args: {
+            query: "Hermes action monitor loop"
+          }
+        },
+        {
+          event_id: "monitor-search-repeat-003",
+          hook: "post_tool_call",
+          timestamp: "2026-05-20T00:00:20Z",
+          tool_name: "session_search",
+          args: {
+            query: "Hermes action monitor loop"
+          },
+          result: {
+            success: true
+          }
+        },
+        {
+          event_id: "monitor-browser-repeat-004",
+          hook: "post_tool_call",
+          timestamp: "2026-05-20T00:00:30Z",
+          tool_name: "browser_search",
+          args: {
+            query: "Hermes action monitor loop"
+          },
+          result: {
+            success: true
+          }
+        }
+      ]
+    },
+    now: new Date("2026-05-20T00:00:00Z")
+  });
+  const monitor = result.observability_stream.find((record) => record.record_kind === "action_history_monitor");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.evolution_candidate_count, 4);
+  assert.equal(result.summary.boundary_observation_count, 4);
+  assert.equal(result.summary.work_order_stream_count, 0);
+  assert.equal(result.summary.observability_stream_count, 5);
+  assert.equal(result.evolution_candidates.some((record) => record.record_kind === "action_history_monitor"), false);
+  assert.equal(result.work_order_stream.some((record) => record.record_kind === "action_history_monitor"), false);
+  assert.equal(monitor.record_kind, "action_history_monitor");
+  assert.equal(monitor.signal_origin, "runtime_operation_log");
+  assert.equal(monitor.routing_stream, "observability_stream");
+  assert.equal(monitor.can_promote_now, false);
+  assert.equal(monitor.replay_required, false);
+  assert.equal(monitor.tournament_required, false);
+  assert.equal(monitor.anomaly_rule_version, "none");
+  assert.deepEqual(monitor.anomaly_rule_ids, []);
+  assert.equal(monitor.metrics.failure_after_repeat_rate.failure_definition, "post_tool_call result returns error or failed");
+  assert.equal(monitor.metrics.failure_after_repeat_rate.denominator, 1);
+  assert.equal(monitor.metrics.failure_after_repeat_rate.numerator, 1);
+  assert.equal(monitor.metrics.failure_after_repeat_rate.value, 1);
+  assert.equal(monitor.metrics.query_entropy.query_source, "retrieval_or_search_tool_args_query");
+  assert.equal(monitor.metrics.query_entropy.query_count, 4);
+  assert.equal(monitor.metrics.query_entropy.unique_query_count, 1);
+  assert.equal(monitor.metrics.query_entropy.status, "collapsed");
+
+  const validation = await validateJsonData({
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: result,
+    name: "validate action-history monitor adapter report"
+  });
+  assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+
+  const tampered = structuredClone(result);
+  const tamperedMonitor = tampered.observability_stream.find((record) => record.record_kind === "action_history_monitor");
+  tamperedMonitor.routing_stream = "work_order_stream";
+  const tamperedValidation = await validateJsonData({
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: tampered,
+    name: "validate tampered action-history monitor adapter report"
+  });
+  assert.equal(tamperedValidation.ok, false);
 });
 
 test("Hermes runtime adapter output validates against the universal adapter schema", async () => {
@@ -311,7 +414,7 @@ test("Hermes runtime adapter folds pre/post tool-call observations by action ide
   assert.equal(result.ok, true);
   assert.equal(result.summary.boundary_observation_count, 6);
   assert.equal(result.summary.work_order_stream_count, 1);
-  assert.equal(result.summary.observability_stream_count, 5);
+  assert.equal(result.summary.observability_stream_count, 6);
   assert.equal(workOrder.raw_signal_count, 6);
   assert.equal(workOrder.source_event_ids.length, 6);
   assert.equal(workOrder.source_event_ids[0].startsWith("skill-create-post-"), true);
@@ -371,7 +474,7 @@ test("Hermes runtime adapter can read observe-only plugin NDJSON event logs", as
   assert.equal(result.summary.official_evolution_candidate_count, 0);
   assert.equal(result.summary.inferred_evolution_pressure_count, 2);
   assert.equal(result.summary.work_order_stream_count, 0);
-  assert.equal(result.summary.observability_stream_count, 2);
+  assert.equal(result.summary.observability_stream_count, 3);
   assert.equal(result.summary.research_digest_count, 2);
   assert.equal(result.summary.evolution_evidence_count, 0);
   assert.equal(result.safety.writes_skills, false);

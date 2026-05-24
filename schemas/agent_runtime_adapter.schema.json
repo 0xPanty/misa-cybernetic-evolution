@@ -112,7 +112,7 @@
     },
     "observability_stream": {
       "type": "array",
-      "items": { "$ref": "#/$defs/evolution_candidate" }
+      "items": { "$ref": "#/$defs/observability_record" }
     },
     "work_order_stream": {
       "type": "array",
@@ -616,6 +616,165 @@
             },
             "reason": { "type": "string" }
           }
+        }
+      }
+    },
+    "observability_record": {
+      "oneOf": [
+        { "$ref": "#/$defs/evolution_candidate" },
+        { "$ref": "#/$defs/action_history_monitor_record" }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": ["record_kind"],
+            "properties": {
+              "record_kind": { "const": "action_history_monitor" }
+            }
+          },
+          "then": {
+            "required": [
+              "signal_origin",
+              "routing_stream",
+              "can_promote_now",
+              "replay_required",
+              "tournament_required"
+            ],
+            "properties": {
+              "signal_origin": { "const": "runtime_operation_log" },
+              "routing_stream": { "const": "observability_stream" },
+              "can_promote_now": { "const": false },
+              "replay_required": { "const": false },
+              "tournament_required": { "const": false }
+            }
+          }
+        }
+      ]
+    },
+    "action_history_monitor_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "record_kind",
+        "source_event_ids",
+        "signal_origin",
+        "interpretation",
+        "routing_stream",
+        "stream_reason",
+        "status",
+        "replay_required",
+        "tournament_required",
+        "can_promote_now",
+        "advisory_only",
+        "anomaly_rule_version",
+        "anomaly_rule_ids",
+        "metrics",
+        "source_window"
+      ],
+      "properties": {
+        "record_id": { "type": "string" },
+        "record_kind": { "type": "string", "const": "action_history_monitor" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "signal_origin": { "type": "string", "const": "runtime_operation_log" },
+        "interpretation": { "type": "string", "const": "adapter_inferred_evolution_pressure" },
+        "routing_stream": { "type": "string", "const": "observability_stream" },
+        "stream_reason": { "type": "string" },
+        "status": { "type": "string", "const": "observed" },
+        "replay_required": { "type": "boolean", "const": false },
+        "tournament_required": { "type": "boolean", "const": false },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "advisory_only": { "type": "boolean", "const": true },
+        "anomaly_rule_version": { "type": "string", "const": "none" },
+        "anomaly_rule_ids": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["failure_after_repeat_rate", "query_entropy"],
+          "properties": {
+            "failure_after_repeat_rate": { "$ref": "#/$defs/action_history_failure_after_repeat_rate" },
+            "query_entropy": { "$ref": "#/$defs/action_history_query_entropy" }
+          }
+        },
+        "source_window": { "$ref": "#/$defs/source_window" }
+      }
+    },
+    "action_history_metric_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "llm_api_calls"],
+      "properties": {
+        "kind": { "type": "string", "const": "deterministic_reducer" },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "action_history_failure_after_repeat_rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "definition",
+        "failure_definition",
+        "source_contract",
+        "numerator",
+        "denominator",
+        "value",
+        "failed_source_event_ids",
+        "repeated_source_event_ids",
+        "status"
+      ],
+      "properties": {
+        "metric_id": { "type": "string", "const": "failure_after_repeat_rate" },
+        "definition": { "type": "string" },
+        "failure_definition": { "type": "string", "const": "post_tool_call result returns error or failed" },
+        "source_contract": { "$ref": "#/$defs/action_history_metric_contract" },
+        "numerator": { "type": "integer", "minimum": 0 },
+        "denominator": { "type": "integer", "minimum": 0 },
+        "value": { "type": "number", "minimum": 0, "maximum": 1 },
+        "failed_source_event_ids": { "$ref": "#/$defs/string_array" },
+        "repeated_source_event_ids": { "$ref": "#/$defs/string_array" },
+        "status": {
+          "type": "string",
+          "enum": ["not_applicable", "repeat_after_failure_detected", "no_repeat_after_failure"]
+        }
+      }
+    },
+    "action_history_query_entropy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "definition",
+        "query_source",
+        "source_contract",
+        "query_count",
+        "unique_query_count",
+        "entropy_bits",
+        "normalized_entropy",
+        "value",
+        "query_tool_names",
+        "source_event_ids",
+        "status"
+      ],
+      "properties": {
+        "metric_id": { "type": "string", "const": "query_entropy" },
+        "definition": { "type": "string" },
+        "query_source": { "type": "string", "const": "retrieval_or_search_tool_args_query" },
+        "source_contract": { "$ref": "#/$defs/action_history_metric_contract" },
+        "query_count": { "type": "integer", "minimum": 0 },
+        "unique_query_count": { "type": "integer", "minimum": 0 },
+        "entropy_bits": { "type": "number", "minimum": 0 },
+        "normalized_entropy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "value": { "type": "number", "minimum": 0, "maximum": 1 },
+        "query_tool_names": { "$ref": "#/$defs/string_array" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "status": {
+          "type": "string",
+          "enum": ["insufficient_sample", "collapsed", "low_entropy", "diverse"]
         }
       }
     },
