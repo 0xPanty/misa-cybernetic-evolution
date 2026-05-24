@@ -9,6 +9,8 @@ export const DEFAULT_HERMES_RUNTIME_PLUGIN_EVENT_LOG = "~/.hermes/qianxuesen-run
 const REQUIRED_HERMES_HOOKS = [
   "pre_tool_call",
   "post_tool_call",
+  "pre_api_request",
+  "post_api_request",
   "pre_llm_call",
   "post_llm_call",
   "on_session_end"
@@ -138,6 +140,56 @@ const QUERY_ENTROPY_TOOLS = new Set([
   "browser_search"
 ]);
 const ACTION_HISTORY_MONITOR_RECORD_KIND = "action_history_monitor";
+const MODEL_IO_TAP_RECORD_KIND = "model_io_tap";
+const MEASUREMENT_QUALITY_GATE_RECORD_KIND = "measurement_quality_gate";
+const MEASUREMENT_GATE_BIAS_MONITOR_RECORD_KIND = "measurement_gate_bias_monitor";
+const MODEL_IO_TAP_REDACTION_STATUSES = ["at_tap_point", "at_importer_point"];
+const MODEL_IO_TAP_PHASES = ["pre_api_request", "post_api_request", "imported_request"];
+const MEASUREMENT_GATE_RULE_VERSION = "hermes-measurement-gate-rules.v1";
+const MEASUREMENT_GATE_RULE_REGISTRY = Object.freeze([
+  {
+    rule_id: "context_byte_size_high",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "input_contamination",
+    rule_definition: "model_io_tap max(context_byte_size) >= 50000",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "tool_schema_count_high",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "input_contamination",
+    rule_definition: "model_io_tap max(tool_schema_count) >= 40",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "tool_result_error_accumulation",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "input_contamination",
+    rule_definition: "model_io_tap max(tool_result_error_count) >= 3",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "failure_after_repeat_rate_high",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "behavior_loop",
+    rule_definition: "action_history_monitor failure_after_repeat_rate value >= 0.5 with denominator >= 1",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "query_entropy_collapsed",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "behavior_loop",
+    rule_definition: "action_history_monitor query_entropy status is collapsed or low_entropy with query_count >= 3",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "measurement_evidence_sparse",
+    version: MEASUREMENT_GATE_RULE_VERSION,
+    category: "insufficient_evidence",
+    rule_definition: "no model_io_tap records and action_history_monitor has no failed action sample plus insufficient query entropy sample",
+    deterministic_reducer: true
+  }
+]);
 
 const RESEARCH_SIGNALS = new Set([
   "external_framework_change",
@@ -206,6 +258,13 @@ function round3(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function maxNumber(values, fallback = 0) {
+  const numbers = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+  return numbers.length ? Math.max(...numbers) : fallback;
+}
+
 function countBy(items, selector) {
   return items.reduce((counts, item) => {
     const key = selector(item);
@@ -219,10 +278,24 @@ function numberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function nonNegativeIntegerOrNull(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : null;
+}
+
+function nonNegativeIntegerOrZero(value) {
+  return nonNegativeIntegerOrNull(value) ?? 0;
+}
+
 function stringOrNull(value) {
   if (value === null || value === undefined) return null;
   const text = String(value).trim();
   return text ? text : null;
+}
+
+function hashOrNull(value) {
+  const text = stringOrNull(value);
+  return text && /^[a-f0-9]{64}$/.test(text) ? text : null;
 }
 
 function riskOrUnknown(value) {
@@ -1218,6 +1291,288 @@ function buildActionHistoryMonitorRecord(normalizedEvents, originalEvents) {
   };
 }
 
+function isModelIoTapRecord(event = {}) {
+  return event?.record_kind === MODEL_IO_TAP_RECORD_KIND;
+}
+
+function safeModelIoTapApiCallRef(raw = {}) {
+  return {
+    session_id: stringOrNull(raw.session_id),
+    task_id: stringOrNull(raw.task_id),
+    api_call_count: nonNegativeIntegerOrNull(raw.api_call_count),
+    hook: enumOrDefault(raw.hook, MODEL_IO_TAP_PHASES, "imported_request"),
+    model: stringOrNull(raw.model),
+    provider: stringOrNull(raw.provider),
+    api_mode: stringOrNull(raw.api_mode),
+    base_url_hash: hashOrNull(raw.base_url_hash)
+  };
+}
+
+function safeModelIoTapMetrics(raw = {}) {
+  const metrics = raw.metrics && typeof raw.metrics === "object" ? raw.metrics : {};
+  const tokenUsage = metrics.token_usage && typeof metrics.token_usage === "object"
+    ? metrics.token_usage
+    : {};
+
+  return {
+    token_usage: {
+      input_tokens: nonNegativeIntegerOrNull(tokenUsage.input_tokens ?? metrics.input_tokens),
+      output_tokens: nonNegativeIntegerOrNull(tokenUsage.output_tokens ?? metrics.output_tokens),
+      cache_read_tokens: nonNegativeIntegerOrNull(tokenUsage.cache_read_tokens ?? metrics.cache_read_tokens)
+    },
+    message_count: nonNegativeIntegerOrZero(metrics.message_count),
+    context_byte_size: nonNegativeIntegerOrZero(metrics.context_byte_size),
+    tool_schema_count: nonNegativeIntegerOrZero(metrics.tool_schema_count),
+    tool_result_error_count: nonNegativeIntegerOrZero(metrics.tool_result_error_count),
+    system_prompt_hash: hashOrNull(metrics.system_prompt_hash),
+    tool_schema_hash: hashOrNull(metrics.tool_schema_hash)
+  };
+}
+
+function normalizeModelIoTapRecord(event = {}, index = 0) {
+  const sourceEventIds = uniqueStrings(
+    Array.isArray(event.source_event_ids) && event.source_event_ids.length
+      ? event.source_event_ids
+      : [event.event_id ?? `model-io-tap-${index + 1}`]
+  );
+  const apiCallRef = safeModelIoTapApiCallRef({
+    ...(event.api_call_ref ?? {}),
+    hook: event.api_call_ref?.hook ?? event.hook,
+    session_id: event.api_call_ref?.session_id ?? event.session_id,
+    task_id: event.api_call_ref?.task_id ?? event.task_id,
+    api_call_count: event.api_call_ref?.api_call_count ?? event.api_call_count,
+    model: event.api_call_ref?.model ?? event.model,
+    provider: event.api_call_ref?.provider ?? event.provider,
+    api_mode: event.api_call_ref?.api_mode ?? event.api_mode,
+    base_url_hash: event.api_call_ref?.base_url_hash ?? event.base_url_hash
+  });
+  const sourceWindow = event.source_window?.kind && event.source_window?.value
+    ? event.source_window
+    : {
+        kind: "count",
+        value: `${sourceEventIds.length}_model_io_tap_events`
+      };
+
+  return {
+    record_id: stringOrNull(event.record_id)
+      ?? `hermes-model-io-tap-${stableHash({ source_event_ids: sourceEventIds, api_call_ref: apiCallRef }).slice(0, 12)}`,
+    record_kind: MODEL_IO_TAP_RECORD_KIND,
+    source_event_ids: sourceEventIds,
+    signal_origin: "runtime_operation_log",
+    routing_stream: "observability_stream",
+    stream_reason: "readonly model I/O digest; input-side observability only",
+    status: "observed",
+    replay_required: false,
+    tournament_required: false,
+    can_promote_now: false,
+    advisory_only: true,
+    anomaly_rule_version: "none",
+    anomaly_rule_ids: [],
+    raw_prompt_persisted: false,
+    raw_private_content_exported: false,
+    redaction_status: enumOrDefault(event.redaction_status, MODEL_IO_TAP_REDACTION_STATUSES, "at_tap_point"),
+    source_contract: {
+      kind: "deterministic_reducer",
+      llm_api_calls: 0
+    },
+    api_call_ref: apiCallRef,
+    metrics: safeModelIoTapMetrics(event),
+    source_window: sourceWindow
+  };
+}
+
+function measurementGateRuleIdsFor({ actionHistoryMonitorRecord, modelIoTapRecords }) {
+  const matched = [];
+  const maxContextByteSize = maxNumber(modelIoTapRecords.map((record) => record.metrics.context_byte_size));
+  const maxToolSchemaCount = maxNumber(modelIoTapRecords.map((record) => record.metrics.tool_schema_count));
+  const maxToolResultErrorCount = maxNumber(modelIoTapRecords.map((record) => record.metrics.tool_result_error_count));
+  const failureAfterRepeat = actionHistoryMonitorRecord?.metrics?.failure_after_repeat_rate;
+  const queryEntropy = actionHistoryMonitorRecord?.metrics?.query_entropy;
+
+  if (maxContextByteSize >= 50000) matched.push("context_byte_size_high");
+  if (maxToolSchemaCount >= 40) matched.push("tool_schema_count_high");
+  if (maxToolResultErrorCount >= 3) matched.push("tool_result_error_accumulation");
+  if ((failureAfterRepeat?.denominator ?? 0) >= 1 && (failureAfterRepeat?.value ?? 0) >= 0.5) {
+    matched.push("failure_after_repeat_rate_high");
+  }
+  if ((queryEntropy?.query_count ?? 0) >= 3 && ["collapsed", "low_entropy"].includes(queryEntropy?.status)) {
+    matched.push("query_entropy_collapsed");
+  }
+  if (
+    modelIoTapRecords.length === 0
+    && (failureAfterRepeat?.denominator ?? 0) === 0
+    && (!queryEntropy || queryEntropy.status === "insufficient_sample")
+  ) {
+    matched.push("measurement_evidence_sparse");
+  }
+
+  return uniqueStrings(matched);
+}
+
+function measurementGateVerdictFor(ruleIds) {
+  const rules = MEASUREMENT_GATE_RULE_REGISTRY.filter((rule) => ruleIds.includes(rule.rule_id));
+  const inputSuspected = rules.some((rule) => rule.category === "input_contamination");
+  const behaviorSuspected = rules.some((rule) => rule.category === "behavior_loop");
+  if (inputSuspected && behaviorSuspected) return "suspect_compound_failure";
+  if (inputSuspected) return "suspect_input_contamination";
+  if (behaviorSuspected) return "suspect_behavior_loop";
+  if (rules.some((rule) => rule.category === "insufficient_evidence")) return "insufficient_evidence";
+  return "clean_measurement";
+}
+
+function measurementGateBiasSnapshot({ verdict, evolutionCandidates }) {
+  const candidateTypeCounts = countBy(evolutionCandidates, (candidate) => candidate.candidate_type);
+  return Object.entries(candidateTypeCounts)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([candidateType, count]) => {
+      const prospectiveDirtyCount = verdict === "clean_measurement" ? 0 : count;
+      return {
+        candidate_type: candidateType,
+        sample_count: count,
+        prospective_clean_replay_required_count: prospectiveDirtyCount,
+        prospective_clean_replay_required_rate: count ? round3(prospectiveDirtyCount / count) : 0
+      };
+    });
+}
+
+function buildMeasurementGateBiasMonitorRecord({
+  measurementQualityGateRecord,
+  evolutionCandidates,
+  runtimeEvents
+}) {
+  if (!measurementQualityGateRecord) return null;
+  const snapshot = measurementGateBiasSnapshot({
+    verdict: measurementQualityGateRecord.verdict,
+    evolutionCandidates
+  });
+
+  return {
+    record_id: `hermes-measurement-gate-bias-monitor-${stableHash({
+      gate_record_id: measurementQualityGateRecord.record_id,
+      verdict: measurementQualityGateRecord.verdict,
+      candidate_type_counts: countBy(evolutionCandidates, (candidate) => candidate.candidate_type)
+    }).slice(0, 12)}`,
+    record_kind: MEASUREMENT_GATE_BIAS_MONITOR_RECORD_KIND,
+    source_event_ids: measurementQualityGateRecord.source_event_ids,
+    signal_origin: "runtime_operation_log",
+    routing_stream: "observability_stream",
+    stream_reason: "emit-only gate-of-gate snapshot; detects prospective candidate-type bias before Phase 2-B",
+    status: "observed",
+    gate_phase: "emit_only",
+    replay_required: false,
+    tournament_required: false,
+    can_promote_now: false,
+    advisory_only: true,
+    anomaly_rule_version: "none",
+    anomaly_rule_ids: [],
+    gate_record_id: measurementQualityGateRecord.record_id,
+    verdict: measurementQualityGateRecord.verdict,
+    bias_status: evolutionCandidates.length ? "baseline_only" : "no_candidate_sample",
+    bias_policy: {
+      phase: "phase_2a_emit_only",
+      minimum_real_sessions_required: 50,
+      dirty_rate_target_min: 0.05,
+      dirty_rate_target_max: 0.3,
+      human_review_hit_rate_min: 0.7,
+      deterministic_reducer: true,
+      llm_api_calls: 0
+    },
+    monitor_authority: {
+      evaluates_candidate_quality: false,
+      evaluates_gate_bias: true,
+      blocks_layer_a: false,
+      triggers_replay: false,
+      layer_a_visibility: "not_exported_to_layer_a",
+      agent_can_read: false,
+      llm_api_calls: 0
+    },
+    by_candidate_type: snapshot.map((item) => ({
+      candidate_type: item.candidate_type,
+      sample_count: item.sample_count,
+      prospective_dirty_measurement_count: item.prospective_clean_replay_required_count,
+      prospective_dirty_measurement_rate: item.prospective_clean_replay_required_rate
+    })),
+    source_window: sourceWindowFor(runtimeEvents, measurementQualityGateRecord.source_event_ids.length)
+  };
+}
+
+function buildMeasurementQualityGateRecord({
+  actionHistoryMonitorRecord,
+  modelIoTapRecords,
+  evolutionCandidates,
+  runtimeEvents
+}) {
+  if (!actionHistoryMonitorRecord && modelIoTapRecords.length === 0) return null;
+
+  const matchedRuleIds = measurementGateRuleIdsFor({ actionHistoryMonitorRecord, modelIoTapRecords });
+  const verdict = measurementGateVerdictFor(matchedRuleIds);
+  const sourceEventIds = uniqueStrings([
+    ...(actionHistoryMonitorRecord?.source_event_ids ?? []),
+    ...modelIoTapRecords.flatMap((record) => record.source_event_ids)
+  ]);
+  const modelIoMetrics = modelIoTapRecords.map((record) => record.metrics);
+  const failureAfterRepeat = actionHistoryMonitorRecord?.metrics?.failure_after_repeat_rate;
+  const queryEntropy = actionHistoryMonitorRecord?.metrics?.query_entropy;
+
+  return {
+    record_id: `hermes-measurement-quality-gate-${stableHash({
+      source_event_ids: sourceEventIds,
+      matched_rule_ids: matchedRuleIds,
+      verdict
+    }).slice(0, 12)}`,
+    record_kind: MEASUREMENT_QUALITY_GATE_RECORD_KIND,
+    source_event_ids: sourceEventIds,
+    signal_origin: "runtime_operation_log",
+    routing_stream: "observability_stream",
+    stream_reason: "emit-only measurement quality gate; does not block Layer A in this phase",
+    status: "observed",
+    verdict,
+    gate_phase: "emit_only",
+    replay_required: false,
+    tournament_required: false,
+    can_promote_now: false,
+    advisory_only: true,
+    anomaly_rule_version: "none",
+    anomaly_rule_ids: [],
+    measurement_rule_registry: {
+      registry_id: "hermes-measurement-gate-rules",
+      version: MEASUREMENT_GATE_RULE_VERSION,
+      matched_rule_ids: matchedRuleIds,
+      rules: MEASUREMENT_GATE_RULE_REGISTRY
+    },
+    gate_authority: {
+      evaluates_candidate_quality: false,
+      evaluates_measurement_quality: true,
+      blocks_layer_a: false,
+      triggers_replay: false,
+      layer_a_visibility: "not_exported_to_layer_a",
+      agent_can_read: false,
+      llm_api_calls: 0
+    },
+    inputs: {
+      action_history_monitor_record_ids: actionHistoryMonitorRecord ? [actionHistoryMonitorRecord.record_id] : [],
+      model_io_tap_record_ids: modelIoTapRecords.map((record) => record.record_id),
+      candidate_count: evolutionCandidates.length,
+      candidate_type_counts: countBy(evolutionCandidates, (candidate) => candidate.candidate_type)
+    },
+    metrics: {
+      max_context_byte_size: maxNumber(modelIoMetrics.map((metrics) => metrics.context_byte_size)),
+      max_tool_schema_count: maxNumber(modelIoMetrics.map((metrics) => metrics.tool_schema_count)),
+      max_tool_result_error_count: maxNumber(modelIoMetrics.map((metrics) => metrics.tool_result_error_count)),
+      max_failure_after_repeat_rate: failureAfterRepeat?.value ?? null,
+      failure_after_repeat_denominator: failureAfterRepeat?.denominator ?? 0,
+      query_entropy_value: queryEntropy?.value ?? null,
+      query_entropy_status: queryEntropy?.status ?? null
+    },
+    gate_bias_monitor: {
+      mode: "emit_only_candidate_type_rate_snapshot",
+      status: evolutionCandidates.length ? "baseline_only" : "no_candidate_sample",
+      by_candidate_type: measurementGateBiasSnapshot({ verdict, evolutionCandidates })
+    },
+    source_window: sourceWindowFor(runtimeEvents, sourceEventIds.length)
+  };
+}
+
 function buildHookMapping() {
   return [
     {
@@ -1233,6 +1588,22 @@ function buildHookMapping() {
       hermes_surface: "tool result after execution",
       qianxuesen_stage: "observe_tool_result",
       qianxuesen_event_type: "execution_trace",
+      can_block_runtime: false,
+      default_blocks_runtime: false
+    },
+    {
+      hook: "pre_api_request",
+      hermes_surface: "assembled provider request before model call",
+      qianxuesen_stage: "observe_model_input_digest",
+      qianxuesen_event_type: "model_io_tap",
+      can_block_runtime: false,
+      default_blocks_runtime: false
+    },
+    {
+      hook: "post_api_request",
+      hermes_surface: "provider response metadata after model call",
+      qianxuesen_stage: "observe_model_output_digest",
+      qianxuesen_event_type: "model_io_tap",
       can_block_runtime: false,
       default_blocks_runtime: false
     },
@@ -1359,6 +1730,15 @@ function buildChecks({
   const actionHistoryMonitorRecords = observabilityStream.filter((record) => (
     record.record_kind === ACTION_HISTORY_MONITOR_RECORD_KIND
   ));
+  const modelIoTapRecords = observabilityStream.filter((record) => (
+    record.record_kind === MODEL_IO_TAP_RECORD_KIND
+  ));
+  const measurementQualityGateRecords = observabilityStream.filter((record) => (
+    record.record_kind === MEASUREMENT_QUALITY_GATE_RECORD_KIND
+  ));
+  const measurementGateBiasMonitorRecords = observabilityStream.filter((record) => (
+    record.record_kind === MEASUREMENT_GATE_BIAS_MONITOR_RECORD_KIND
+  ));
   const directAuthorityOff = Object.values({
     production_authority: safety.production_authority,
     writes_persistent_memory: safety.writes_persistent_memory,
@@ -1426,6 +1806,58 @@ function buildChecks({
       ))
         && workOrderStream.every((record) => record.record_kind !== ACTION_HISTORY_MONITOR_RECORD_KIND),
       action_history_monitor_count: actionHistoryMonitorRecords.length
+    },
+    {
+      name: "model I/O tap stays input-side observability-only",
+      ok: modelIoTapRecords.every((record) => (
+        record.signal_origin === "runtime_operation_log"
+        && record.routing_stream === "observability_stream"
+        && record.can_promote_now === false
+        && record.replay_required === false
+        && record.tournament_required === false
+        && record.raw_prompt_persisted === false
+        && record.raw_private_content_exported === false
+        && record.source_contract.llm_api_calls === 0
+      ))
+        && workOrderStream.every((record) => record.record_kind !== MODEL_IO_TAP_RECORD_KIND)
+        && evolutionCandidates.every((record) => record.record_kind !== MODEL_IO_TAP_RECORD_KIND),
+      model_io_tap_count: modelIoTapRecords.length
+    },
+    {
+      name: "measurement quality gate stays emit-only",
+      ok: measurementQualityGateRecords.every((record) => (
+        record.signal_origin === "runtime_operation_log"
+        && record.routing_stream === "observability_stream"
+        && record.gate_phase === "emit_only"
+        && record.can_promote_now === false
+        && record.replay_required === false
+        && record.tournament_required === false
+        && record.gate_authority.blocks_layer_a === false
+        && record.gate_authority.triggers_replay === false
+        && record.gate_authority.agent_can_read === false
+        && record.gate_authority.llm_api_calls === 0
+      ))
+        && workOrderStream.every((record) => record.record_kind !== MEASUREMENT_QUALITY_GATE_RECORD_KIND)
+        && evolutionCandidates.every((record) => record.record_kind !== MEASUREMENT_QUALITY_GATE_RECORD_KIND),
+      measurement_quality_gate_count: measurementQualityGateRecords.length
+    },
+    {
+      name: "measurement gate bias monitor stays emit-only",
+      ok: measurementGateBiasMonitorRecords.every((record) => (
+        record.signal_origin === "runtime_operation_log"
+        && record.routing_stream === "observability_stream"
+        && record.gate_phase === "emit_only"
+        && record.can_promote_now === false
+        && record.replay_required === false
+        && record.tournament_required === false
+        && record.monitor_authority.blocks_layer_a === false
+        && record.monitor_authority.triggers_replay === false
+        && record.monitor_authority.agent_can_read === false
+        && record.monitor_authority.llm_api_calls === 0
+      ))
+        && workOrderStream.every((record) => record.record_kind !== MEASUREMENT_GATE_BIAS_MONITOR_RECORD_KIND)
+        && evolutionCandidates.every((record) => record.record_kind !== MEASUREMENT_GATE_BIAS_MONITOR_RECORD_KIND),
+      measurement_gate_bias_monitor_count: measurementGateBiasMonitorRecords.length
     },
     {
       name: "candidate provenance is explicit and closed",
@@ -1570,17 +2002,37 @@ export function buildHermesRuntimeAdapterReport({
   if (!fixture) throw new Error("fixture is required");
 
   const events = fixture.events ?? [];
+  const modelIoTapRecords = events
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => isModelIoTapRecord(event))
+    .map(({ event, index }) => normalizeModelIoTapRecord(event, index));
+  const runtimeEvents = events.filter((event) => !isModelIoTapRecord(event));
   const hookMapping = buildHookMapping();
-  const normalizedEvents = events.map(normalizeHermesEvent);
-  const researchDigests = buildResearchDigests(normalizedEvents, events);
+  const normalizedEvents = runtimeEvents.map(normalizeHermesEvent);
+  const researchDigests = buildResearchDigests(normalizedEvents, runtimeEvents);
   const evolutionCandidates = buildEvolutionCandidates(normalizedEvents);
   const boundaryObservations = evolutionCandidates.filter((candidate) => candidate.signal_origin === "runtime_operation_log");
   const candidateObservabilityStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "observability_stream");
   const workOrderStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "work_order_stream");
-  const actionHistoryMonitorRecord = buildActionHistoryMonitorRecord(normalizedEvents, events);
-  const observabilityStream = actionHistoryMonitorRecord
-    ? [...candidateObservabilityStream, actionHistoryMonitorRecord]
-    : candidateObservabilityStream;
+  const actionHistoryMonitorRecord = buildActionHistoryMonitorRecord(normalizedEvents, runtimeEvents);
+  const measurementQualityGateRecord = buildMeasurementQualityGateRecord({
+    actionHistoryMonitorRecord,
+    modelIoTapRecords,
+    evolutionCandidates,
+    runtimeEvents
+  });
+  const measurementGateBiasMonitorRecord = buildMeasurementGateBiasMonitorRecord({
+    measurementQualityGateRecord,
+    evolutionCandidates,
+    runtimeEvents
+  });
+  const observabilityStream = [
+    ...candidateObservabilityStream,
+    ...modelIoTapRecords,
+    ...(actionHistoryMonitorRecord ? [actionHistoryMonitorRecord] : []),
+    ...(measurementQualityGateRecord ? [measurementQualityGateRecord] : []),
+    ...(measurementGateBiasMonitorRecord ? [measurementGateBiasMonitorRecord] : [])
+  ];
   const evolutionEvidence = normalizedEvents
     .map((event) => event.evolution_evidence)
     .filter(Boolean);
@@ -1665,6 +2117,9 @@ export function buildHermesRuntimeAdapterReport({
     summary: {
       event_count: normalizedEvents.length,
       normalized_event_count: normalizedEvents.length,
+      model_io_tap_count: modelIoTapRecords.length,
+      measurement_quality_gate_count: measurementQualityGateRecord ? 1 : 0,
+      measurement_gate_bias_monitor_count: measurementGateBiasMonitorRecord ? 1 : 0,
       research_digest_count: researchDigests.length,
       evolution_candidate_count: evolutionCandidates.length,
       official_evolution_candidate_count: evolutionCandidates.filter((candidate) => (
@@ -1689,7 +2144,7 @@ export function buildHermesRuntimeAdapterReport({
       insufficient_evidence_summary: {
         sample_count: evolutionCandidates.length,
         event_type: "evolution_candidate",
-        source_window: sourceWindowFor(events, evolutionCandidates.length),
+        source_window: sourceWindowFor(runtimeEvents, evolutionCandidates.length),
         insufficient_count: evolutionCandidates.filter((candidate) => candidate.evidence_quality !== "sufficient").length,
         insufficient_ratio: evolutionCandidates.length
           ? round3(evolutionCandidates.filter((candidate) => candidate.evidence_quality !== "sufficient").length / evolutionCandidates.length)

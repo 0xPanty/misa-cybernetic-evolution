@@ -14,6 +14,11 @@ It deliberately does not block tools, write memory, mutate skills, call models,
 or call external APIs. The generated event stream should be replayed through the
 local `hermes:adapt-runtime` contract before any candidate is considered.
 
+`pre_api_request` and `post_api_request` emit `model_io_tap` records. These are
+not raw prompt dumps. They keep only hashes and counts: message count, context
+byte size, tool schema count, tool-result error count, token usage when Hermes
+provides it, and stable hashes for system prompts and tool schemas.
+
 ## Local Install
 
 ```bash
@@ -46,3 +51,7 @@ The adapter turns research/search traces into `research_digests` and turns
 skill, memory, curator, or failure pressure into replay-required
 `evolution_candidates`. It still does not write memory, install skills, block
 runtime tools, call LLMs, or touch external APIs.
+
+`model_io_tap` records stay in `observability_stream` only. They do not create
+work orders, trigger tournaments, enter replay reports, or allow the running
+agent to read its own prompt digest.

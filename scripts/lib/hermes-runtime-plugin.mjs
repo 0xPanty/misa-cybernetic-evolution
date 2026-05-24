@@ -19,6 +19,8 @@ const PLUGIN_FILES = ["plugin.yaml", "__init__.py", "README.md"];
 const REQUIRED_HOOKS = [
   "pre_tool_call",
   "post_tool_call",
+  "pre_api_request",
+  "post_api_request",
   "pre_llm_call",
   "post_llm_call",
   "on_session_end"
@@ -245,6 +247,7 @@ export async function runHermesRuntimePluginDoctor({
       event_log_file: resolvedEventLog,
       event_log_present: eventLogPresent,
       adapter_events: eventLogAdapter?.summary?.event_count ?? 0,
+      adapter_model_io_taps: eventLogAdapter?.summary?.model_io_tap_count ?? 0,
       adapter_research_digests: eventLogAdapter?.summary?.research_digest_count ?? 0,
       adapter_evolution_candidates: eventLogAdapter?.summary?.evolution_candidate_count ?? 0,
       error: eventLogError
@@ -261,6 +264,7 @@ export async function runHermesRuntimePluginDoctor({
       ...countChecks(checks),
       event_log_present: eventLogPresent,
       adapter_events: eventLogAdapter?.summary?.event_count ?? 0,
+      adapter_model_io_taps: eventLogAdapter?.summary?.model_io_tap_count ?? 0,
       adapter_research_digests: eventLogAdapter?.summary?.research_digest_count ?? 0,
       adapter_evolution_candidates: eventLogAdapter?.summary?.evolution_candidate_count ?? 0
     },

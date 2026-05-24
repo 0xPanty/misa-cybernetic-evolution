@@ -31,6 +31,7 @@ if (hasArg("json")) {
   console.log(`plugin_dir: ${result.plugin_dir}`);
   console.log(`event_log_present: ${result.summary.event_log_present}`);
   console.log(`adapter_events: ${result.summary.adapter_events}`);
+  console.log(`adapter_model_io_taps: ${result.summary.adapter_model_io_taps}`);
   console.log(`research_digests: ${result.summary.adapter_research_digests}`);
   console.log(`evolution_candidates: ${result.summary.adapter_evolution_candidates}`);
   console.log(`checks: ${result.summary.passed}/${result.summary.total}`);

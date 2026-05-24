@@ -153,6 +153,9 @@
       "properties": {
         "event_count": { "type": "integer", "minimum": 0 },
         "normalized_event_count": { "type": "integer", "minimum": 0 },
+        "model_io_tap_count": { "type": "integer", "minimum": 0 },
+        "measurement_quality_gate_count": { "type": "integer", "minimum": 0 },
+        "measurement_gate_bias_monitor_count": { "type": "integer", "minimum": 0 },
         "research_digest_count": { "type": "integer", "minimum": 0 },
         "evolution_candidate_count": { "type": "integer", "minimum": 0 },
         "official_evolution_candidate_count": { "type": "integer", "minimum": 0 },
@@ -622,14 +625,24 @@
     "observability_record": {
       "oneOf": [
         { "$ref": "#/$defs/evolution_candidate" },
-        { "$ref": "#/$defs/action_history_monitor_record" }
+        { "$ref": "#/$defs/action_history_monitor_record" },
+        { "$ref": "#/$defs/model_io_tap_record" },
+        { "$ref": "#/$defs/measurement_quality_gate_record" },
+        { "$ref": "#/$defs/measurement_gate_bias_monitor_record" }
       ],
       "allOf": [
         {
           "if": {
             "required": ["record_kind"],
             "properties": {
-              "record_kind": { "const": "action_history_monitor" }
+              "record_kind": {
+                "enum": [
+                  "action_history_monitor",
+                  "model_io_tap",
+                  "measurement_quality_gate",
+                  "measurement_gate_bias_monitor"
+                ]
+              }
             }
           },
           "then": {
@@ -650,6 +663,448 @@
           }
         }
       ]
+    },
+    "model_io_tap_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "record_kind",
+        "source_event_ids",
+        "signal_origin",
+        "routing_stream",
+        "stream_reason",
+        "status",
+        "replay_required",
+        "tournament_required",
+        "can_promote_now",
+        "advisory_only",
+        "anomaly_rule_version",
+        "anomaly_rule_ids",
+        "raw_prompt_persisted",
+        "raw_private_content_exported",
+        "redaction_status",
+        "source_contract",
+        "api_call_ref",
+        "metrics",
+        "source_window"
+      ],
+      "properties": {
+        "record_id": { "type": "string" },
+        "record_kind": { "type": "string", "const": "model_io_tap" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "signal_origin": { "type": "string", "const": "runtime_operation_log" },
+        "routing_stream": { "type": "string", "const": "observability_stream" },
+        "stream_reason": { "type": "string" },
+        "status": { "type": "string", "const": "observed" },
+        "replay_required": { "type": "boolean", "const": false },
+        "tournament_required": { "type": "boolean", "const": false },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "advisory_only": { "type": "boolean", "const": true },
+        "anomaly_rule_version": { "type": "string", "const": "none" },
+        "anomaly_rule_ids": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "raw_prompt_persisted": { "type": "boolean", "const": false },
+        "raw_private_content_exported": { "type": "boolean", "const": false },
+        "redaction_status": {
+          "type": "string",
+          "enum": ["at_tap_point", "at_importer_point"]
+        },
+        "source_contract": { "$ref": "#/$defs/model_io_tap_source_contract" },
+        "api_call_ref": { "$ref": "#/$defs/model_io_tap_api_call_ref" },
+        "metrics": { "$ref": "#/$defs/model_io_tap_metrics" },
+        "source_window": { "$ref": "#/$defs/source_window" }
+      }
+    },
+    "model_io_tap_source_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "llm_api_calls"],
+      "properties": {
+        "kind": { "type": "string", "const": "deterministic_reducer" },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "model_io_tap_api_call_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "session_id",
+        "task_id",
+        "api_call_count",
+        "hook",
+        "model",
+        "provider",
+        "api_mode",
+        "base_url_hash"
+      ],
+      "properties": {
+        "session_id": { "type": ["string", "null"] },
+        "task_id": { "type": ["string", "null"] },
+        "api_call_count": { "type": ["integer", "null"], "minimum": 0 },
+        "hook": {
+          "type": "string",
+          "enum": ["pre_api_request", "post_api_request", "imported_request"]
+        },
+        "model": { "type": ["string", "null"] },
+        "provider": { "type": ["string", "null"] },
+        "api_mode": { "type": ["string", "null"] },
+        "base_url_hash": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "model_io_tap_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "token_usage",
+        "message_count",
+        "context_byte_size",
+        "tool_schema_count",
+        "tool_result_error_count",
+        "system_prompt_hash",
+        "tool_schema_hash"
+      ],
+      "properties": {
+        "token_usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input_tokens", "output_tokens", "cache_read_tokens"],
+          "properties": {
+            "input_tokens": { "type": ["integer", "null"], "minimum": 0 },
+            "output_tokens": { "type": ["integer", "null"], "minimum": 0 },
+            "cache_read_tokens": { "type": ["integer", "null"], "minimum": 0 }
+          }
+        },
+        "message_count": { "type": "integer", "minimum": 0 },
+        "context_byte_size": { "type": "integer", "minimum": 0 },
+        "tool_schema_count": { "type": "integer", "minimum": 0 },
+        "tool_result_error_count": { "type": "integer", "minimum": 0 },
+        "system_prompt_hash": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "tool_schema_hash": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "measurement_quality_gate_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "record_kind",
+        "source_event_ids",
+        "signal_origin",
+        "routing_stream",
+        "stream_reason",
+        "status",
+        "verdict",
+        "gate_phase",
+        "replay_required",
+        "tournament_required",
+        "can_promote_now",
+        "advisory_only",
+        "anomaly_rule_version",
+        "anomaly_rule_ids",
+        "measurement_rule_registry",
+        "gate_authority",
+        "inputs",
+        "metrics",
+        "gate_bias_monitor",
+        "source_window"
+      ],
+      "properties": {
+        "record_id": { "type": "string" },
+        "record_kind": { "type": "string", "const": "measurement_quality_gate" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "signal_origin": { "type": "string", "const": "runtime_operation_log" },
+        "routing_stream": { "type": "string", "const": "observability_stream" },
+        "stream_reason": { "type": "string" },
+        "status": { "type": "string", "const": "observed" },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "clean_measurement",
+            "suspect_input_contamination",
+            "suspect_behavior_loop",
+            "suspect_compound_failure",
+            "insufficient_evidence"
+          ]
+        },
+        "gate_phase": { "type": "string", "const": "emit_only" },
+        "replay_required": { "type": "boolean", "const": false },
+        "tournament_required": { "type": "boolean", "const": false },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "advisory_only": { "type": "boolean", "const": true },
+        "anomaly_rule_version": { "type": "string", "const": "none" },
+        "anomaly_rule_ids": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "measurement_rule_registry": { "$ref": "#/$defs/measurement_gate_rule_registry" },
+        "gate_authority": { "$ref": "#/$defs/measurement_gate_authority" },
+        "inputs": { "$ref": "#/$defs/measurement_gate_inputs" },
+        "metrics": { "$ref": "#/$defs/measurement_gate_metrics" },
+        "gate_bias_monitor": { "$ref": "#/$defs/measurement_gate_bias_monitor" },
+        "source_window": { "$ref": "#/$defs/source_window" }
+      }
+    },
+    "measurement_gate_rule_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry_id", "version", "matched_rule_ids", "rules"],
+      "properties": {
+        "registry_id": { "type": "string", "const": "hermes-measurement-gate-rules" },
+        "version": { "type": "string", "const": "hermes-measurement-gate-rules.v1" },
+        "matched_rule_ids": { "$ref": "#/$defs/string_array" },
+        "rules": {
+          "type": "array",
+          "minItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rule_id", "version", "category", "rule_definition", "deterministic_reducer"],
+            "properties": {
+              "rule_id": { "type": "string" },
+              "version": { "type": "string", "const": "hermes-measurement-gate-rules.v1" },
+              "category": {
+                "type": "string",
+                "enum": ["input_contamination", "behavior_loop", "insufficient_evidence"]
+              },
+              "rule_definition": { "type": "string" },
+              "deterministic_reducer": { "type": "boolean", "const": true }
+            }
+          }
+        }
+      }
+    },
+    "measurement_gate_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluates_candidate_quality",
+        "evaluates_measurement_quality",
+        "blocks_layer_a",
+        "triggers_replay",
+        "layer_a_visibility",
+        "agent_can_read",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "evaluates_candidate_quality": { "type": "boolean", "const": false },
+        "evaluates_measurement_quality": { "type": "boolean", "const": true },
+        "blocks_layer_a": { "type": "boolean", "const": false },
+        "triggers_replay": { "type": "boolean", "const": false },
+        "layer_a_visibility": { "type": "string", "const": "not_exported_to_layer_a" },
+        "agent_can_read": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "measurement_gate_inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_history_monitor_record_ids",
+        "model_io_tap_record_ids",
+        "candidate_count",
+        "candidate_type_counts"
+      ],
+      "properties": {
+        "action_history_monitor_record_ids": { "$ref": "#/$defs/string_array" },
+        "model_io_tap_record_ids": { "$ref": "#/$defs/string_array" },
+        "candidate_count": { "type": "integer", "minimum": 0 },
+        "candidate_type_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "measurement_gate_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_context_byte_size",
+        "max_tool_schema_count",
+        "max_tool_result_error_count",
+        "max_failure_after_repeat_rate",
+        "failure_after_repeat_denominator",
+        "query_entropy_value",
+        "query_entropy_status"
+      ],
+      "properties": {
+        "max_context_byte_size": { "type": "integer", "minimum": 0 },
+        "max_tool_schema_count": { "type": "integer", "minimum": 0 },
+        "max_tool_result_error_count": { "type": "integer", "minimum": 0 },
+        "max_failure_after_repeat_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "failure_after_repeat_denominator": { "type": "integer", "minimum": 0 },
+        "query_entropy_value": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "query_entropy_status": {
+          "type": ["string", "null"],
+          "enum": ["insufficient_sample", "collapsed", "low_entropy", "diverse", null]
+        }
+      }
+    },
+    "measurement_gate_bias_monitor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "status", "by_candidate_type"],
+      "properties": {
+        "mode": { "type": "string", "const": "emit_only_candidate_type_rate_snapshot" },
+        "status": { "type": "string", "enum": ["baseline_only", "no_candidate_sample"] },
+        "by_candidate_type": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidate_type",
+              "sample_count",
+              "prospective_clean_replay_required_count",
+              "prospective_clean_replay_required_rate"
+            ],
+            "properties": {
+              "candidate_type": { "type": "string" },
+              "sample_count": { "type": "integer", "minimum": 0 },
+              "prospective_clean_replay_required_count": { "type": "integer", "minimum": 0 },
+              "prospective_clean_replay_required_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "measurement_gate_bias_monitor_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_id",
+        "record_kind",
+        "source_event_ids",
+        "signal_origin",
+        "routing_stream",
+        "stream_reason",
+        "status",
+        "gate_phase",
+        "replay_required",
+        "tournament_required",
+        "can_promote_now",
+        "advisory_only",
+        "anomaly_rule_version",
+        "anomaly_rule_ids",
+        "gate_record_id",
+        "verdict",
+        "bias_status",
+        "bias_policy",
+        "monitor_authority",
+        "by_candidate_type",
+        "source_window"
+      ],
+      "properties": {
+        "record_id": { "type": "string" },
+        "record_kind": { "type": "string", "const": "measurement_gate_bias_monitor" },
+        "source_event_ids": { "$ref": "#/$defs/string_array" },
+        "signal_origin": { "type": "string", "const": "runtime_operation_log" },
+        "routing_stream": { "type": "string", "const": "observability_stream" },
+        "stream_reason": { "type": "string" },
+        "status": { "type": "string", "const": "observed" },
+        "gate_phase": { "type": "string", "const": "emit_only" },
+        "replay_required": { "type": "boolean", "const": false },
+        "tournament_required": { "type": "boolean", "const": false },
+        "can_promote_now": { "type": "boolean", "const": false },
+        "advisory_only": { "type": "boolean", "const": true },
+        "anomaly_rule_version": { "type": "string", "const": "none" },
+        "anomaly_rule_ids": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "gate_record_id": { "type": "string" },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "clean_measurement",
+            "suspect_input_contamination",
+            "suspect_behavior_loop",
+            "suspect_compound_failure",
+            "insufficient_evidence"
+          ]
+        },
+        "bias_status": { "type": "string", "enum": ["baseline_only", "no_candidate_sample"] },
+        "bias_policy": { "$ref": "#/$defs/measurement_gate_bias_policy" },
+        "monitor_authority": { "$ref": "#/$defs/measurement_gate_bias_monitor_authority" },
+        "by_candidate_type": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "candidate_type",
+              "sample_count",
+              "prospective_dirty_measurement_count",
+              "prospective_dirty_measurement_rate"
+            ],
+            "properties": {
+              "candidate_type": { "type": "string" },
+              "sample_count": { "type": "integer", "minimum": 0 },
+              "prospective_dirty_measurement_count": { "type": "integer", "minimum": 0 },
+              "prospective_dirty_measurement_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "source_window": { "$ref": "#/$defs/source_window" }
+      }
+    },
+    "measurement_gate_bias_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "minimum_real_sessions_required",
+        "dirty_rate_target_min",
+        "dirty_rate_target_max",
+        "human_review_hit_rate_min",
+        "deterministic_reducer",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "phase": { "type": "string", "const": "phase_2a_emit_only" },
+        "minimum_real_sessions_required": { "type": "integer", "const": 50 },
+        "dirty_rate_target_min": { "type": "number", "const": 0.05 },
+        "dirty_rate_target_max": { "type": "number", "const": 0.3 },
+        "human_review_hit_rate_min": { "type": "number", "const": 0.7 },
+        "deterministic_reducer": { "type": "boolean", "const": true },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
+    },
+    "measurement_gate_bias_monitor_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluates_candidate_quality",
+        "evaluates_gate_bias",
+        "blocks_layer_a",
+        "triggers_replay",
+        "layer_a_visibility",
+        "agent_can_read",
+        "llm_api_calls"
+      ],
+      "properties": {
+        "evaluates_candidate_quality": { "type": "boolean", "const": false },
+        "evaluates_gate_bias": { "type": "boolean", "const": true },
+        "blocks_layer_a": { "type": "boolean", "const": false },
+        "triggers_replay": { "type": "boolean", "const": false },
+        "layer_a_visibility": { "type": "string", "const": "not_exported_to_layer_a" },
+        "agent_can_read": { "type": "boolean", "const": false },
+        "llm_api_calls": { "type": "integer", "const": 0 }
+      }
     },
     "action_history_monitor_record": {
       "type": "object",

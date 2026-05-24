@@ -2,7 +2,7 @@
 
 A control-theoretic learning sidecar for Hermes-style AI agents.
 
-Current package version: `0.27.3`. The current line keeps source-lineage and
+Current package version: `0.28.0`. The current line keeps source-lineage and
 retrieval trace metadata for vector-memory dry runs, adds a default local
 persistent vector store, adds read-only session-distiller cybernetic review,
 adds the first skill-evolution adapter surface, adds a Hermes runtime adapter
@@ -12,6 +12,7 @@ adds the v0.27 factor-compliant candidate layer,
 starts the v0.28 runtime thread contract,
 adds local component-health diagnostics,
 adds Hermes evolution-grade evidence and the `hermes:value-proof` local value check,
+adds an experimental Hermes model I/O tap plus emit-only measurement quality gate,
 and keeps the control boundary stable: no live Zilliz writes, no provider
 embeddings, and no runtime changes.
 

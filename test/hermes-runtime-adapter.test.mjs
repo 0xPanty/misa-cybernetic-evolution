@@ -34,8 +34,10 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.equal(result.summary.qianxuesen_replay_synthesis_count, 0);
   assert.equal(result.summary.inferred_evolution_pressure_count, 4);
   assert.equal(result.summary.boundary_observation_count, 4);
-  assert.equal(result.summary.observability_stream_count, 4);
+  assert.equal(result.summary.observability_stream_count, 6);
   assert.equal(result.summary.work_order_stream_count, 1);
+  assert.equal(result.summary.measurement_quality_gate_count, 1);
+  assert.equal(result.summary.measurement_gate_bias_monitor_count, 1);
   assert.equal(result.summary.sidecar_signal_to_noise_ratio.metric_id, "sidecar_signal_to_noise_ratio");
   assert.equal(result.summary.sidecar_signal_to_noise_ratio.value, 0.25);
   assert.equal(result.summary.insufficient_evidence_summary.sample_count, 4);
@@ -53,7 +55,13 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.equal(result.evolution_candidates.every((candidate) => candidate.interpretation === "adapter_inferred_evolution_pressure"), true);
   assert.equal(result.work_order_stream.length, 1);
   assert.equal(result.work_order_stream[0].anomaly_rule_ids.includes("memory_write_boundary_pressure"), true);
-  assert.equal(result.observability_stream.length, 4);
+  assert.equal(result.observability_stream.length, 6);
+  const defaultGate = result.observability_stream.find((record) => record.record_kind === "measurement_quality_gate");
+  const defaultBiasMonitor = result.observability_stream.find((record) => record.record_kind === "measurement_gate_bias_monitor");
+  assert.equal(defaultGate.verdict, "insufficient_evidence");
+  assert.equal(defaultGate.measurement_rule_registry.matched_rule_ids.includes("measurement_evidence_sparse"), true);
+  assert.equal(defaultBiasMonitor.gate_record_id, defaultGate.record_id);
+  assert.equal(defaultBiasMonitor.monitor_authority.blocks_layer_a, false);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.can_promote_now === false), true);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.evidence_quality === "insufficient_evidence"), true);
   assert.equal(result.evolution_candidates.every((candidate) => candidate.advisory_only === true), true);
@@ -71,6 +79,8 @@ test("Hermes runtime adapter separates boundary observations from work-order ano
   assert.ok(checkNames.has("candidate provenance is explicit and closed"));
   assert.ok(checkNames.has("runtime log pressure reaches inbox only through deterministic anomaly rules"));
   assert.ok(checkNames.has("action-history monitor stays observability-only"));
+  assert.ok(checkNames.has("measurement quality gate stays emit-only"));
+  assert.ok(checkNames.has("measurement gate bias monitor stays emit-only"));
   assert.ok(checkNames.has("control-plane write-deny is explicit and closed"));
 });
 
@@ -133,12 +143,15 @@ test("Hermes action-history monitor is readonly observability and schema-locked"
     now: new Date("2026-05-20T00:00:00Z")
   });
   const monitor = result.observability_stream.find((record) => record.record_kind === "action_history_monitor");
+  const gate = result.observability_stream.find((record) => record.record_kind === "measurement_quality_gate");
 
   assert.equal(result.ok, true);
   assert.equal(result.summary.evolution_candidate_count, 4);
   assert.equal(result.summary.boundary_observation_count, 4);
   assert.equal(result.summary.work_order_stream_count, 0);
-  assert.equal(result.summary.observability_stream_count, 5);
+  assert.equal(result.summary.observability_stream_count, 7);
+  assert.equal(result.summary.measurement_quality_gate_count, 1);
+  assert.equal(result.summary.measurement_gate_bias_monitor_count, 1);
   assert.equal(result.evolution_candidates.some((record) => record.record_kind === "action_history_monitor"), false);
   assert.equal(result.work_order_stream.some((record) => record.record_kind === "action_history_monitor"), false);
   assert.equal(monitor.record_kind, "action_history_monitor");
@@ -157,6 +170,17 @@ test("Hermes action-history monitor is readonly observability and schema-locked"
   assert.equal(monitor.metrics.query_entropy.query_count, 4);
   assert.equal(monitor.metrics.query_entropy.unique_query_count, 1);
   assert.equal(monitor.metrics.query_entropy.status, "collapsed");
+  assert.equal(gate.record_kind, "measurement_quality_gate");
+  assert.equal(gate.verdict, "suspect_behavior_loop");
+  assert.equal(gate.gate_phase, "emit_only");
+  assert.equal(gate.replay_required, false);
+  assert.equal(gate.tournament_required, false);
+  assert.equal(gate.gate_authority.blocks_layer_a, false);
+  assert.equal(gate.gate_authority.triggers_replay, false);
+  assert.equal(gate.gate_authority.agent_can_read, false);
+  assert.equal(gate.measurement_rule_registry.version, "hermes-measurement-gate-rules.v1");
+  assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes("failure_after_repeat_rate_high"), true);
+  assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes("query_entropy_collapsed"), true);
 
   const validation = await validateJsonData({
     schemaRel: "schemas/agent_runtime_adapter.schema.json",
@@ -168,12 +192,362 @@ test("Hermes action-history monitor is readonly observability and schema-locked"
   const tampered = structuredClone(result);
   const tamperedMonitor = tampered.observability_stream.find((record) => record.record_kind === "action_history_monitor");
   tamperedMonitor.routing_stream = "work_order_stream";
+  const tamperedGate = tampered.observability_stream.find((record) => record.record_kind === "measurement_quality_gate");
+  tamperedGate.gate_authority.blocks_layer_a = true;
+  const tamperedBiasMonitor = tampered.observability_stream.find((record) => (
+    record.record_kind === "measurement_gate_bias_monitor"
+  ));
+  tamperedBiasMonitor.monitor_authority.triggers_replay = true;
   const tamperedValidation = await validateJsonData({
     schemaRel: "schemas/agent_runtime_adapter.schema.json",
     data: tampered,
     name: "validate tampered action-history monitor adapter report"
   });
   assert.equal(tamperedValidation.ok, false);
+});
+
+test("Hermes model I/O tap is readonly observability and schema-locked", async () => {
+  const fakeHash = "a".repeat(64);
+  const result = buildHermesRuntimeAdapterReport({
+    fixture: {
+      source: {
+        runtime: "hermes-agent",
+        runtime_commit: "model-io-tap-local-sample",
+        source_url: "local-model-io-tap"
+      },
+      events: [
+        {
+          event_id: "model-io-pre-001",
+          record_kind: "model_io_tap",
+          source_event_ids: ["model-io-pre-001"],
+          hook: "pre_api_request",
+          session_id: "s-model-io",
+          task_id: "task-model-io",
+          api_call_count: 7,
+          model: "synthetic-model",
+          provider: "synthetic-provider",
+          api_mode: "chat_completions",
+          base_url_hash: fakeHash,
+          signal_origin: "runtime_operation_log",
+          routing_stream: "observability_stream",
+          replay_required: false,
+          tournament_required: false,
+          can_promote_now: false,
+          raw_prompt_persisted: false,
+          raw_private_content_exported: false,
+          redaction_status: "at_tap_point",
+          metrics: {
+            token_usage: {
+              input_tokens: 1234,
+              output_tokens: null,
+              cache_read_tokens: 100
+            },
+            message_count: 6,
+            context_byte_size: 60000,
+            tool_schema_count: 41,
+            tool_result_error_count: 3,
+            system_prompt_hash: fakeHash,
+            tool_schema_hash: fakeHash
+          }
+        }
+      ]
+    },
+    now: new Date("2026-05-21T00:00:00Z")
+  });
+  const tap = result.observability_stream.find((record) => record.record_kind === "model_io_tap");
+  const gate = result.observability_stream.find((record) => record.record_kind === "measurement_quality_gate");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.event_count, 0);
+  assert.equal(result.summary.evolution_candidate_count, 0);
+  assert.equal(result.summary.boundary_observation_count, 0);
+  assert.equal(result.summary.model_io_tap_count, 1);
+  assert.equal(result.summary.measurement_quality_gate_count, 1);
+  assert.equal(result.summary.work_order_stream_count, 0);
+  assert.equal(result.summary.observability_stream_count, 3);
+  assert.equal(result.evolution_candidates.some((record) => record.record_kind === "model_io_tap"), false);
+  assert.equal(result.work_order_stream.some((record) => record.record_kind === "model_io_tap"), false);
+  assert.equal(tap.record_kind, "model_io_tap");
+  assert.equal(tap.signal_origin, "runtime_operation_log");
+  assert.equal(tap.routing_stream, "observability_stream");
+  assert.equal(tap.can_promote_now, false);
+  assert.equal(tap.replay_required, false);
+  assert.equal(tap.tournament_required, false);
+  assert.equal(tap.raw_prompt_persisted, false);
+  assert.equal(tap.raw_private_content_exported, false);
+  assert.equal(tap.source_contract.llm_api_calls, 0);
+  assert.equal(tap.api_call_ref.hook, "pre_api_request");
+  assert.equal(tap.metrics.message_count, 6);
+  assert.equal(tap.metrics.context_byte_size, 60000);
+  assert.equal(tap.metrics.tool_schema_count, 41);
+  assert.equal(gate.verdict, "suspect_input_contamination");
+  assert.equal(gate.gate_phase, "emit_only");
+  assert.equal(gate.gate_authority.evaluates_candidate_quality, false);
+  assert.equal(gate.gate_authority.evaluates_measurement_quality, true);
+  assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes("context_byte_size_high"), true);
+  assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes("tool_schema_count_high"), true);
+  assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes("tool_result_error_accumulation"), true);
+
+  const validation = await validateJsonData({
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: result,
+    name: "validate model I/O tap adapter report"
+  });
+  assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+
+  const tampered = structuredClone(result);
+  const tamperedTap = tampered.observability_stream.find((record) => record.record_kind === "model_io_tap");
+  tamperedTap.routing_stream = "work_order_stream";
+  tamperedTap.raw_prompt_persisted = true;
+  const tamperedValidation = await validateJsonData({
+    schemaRel: "schemas/agent_runtime_adapter.schema.json",
+    data: tampered,
+    name: "validate tampered model I/O tap adapter report"
+  });
+  assert.equal(tamperedValidation.ok, false);
+});
+
+test("Hermes measurement quality gate evidence matrix stays advisory-only", async () => {
+  const fakeHash = "b".repeat(64);
+  const baseToolEvent = {
+    event_id: "gate-search-clean-001",
+    hook: "post_tool_call",
+    timestamp: "2026-05-22T00:00:00Z",
+    tool_name: "session_search",
+    args: {
+      query: "Hermes measurement gate clean sample"
+    },
+    result: {
+      success: true
+    }
+  };
+  const modelTap = ({ eventId, contextByteSize, toolSchemaCount, toolResultErrorCount }) => ({
+    event_id: eventId,
+    record_kind: "model_io_tap",
+    source_event_ids: [eventId],
+    hook: "pre_api_request",
+    session_id: "s-gate-matrix",
+    task_id: "task-gate-matrix",
+    api_call_count: 1,
+    model: "synthetic-model",
+    provider: "synthetic-provider",
+    api_mode: "chat_completions",
+    base_url_hash: fakeHash,
+    redaction_status: "at_tap_point",
+    metrics: {
+      token_usage: {
+        input_tokens: 1000,
+        output_tokens: null,
+        cache_read_tokens: 50
+      },
+      message_count: 5,
+      context_byte_size: contextByteSize,
+      tool_schema_count: toolSchemaCount,
+      tool_result_error_count: toolResultErrorCount,
+      system_prompt_hash: fakeHash,
+      tool_schema_hash: fakeHash
+    }
+  });
+  const cases = [
+    {
+      name: "clean",
+      expectedVerdict: "clean_measurement",
+      events: [
+        baseToolEvent,
+        modelTap({
+          eventId: "gate-model-clean-001",
+          contextByteSize: 12000,
+          toolSchemaCount: 10,
+          toolResultErrorCount: 0
+        })
+      ]
+    },
+    {
+      name: "context bloat",
+      expectedVerdict: "suspect_input_contamination",
+      expectedRules: ["context_byte_size_high"],
+      events: [
+        baseToolEvent,
+        modelTap({
+          eventId: "gate-model-context-bloat-001",
+          contextByteSize: 70000,
+          toolSchemaCount: 10,
+          toolResultErrorCount: 0
+        })
+      ]
+    },
+    {
+      name: "tool menu bloat",
+      expectedVerdict: "suspect_input_contamination",
+      expectedRules: ["tool_schema_count_high"],
+      events: [
+        baseToolEvent,
+        modelTap({
+          eventId: "gate-model-tool-menu-bloat-001",
+          contextByteSize: 12000,
+          toolSchemaCount: 45,
+          toolResultErrorCount: 0
+        })
+      ]
+    },
+    {
+      name: "stale error accumulation",
+      expectedVerdict: "suspect_input_contamination",
+      expectedRules: ["tool_result_error_accumulation"],
+      events: [
+        baseToolEvent,
+        modelTap({
+          eventId: "gate-model-stale-error-001",
+          contextByteSize: 12000,
+          toolSchemaCount: 10,
+          toolResultErrorCount: 4
+        })
+      ]
+    },
+    {
+      name: "failure repeat loop",
+      expectedVerdict: "suspect_behavior_loop",
+      expectedRules: ["failure_after_repeat_rate_high"],
+      events: [
+        {
+          ...baseToolEvent,
+          event_id: "gate-loop-failed-001",
+          hook: "post_tool_call",
+          result: {
+            status: "failed"
+          }
+        },
+        {
+          ...baseToolEvent,
+          event_id: "gate-loop-repeat-002",
+          hook: "pre_tool_call"
+        }
+      ]
+    },
+    {
+      name: "query entropy collapse",
+      expectedVerdict: "suspect_behavior_loop",
+      expectedRules: ["query_entropy_collapsed"],
+      events: [
+        {
+          ...baseToolEvent,
+          event_id: "gate-query-collapse-001",
+          hook: "post_tool_call"
+        },
+        {
+          ...baseToolEvent,
+          event_id: "gate-query-collapse-002",
+          hook: "post_tool_call"
+        },
+        {
+          ...baseToolEvent,
+          event_id: "gate-query-collapse-003",
+          hook: "post_tool_call"
+        }
+      ]
+    },
+    {
+      name: "compound failure",
+      expectedVerdict: "suspect_compound_failure",
+      expectedRules: [
+        "context_byte_size_high",
+        "tool_schema_count_high",
+        "tool_result_error_accumulation",
+        "failure_after_repeat_rate_high",
+        "query_entropy_collapsed"
+      ],
+      events: [
+        {
+          ...baseToolEvent,
+          event_id: "gate-compound-failed-001",
+          hook: "post_tool_call",
+          result: {
+            status: "failed"
+          }
+        },
+        {
+          ...baseToolEvent,
+          event_id: "gate-compound-repeat-002",
+          hook: "pre_tool_call"
+        },
+        {
+          ...baseToolEvent,
+          event_id: "gate-compound-repeat-003",
+          hook: "post_tool_call"
+        },
+        modelTap({
+          eventId: "gate-model-compound-001",
+          contextByteSize: 70000,
+          toolSchemaCount: 45,
+          toolResultErrorCount: 4
+        })
+      ]
+    },
+    {
+      name: "insufficient evidence",
+      expectedVerdict: "insufficient_evidence",
+      expectedRules: ["measurement_evidence_sparse"],
+      events: [
+        {
+          ...baseToolEvent,
+          event_id: "gate-sparse-001",
+          args: {
+            query: "single sparse query"
+          }
+        }
+      ]
+    }
+  ];
+
+  for (const gateCase of cases) {
+    const result = buildHermesRuntimeAdapterReport({
+      fixture: {
+        source: {
+          runtime: "hermes-agent",
+          runtime_commit: `measurement-gate-${gateCase.name}`,
+          source_url: "local-measurement-gate-matrix"
+        },
+        events: gateCase.events
+      },
+      now: new Date("2026-05-22T00:00:00Z")
+    });
+    const gate = result.observability_stream.find((record) => record.record_kind === "measurement_quality_gate");
+    const biasMonitor = result.observability_stream.find((record) => record.record_kind === "measurement_gate_bias_monitor");
+    const validation = await validateJsonData({
+      schemaRel: "schemas/agent_runtime_adapter.schema.json",
+      data: result,
+      name: `validate measurement gate ${gateCase.name}`
+    });
+
+    assert.equal(result.ok, true, gateCase.name);
+    assert.equal(validation.ok, true, JSON.stringify(validation.errors, null, 2));
+    assert.equal(gate.verdict, gateCase.expectedVerdict, gateCase.name);
+    assert.equal(gate.gate_phase, "emit_only");
+    assert.equal(gate.gate_authority.evaluates_candidate_quality, false);
+    assert.equal(gate.gate_authority.evaluates_measurement_quality, true);
+    assert.equal(gate.gate_authority.blocks_layer_a, false);
+    assert.equal(gate.gate_authority.triggers_replay, false);
+    assert.equal(gate.gate_authority.agent_can_read, false);
+    assert.equal(gate.gate_authority.llm_api_calls, 0);
+    assert.equal(result.work_order_stream.some((record) => record.record_kind === "measurement_quality_gate"), false);
+    assert.equal(result.evolution_candidates.some((record) => record.record_kind === "measurement_quality_gate"), false);
+    assert.equal(biasMonitor.gate_record_id, gate.record_id);
+    assert.equal(biasMonitor.gate_phase, "emit_only");
+    assert.equal(biasMonitor.monitor_authority.evaluates_candidate_quality, false);
+    assert.equal(biasMonitor.monitor_authority.evaluates_gate_bias, true);
+    assert.equal(biasMonitor.monitor_authority.blocks_layer_a, false);
+    assert.equal(biasMonitor.monitor_authority.triggers_replay, false);
+    assert.equal(biasMonitor.monitor_authority.agent_can_read, false);
+    assert.equal(result.work_order_stream.some((record) => record.record_kind === "measurement_gate_bias_monitor"), false);
+    assert.equal(result.evolution_candidates.some((record) => record.record_kind === "measurement_gate_bias_monitor"), false);
+    assert.equal(result.summary.sidecar_signal_to_noise_ratio.numerator, result.summary.work_order_stream_count);
+    assert.equal(result.summary.sidecar_signal_to_noise_ratio.denominator, result.summary.boundary_observation_count);
+    assert.equal(result.summary.tournament_required_count, 0);
+
+    for (const ruleId of gateCase.expectedRules ?? []) {
+      assert.equal(gate.measurement_rule_registry.matched_rule_ids.includes(ruleId), true, `${gateCase.name}:${ruleId}`);
+    }
+  }
 });
 
 test("Hermes runtime adapter output validates against the universal adapter schema", async () => {
@@ -414,7 +788,8 @@ test("Hermes runtime adapter folds pre/post tool-call observations by action ide
   assert.equal(result.ok, true);
   assert.equal(result.summary.boundary_observation_count, 6);
   assert.equal(result.summary.work_order_stream_count, 1);
-  assert.equal(result.summary.observability_stream_count, 6);
+  assert.equal(result.summary.observability_stream_count, 8);
+  assert.equal(result.summary.measurement_quality_gate_count, 1);
   assert.equal(workOrder.raw_signal_count, 6);
   assert.equal(workOrder.source_event_ids.length, 6);
   assert.equal(workOrder.source_event_ids[0].startsWith("skill-create-post-"), true);
@@ -474,7 +849,8 @@ test("Hermes runtime adapter can read observe-only plugin NDJSON event logs", as
   assert.equal(result.summary.official_evolution_candidate_count, 0);
   assert.equal(result.summary.inferred_evolution_pressure_count, 2);
   assert.equal(result.summary.work_order_stream_count, 0);
-  assert.equal(result.summary.observability_stream_count, 3);
+  assert.equal(result.summary.observability_stream_count, 5);
+  assert.equal(result.summary.measurement_quality_gate_count, 1);
   assert.equal(result.summary.research_digest_count, 2);
   assert.equal(result.summary.evolution_evidence_count, 0);
   assert.equal(result.safety.writes_skills, false);

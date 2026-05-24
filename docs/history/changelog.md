@@ -5,7 +5,7 @@ stay focused on current state, current boundary, and current validation.
 
 ## Current Line
 
-The package is currently `0.27.3`.
+The package is currently `0.28.0`.
 
 The current direction is v0.26 convergence: keep the control boundary stable,
 make vector-memory hits traceable to opaque original-source refs, rank retrieval
@@ -69,6 +69,21 @@ v0.27.3 keeps that installer idempotent on older VPS installs by removing the
 legacy `20-cybernetic-review.conf` drop-in when the current
 `cybernetic-review.conf` hook is installed, so the same review hook does not run
 twice after one service execution.
+
+v0.28.0 adds an experimental Hermes model I/O tap and emit-only measurement
+quality gate. The Hermes plugin now observes `pre_api_request` and
+`post_api_request` as redacted model-I/O digests, storing only counts and hashes.
+The adapter cross-checks those digests with the action-history monitor to emit
+measurement verdicts such as `clean_measurement`, `suspect_input_contamination`,
+`suspect_behavior_loop`, `suspect_compound_failure`, and
+`insufficient_evidence`. A separate `measurement_gate_bias_monitor` watches
+prospective candidate-type skew before any future Phase 2-B replay authority.
+All three records are schema-locked to `observability_stream`, cannot enter
+`work_order_stream` or `evolution_candidates`, cannot trigger tournament or
+replay, and cannot be read by the agent. Redaction canary tests are now in the
+main `npm test` path; real diagnostic effectiveness still requires live
+`model_io_tap` calibration across at least 50 sessions before manual review or
+auto replay can be considered.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,

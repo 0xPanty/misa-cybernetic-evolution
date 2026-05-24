@@ -65,6 +65,8 @@ replays that NDJSON through `hermes:adapt-runtime`.
 | --- | --- |
 | `pre_tool_call` | observe tool intent before runtime execution |
 | `post_tool_call` | observe result, failure, and evidence refs |
+| `pre_api_request` | observe redacted model-input digest after Hermes assembles provider request |
+| `post_api_request` | observe redacted model-output usage digest after provider response |
 | `pre_llm_call` | observe model-request boundary |
 | `post_llm_call` | observe output and background-review pressure |
 | `on_session_end` | flush adapter events into a digest boundary |
@@ -158,6 +160,110 @@ tournament_required = false
 
 So it can explain loops or query collapse, but it cannot create work orders,
 trigger tournaments, or promote itself.
+
+## Model I/O Tap
+
+The Hermes plugin also emits `model_io_tap` records from `pre_api_request` and
+`post_api_request`. This is an experimental input-side diagnostic, not a new
+control loop. It exists to answer one narrow question: when the agent behaved
+badly, was the model being fed a clean case file or a bloated/unstable one?
+
+The tap stores only deterministic counts and hashes:
+
+- `input_tokens`, `output_tokens`, and `cache_read_tokens` when Hermes exposes
+  usage;
+- `message_count` and `context_byte_size`;
+- `tool_schema_count`;
+- `tool_result_error_count`;
+- `system_prompt_hash` and `tool_schema_hash`.
+
+It does not persist raw prompts, raw tool schemas, raw tool results, assistant
+answers, or provider keys. Its output is schema-locked:
+
+```text
+record_kind = model_io_tap
+signal_origin = runtime_operation_log
+routing_stream = observability_stream
+can_promote_now = false
+replay_required = false
+tournament_required = false
+raw_prompt_persisted = false
+raw_private_content_exported = false
+```
+
+The first phase is not decision-authorized. These records do not feed Layer A,
+replay reports, tournaments, SNR, or anomaly rules. They can be cross-checked by
+the measurement quality gate only as Layer C observability.
+
+Before VPS deployment, the plugin redaction test is blocking. The test injects
+multiple canaries into synthetic prompts, fake provider fields, tool args, long
+code-like content, and assistant output. `npm test` must prove none of those
+canaries reach NDJSON; only counts, hashes, and booleans may be persisted.
+
+## Measurement Quality Gate
+
+Phase 2-A adds an emit-only `measurement_quality_gate` record inside Layer C.
+It cross-checks `action_history_monitor` and `model_io_tap`, but it does not
+block Layer A yet.
+
+The gate answers a narrower question than tournament quality:
+
+```text
+not: is this candidate good?
+yes: is this measurement environment clean enough to trust?
+```
+
+The first registry is separate from anomaly rules:
+
+```text
+hermes-measurement-gate-rules.v1
+```
+
+MVP verdicts:
+
+- `clean_measurement`: monitor and model I/O evidence are present and no
+  measurement contamination rule fired;
+- `suspect_input_contamination`: model input looks dirty, such as very large
+  context, too many exposed tools, or accumulated failed tool results;
+- `suspect_behavior_loop`: action history looks like a loop, such as repeated
+  failure-after-repeat or collapsed search entropy;
+- `suspect_compound_failure`: input contamination and behavior-loop rules both
+  fired in the same window;
+- `insufficient_evidence`: the gate saw too little monitor/model-I/O evidence to
+  treat the measurement as clean.
+
+Phase 2-A authority is locked down:
+
+```text
+record_kind = measurement_quality_gate
+gate_phase = emit_only
+routing_stream = observability_stream
+blocks_layer_a = false
+triggers_replay = false
+agent_can_read = false
+llm_api_calls = 0
+```
+
+So the gate can produce a measurement verdict for later calibration, but dirty
+measurements are not filtered yet. Later phases may earn manual replay or auto
+replay authority only after real data shows the gate is stable.
+
+The adapter also emits a separate `measurement_gate_bias_monitor` record. This is
+the gate-of-gate: it watches whether the gate would mark one candidate type dirty
+more often than others. In Phase 2-A it is only a current-window snapshot. It does
+not block Layer A, trigger replay, or judge candidate quality.
+
+Strong validation is ordered:
+
+1. `redaction` is a deploy blocker. If canaries leak into NDJSON, do not deploy
+   the plugin to VPS.
+2. `known-answer fixtures` prove mechanical wiring only. They check that each
+   deterministic rule produces the expected verdict, but they do not prove the
+   thresholds are correct.
+3. `real-run calibration` is required before Phase 2-B. Start manual review only
+   after at least 50 real sessions, dirty verdict rate stays in the 5%-30% band,
+   human review agrees with dirty verdicts at least 70% of the time, and the
+   gate-bias monitor shows no candidate-type skew.
 
 The report also emits `sidecar_signal_to_noise_ratio`:
 
