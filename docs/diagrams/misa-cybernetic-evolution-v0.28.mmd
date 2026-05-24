@@ -1,127 +1,115 @@
-graph TD
-  TITLE["Misa Cybernetic Evolution Layer v0.28<br/>measurement-first control loop for Hermes-style agents"]
+flowchart TB
 
-  subgraph SRC["SIGNAL INTAKE - two real evidence lanes"]
-    subgraph A_SRC["Lane A - Qianxuesen window distillation"]
-      A0["Window bundle<br/>redacted transcript slices<br/>local refs only"]
-      A1["Source ledger<br/>retrieval trace<br/>Hermes refs<br/>timestamps"]
-      A2["Distillation template<br/>observation -> claim -> evidence<br/>counter-evidence / uncertainty<br/>route hint / replay requirement"]
-      A3["Signal map<br/>memory | skill | case<br/>policy | damping"]
-      A4["Replay synthesis<br/>candidate evidence packet<br/>source-backed"]
-      A0 --> A1 --> A2 --> A3 --> A4
-    end
+  TITLE["<b>Misa Cybernetic Evolution Layer · v0.28</b><br/><i>Measurement-first control loop · Engineering Cybernetics for AI agents</i>"]
 
-    subgraph C_SRC["Lane B - Hermes runtime logs and model I/O"]
-      C0["Runtime operation logs<br/>pre/post tool_call<br/>action identity folded"]
-      C1["Action-history monitor<br/>failure-after-repeat<br/>query entropy"]
-      C2["API boundary hooks<br/>pre/post api_request"]
-      C3["Model I/O tap<br/>context bytes<br/>tool schema count<br/>hashes only"]
-      C4["Measurement quality gate<br/>clean / input dirty / behavior loop<br/>compound / insufficient"]
-      C5["Gate-of-gate bias monitor<br/>per-candidate skew<br/>emit-only"]
-      C0 --> C1 --> C4
-      C2 --> C3 --> C4 --> C5
-    end
+  %% =========================================================
+  %% TOP: two evidence lanes (the only data-backed lanes)
+  %% =========================================================
+  subgraph LA["Lane A &nbsp;·&nbsp; Qianxuesen window distillation"]
+    direction TB
+    A1[/"Window bundle<br/><i>redacted slices · local refs</i>"/]
+    A2["Source ledger<br/><i>retrieval trace · timestamps</i>"]
+    A3["Distillation template<br/><i>obs → claim → evidence<br/>counter-evidence · uncertainty</i>"]
+    A4["Signal map<br/><i>memory | skill | case<br/>policy | damping</i>"]
+    A5["Replay synthesis<br/><i>candidate evidence packet</i>"]
+    A1 --> A2 --> A3 --> A4 --> A5
   end
 
-  subgraph L0["L0 SENSOR CONTRACT - do not trust unnamed signals"]
-    L0A["Schema lock<br/>record_kind + signal_origin required"]
-    L0B["Redaction boundary<br/>no raw prompt / token / tool args in repo"]
-    L0C["Authority split<br/>window evidence can seed candidates<br/>runtime telemetry stays observability"]
-    L0A --> L0B --> L0C
+  subgraph LB["Lane B &nbsp;·&nbsp; Hermes runtime + model I/O"]
+    direction TB
+    B1[/"Runtime ops<br/><i>pre/post tool_call</i>"/]
+    B2[/"API boundary hooks<br/><i>pre/post api_request</i>"/]
+    B3["action_history_monitor<br/><i>failure-after-repeat<br/>query entropy</i>"]
+    B4["model_io_tap<br/><i>context bytes · tool count<br/>hashes only · no raw</i>"]
+    B1 --> B3
+    B2 --> B4
   end
 
-  subgraph L1["L1 EVIDENCE DISTILLATION - turn windows into controllable signals"]
-    L1A["Controlled distillation<br/>source-backed lessons<br/>context entropy compressed"]
-    L1B["Route vocabulary<br/>memory / skill / case<br/>policy / damping"]
-    L1C["Candidate gates<br/>minimal L3<br/>preflight<br/>repair ticket"]
-    L1A --> L1B --> L1C
+  %% =========================================================
+  %% MIDDLE: the v0.28 punchline — measurement quality gate
+  %% =========================================================
+  subgraph GATE["★ &nbsp; v0.28 NEW &nbsp;·&nbsp; Measurement Quality Gate"]
+    direction TB
+    G1{{"measurement_quality_gate<br/>━━━━━━━━━━━━━━━━━━━━━<br/><b>clean</b> &nbsp;·&nbsp; suspect_input<br/>suspect_behavior &nbsp;·&nbsp; suspect_compound<br/><i>insufficient_evidence</i> (fails closed)"}}
+    G2["gate-of-gate bias monitor<br/><i>per-candidate skew · emit-only</i>"]
+    G1 --> G2
   end
 
-  subgraph L2["L2 CROSS-VALIDATION - check whether the measurement is trustworthy"]
-    L2A["Behavior evidence<br/>is the agent looping?"]
-    L2B["Input evidence<br/>is the prompt/case file polluted?"]
-    L2C["Three-way check<br/>candidate result x action history x model I/O"]
-    L2D["Gate verdict<br/>clean / input dirty / behavior loop<br/>compound / insufficient"]
-    L2E["Boundary rule<br/>no clean measurement -> no candidate judgment"]
-    L2A --> L2C
-    L2B --> L2C --> L2D --> L2E
+  %% =========================================================
+  %% BOTTOM: three disjoint output streams
+  %% =========================================================
+  subgraph OUT["Output streams &nbsp;·&nbsp; schema-locked disjoint"]
+    direction LR
+    O1["observability_stream<br/><i>emit-only diagnostics</i>"]
+    O2["work_order_stream<br/><i>replay-required</i>"]
+    O3["evolution_candidates<br/><i>tournament input</i>"]
   end
 
-  subgraph L3["L3 CONTROL ROUTING + FEEDBACK - runtime noise may become work, not truth"]
-    L3A["Anomaly rule registry<br/>versioned deterministic rules"]
-    L3B["Observability stream<br/>audit / SNR / diagnostics"]
-    L3C["Work-order stream<br/>only registered boundary issues"]
-    L3D["Variant + quality eval<br/>strategy fit<br/>replay value<br/>boundary safety"]
-    L3E["L3 feedback reducer<br/>red / yellow / green pools<br/>semantic pressure"]
-    L3F["Feedback targets<br/>tighten L1 source selection<br/>repair L2 gates<br/>seed better variants"]
-    L3A --> L3B
-    L3A --> L3C --> L3D --> L3E --> L3F
+  %% =========================================================
+  %% SIDE LEFT: Layer 0 schema + redaction (the safety wall)
+  %% =========================================================
+  subgraph L0["Layer 0 &nbsp;·&nbsp; Schema + Redaction Contract"]
+    direction TB
+    S1["record_kind + signal_origin locked"]
+    S2["no raw prompt / token / tool body persists"]
+    S3["5 canary strings · CI-blocking"]
   end
 
-  FB["NEXT-CYCLE FEEDBACK BUFFER<br/>feeds future source selection, gate repair, and variant seeds<br/>no direct winner authority"]
+  %% =========================================================
+  %% SIDE RIGHT: hard-blocked surfaces (the boundary claim)
+  %% =========================================================
+  BLOCK["⛔ &nbsp; BLOCKED BY DEFAULT<br/>━━━━━━━━━━━━━━━━━━━<br/>memory writes · skill install<br/>provider routes · runtime block<br/>public posts · VPS update<br/>agent self-review · auto-replay<br/>LLM-owned route or winner"]
 
-  subgraph L4["L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator"]
-    L4A["Tournament<br/>positive lift<br/>no safety regression"]
-    L4B["Value proof<br/>local/synthetic discrimination<br/>current corpus only"]
-    L4C["Human boundary<br/>approve / hold / reject"]
-    L4D["Allowed outputs<br/>draft skill<br/>repair ticket<br/>work order"]
-    L4A --> L4B --> L4C --> L4D
-  end
+  %% =========================================================
+  %% Flows
+  %% =========================================================
+  TITLE --> LA
+  TITLE --> LB
 
-  BLOCK["BLOCKED BY DEFAULT<br/>raw private content | memory writes | skill install | provider routes<br/>runtime blocking | public posts | VPS updates | runtime-log tournament"]
+  A3 --> G1
+  B3 --> G1
+  B4 --> G1
 
-  TITLE --> A0
-  TITLE --> C0
-  TITLE --> C2
-  A4 --> L0A
-  C4 --> L0A
-  C5 --> L0A
-  L0C --> L1A
-  L1C --> L2C
-  A4 -. "candidate result evidence" .-> L2C
-  C1 --> L2A
-  C3 --> L2B
-  L2E --> L3A
-  L3F --> L4A
-  L4D --> BLOCK
+  A5 --> O2
+  A5 --> O3
+  B3 -. "observability" .-> O1
+  B4 -. "observability" .-> O1
+  G2 -. "emit-only verdict" .-> O1
 
-  C4 -. "measurement verdict only" .-> L2D
-  L3B -. "audit only" .-> BLOCK
-  L3C -. "repair queue only" .-> L4D
-  L3F -. "feedback only, no winner authority" .-> FB
+  L0 -. "enforces" .-> LA
+  L0 -. "enforces" .-> LB
+  L0 -. "enforces" .-> GATE
 
-  style TITLE fill:#0f172a,stroke:#38bdf8,color:#f8fafc
-  style A0 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
-  style A1 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
-  style A2 fill:#0b3b5a,stroke:#22d3ee,color:#ecfeff
-  style A3 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
-  style A4 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
-  style C0 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
-  style C1 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
-  style C2 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
-  style C3 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
-  style C4 fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style C5 fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L0A fill:#13321f,stroke:#22c55e,color:#dcfce7
-  style L0B fill:#13321f,stroke:#22c55e,color:#dcfce7
-  style L0C fill:#13321f,stroke:#22c55e,color:#dcfce7
-  style L1A fill:#123047,stroke:#06b6d4,color:#ecfeff
-  style L1B fill:#123047,stroke:#06b6d4,color:#ecfeff
-  style L1C fill:#123047,stroke:#06b6d4,color:#ecfeff
-  style L2A fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L2B fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L2C fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L2D fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L2E fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
-  style L3A fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L3B fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L3C fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L3D fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L3E fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L3F fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style FB fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
-  style L4A fill:#451a03,stroke:#f97316,color:#ffedd5
-  style L4B fill:#451a03,stroke:#f97316,color:#ffedd5
-  style L4C fill:#451a03,stroke:#f97316,color:#ffedd5
-  style L4D fill:#451a03,stroke:#f97316,color:#ffedd5
-  style BLOCK fill:#111827,stroke:#ef4444,color:#fee2e2
+  OUT -. "cannot reach" .-> BLOCK
+  G1 -. "cannot trigger" .-> BLOCK
+
+  %% =========================================================
+  %% Styling — clear visual hierarchy
+  %% Main flow: cyan-blue family
+  %% v0.28 gate: magenta (the focus)
+  %% Constraints / boundary: gray-dashed
+  %% Blocked: red
+  %% Output: green
+  %% =========================================================
+  classDef title fill:#0b1326,stroke:#38bdf8,stroke-width:2px,color:#f1f5f9;
+
+  classDef laneA fill:#0c1f3a,stroke:#3b82f6,color:#dbeafe;
+  classDef laneB fill:#1f1431,stroke:#a78bfa,color:#ede9fe;
+
+  classDef gateMain fill:#3b0d2e,stroke:#f43f5e,stroke-width:3px,color:#fce7f3;
+  classDef gateSub fill:#2a0f24,stroke:#f9a8d4,color:#fbcfe8;
+
+  classDef out fill:#0e2a1d,stroke:#22c55e,color:#dcfce7;
+
+  classDef sch fill:#1a1d24,stroke:#94a3b8,color:#cbd5e1,stroke-dasharray:6 4;
+
+  classDef blocked fill:#2a0b0b,stroke:#dc2626,stroke-width:2px,color:#fecaca;
+
+  class TITLE title
+  class A1,A2,A3,A4,A5 laneA
+  class B1,B2,B3,B4 laneB
+  class G1 gateMain
+  class G2 gateSub
+  class O1,O2,O3 out
+  class S1,S2,S3 sch
+  class BLOCK blocked

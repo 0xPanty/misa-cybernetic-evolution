@@ -934,20 +934,12 @@ History and calibration:
 
 ## Diagram Source
 
-The current architecture diagram is rendered from
-[docs/diagrams/misa-cybernetic-evolution-v0.28.d2](./docs/diagrams/misa-cybernetic-evolution-v0.28.d2)
-with D2:
+The current architecture diagram is rendered by the fixed-layout SVG renderer at
+[scripts/render-architecture-diagram.mjs](./scripts/render-architecture-diagram.mjs).
+It avoids automatic graph layout so the README diagram stays readable on GitHub:
 
 ```bash
 npm run docs:architecture-diagram
-```
-
-The Mermaid sketch at
-[docs/diagrams/misa-cybernetic-evolution-v0.28.mmd](./docs/diagrams/misa-cybernetic-evolution-v0.28.mmd)
-is kept as a lightweight editable fallback:
-
-```bash
-npm run docs:architecture-diagram:mermaid
 ```
 
 The older Remotion storyboard at
