@@ -36,23 +36,28 @@ graph TD
     L1A --> L1B --> L1C
   end
 
-  subgraph L2["L2 MEASUREMENT VALIDITY - check whether the case file is clean"]
+  subgraph L2["L2 CROSS-VALIDATION - check whether the measurement is trustworthy"]
     L2A["Behavior evidence<br/>is the agent looping?"]
     L2B["Input evidence<br/>is the prompt/case file polluted?"]
-    L2C["Gate verdict<br/>advisory-only in v0.28"]
-    L2D["Boundary rule<br/>diagnosis cannot become tournament truth"]
+    L2C["Cross-check reducer<br/>Layer A result x action history x model I/O"]
+    L2D["Gate verdict<br/>clean / input dirty / behavior loop<br/>compound / insufficient"]
+    L2E["Boundary rule<br/>measurement risk cannot become candidate truth"]
     L2A --> L2C
-    L2B --> L2C --> L2D
+    L2B --> L2C --> L2D --> L2E
   end
 
-  subgraph L3["L3 CONTROL ROUTING - runtime noise may become work, not truth"]
+  subgraph L3["L3 CONTROL ROUTING + FEEDBACK - runtime noise may become work, not truth"]
     L3A["Anomaly rule registry<br/>versioned deterministic rules"]
     L3B["Observability stream<br/>audit / SNR / diagnostics"]
     L3C["Work-order stream<br/>only registered boundary issues"]
     L3D["Variant + quality eval<br/>strategy fit<br/>replay value<br/>boundary safety"]
+    L3E["L3 feedback reducer<br/>red / yellow / green pools<br/>semantic pressure"]
+    L3F["Feedback targets<br/>tighten L1 source selection<br/>repair L2 gates<br/>seed better variants"]
     L3A --> L3B
-    L3A --> L3C --> L3D
+    L3A --> L3C --> L3D --> L3E --> L3F
   end
+
+  FB["NEXT-CYCLE FEEDBACK BUFFER<br/>feeds future source selection, gate repair, and variant seeds<br/>no direct winner authority"]
 
   subgraph L4["L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator"]
     L4A["Tournament<br/>positive lift<br/>no safety regression"]
@@ -71,16 +76,18 @@ graph TD
   C4 --> L0A
   C5 --> L0A
   L0C --> L1A
-  L1C --> L2A
+  L1C --> L2C
+  A3 -. "candidate result evidence" .-> L2C
   C2 --> L2A
   C3 --> L2B
-  L2D --> L3A
-  L3D --> L4A
+  L2E --> L3A
+  L3F --> L4A
   L4D --> BLOCK
 
-  C4 -. "measurement verdict only" .-> L2C
+  C4 -. "measurement verdict only" .-> L2D
   L3B -. "audit only" .-> BLOCK
   L3C -. "repair queue only" .-> L4D
+  L3F -. "feedback only, no winner authority" .-> FB
 
   classDef title fill:#0f172a,stroke:#38bdf8,color:#f8fafc;
   classDef source fill:#082f49,stroke:#38bdf8,color:#e0f2fe;
@@ -97,7 +104,7 @@ graph TD
   class C0,C1,C2,C3,C4,C5 runtime;
   class L0A,L0B,L0C contract;
   class L1A,L1B,L1C distill;
-  class L2A,L2B,L2C,L2D measure;
-  class L3A,L3B,L3C,L3D route;
+  class L2A,L2B,L2C,L2D,L2E measure;
+  class L3A,L3B,L3C,L3D,L3E,L3F,FB route;
   class L4A,L4B,L4C,L4D decision;
   class BLOCK block;

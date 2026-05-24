@@ -24,7 +24,10 @@ replay, tournament, work orders, runtime blocking, or agent self-review.
 
 The public architecture diagram intentionally shows only the two data-backed
 lanes: Qianxuesen window distillation and Hermes runtime/model-I/O
-observability.
+observability. The middle of the diagram shows the cross-validation gate and
+the L3 feedback path: runtime diagnostics can tighten future source selection,
+gate repair, and variant generation, but cannot directly change tournament
+winners.
 
 ## One-Line Verdict
 
