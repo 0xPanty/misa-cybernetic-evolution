@@ -18,7 +18,7 @@ a clean case file before blaming the candidate for a bad result. The new tap and
 gate are observe-only: they can report measurement risk, but they cannot trigger
 replay, tournament, work orders, runtime blocking, or agent self-review.
 
-![Misa Cybernetic Evolution Layer control loop](docs/assets/langgraph-qianxuesen-flow.svg)
+![Misa Cybernetic Evolution Layer v0.28 control loop](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
 ## One-Line Verdict
 
@@ -839,12 +839,19 @@ History and calibration:
 
 - [Version changelog and calibration notes](./docs/history/changelog.md)
 
-## Remotion Diagram Source
+## Diagram Source
 
-The diagram above has a Remotion storyboard source at
-[docs/remotion/langgraph-qianxuesen-flow.tsx](./docs/remotion/langgraph-qianxuesen-flow.tsx).
-It is kept as a future animation source for the same logic: evidence in, local
-control decisions, safe drafts out, human boundary preserved.
+The current architecture diagram is rendered from
+[docs/diagrams/misa-cybernetic-evolution-v0.28.mmd](./docs/diagrams/misa-cybernetic-evolution-v0.28.mmd)
+with `beautiful-mermaid`:
+
+```bash
+npm run docs:architecture-diagram
+```
+
+The older Remotion storyboard at
+[docs/remotion/langgraph-qianxuesen-flow.tsx](./docs/remotion/langgraph-qianxuesen-flow.tsx)
+is kept as historical animation source.
 
 ## License
 

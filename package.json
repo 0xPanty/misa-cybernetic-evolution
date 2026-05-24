@@ -89,6 +89,7 @@
     "smoke:current-line": "node scripts/current-line-smoke.mjs",
     "calibrate:current-line": "node scripts/current-line-calibration.mjs",
     "health:qianxuesen": "node scripts/qianxuesen-full-loop-health.mjs",
+    "docs:architecture-diagram": "node scripts/render-architecture-diagram.mjs",
     "precheck": "node scripts/precheck.mjs",
     "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "test:experiments": "node --test --test-concurrency=1 experiments/*/test/*.test.mjs",
@@ -103,6 +104,7 @@
   ],
   "devDependencies": {
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "beautiful-mermaid": "^1.1.3"
   }
 }
