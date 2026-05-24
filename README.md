@@ -22,6 +22,10 @@ replay, tournament, work orders, runtime blocking, or agent self-review.
 
 [Open the full-size architecture diagram](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
+The public architecture diagram intentionally shows only the two data-backed
+lanes: Qianxuesen window distillation and Hermes runtime/model-I/O
+observability.
+
 ## One-Line Verdict
 
 This is a measurement-first cybernetic control layer for agents: evidence in,

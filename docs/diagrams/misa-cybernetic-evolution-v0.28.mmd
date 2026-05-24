@@ -1,8 +1,8 @@
 graph TD
   TITLE["Misa Cybernetic Evolution Layer v0.28<br/>measurement-first control loop for Hermes-style agents"]
 
-  subgraph SRC["SIGNAL INTAKE - real evidence before evolution"]
-    subgraph A_SRC["Layer A - Qianxuesen window distillation"]
+  subgraph SRC["SIGNAL INTAKE - two real evidence lanes"]
+    subgraph A_SRC["Lane A - Qianxuesen window distillation"]
       A0["Redacted session windows<br/>local refs only"]
       A1["Source lineage<br/>retrieval trace<br/>Hermes refs"]
       A2["Distill + map<br/>segments -> signals"]
@@ -10,13 +10,7 @@ graph TD
       A0 --> A1 --> A2 --> A3
     end
 
-    subgraph B_SRC["Layer B - official Hermes self-evolution interface"]
-      B0["Explicit signal_origin only<br/>currently no real candidates"]
-      B1["Default empty<br/>no hallucinated promotion"]
-      B0 --> B1
-    end
-
-    subgraph C_SRC["Layer C - Hermes runtime logs and model I/O"]
+    subgraph C_SRC["Lane B - Hermes runtime logs and model I/O"]
       C0["Runtime operation logs<br/>pre/post tool_call"]
       C1["API boundary hooks<br/>pre/post api_request"]
       C2["Action-history monitor<br/>failure-after-repeat<br/>query entropy"]
@@ -31,7 +25,7 @@ graph TD
   subgraph L0["L0 SENSOR CONTRACT - do not trust unnamed signals"]
     L0A["Schema lock<br/>record_kind + signal_origin required"]
     L0B["Redaction boundary<br/>no raw prompt / token / tool args in repo"]
-    L0C["Origin split<br/>A = evolution input<br/>B = explicit only<br/>C = observability"]
+    L0C["Two-lane split<br/>window evidence vs runtime observability"]
     L0A --> L0B --> L0C
   end
 
@@ -62,20 +56,18 @@ graph TD
 
   subgraph L4["L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator"]
     L4A["Tournament<br/>positive lift<br/>no safety regression"]
-    L4B["Value proof<br/>local/synthetic discrimination<br/>not official Hermes self-evolution accuracy"]
+    L4B["Value proof<br/>local/synthetic discrimination<br/>current corpus only"]
     L4C["Human boundary<br/>approve / hold / reject"]
     L4D["Allowed outputs<br/>draft skill<br/>repair ticket<br/>work order"]
     L4A --> L4B --> L4C --> L4D
   end
 
-  BLOCK["BLOCKED BY DEFAULT<br/>raw private content | memory writes | skill install | provider routes<br/>runtime blocking | public posts | VPS updates | Layer C tournament"]
+  BLOCK["BLOCKED BY DEFAULT<br/>raw private content | memory writes | skill install | provider routes<br/>runtime blocking | public posts | VPS updates | runtime-log tournament"]
 
   TITLE --> A0
-  TITLE --> B0
   TITLE --> C0
   TITLE --> C1
   A3 --> L0A
-  B1 --> L0A
   C4 --> L0A
   C5 --> L0A
   L0C --> L1A
@@ -92,7 +84,6 @@ graph TD
 
   classDef title fill:#0f172a,stroke:#38bdf8,color:#f8fafc;
   classDef source fill:#082f49,stroke:#38bdf8,color:#e0f2fe;
-  classDef official fill:#312e81,stroke:#a78bfa,color:#ede9fe;
   classDef runtime fill:#3b1d0f,stroke:#fb923c,color:#ffedd5;
   classDef contract fill:#13321f,stroke:#22c55e,color:#dcfce7;
   classDef distill fill:#123047,stroke:#06b6d4,color:#ecfeff;
@@ -103,7 +94,6 @@ graph TD
 
   class TITLE title;
   class A0,A1,A2,A3 source;
-  class B0,B1 official;
   class C0,C1,C2,C3,C4,C5 runtime;
   class L0A,L0B,L0C contract;
   class L1A,L1B,L1C distill;
