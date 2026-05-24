@@ -3,34 +3,35 @@ graph TD
 
   subgraph SRC["SIGNAL INTAKE - two real evidence lanes"]
     subgraph A_SRC["Lane A - Qianxuesen window distillation"]
-      A0["Redacted session windows<br/>local refs only"]
-      A1["Source lineage<br/>retrieval trace<br/>Hermes refs"]
-      A2["Distill + map<br/>segments -> signals"]
-      A3["Replay synthesis<br/>primary evolution input"]
-      A0 --> A1 --> A2 --> A3
+      A0["Window bundle<br/>redacted transcript slices<br/>local refs only"]
+      A1["Source ledger<br/>retrieval trace<br/>Hermes refs<br/>timestamps"]
+      A2["Distillation template<br/>observation -> claim -> evidence<br/>counter-evidence / uncertainty<br/>route hint / replay requirement"]
+      A3["Signal map<br/>memory | skill | case<br/>policy | damping"]
+      A4["Replay synthesis<br/>candidate evidence packet<br/>source-backed"]
+      A0 --> A1 --> A2 --> A3 --> A4
     end
 
     subgraph C_SRC["Lane B - Hermes runtime logs and model I/O"]
-      C0["Runtime operation logs<br/>pre/post tool_call"]
-      C1["API boundary hooks<br/>pre/post api_request"]
-      C2["Action-history monitor<br/>failure-after-repeat<br/>query entropy"]
+      C0["Runtime operation logs<br/>pre/post tool_call<br/>action identity folded"]
+      C1["Action-history monitor<br/>failure-after-repeat<br/>query entropy"]
+      C2["API boundary hooks<br/>pre/post api_request"]
       C3["Model I/O tap<br/>context bytes<br/>tool schema count<br/>hashes only"]
       C4["Measurement quality gate<br/>clean / input dirty / behavior loop<br/>compound / insufficient"]
       C5["Gate-of-gate bias monitor<br/>per-candidate skew<br/>emit-only"]
-      C0 --> C2 --> C4
-      C1 --> C3 --> C4 --> C5
+      C0 --> C1 --> C4
+      C2 --> C3 --> C4 --> C5
     end
   end
 
   subgraph L0["L0 SENSOR CONTRACT - do not trust unnamed signals"]
     L0A["Schema lock<br/>record_kind + signal_origin required"]
     L0B["Redaction boundary<br/>no raw prompt / token / tool args in repo"]
-    L0C["Two-lane split<br/>window evidence vs runtime observability"]
+    L0C["Authority split<br/>window evidence can seed candidates<br/>runtime telemetry stays observability"]
     L0A --> L0B --> L0C
   end
 
   subgraph L1["L1 EVIDENCE DISTILLATION - turn windows into controllable signals"]
-    L1A["Window distiller<br/>compress context entropy"]
+    L1A["Controlled distillation<br/>source-backed lessons<br/>context entropy compressed"]
     L1B["Route vocabulary<br/>memory / skill / case<br/>policy / damping"]
     L1C["Candidate gates<br/>minimal L3<br/>preflight<br/>repair ticket"]
     L1A --> L1B --> L1C
@@ -39,9 +40,9 @@ graph TD
   subgraph L2["L2 CROSS-VALIDATION - check whether the measurement is trustworthy"]
     L2A["Behavior evidence<br/>is the agent looping?"]
     L2B["Input evidence<br/>is the prompt/case file polluted?"]
-    L2C["Cross-check reducer<br/>Layer A result x action history x model I/O"]
+    L2C["Three-way check<br/>candidate result x action history x model I/O"]
     L2D["Gate verdict<br/>clean / input dirty / behavior loop<br/>compound / insufficient"]
-    L2E["Boundary rule<br/>measurement risk cannot become candidate truth"]
+    L2E["Boundary rule<br/>no clean measurement -> no candidate judgment"]
     L2A --> L2C
     L2B --> L2C --> L2D --> L2E
   end
@@ -71,14 +72,14 @@ graph TD
 
   TITLE --> A0
   TITLE --> C0
-  TITLE --> C1
-  A3 --> L0A
+  TITLE --> C2
+  A4 --> L0A
   C4 --> L0A
   C5 --> L0A
   L0C --> L1A
   L1C --> L2C
-  A3 -. "candidate result evidence" .-> L2C
-  C2 --> L2A
+  A4 -. "candidate result evidence" .-> L2C
+  C1 --> L2A
   C3 --> L2B
   L2E --> L3A
   L3F --> L4A
@@ -89,22 +90,38 @@ graph TD
   L3C -. "repair queue only" .-> L4D
   L3F -. "feedback only, no winner authority" .-> FB
 
-  classDef title fill:#0f172a,stroke:#38bdf8,color:#f8fafc;
-  classDef source fill:#082f49,stroke:#38bdf8,color:#e0f2fe;
-  classDef runtime fill:#3b1d0f,stroke:#fb923c,color:#ffedd5;
-  classDef contract fill:#13321f,stroke:#22c55e,color:#dcfce7;
-  classDef distill fill:#123047,stroke:#06b6d4,color:#ecfeff;
-  classDef measure fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff;
-  classDef route fill:#3f2a08,stroke:#f59e0b,color:#fef3c7;
-  classDef decision fill:#451a03,stroke:#f97316,color:#ffedd5;
-  classDef block fill:#111827,stroke:#ef4444,color:#fee2e2;
-
-  class TITLE title;
-  class A0,A1,A2,A3 source;
-  class C0,C1,C2,C3,C4,C5 runtime;
-  class L0A,L0B,L0C contract;
-  class L1A,L1B,L1C distill;
-  class L2A,L2B,L2C,L2D,L2E measure;
-  class L3A,L3B,L3C,L3D,L3E,L3F,FB route;
-  class L4A,L4B,L4C,L4D decision;
-  class BLOCK block;
+  style TITLE fill:#0f172a,stroke:#38bdf8,color:#f8fafc
+  style A0 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
+  style A1 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
+  style A2 fill:#0b3b5a,stroke:#22d3ee,color:#ecfeff
+  style A3 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
+  style A4 fill:#082f49,stroke:#38bdf8,color:#e0f2fe
+  style C0 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
+  style C1 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
+  style C2 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
+  style C3 fill:#3b1d0f,stroke:#fb923c,color:#ffedd5
+  style C4 fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style C5 fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L0A fill:#13321f,stroke:#22c55e,color:#dcfce7
+  style L0B fill:#13321f,stroke:#22c55e,color:#dcfce7
+  style L0C fill:#13321f,stroke:#22c55e,color:#dcfce7
+  style L1A fill:#123047,stroke:#06b6d4,color:#ecfeff
+  style L1B fill:#123047,stroke:#06b6d4,color:#ecfeff
+  style L1C fill:#123047,stroke:#06b6d4,color:#ecfeff
+  style L2A fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L2B fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L2C fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L2D fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L2E fill:#3a1f5d,stroke:#c084fc,color:#f3e8ff
+  style L3A fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L3B fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L3C fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L3D fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L3E fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L3F fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style FB fill:#3f2a08,stroke:#f59e0b,color:#fef3c7
+  style L4A fill:#451a03,stroke:#f97316,color:#ffedd5
+  style L4B fill:#451a03,stroke:#f97316,color:#ffedd5
+  style L4C fill:#451a03,stroke:#f97316,color:#ffedd5
+  style L4D fill:#451a03,stroke:#f97316,color:#ffedd5
+  style BLOCK fill:#111827,stroke:#ef4444,color:#fee2e2
