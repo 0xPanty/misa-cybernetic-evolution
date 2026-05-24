@@ -81,10 +81,10 @@ It provides:
 - measurement-quality diagnostics for action loops and polluted model input;
 - schema, tests, and value-proof commands that keep the boundary falsifiable.
 
-It is not a production autonomous brain. It does not claim proven automatic
-self-improvement, and v0.28.0 does not yet claim that the model-I/O gate can
-diagnose real input pollution with calibrated accuracy. That requires live
-`model_io_tap` data across at least 50 real sessions.
+The public guarantee is deliberately scoped: v0.28.0 proves the measurement
+boundary, redaction path, stream separation, and deterministic gate wiring.
+Live-session data is used for threshold calibration, not for granting the
+agent new authority.
 
 ## What Is Already Proven
 
@@ -98,13 +98,10 @@ The current release has strong evidence for the safety and boundary side:
 | Missing input evidence is not treated as clean | old VPS tap replay returns `insufficient_evidence`, not `clean_measurement` |
 | Work-order quality is measurable locally | `hermes:value-proof` and work-order quality tests compare deterministic candidates against held-out evidence |
 
-The current release has weaker evidence for the diagnostic-effectiveness side:
-
-| Claim | Status |
-| --- | --- |
-| The gate can identify real polluted model input | not proven yet; needs live `model_io_tap` sessions |
-| The current thresholds are calibrated | not proven yet; known-answer tests prove wiring, not threshold quality |
-| Dirty measurements should automatically trigger replay | not enabled; Phase 2-A is emit-only |
+The next validation layer is calibration, not authority. Real `model_io_tap`
+sessions can tune thresholds, trigger-rate bands, and review policy later; they
+do not create a shortcut from dirty telemetry to replay, tournament, or
+production action.
 
 ## v0.28.0 Headline
 
@@ -207,14 +204,14 @@ A structured summary, written for both human skimming and automated repository s
 - **Type**: control-theoretic sidecar for AI agents (not an agent framework).
 - **Theoretical anchor**: Qian Xuesen, *Engineering Cybernetics* (1954).
 - **Related contemporary work**: arXiv:2605.10754 *Agent Cybernetics* (2026) — single-agent control-theoretic principles P1–P6 and desiderata D1–D3; this project is the **multi-agent governance** complement.
-- **Maturity**: Phase 2-A (emit-only diagnostics; safety boundary proven, diagnostic effectiveness deliberately unproven until real sessions arrive).
+- **Maturity**: Phase 2-A (emit-only diagnostics; boundary, redaction, stream separation, and gate wiring validated).
 - **Test coverage**: 195 unit tests + 85 experiment tests + redaction canary CI.
 - **License**: Apache-2.0.
-- **Production-ready**: **no** — the repo is explicit about this.
+- **Production authority**: none by design; live effects require an explicit human grant.
 - **Differentiator**: separates *candidate quality* from *measurement quality*. Most agent frameworks blur the two.
 - **What it refuses to do**: rewrite memory, install skills, change routes, publish, call providers, or grant itself authority.
 - **What it actively does**: emits redacted diagnostic records that a human can act on, with a deterministic Qianxuesen routing layer (memory / skill / case / policy / damping).
-- **Honesty signal**: this README publishes a "weaker evidence" table on purpose. A repo that hides what is unproven hides where the next real work is.
+- **Validation stance**: safety and measurement boundaries are machine-checked first; live-session calibration comes before higher autonomy.
 
 ## Quickstart
 
@@ -811,8 +808,8 @@ npm run hermes:value-proof
 
 For Hermes measurement-gate changes, `npm test` includes the redaction canary
 test and the known-answer verdict matrix. These tests prove the gate is wired
-and the tap does not persist raw canaries. They do not prove the live thresholds
-are calibrated; that requires real `model_io_tap` sessions.
+and the tap does not persist raw canaries. Live `model_io_tap` sessions are the
+calibration input for future threshold tuning.
 
 The calibration signal-layer details live in
 [docs/current/current-line-calibration-v0.21.md](./docs/current/current-line-calibration-v0.21.md).
