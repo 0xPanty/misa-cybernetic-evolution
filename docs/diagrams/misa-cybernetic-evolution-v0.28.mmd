@@ -3,7 +3,6 @@ graph TD
 
   subgraph SRC["SIGNAL INTAKE - real evidence before evolution"]
     subgraph A_SRC["Layer A - Qianxuesen window distillation"]
-      direction LR
       A0["Redacted session windows<br/>local refs only"]
       A1["Source lineage<br/>retrieval trace<br/>Hermes refs"]
       A2["Distill + map<br/>segments -> signals"]
@@ -12,14 +11,12 @@ graph TD
     end
 
     subgraph B_SRC["Layer B - official Hermes self-evolution interface"]
-      direction LR
       B0["Explicit signal_origin only<br/>currently no real candidates"]
       B1["Default empty<br/>no hallucinated promotion"]
       B0 --> B1
     end
 
     subgraph C_SRC["Layer C - Hermes runtime logs and model I/O"]
-      direction LR
       C0["Runtime operation logs<br/>pre/post tool_call"]
       C1["API boundary hooks<br/>pre/post api_request"]
       C2["Action-history monitor<br/>failure-after-repeat<br/>query entropy"]
@@ -32,7 +29,6 @@ graph TD
   end
 
   subgraph L0["L0 SENSOR CONTRACT - do not trust unnamed signals"]
-    direction LR
     L0A["Schema lock<br/>record_kind + signal_origin required"]
     L0B["Redaction boundary<br/>no raw prompt / token / tool args in repo"]
     L0C["Origin split<br/>A = evolution input<br/>B = explicit only<br/>C = observability"]
@@ -40,7 +36,6 @@ graph TD
   end
 
   subgraph L1["L1 EVIDENCE DISTILLATION - turn windows into controllable signals"]
-    direction LR
     L1A["Window distiller<br/>compress context entropy"]
     L1B["Route vocabulary<br/>memory / skill / case<br/>policy / damping"]
     L1C["Candidate gates<br/>minimal L3<br/>preflight<br/>repair ticket"]
@@ -48,7 +43,6 @@ graph TD
   end
 
   subgraph L2["L2 MEASUREMENT VALIDITY - check whether the case file is clean"]
-    direction LR
     L2A["Behavior evidence<br/>is the agent looping?"]
     L2B["Input evidence<br/>is the prompt/case file polluted?"]
     L2C["Gate verdict<br/>advisory-only in v0.28"]
@@ -58,7 +52,6 @@ graph TD
   end
 
   subgraph L3["L3 CONTROL ROUTING - runtime noise may become work, not truth"]
-    direction LR
     L3A["Anomaly rule registry<br/>versioned deterministic rules"]
     L3B["Observability stream<br/>audit / SNR / diagnostics"]
     L3C["Work-order stream<br/>only registered boundary issues"]
@@ -68,7 +61,6 @@ graph TD
   end
 
   subgraph L4["L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator"]
-    direction LR
     L4A["Tournament<br/>positive lift<br/>no safety regression"]
     L4B["Value proof<br/>local/synthetic discrimination<br/>not official Hermes self-evolution accuracy"]
     L4C["Human boundary<br/>approve / hold / reject"]

@@ -20,6 +20,8 @@ replay, tournament, work orders, runtime blocking, or agent self-review.
 
 ![Misa Cybernetic Evolution Layer v0.28 control loop](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
+[Open the full-size architecture diagram](docs/assets/misa-cybernetic-evolution-v0.28.svg)
+
 ## One-Line Verdict
 
 This is a measurement-first cybernetic control layer for agents: evidence in,

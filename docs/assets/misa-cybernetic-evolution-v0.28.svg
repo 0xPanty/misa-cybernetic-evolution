@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4461.862666666666 1161.425" width="4461.862666666666" height="1161.425" style="--bg:#08111f;--fg:#e5edf8;--line:#64748b;--accent:#38bdf8;--muted:#9fb3c8;--surface:#101a2d;--border:#334155;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1116.8944666666666 3383.2" width="1116.8944666666666" height="3383.2" style="--bg:#08111f;--fg:#e5edf8;--line:#64748b;--accent:#38bdf8;--muted:#9fb3c8;--surface:#101a2d;--border:#334155;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter%2C%20Arial%2C%20sans-serif:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter, Arial, sans-serif', system-ui, sans-serif; }
@@ -27,282 +27,282 @@
   </marker>
 </defs>
 <g class="subgraph" data-id="SRC" data-label="SIGNAL INTAKE - real evidence before evolution">
-  <rect x="500.91099999999994" y="28" width="988.154" height="586.8" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="500.91099999999994" y="28" width="988.154" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="512.911" y="42" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">SIGNAL INTAKE - real evidence before evolution</text>
+  <rect x="28" y="236.70000000000002" width="946.521" height="606.8" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="28" y="236.70000000000002" width="946.521" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="40" y="250.70000000000002" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">SIGNAL INTAKE - real evidence before evolution</text>
 <g class="subgraph" data-id="A_SRC" data-label="Layer A - Qianxuesen window distillation">
-  <rect x="516.911" y="205.8" width="862.788" height="130.7" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="516.911" y="205.8" width="862.788" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="528.911" y="219.8" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer A - Qianxuesen window distillation</text>
+  <rect x="44" y="312.04999999999995" width="232.52399999999997" height="460.1" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="44" y="312.04999999999995" width="232.52399999999997" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="56" y="326.04999999999995" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer A - Qianxuesen window distillation</text>
 </g>
 <g class="subgraph" data-id="B_SRC" data-label="Layer B - official Hermes self-evolution interface">
-  <rect x="516.911" y="72" width="485.34299999999996" height="113.80000000000001" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="516.911" y="72" width="485.34299999999996" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="528.911" y="86" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer B - official Hermes self-evolution interface</text>
+  <rect x="300.524" y="430.29999999999995" width="239.19299999999996" height="223.60000000000002" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="300.524" y="430.29999999999995" width="239.19299999999996" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="312.524" y="444.29999999999995" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer B - official Hermes self-evolution interface</text>
 </g>
 <g class="subgraph" data-id="C_SRC" data-label="Layer C - Hermes runtime logs and model I/O">
-  <rect x="516.911" y="356.5" width="956.154" height="242.3" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="516.911" y="356.5" width="956.154" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="528.911" y="370.5" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer C - Hermes runtime logs and model I/O</text>
+  <rect x="563.7169999999999" y="286.69999999999993" width="394.80400000000003" height="510.8" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="563.7169999999999" y="286.69999999999993" width="394.80400000000003" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="575.7169999999999" y="300.69999999999993" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">Layer C - Hermes runtime logs and model I/O</text>
 </g>
 </g>
 <g class="subgraph" data-id="L0" data-label="L0 SENSOR CONTRACT - do not trust unnamed signals">
-  <rect x="28" y="743.5666666666666" width="815.9669999999999" height="147.60000000000002" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="28" y="743.5666666666666" width="815.9669999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="40" y="757.5666666666666" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L0 SENSOR CONTRACT - do not trust unnamed signals</text>
+  <rect x="489.7041333333334" y="911.5" width="298.47299999999996" height="367.20000000000005" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="489.7041333333334" y="911.5" width="298.47299999999996" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="501.7041333333334" y="925.5" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L0 SENSOR CONTRACT - do not trust unnamed signals</text>
 </g>
 <g class="subgraph" data-id="L1" data-label="L1 EVIDENCE DISTILLATION - turn windows into controllable signals">
-  <rect x="863.9669999999998" y="743.5666666666666" width="632.1990000000001" height="147.60000000000002" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="863.9669999999998" y="743.5666666666666" width="632.1990000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="875.9669999999998" y="757.5666666666666" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L1 EVIDENCE DISTILLATION - turn windows into controllable signals</text>
+  <rect x="525.6426333333334" y="1346.7" width="226.59599999999998" height="384.1" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="525.6426333333334" y="1346.7" width="226.59599999999998" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="537.6426333333334" y="1360.7" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L1 EVIDENCE DISTILLATION - turn windows into controllable signals</text>
 </g>
 <g class="subgraph" data-id="L2" data-label="L2 MEASUREMENT VALIDITY - check whether the case file is clean">
-  <rect x="1516.1659999999997" y="662.6999999999999" width="824.1179999999999" height="202.60000000000002" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="1516.1659999999997" y="662.6999999999999" width="824.1179999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="1528.1659999999997" y="676.6999999999999" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L2 MEASUREMENT VALIDITY - check whether the case file is clean</text>
+  <rect x="550.4279666666667" y="1798.8" width="434.7819999999999" height="333.40000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="550.4279666666667" y="1798.8" width="434.7819999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="562.4279666666667" y="1812.8" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L2 MEASUREMENT VALIDITY - check whether the case file is clean</text>
 </g>
 <g class="subgraph" data-id="L3" data-label="L3 CONTROL ROUTING - runtime noise may become work, not truth">
-  <rect x="2360.2839999999997" y="634.8" width="752.982" height="235.90000000000003" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="2360.2839999999997" y="634.8" width="752.982" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="2372.2839999999997" y="648.8" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L3 CONTROL ROUTING - runtime noise may become work, not truth</text>
+  <rect x="513.7862166666667" y="2200.2" width="481.74224999999996" height="367.20000000000005" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="513.7862166666667" y="2200.2" width="481.74224999999996" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="525.7862166666667" y="2214.2" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L3 CONTROL ROUTING - runtime noise may become work, not truth</text>
 </g>
 <g class="subgraph" data-id="L4" data-label="L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator">
-  <rect x="3190.7659999999996" y="844.4000000000001" width="951.7079999999999" height="162.325" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="3190.7659999999996" y="844.4000000000001" width="951.7079999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="3202.7659999999996" y="858.4000000000001" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator</text>
+  <rect x="758.6734666666667" y="2711.7" width="330.22099999999995" height="510.8" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="758.6734666666667" y="2711.7" width="330.22099999999995" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="770.6734666666667" y="2725.7" font-size="12" font-weight="600" fill="var(--_text-sec)" dy="4.199999999999999">L4 DECISION BOUNDARY - safe drafts out, humans hold the actuator</text>
 </g>
-<polyline class="edge" data-from="TITLE" data-to="A0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.73249999999996,81.80000000000001 301.73249999999996,98.9 633.1729999999999,98.9 633.1729999999999,258.25" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="TITLE" data-to="B0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.73249999999996,81.80000000000001 301.73249999999996,98.9 636.5074999999999,98.9 636.5074999999999,116" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="TITLE" data-to="C0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.73249999999996,81.80000000000001 301.73249999999996,98.9 619.8349999999999,98.9 619.8349999999999,408.95" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="TITLE" data-to="C1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.73249999999996,81.80000000000001 301.73249999999996,98.9 619.835,98.9 619.835,512.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="A3" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1276.775,312.05 1276.775,683.3958333333334 173.5315,683.3958333333334 173.5315,799.9833333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="B1" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="891.1789999999999,169.8 891.1789999999999,683.3958333333334 173.5315,683.3958333333334 173.5315,799.9833333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C4" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1102.502,521.3666666666667 1102.502,683.3958333333334 173.5315,683.3958333333334 173.5315,799.9833333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C5" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1364.9539999999997,566.8083333333334 1364.9539999999997,683.3958333333334 173.5315,683.3958333333334 173.5315,799.9833333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L0C" data-to="L1A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="827.9669999999999,821.1333333333332 843.9669999999999,821.1333333333332 853.9669999999998,831.3666666666667 853.9669999999998,831.3666666666667 863.9669999999998,831.3666666666666 879.9669999999998,831.3666666666666" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L1C" data-to="L2A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1480.1659999999997,821.1333333333332 1496.1659999999997,821.1333333333332 1506.1659999999997,831.3666666666667 1506.1659999999997,831.3666666666667 1516.1659999999997,835.8499999999999 1552.9139999999998,835.8499999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C2" data-to="L2A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="932.161,424.06666666666666 944.161,424.06666666666666 944.161,418.56666666666666 1473.065,418.56666666666666 4186.473999999999,418.56666666666666 4186.473999999999,817.9166666666666 1552.9139999999998,817.9166666666666" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C3" data-to="L2B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="924.257,554.5083333333334 944.161,553.6 944.161,578.9583333333333 1473.065,578.9583333333333 -16,578.9583333333333 -16,744.5999999999999 1532.1659999999997,744.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L2D" data-to="L3A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2324.2839999999997,744.5999999999999 2340.2839999999997,744.5999999999999 2350.2839999999997,744.5999999999999 2350.2839999999997,744.5999999999999 2360.2839999999997,744.5999999999999 2376.2839999999997,744.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3D" data-to="L4A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="3097.2659999999996,821.1333333333333 3113.2659999999996,821.1333333333333 3123.2659999999996,810.9 3123.2659999999996,955.375 3190.7659999999996,955.3750000000001 3206.7659999999996,955.3750000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L4D" data-to="BLOCK" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="4126.473999999999,932.2 4142.473999999999,932.2 4152.473999999999,932.2 4152.473999999999,1062.725" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C4" data-to="L2C" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="measurement verdict only" points="1216.8429999999998,468.3416666666667 1473.065,468.3416666666667 4198.473999999999,468.3416666666667 4198.473999999999,706.6999999999999 1766.1789999999996,706.6999999999999 1766.1789999999996,731.1499999999999 1810.1789999999996,731.1499999999999" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3B" data-to="BLOCK" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="audit only" points="2852.2274999999995,705.6999999999999 3113.2659999999996,705.6999999999999 4293.168333333333,705.6999999999999 4293.168333333333,1062.725" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3C" data-to="L4D" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="repair queue only" points="2878.5329999999994,774.5333333333333 2890.5329999999994,774.5333333333333 2890.5329999999994,756.0999999999999 3113.2659999999996,756.0999999999999 3180.7659999999996,756.1 3180.7659999999996,909.0250000000001 3190.7659999999996,909.0250000000001 3949.3809999999994,909.0250000000001 3949.3809999999994,917.6000000000001 3993.3809999999994,917.6000000000001" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="A0" data-to="A1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="733.435,285.15 789.435,285.15" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="A1" data-to="A2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="921.0459999999999,285.15 977.0459999999999,285.15" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="A2" data-to="A3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1133.851,285.15 1189.851,285.15" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="B0" data-to="B1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="740.1039999999999,142.9 796.1039999999999,142.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C0" data-to="C2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="706.759,435.85 762.759,435.85" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C2" data-to="C4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="932.161,447.6333333333333 944.161,447.6333333333333 944.161,474.23333333333335 988.161,474.23333333333335" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C1" data-to="C3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="702.313,539.9083333333333 778.567,539.9083333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C3" data-to="C4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="924.257,525.3083333333334 944.161,524.4 944.161,497.8 988.161,497.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="C4" data-to="C5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1216.8429999999998,503.69166666666666 1228.8429999999998,503.69166666666666 1228.8429999999998,531.4583333333334 1272.8429999999998,531.4583333333334" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L0A" data-to="L0B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="303.063,826.8833333333333 359.063,826.8833333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L0B" data-to="L0C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="625.536,821.1333333333332 681.536,821.1333333333332" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L1A" data-to="L1B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1074.5629999999996,835.3333333333333 1130.5629999999996,835.3333333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L1B" data-to="L1C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1288.1089999999997,825.0999999999999 1344.1089999999997,825.0999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L2A" data-to="L2C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1712.6829999999998,826.8833333333333 1766.1789999999996,826.8833333333333 1766.1789999999996,758.05 1810.1789999999996,758.05" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L2B" data-to="L2C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1754.1789999999996,744.5999999999999 1810.1789999999996,744.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L2C" data-to="L2D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="1981.8039999999996,744.5999999999999 2037.8039999999996,744.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3A" data-to="L3B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2588.6639999999998,735.6333333333333 2600.6639999999998,735.6333333333333 2600.6639999999998,705.6999999999999 2670.9694999999997,705.6999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3A" data-to="L3C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2588.6639999999998,753.5666666666666 2600.6639999999998,753.5666666666666 2600.6639999999998,783.5 2644.6639999999998,783.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L3C" data-to="L3D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="2878.5329999999994,792.4666666666667 2890.5329999999994,792.4666666666667 2890.5329999999994,821.1333333333333 2934.5329999999994,821.1333333333333" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L4A" data-to="L4B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="3370.24,955.3750000000001 3426.24,955.3750000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L4B" data-to="L4C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="3713.4609999999993,955.3750000000001 3769.4609999999993,955.3750000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="L4C" data-to="L4D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="3937.3809999999994,955.3750000000001 3949.3809999999994,955.3750000000001 3949.3809999999994,946.8000000000001 3993.3809999999994,946.8000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="TITLE" data-to="A0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="430.3720333333333,174.70000000000002 430.3720333333333,224.70000000000002 160.262,224.70000000000002 160.262,343.37499999999994" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="TITLE" data-to="B0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="430.3720333333333,174.70000000000002 430.3720333333333,224.70000000000002 420.1205,224.70000000000002 420.1205,457.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="TITLE" data-to="C0" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="430.3720333333333,174.70000000000002 430.3720333333333,224.70000000000002 666.6409999999998,224.70000000000002 666.6409999999998,343.37499999999994" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="TITLE" data-to="C1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="430.3720333333333,174.70000000000002 430.3720333333333,224.70000000000002 860.0429999999999,224.70000000000002 860.0429999999999,343.37499999999994" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="A3" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="160.262,760.3749999999999 160.262,866.3875 638.9406333333334,866.3875 638.9406333333334,955.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B1" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="420.1205,642.1249999999999 420.1205,866.3875 638.9406333333334,866.3875 638.9406333333334,955.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C4" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="765.3179999999999,659.025 765.3179999999999,866.3875 638.9406333333334,866.3875 638.9406333333334,955.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C5" data-to="L0A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="765.3179999999999,777.275 765.3179999999999,866.3875 638.9406333333334,866.3875 638.9406333333334,955.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L0C" data-to="L1A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1262.7 638.9406333333334,1390.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L1C" data-to="L2A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1714.8000000000002 638.9406333333334,1780.8 672.9406333333334,1780.8 672.9406333333334,1842.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C2" data-to="L2A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="666.6409999999998,528.1 666.6409999999998,558.2125 646.3124666666668,558.2125 646.3124666666668,1842.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C3" data-to="L2B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="860.0429999999999,545 860.0429999999999,566.6624999999999 858.2034666666667,566.6624999999999 858.2034666666667,1842.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L2D" data-to="L3A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="736.1969666666668,2116.2 736.1969666666666,2244.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3D" data-to="L4A" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="898.1619666666667,2551.3999999999996 898.1619666666667,2693.7 929.2839666666667,2693.7 929.2839666666666,2755.7" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L4D" data-to="BLOCK" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="851.9787166666667,3206.5 851.9787166666667,3272.5 844.4732166666665,3272.5 844.4732166666665,3284.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C4" data-to="L2C" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="measurement verdict only" points="822.4884999999999,659.025 822.4884999999999,666.8 867.4289999999999,666.8 867.4289999999999,1704.5 877.1771333333334,1704.5 877.1771333333334,1768.7999999999997 736.1969666666668,1768.7999999999997 736.1969666666668,1952.6" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3B" data-to="BLOCK" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="audit only" points="620.4152166666668,2407.7999999999997 620.4152166666668,3196.2 689.4734666666667,3196.2 689.4734666666667,3272.5 703.7788833333333,3272.5 703.7788833333333,3284.5" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3C" data-to="L4D" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="repair queue only" points="813.00055,2407.7999999999997 813.00055,2419.7999999999997 805.7954666666667,2419.7999999999997 805.7954666666667,2693.7 774.6734666666667,2693.7 774.6734666666667,3074.8999999999996 829.79655,3074.8999999999996 829.79655,3118.8999999999996" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="A0" data-to="A1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="160.262,397.17499999999995 160.262,457.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="A1" data-to="A2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="160.262,528.0999999999999 160.262,588.3249999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="A2" data-to="A3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="160.262,642.1249999999999 160.262,706.5749999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="B0" data-to="B1" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="420.1205,511.19999999999993 420.1205,588.3249999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C0" data-to="C2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="666.6409999999998,397.17499999999995 666.6409999999998,457.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C2" data-to="C4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="666.6409999999998,528.1 666.6409999999998,558.2125 765.3179999999999,558.2125 765.3179999999999,588.3249999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C1" data-to="C3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="860.0429999999999,397.17499999999995 860.0429999999999,457.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C3" data-to="C4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="860.0429999999999,545 860.0429999999999,566.6624999999999 765.3179999999999,566.6624999999999 765.3179999999999,588.3249999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="C4" data-to="C5" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="765.3179999999999,659.025 765.3179999999999,706.5749999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L0A" data-to="L0B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1009.3 638.9406333333334,1065.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L0B" data-to="L0C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1119.1 638.9406333333334,1175.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L1A" data-to="L1B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1444.5 638.9406333333334,1500.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L1B" data-to="L1C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="638.9406333333334,1571.2 638.9406333333334,1627.2" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L2A" data-to="L2C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="646.3124666666668,1896.6 646.3124666666668,1908.6 693.2907166666668,1908.6 693.2907166666668,1952.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L2B" data-to="L2C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="858.2034666666667,1896.6 858.2034666666667,1908.6 779.1032166666668,1908.6 779.1032166666668,1952.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L2C" data-to="L2D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="736.1969666666668,2006.4 736.1969666666668,2062.4" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3A" data-to="L3B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="736.1969666666666,2298 736.1969666666666,2326 620.4152166666668,2326 620.4152166666668,2354" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3A" data-to="L3C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="736.1969666666666,2298 736.1969666666666,2326 851.9787166666666,2326 851.9787166666666,2354" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L3C" data-to="L3D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="890.9568833333334,2407.7999999999997 890.9568833333334,2419.7999999999997 898.1619666666667,2419.7999999999997 898.1619666666667,2463.7999999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L4A" data-to="L4B" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="929.2839666666667,2826.3999999999996 929.2839666666667,2882.3999999999996" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L4B" data-to="L4C" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="929.2839666666667,2953.1 929.2839666666667,3009.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="L4C" data-to="L4D" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="929.2839666666667,3062.8999999999996 929.2839666666667,3074.8999999999996 874.1608833333333,3074.8999999999996 874.1608833333333,3118.8999999999996" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
 <g class="edge-label" data-from="C4" data-to="L2C" data-label="measurement verdict only">
-  <rect x="4008.391166666666" y="453.1916666666667" width="137.638" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="4077.210166666666" y="468.3416666666667" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">measurement verdict only</text>
+  <rect x="808.1771333333334" y="1711.5" width="137.638" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="876.9961333333333" y="1726.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">measurement verdict only</text>
 </g>
 <g class="edge-label" data-from="L3B" data-to="BLOCK" data-label="audit only">
-  <rect x="4261.668333333333" y="981.425" width="62.2" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="4292.768333333333" y="996.5749999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">audit only</text>
+  <rect x="657.9734666666667" y="3203.2" width="62.2" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="689.0734666666667" y="3218.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">audit only</text>
 </g>
 <g class="edge-label" data-from="L3C" data-to="L4D" data-label="repair queue only">
-  <rect x="3130.2659999999996" y="763.1" width="100.81000000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="3180.671" y="778.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">repair queue only</text>
+  <rect x="755.2954666666667" y="2624.3999999999996" width="100.81000000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="805.7004666666667" y="2639.5499999999997" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">repair queue only</text>
 </g>
 <g class="node" data-id="TITLE" data-label="Misa Cybernetic Evolution Layer v0.28
 measurement-first control loop for Hermes-style agents" data-shape="rectangle">
-  <rect x="122.554" y="28" width="358.3569999999999" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="301.73249999999996" y="54.900000000000006" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="301.73249999999996" dy="-3.9000000000000012">Misa Cybernetic Evolution Layer v0.28</tspan><tspan x="301.73249999999996" dy="16.900000000000002">measurement-first control loop for Hermes-style agents</tspan></text>
+  <rect x="251.19353333333333" y="120.9" width="358.3569999999999" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="430.3720333333333" y="147.8" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="430.3720333333333" dy="-3.9000000000000012">Misa Cybernetic Evolution Layer v0.28</tspan><tspan x="430.3720333333333" dy="16.900000000000002">measurement-first control loop for Hermes-style agents</tspan></text>
 </g>
 <g class="node" data-id="BLOCK" data-label="BLOCKED BY DEFAULT
 raw private content | memory writes | skill install | provider routes
 runtime blocking | public posts | VPS updates | Layer C tournament" data-shape="rectangle">
-  <rect x="4011.7796666666663" y="1062.725" width="422.0829999999998" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="4222.821166666667" y="1098.0749999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="4222.821166666667" dy="-12.350000000000001">BLOCKED BY DEFAULT</tspan><tspan x="4222.821166666667" dy="16.900000000000002">raw private content | memory writes | skill install | provider routes</tspan><tspan x="4222.821166666667" dy="16.900000000000002">runtime blocking | public posts | VPS updates | Layer C tournament</tspan></text>
+  <rect x="563.08455" y="3284.5" width="422.0829999999998" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="774.12605" y="3319.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="774.12605" dy="-12.350000000000001">BLOCKED BY DEFAULT</tspan><tspan x="774.12605" dy="16.900000000000002">raw private content | memory writes | skill install | provider routes</tspan><tspan x="774.12605" dy="16.900000000000002">runtime blocking | public posts | VPS updates | Layer C tournament</tspan></text>
 </g>
 <g class="node" data-id="class" data-label="class" data-shape="rectangle">
-  <rect x="28" y="28" width="74.554" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="65.277" y="46.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">class</text>
+  <rect x="318.9894166666667" y="28" width="74.554" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="356.2664166666667" y="46.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">class</text>
 </g>
 <g class="node" data-id="A0" data-label="Redacted session windows
 local refs only" data-shape="rectangle">
-  <rect x="532.911" y="258.25" width="200.52399999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="633.1729999999999" y="285.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="633.1729999999999" dy="-3.9000000000000012">Redacted session windows</tspan><tspan x="633.1729999999999" dy="16.900000000000002">local refs only</tspan></text>
+  <rect x="60" y="343.37499999999994" width="200.52399999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="160.262" y="370.2749999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="160.262" dy="-3.9000000000000012">Redacted session windows</tspan><tspan x="160.262" dy="16.900000000000002">local refs only</tspan></text>
 </g>
 <g class="node" data-id="A1" data-label="Source lineage
 retrieval trace
 Hermes refs" data-shape="rectangle">
-  <rect x="789.435" y="249.8" width="131.611" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="855.2404999999999" y="285.15000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="855.2404999999999" dy="-12.350000000000001">Source lineage</tspan><tspan x="855.2404999999999" dy="16.900000000000002">retrieval trace</tspan><tspan x="855.2404999999999" dy="16.900000000000002">Hermes refs</tspan></text>
+  <rect x="94.45649999999999" y="457.4" width="131.611" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="160.262" y="492.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="160.262" dy="-12.350000000000001">Source lineage</tspan><tspan x="160.262" dy="16.900000000000002">retrieval trace</tspan><tspan x="160.262" dy="16.900000000000002">Hermes refs</tspan></text>
 </g>
 <g class="node" data-id="A2" data-label="Distill + map
 segments -&gt; signals" data-shape="rectangle">
-  <rect x="977.0459999999999" y="258.25" width="156.805" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1055.4485" y="285.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1055.4485" dy="-3.9000000000000012">Distill + map</tspan><tspan x="1055.4485" dy="16.900000000000002">segments -&gt; signals</tspan></text>
+  <rect x="81.85949999999998" y="588.3249999999999" width="156.805" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="160.262" y="615.2249999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="160.262" dy="-3.9000000000000012">Distill + map</tspan><tspan x="160.262" dy="16.900000000000002">segments -&gt; signals</tspan></text>
 </g>
 <g class="node" data-id="A3" data-label="Replay synthesis
 primary evolution input" data-shape="rectangle">
-  <rect x="1189.851" y="258.25" width="173.84799999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1276.775" y="285.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1276.775" dy="-3.9000000000000012">Replay synthesis</tspan><tspan x="1276.775" dy="16.900000000000002">primary evolution input</tspan></text>
+  <rect x="73.338" y="706.5749999999999" width="173.84799999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="160.262" y="733.4749999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="160.262" dy="-3.9000000000000012">Replay synthesis</tspan><tspan x="160.262" dy="16.900000000000002">primary evolution input</tspan></text>
 </g>
 <g class="node" data-id="B0" data-label="Explicit signal_origin only
 currently no real candidates" data-shape="rectangle">
-  <rect x="532.911" y="116" width="207.19299999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="636.5074999999999" y="142.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="636.5074999999999" dy="-3.9000000000000012">Explicit signal_origin only</tspan><tspan x="636.5074999999999" dy="16.900000000000002">currently no real candidates</tspan></text>
+  <rect x="316.524" y="457.4" width="207.19299999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="420.1205" y="484.29999999999995" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="420.1205" dy="-3.9000000000000012">Explicit signal_origin only</tspan><tspan x="420.1205" dy="16.900000000000002">currently no real candidates</tspan></text>
 </g>
 <g class="node" data-id="B1" data-label="Default empty
 no hallucinated promotion" data-shape="rectangle">
-  <rect x="796.1039999999999" y="116" width="190.14999999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="891.1789999999999" y="142.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="891.1789999999999" dy="-3.9000000000000012">Default empty</tspan><tspan x="891.1789999999999" dy="16.900000000000002">no hallucinated promotion</tspan></text>
+  <rect x="325.0455" y="588.3249999999999" width="190.14999999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="420.1205" y="615.2249999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="420.1205" dy="-3.9000000000000012">Default empty</tspan><tspan x="420.1205" dy="16.900000000000002">no hallucinated promotion</tspan></text>
 </g>
 <g class="node" data-id="C0" data-label="Runtime operation logs
 pre/post tool_call" data-shape="rectangle">
-  <rect x="532.911" y="408.95" width="173.848" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="619.8349999999999" y="435.84999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="619.8349999999999" dy="-3.9000000000000012">Runtime operation logs</tspan><tspan x="619.8349999999999" dy="16.900000000000002">pre/post tool_call</tspan></text>
+  <rect x="579.7169999999999" y="343.37499999999994" width="173.848" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="666.6409999999998" y="370.2749999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="666.6409999999998" dy="-3.9000000000000012">Runtime operation logs</tspan><tspan x="666.6409999999998" dy="16.900000000000002">pre/post tool_call</tspan></text>
 </g>
 <g class="node" data-id="C1" data-label="API boundary hooks
 pre/post api_request" data-shape="rectangle">
-  <rect x="537.357" y="512.1" width="164.95600000000002" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="619.835" y="539" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="619.835" dy="-3.9000000000000012">API boundary hooks</tspan><tspan x="619.835" dy="16.900000000000002">pre/post api_request</tspan></text>
+  <rect x="777.5649999999998" y="343.37499999999994" width="164.95600000000002" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="860.0429999999999" y="370.2749999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="860.0429999999999" dy="-3.9000000000000012">API boundary hooks</tspan><tspan x="860.0429999999999" dy="16.900000000000002">pre/post api_request</tspan></text>
 </g>
 <g class="node" data-id="C2" data-label="Action-history monitor
 failure-after-repeat
 query entropy" data-shape="rectangle">
-  <rect x="762.759" y="400.5" width="169.402" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="847.46" y="435.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="847.46" dy="-12.350000000000001">Action-history monitor</tspan><tspan x="847.46" dy="16.900000000000002">failure-after-repeat</tspan><tspan x="847.46" dy="16.900000000000002">query entropy</tspan></text>
+  <rect x="581.9399999999998" y="457.4" width="169.402" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="666.6409999999998" y="492.75" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="666.6409999999998" dy="-12.350000000000001">Action-history monitor</tspan><tspan x="666.6409999999998" dy="16.900000000000002">failure-after-repeat</tspan><tspan x="666.6409999999998" dy="16.900000000000002">query entropy</tspan></text>
 </g>
 <g class="node" data-id="C3" data-label="Model I/O tap
 context bytes
 tool schema count
 hashes only" data-shape="rectangle">
-  <rect x="778.567" y="496.10833333333335" width="145.69" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="851.412" y="539.9083333333333" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="851.412" dy="-20.8">Model I/O tap</tspan><tspan x="851.412" dy="16.900000000000002">context bytes</tspan><tspan x="851.412" dy="16.900000000000002">tool schema count</tspan><tspan x="851.412" dy="16.900000000000002">hashes only</tspan></text>
+  <rect x="787.1979999999999" y="457.4" width="145.69" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="860.0429999999999" y="501.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="860.0429999999999" dy="-20.8">Model I/O tap</tspan><tspan x="860.0429999999999" dy="16.900000000000002">context bytes</tspan><tspan x="860.0429999999999" dy="16.900000000000002">tool schema count</tspan><tspan x="860.0429999999999" dy="16.900000000000002">hashes only</tspan></text>
 </g>
 <g class="node" data-id="C4" data-label="Measurement quality gate
 clean / input dirty / behavior loop
 compound / insufficient" data-shape="rectangle">
-  <rect x="988.161" y="450.6666666666667" width="228.682" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1102.502" y="486.0166666666667" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1102.502" dy="-12.350000000000001">Measurement quality gate</tspan><tspan x="1102.502" dy="16.900000000000002">clean / input dirty / behavior loop</tspan><tspan x="1102.502" dy="16.900000000000002">compound / insufficient</tspan></text>
+  <rect x="650.9769999999999" y="588.3249999999999" width="228.682" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="765.3179999999999" y="623.675" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="765.3179999999999" dy="-12.350000000000001">Measurement quality gate</tspan><tspan x="765.3179999999999" dy="16.900000000000002">clean / input dirty / behavior loop</tspan><tspan x="765.3179999999999" dy="16.900000000000002">compound / insufficient</tspan></text>
 </g>
 <g class="node" data-id="C5" data-label="Gate-of-gate bias monitor
 per-candidate skew
 emit-only" data-shape="rectangle">
-  <rect x="1272.8429999999998" y="496.10833333333335" width="184.22199999999998" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1364.9539999999997" y="531.4583333333334" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1364.9539999999997" dy="-12.350000000000001">Gate-of-gate bias monitor</tspan><tspan x="1364.9539999999997" dy="16.900000000000002">per-candidate skew</tspan><tspan x="1364.9539999999997" dy="16.900000000000002">emit-only</tspan></text>
+  <rect x="673.2069999999999" y="706.5749999999999" width="184.22199999999998" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="765.3179999999999" y="741.925" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="765.3179999999999" dy="-12.350000000000001">Gate-of-gate bias monitor</tspan><tspan x="765.3179999999999" dy="16.900000000000002">per-candidate skew</tspan><tspan x="765.3179999999999" dy="16.900000000000002">emit-only</tspan></text>
 </g>
 <g class="node" data-id="L0A" data-label="Schema lock
 record_kind + signal_origin required" data-shape="rectangle">
-  <rect x="44" y="799.9833333333333" width="259.063" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="173.5315" y="826.8833333333333" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="173.5315" dy="-3.9000000000000012">Schema lock</tspan><tspan x="173.5315" dy="16.900000000000002">record_kind + signal_origin required</tspan></text>
+  <rect x="509.4091333333334" y="955.5" width="259.063" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="982.4" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-3.9000000000000012">Schema lock</tspan><tspan x="638.9406333333334" dy="16.900000000000002">record_kind + signal_origin required</tspan></text>
 </g>
 <g class="node" data-id="L0B" data-label="Redaction boundary
 no raw prompt / token / tool args in repo" data-shape="rectangle">
-  <rect x="359.063" y="804.4666666666666" width="266.47299999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="492.29949999999997" y="831.3666666666666" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="492.29949999999997" dy="-3.9000000000000012">Redaction boundary</tspan><tspan x="492.29949999999997" dy="16.900000000000002">no raw prompt / token / tool args in repo</tspan></text>
+  <rect x="505.7041333333334" y="1065.3" width="266.47299999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="1092.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-3.9000000000000012">Redaction boundary</tspan><tspan x="638.9406333333334" dy="16.900000000000002">no raw prompt / token / tool args in repo</tspan></text>
 </g>
 <g class="node" data-id="L0C" data-label="Origin split
 A = evolution input
 B = explicit only
 C = observability" data-shape="rectangle">
-  <rect x="681.536" y="777.3333333333333" width="146.43099999999998" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="754.7515" y="821.1333333333332" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="754.7515" dy="-20.8">Origin split</tspan><tspan x="754.7515" dy="16.900000000000002">A = evolution input</tspan><tspan x="754.7515" dy="16.900000000000002">B = explicit only</tspan><tspan x="754.7515" dy="16.900000000000002">C = observability</tspan></text>
+  <rect x="565.7251333333334" y="1175.1" width="146.43099999999998" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="1218.8999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-20.8">Origin split</tspan><tspan x="638.9406333333334" dy="16.900000000000002">A = evolution input</tspan><tspan x="638.9406333333334" dy="16.900000000000002">B = explicit only</tspan><tspan x="638.9406333333334" dy="16.900000000000002">C = observability</tspan></text>
 </g>
 <g class="node" data-id="L1A" data-label="Window distiller
 compress context entropy" data-shape="rectangle">
-  <rect x="879.9669999999998" y="804.4666666666666" width="194.59599999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="977.2649999999998" y="831.3666666666666" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="977.2649999999998" dy="-3.9000000000000012">Window distiller</tspan><tspan x="977.2649999999998" dy="16.900000000000002">compress context entropy</tspan></text>
+  <rect x="541.6426333333334" y="1390.7" width="194.59599999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="1417.6000000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-3.9000000000000012">Window distiller</tspan><tspan x="638.9406333333334" dy="16.900000000000002">compress context entropy</tspan></text>
 </g>
 <g class="node" data-id="L1B" data-label="Route vocabulary
 memory / skill / case
 policy / damping" data-shape="rectangle">
-  <rect x="1130.5629999999996" y="799.9833333333333" width="157.54600000000002" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1209.3359999999996" y="835.3333333333334" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1209.3359999999996" dy="-12.350000000000001">Route vocabulary</tspan><tspan x="1209.3359999999996" dy="16.900000000000002">memory / skill / case</tspan><tspan x="1209.3359999999996" dy="16.900000000000002">policy / damping</tspan></text>
+  <rect x="560.1676333333334" y="1500.5" width="157.54600000000002" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="1535.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-12.350000000000001">Route vocabulary</tspan><tspan x="638.9406333333334" dy="16.900000000000002">memory / skill / case</tspan><tspan x="638.9406333333334" dy="16.900000000000002">policy / damping</tspan></text>
 </g>
 <g class="node" data-id="L1C" data-label="Candidate gates
 minimal L3
 preflight
 repair ticket" data-shape="rectangle">
-  <rect x="1344.1089999999997" y="777.3333333333333" width="136.05700000000002" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1412.1374999999998" y="821.1333333333332" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1412.1374999999998" dy="-20.8">Candidate gates</tspan><tspan x="1412.1374999999998" dy="16.900000000000002">minimal L3</tspan><tspan x="1412.1374999999998" dy="16.900000000000002">preflight</tspan><tspan x="1412.1374999999998" dy="16.900000000000002">repair ticket</tspan></text>
+  <rect x="570.9121333333334" y="1627.2" width="136.05700000000002" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="638.9406333333334" y="1671" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="638.9406333333334" dy="-20.8">Candidate gates</tspan><tspan x="638.9406333333334" dy="16.900000000000002">minimal L3</tspan><tspan x="638.9406333333334" dy="16.900000000000002">preflight</tspan><tspan x="638.9406333333334" dy="16.900000000000002">repair ticket</tspan></text>
 </g>
 <g class="node" data-id="L2A" data-label="Behavior evidence
 is the agent looping?" data-shape="rectangle">
-  <rect x="1552.9139999999998" y="799.9833333333333" width="159.769" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1632.7984999999999" y="826.8833333333333" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1632.7984999999999" dy="-3.9000000000000012">Behavior evidence</tspan><tspan x="1632.7984999999999" dy="16.900000000000002">is the agent looping?</tspan></text>
+  <rect x="566.4279666666667" y="1842.8" width="159.769" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="646.3124666666668" y="1869.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="646.3124666666668" dy="-3.9000000000000012">Behavior evidence</tspan><tspan x="646.3124666666668" dy="16.900000000000002">is the agent looping?</tspan></text>
 </g>
 <g class="node" data-id="L2B" data-label="Input evidence
 is the prompt/case file polluted?" data-shape="rectangle">
-  <rect x="1532.1659999999997" y="717.6999999999999" width="222.01299999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1643.1724999999997" y="744.5999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1643.1724999999997" dy="-3.9000000000000012">Input evidence</tspan><tspan x="1643.1724999999997" dy="16.900000000000002">is the prompt/case file polluted?</tspan></text>
+  <rect x="747.1969666666668" y="1842.8" width="222.01299999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="858.2034666666667" y="1869.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="858.2034666666667" dy="-3.9000000000000012">Input evidence</tspan><tspan x="858.2034666666667" dy="16.900000000000002">is the prompt/case file polluted?</tspan></text>
 </g>
 <g class="node" data-id="L2C" data-label="Gate verdict
 advisory-only in v0.28" data-shape="rectangle">
-  <rect x="1810.1789999999996" y="717.6999999999999" width="171.62499999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="1895.9914999999996" y="744.5999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="1895.9914999999996" dy="-3.9000000000000012">Gate verdict</tspan><tspan x="1895.9914999999996" dy="16.900000000000002">advisory-only in v0.28</tspan></text>
+  <rect x="650.3844666666668" y="1952.6" width="171.62499999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="736.1969666666668" y="1979.5" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="736.1969666666668" dy="-3.9000000000000012">Gate verdict</tspan><tspan x="736.1969666666668" dy="16.900000000000002">advisory-only in v0.28</tspan></text>
 </g>
 <g class="node" data-id="L2D" data-label="Boundary rule
 diagnosis cannot become tournament truth" data-shape="rectangle">
-  <rect x="2037.8039999999996" y="717.6999999999999" width="286.47999999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="2181.0439999999994" y="744.5999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2181.0439999999994" dy="-3.9000000000000012">Boundary rule</tspan><tspan x="2181.0439999999994" dy="16.900000000000002">diagnosis cannot become tournament truth</tspan></text>
+  <rect x="592.9569666666667" y="2062.4" width="286.47999999999996" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="736.1969666666668" y="2089.3" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="736.1969666666668" dy="-3.9000000000000012">Boundary rule</tspan><tspan x="736.1969666666668" dy="16.900000000000002">diagnosis cannot become tournament truth</tspan></text>
 </g>
 <g class="node" data-id="L3A" data-label="Anomaly rule registry
 versioned deterministic rules" data-shape="rectangle">
-  <rect x="2376.2839999999997" y="717.6999999999999" width="212.37999999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="2482.4739999999997" y="744.5999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2482.4739999999997" dy="-3.9000000000000012">Anomaly rule registry</tspan><tspan x="2482.4739999999997" dy="16.900000000000002">versioned deterministic rules</tspan></text>
+  <rect x="630.0069666666667" y="2244.2" width="212.37999999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="736.1969666666666" y="2271.1" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="736.1969666666666" dy="-3.9000000000000012">Anomaly rule registry</tspan><tspan x="736.1969666666666" dy="16.900000000000002">versioned deterministic rules</tspan></text>
 </g>
 <g class="node" data-id="L3B" data-label="Observability stream
 audit / SNR / diagnostics" data-shape="rectangle">
-  <rect x="2670.9694999999997" y="678.8" width="181.25799999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="2761.5984999999996" y="705.6999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2761.5984999999996" dy="-3.9000000000000012">Observability stream</tspan><tspan x="2761.5984999999996" dy="16.900000000000002">audit / SNR / diagnostics</tspan></text>
+  <rect x="529.7862166666667" y="2354" width="181.25799999999995" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="620.4152166666668" y="2380.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="620.4152166666668" dy="-3.9000000000000012">Observability stream</tspan><tspan x="620.4152166666668" dy="16.900000000000002">audit / SNR / diagnostics</tspan></text>
 </g>
 <g class="node" data-id="L3C" data-label="Work-order stream
 only registered boundary issues" data-shape="rectangle">
-  <rect x="2644.6639999999998" y="756.5999999999999" width="233.869" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="2761.5984999999996" y="783.4999999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="2761.5984999999996" dy="-3.9000000000000012">Work-order stream</tspan><tspan x="2761.5984999999996" dy="16.900000000000002">only registered boundary issues</tspan></text>
+  <rect x="735.0442166666667" y="2354" width="233.869" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="851.9787166666666" y="2380.9" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="851.9787166666666" dy="-3.9000000000000012">Work-order stream</tspan><tspan x="851.9787166666666" dy="16.900000000000002">only registered boundary issues</tspan></text>
 </g>
 <g class="node" data-id="L3D" data-label="Variant + quality eval
 strategy fit
 replay value
 boundary safety" data-shape="rectangle">
-  <rect x="2934.5329999999994" y="777.3333333333333" width="162.733" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="3015.8994999999995" y="821.1333333333332" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="3015.8994999999995" dy="-20.8">Variant + quality eval</tspan><tspan x="3015.8994999999995" dy="16.900000000000002">strategy fit</tspan><tspan x="3015.8994999999995" dy="16.900000000000002">replay value</tspan><tspan x="3015.8994999999995" dy="16.900000000000002">boundary safety</tspan></text>
+  <rect x="816.7954666666667" y="2463.7999999999997" width="162.733" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="898.1619666666667" y="2507.6" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="898.1619666666667" dy="-20.8">Variant + quality eval</tspan><tspan x="898.1619666666667" dy="16.900000000000002">strategy fit</tspan><tspan x="898.1619666666667" dy="16.900000000000002">replay value</tspan><tspan x="898.1619666666667" dy="16.900000000000002">boundary safety</tspan></text>
 </g>
 <g class="node" data-id="L4A" data-label="Tournament
 positive lift
 no safety regression" data-shape="rectangle">
-  <rect x="3206.7659999999996" y="920.0250000000001" width="163.474" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="3288.5029999999997" y="955.3750000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="3288.5029999999997" dy="-12.350000000000001">Tournament</tspan><tspan x="3288.5029999999997" dy="16.900000000000002">positive lift</tspan><tspan x="3288.5029999999997" dy="16.900000000000002">no safety regression</tspan></text>
+  <rect x="847.5469666666668" y="2755.7" width="163.474" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="929.2839666666667" y="2791.0499999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="929.2839666666667" dy="-12.350000000000001">Tournament</tspan><tspan x="929.2839666666667" dy="16.900000000000002">positive lift</tspan><tspan x="929.2839666666667" dy="16.900000000000002">no safety regression</tspan></text>
 </g>
 <g class="node" data-id="L4B" data-label="Value proof
 local/synthetic discrimination
 not official Hermes self-evolution accuracy" data-shape="rectangle">
-  <rect x="3426.24" y="920.0250000000001" width="287.22099999999995" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="3569.8504999999996" y="955.3750000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="3569.8504999999996" dy="-12.350000000000001">Value proof</tspan><tspan x="3569.8504999999996" dy="16.900000000000002">local/synthetic discrimination</tspan><tspan x="3569.8504999999996" dy="16.900000000000002">not official Hermes self-evolution accuracy</tspan></text>
+  <rect x="785.6734666666667" y="2882.3999999999996" width="287.22099999999995" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="929.2839666666667" y="2917.7499999999995" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="929.2839666666667" dy="-12.350000000000001">Value proof</tspan><tspan x="929.2839666666667" dy="16.900000000000002">local/synthetic discrimination</tspan><tspan x="929.2839666666667" dy="16.900000000000002">not official Hermes self-evolution accuracy</tspan></text>
 </g>
 <g class="node" data-id="L4C" data-label="Human boundary
 approve / hold / reject" data-shape="rectangle">
-  <rect x="3769.4609999999993" y="928.4750000000001" width="167.92" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="3853.4209999999994" y="955.3750000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="3853.4209999999994" dy="-3.9000000000000012">Human boundary</tspan><tspan x="3853.4209999999994" dy="16.900000000000002">approve / hold / reject</tspan></text>
+  <rect x="845.3239666666667" y="3009.1" width="167.92" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="929.2839666666667" y="3036" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="929.2839666666667" dy="-3.9000000000000012">Human boundary</tspan><tspan x="929.2839666666667" dy="16.900000000000002">approve / hold / reject</tspan></text>
 </g>
 <g class="node" data-id="L4D" data-label="Allowed outputs
 draft skill
 repair ticket
 work order" data-shape="rectangle">
-  <rect x="3993.3809999999994" y="888.4000000000001" width="133.09300000000002" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="4059.9274999999993" y="932.2" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="4059.9274999999993" dy="-20.8">Allowed outputs</tspan><tspan x="4059.9274999999993" dy="16.900000000000002">draft skill</tspan><tspan x="4059.9274999999993" dy="16.900000000000002">repair ticket</tspan><tspan x="4059.9274999999993" dy="16.900000000000002">work order</tspan></text>
+  <rect x="785.4322166666667" y="3118.8999999999996" width="133.09300000000002" height="87.60000000000001" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="851.9787166666667" y="3162.7" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="851.9787166666667" dy="-20.8">Allowed outputs</tspan><tspan x="851.9787166666667" dy="16.900000000000002">draft skill</tspan><tspan x="851.9787166666667" dy="16.900000000000002">repair ticket</tspan><tspan x="851.9787166666667" dy="16.900000000000002">work order</tspan></text>
 </g>
 </svg>
