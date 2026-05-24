@@ -2,9 +2,11 @@
 
 # Misa Cybernetic Evolution
 
-### A control plane built on a single refusal — **agents do not get to grade themselves.**
+### A control-theoretic sidecar for long-lived AI agents.
 
-*Qian Xuesen's* Engineering Cybernetics *(1954), applied.*
+**Core refusal:** agents do not get to grade themselves.
+
+*Engineering Cybernetics for agents, inspired by Qian Xuesen (1954).*
 
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-0.28.0-green.svg)](./docs/history/changelog.md)
@@ -22,7 +24,15 @@ Current package version: `0.28.0`.
 
 ## Control-Theoretic Agent Evolution
 
-Misa Cybernetic Evolution is a measurement-first control layer for AI agents. It applies Qian Xuesen's *Engineering Cybernetics* (1954) to long-lived agent runtimes: observe the running agent through redacted sensors, distill evidence into controllable signals, validate the measurement before judging the candidate, and keep durable authority in a separate control layer.
+Misa Cybernetic Evolution lets long-lived agent systems learn from real work
+without letting them quietly rewrite their own memory, skills, routes,
+evaluation metrics, or live behavior.
+
+The Qianxuesen layer, named after Qian Xuesen's *Engineering Cybernetics*
+(1954), is the deterministic control layer for distillation, routing, replay,
+and boundary checks. It observes the running agent through redacted sensors,
+distills evidence into controllable signals, validates measurement before
+candidate judgment, and keeps durable authority in a separate control layer.
 
 The central thesis is simple: **the agent is the controlled object, not the judge of its own evolution.** An agent may produce behavior, traces, and candidate changes. It does not own the memory writer, route table, evaluation metric, or promotion decision.
 
@@ -30,7 +40,7 @@ The system is built around a hard separation of roles:
 
 | Layer | Role | Boundary |
 | --- | --- | --- |
-| Qianxuesen window distillation | turns redacted work windows into source-backed candidate evidence | can seed candidates |
+| Control-layer window distillation | turns redacted work windows into source-backed candidate evidence | can seed candidates |
 | Hermes runtime observability | watches action loops, API boundaries, and redacted model I/O quality | cannot promote |
 | Measurement quality gate | cross-checks candidate evidence against runtime and input-quality evidence | evaluates the measurement, not the candidate |
 | L2/L3 control path | validates replay, routes pressure, and feeds repair signals back into the loop | no self-rewrite, no winner override |
@@ -46,7 +56,12 @@ no held-out replay    -> no promotion
 no human boundary     -> no live authority
 ```
 
-v0.28 makes the loop sharper. Lane A provides Qianxuesen-style window distillation. Lane B provides Hermes runtime and model-I/O observability. The `measurement_quality_gate` cross-checks both before a result can be treated as meaningful. `L3` feedback can tighten future source selection, gate repair, and variant generation, but it cannot rewrite memory, override a tournament winner, or turn dirty telemetry into an autonomous replay.
+v0.28 makes the loop sharper. Lane A provides control-layer window
+distillation. Lane B provides Hermes runtime and model-I/O observability. The
+`measurement_quality_gate` cross-checks both before a result can be treated as
+meaningful. `L3` feedback can tighten future source selection, gate repair, and
+variant generation, but it cannot rewrite memory, override a tournament winner,
+or turn dirty telemetry into an autonomous replay.
 
 
 ---
@@ -56,7 +71,7 @@ v0.28 makes the loop sharper. Lane A provides Qianxuesen-style window distillati
 [Open the full-size architecture diagram](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
 The public architecture diagram intentionally shows only the two data-backed
-lanes: Qianxuesen window distillation and Hermes runtime/model-I/O
+lanes: control-layer window distillation and Hermes runtime/model-I/O
 observability. The Lane A distillation template makes the evidence packet
 explicit: source ledger, observation, claim, supporting evidence,
 counter-evidence, uncertainty, route hint, and replay requirement. The middle
@@ -72,7 +87,7 @@ memory, changing skills, switching routes, or taking live authority.
 
 It provides:
 
-- a deterministic Qianxuesen-style routing layer for memory, skill, case,
+- a deterministic cybernetic routing layer for memory, skill, case,
   policy, and damping signals;
 - an observe-only Hermes runtime adapter and plugin surface;
 - replay-gated work orders, seeded variants, and local quality comparison;
@@ -203,7 +218,7 @@ A structured summary, written for both human skimming and automated repository s
 
 - **Type**: control-theoretic sidecar for AI agents (not an agent framework).
 - **Theoretical anchor**: Qian Xuesen, *Engineering Cybernetics* (1954).
-- **Related contemporary work**: arXiv:2605.10754 *Agent Cybernetics* (2026) — single-agent control-theoretic principles P1–P6 and desiderata D1–D3; this project is the **multi-agent governance** complement.
+- **Related direction**: Agent Cybernetics and control-theoretic agent governance; this project is the **multi-agent governance** complement.
 - **Maturity**: measurement boundary validated; redaction, stream separation, and gate wiring are machine-checked.
 - **Test coverage**: 195 unit tests + 85 experiment tests + redaction canary CI.
 - **License**: Apache-2.0.
@@ -360,55 +375,18 @@ Two rules matter most:
 
 | Capability | Command | Boundary |
 | --- | --- | --- |
-| One-command local sidecar | `node scripts/setup-local.mjs` or `npm run deploy:local` | installs dependencies when needed, runs doctor/bootstrap/value-proof locally only |
-| One-command full shadow | `node scripts/setup-full-shadow.mjs` or `npm run deploy:full-shadow` | local sidecar plus window distillation, Hermes plugin, event-log replay, session review, work-order inbox, and value proof; no production authority |
-| One-command VPS shadow update | `npm run update:vps-shadow` | fast-forward repo update, `npm ci`, full-shadow self-check, and VPS hook refresh; refuses tracked local changes |
-| Public repo doctor | `npm run doctor` | clone-time readiness check; read-only |
-| Local bootstrap | `npm run bootstrap:local` | initializes ignored local vector store and local report only |
-| Learning-loop simulation | `npm run simulate:misa` | local fixtures only |
-| Local session distillation | `npm run distill:misa` | no Zilliz, no embedding provider, no external API |
-| Shadow perception digest | `npm run perception:digest -- --json` | sensor/prioritizer only; optional `--ledger-file` emits action recommendations and no-write ledger update proposals |
-| Perception log layout | `npm run perception:layout` | local directory contract only; `--init` creates separated dry-run folders under the chosen root |
-| Curiosity signal gate | `npm run curiosity:signals -- --json` | deterministic value gate for LLM/GEPA variant generation; no provider call |
-| Hermes/Zilliz mapping | `npm run hermes:map-distillation -- --json` | translates refs, does not copy or write Zilliz |
-| Hermes runtime adapter | `npm run hermes:adapt-runtime -- --json` | observe-only Hermes hook adapter; turns skill/memory/research traces into digests, replay candidates, model-I/O taps, and measurement-quality verdicts |
-| Hermes work orders | `npm run hermes:work-order -- --json --dry-run` | turns qualified Hermes boundary pressure into Qianxuesen work orders, variants, selected winners, and quality comparisons |
-| Hermes plugin install | `npm run hermes:plugin:install` | copies the observe-only plugin sample into a local Hermes plugin folder |
-| Hermes plugin doctor | `npm run hermes:plugin:doctor` | checks plugin files and replays local NDJSON events when present |
-| Context-density review | `npm run density:misa` | rejects high-authority runtime imports |
-| Adaptive candidate gate | `npm run adaptive:misa` | local candidate widening only |
-| Signal intake contract | `npm run intake:misa` | cadence contract, no scheduler startup |
-| Daily signal rollup | `npm run rollup:misa` | local queue and report only |
-| Candidate preflight | `npm run evolution:evaluate:misa` | report queue only |
-| Evolution tournament | `npm run evolution:tournament:misa` | local draft winner only |
-| Post-deploy measurement | `npm run post-deploy:measure` | local setpoint backtest; recommends rollback/damping but cannot execute it |
-| Stability monitor | `npm run stability:monitor` | local divergence gate; safe mode freezes promotion routes in output only |
-| Outer-loop review | `npm run outer-loop:review` | weekly slow-loop review; suggestions only, no route or metric mutation |
-| Loser pressure quant | `npm run loser:pressure -- --target-samples=1000` | local loser-memory pressure report; model can generate samples only |
-| Loser pressure matrix | `npm run loser:matrix -- --target-samples=1000` | multi-scenario parameter sweep for accumulated loser evidence |
-| Memory-layer comparison | `npm run memory-layer:misa` | compares broad vs minimal L3 |
-| Local skill export | `npm run export-skills:misa` | writes draft files, does not install Skills |
-| Repair tickets | `npm run repair-ticket:misa -- --dry-run` | local work queue only |
-| Session distiller review | `npm run session-distiller:review -- --json --summary-file <file>` | review distiller/Zilliz artifacts and open work-order candidates only |
-| Work-order inbox | `npm run work-order:inbox -- --review-file <file>` | split review repair work orders into agent-claimable inbox files; no execution |
-| Work-order routing | `npm run work-order:route -- --dry-run` | default risk-graded self-review, still no durable/public execution |
-| Work-order variants | `npm run work-order:variants -- --json --dry-run` | seeded local candidate work orders; LLM critique is value-gated and zero-call by default |
-| Work-order quality eval | `npm run work-order:evaluate -- --json --dry-run` | baseline-vs-winner quality score for final Qianxuesen work-order packets |
-| Candidate context | `npm run candidate:context -- --json` | locks the context, prompt refs, metric refs, and generator scope for factor-compliant candidate generation |
-| Candidate reducer | `npm run candidate:reduce -- --json --seed stable-review` | deterministic draft candidate fingerprints from locked context; no execution or provider calls |
-| Human escalation | `npm run human:escalation -- --json` | unified human-review packets for high-risk work-order decisions |
-| Runtime thread | `npm run runtime:thread -- --json` | local launch/pause/resume event log and deterministic next step; no tool execution or live effects |
-| Component health diagnostics | `npm run health:components -- --json` | deterministic local health reducers, positive feedback, and replayable diagnostic candidates for the human owner only |
-| Skill evolution supervisor | `npm run skill:evolution` | behavior adapter plus skill contract review; can propose replay-required candidates, cannot mutate skills |
-| Vector memory classification | `npm run vector-memory:classify -- --json` | Zilliz/local-vector storage plan only, no writes |
-| Local vector store | `npm run vector-store:local -- --mode upsert` | default persistent local JSONL/token-vector backend under ignored `runs/local-vector-store/`; adapters must accept the public distillation template |
-| Vector retrieval ranker | `npm run vector-memory:rank -- --eval-fixtures` | kind filter and same-source rerank dry-run, no embeddings or writes |
-| Zilliz adapter dry-run | `npm run zilliz:adapt -- --json` | collection and upsert payload only, no embeddings or writes |
-| LangGraph bridge contract | `npm run langgraph:bridge -- --json` | carrier contract only |
-| OmniAgent footprint bridge | `npm run omniagent:footprint` | footprint as evidence only |
-| Current-line smoke | `npm run smoke:current-line` | one dry-run guard for session review, work orders, variants, quality eval, tournament, stability, outer-loop, skill evolution, curiosity signals, Hermes runtime adapter/work-order/plugin, runtime thread, component health, local vector store, ranker, and Zilliz adapter |
-| Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, work-order, retrieval, tournament, and judge value |
-| Qianxuesen full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the full local shadow loop, with artifact pointers |
+| Local sidecar bootstrap | `node scripts/setup-local.mjs` or `npm run deploy:local` | doctor, local bootstrap, and Hermes value proof; local artifacts only |
+| Full Hermes shadow path | `node scripts/setup-full-shadow.mjs` or `npm run deploy:full-shadow` | observe-only plugin, event-log replay, window distillation, session review, work-order inbox, and value proof |
+| Hermes value proof | `npm run hermes:value-proof` | deterministic local proof over the work-order corpus, Hermes adapter samples, and bad-evidence controls |
+| Current-line smoke | `npm run smoke:current-line` | one dry-run guard across session review, work orders, tournament, runtime adapter, runtime thread, health, vector store, ranker, and Zilliz adapter |
+| Current-line calibration | `npm run calibrate:current-line` | redacted sample calibration for signal layers, route, retrieval, tournament, and judge value |
+| Full-loop health | `npm run health:qianxuesen` | small latest/history manifest for the local shadow loop, with artifact pointers |
+| Evolution tournament | `npm run evolution:tournament:misa` | local draft winner only; no route, winner, or live authority change |
+| Precheck gate | `npm run precheck` | static, schema, bridge, smoke, and current-line contract checks |
+
+The full command surface lives in `package.json`; the public gate order and
+reviewer-facing command chain live in
+[docs/current/verification-matrix.md](./docs/current/verification-matrix.md).
 
 ## Experiments
 
