@@ -109,11 +109,11 @@ must not:
 
 ## Current Line
 
-The current package line is `0.25.0`.
+The current package line is `0.28.0`.
 
 Versioned v0.x references later in this file are history and feature-origin
 anchors. They do not create separate current lines; the current command surface
-is the v0.25 shadow chain described here.
+is the v0.28 local/shadow chain described here.
 
 For public users, the clone-time path is:
 
@@ -342,12 +342,13 @@ Misa memory, replace Zilliz, publish Farcaster, publish Skills, touch runtime
 services, or start timers.
 
 For Misa, the launch shape is still structure reference plus local precheck.
-The newer v0.19-v0.25 line adds vector-memory lineage, kind-aware retrieval
+The newer v0.19-v0.28 package line adds vector-memory lineage, kind-aware retrieval
 ranking, Zilliz adapter dry-run payloads, read-only session-distiller
 cybernetic review, the observe-only Hermes runtime plugin/adapter, and seeded
 work-order variants plus work-order quality evaluation with a local issue/PR
-dev/test holdout. Those features are confidence-chain inputs, not production
-authority.
+dev/test holdout. v0.27 adds candidate-generation discipline, while v0.28 adds
+the replayable runtime thread and measurement-quality gate. Those features are
+confidence-chain inputs, not live authority.
 
 ### 8. Work Order Handoff Plane
 

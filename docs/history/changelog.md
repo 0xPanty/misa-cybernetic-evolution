@@ -70,8 +70,8 @@ legacy `20-cybernetic-review.conf` drop-in when the current
 `cybernetic-review.conf` hook is installed, so the same review hook does not run
 twice after one service execution.
 
-v0.28.0 adds an experimental Hermes model I/O tap and emit-only measurement
-quality gate. The Hermes plugin now observes `pre_api_request` and
+v0.28.0 adds the Hermes model I/O tap and emit-only measurement quality gate.
+The Hermes plugin now observes `pre_api_request` and
 `post_api_request` as redacted model-I/O digests, storing only counts and hashes.
 The adapter cross-checks those digests with the action-history monitor to emit
 measurement verdicts such as `clean_measurement`, `suspect_input_contamination`,
@@ -81,9 +81,9 @@ prospective candidate-type skew before any future Phase 2-B replay authority.
 All three records are schema-locked to `observability_stream`, cannot enter
 `work_order_stream` or `evolution_candidates`, cannot trigger tournament or
 replay, and cannot be read by the agent. Redaction canary tests are now in the
-main `npm test` path; real diagnostic effectiveness still requires live
-`model_io_tap` calibration across at least 50 sessions before manual review or
-auto replay can be considered.
+main `npm test` path. Live `model_io_tap` sessions are calibration input for
+future trigger bands and review policy; they do not create a shortcut from
+diagnostic telemetry to replay, tournament, or live authority.
 
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
@@ -167,9 +167,9 @@ starts, or production/VPS authority.
 
 ## Version History
 
-Rows before v0.25 are historical anchors for retained behavior. They should not
-be read as competing current tracks; the current line is the v0.25 convergence
-chain above.
+Rows before v0.28 are historical anchors for retained behavior. They should not
+be read as competing current tracks; the current package line is v0.28.0 and the
+current command surface is the local/shadow gate described above.
 
 | Version | Added | Boundary |
 | --- | --- | --- |

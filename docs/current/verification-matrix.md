@@ -31,8 +31,8 @@ npm test
 ```
 
 This proves L0 repository consistency, L1 read-only replay, and L2 shadow-mode
-no-live-effect behavior over the committed fixture set. It does not prove canary
-safety or production readiness.
+no-live-effect behavior over the committed fixture set. It does not grant L3
+canary status or L4 live authority.
 
 `deploy:local` is the one-command local sidecar path. It runs the public doctor,
 initializes the ignored local vector store through `bootstrap:local`, and runs
@@ -121,8 +121,8 @@ Historical simulator pieces are documented in:
 - [source-synthesis.md](./source-synthesis.md)
 
 These files explain retained historical invariants. They are not alternate
-current release tracks; the current local shadow gate above is the v0.25 entry
-point.
+current release tracks; the current local shadow gate above is the v0.28 package
+entry point.
 
 It checks that Misa-style events can route to memory, skill, case, policy, and
 damping without live effects, and that each fixture's declared route expectation
@@ -150,13 +150,14 @@ The current-line additions are documented in:
 - [vector-retrieval-ranker-v0.20.md](./vector-retrieval-ranker-v0.20.md)
 - [current-line-calibration-v0.21.md](./current-line-calibration-v0.21.md)
 
-The older version names remain useful for audit history, but v0.25 owns the
-active smoke, calibration, precheck, and CI command surface.
+The older version names remain useful for audit history, but the active package
+line is v0.28.0. The smoke, calibration, precheck, and CI command surface above
+is the current public gate.
 
 ## Gate Boundaries
 
-Offline success is not production success. Each gate must state what it proves
-and what it does not prove.
+Local success is not live authority. Each gate must state what it proves and
+where authority stops.
 
 Examples:
 

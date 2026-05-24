@@ -413,7 +413,7 @@ Two rules matter most:
 ## Experiments
 
 External trajectory analysis and L1-L4 selection audit commands now live under
-`experiments/`. They are experiment lines, not v0.25 current-line requirements.
+`experiments/`. They are experiment lines, not current package requirements.
 Default CI and `npm test` do not run them; run `npm run test:experiments` only
 when you intentionally want to replay those lines.
 
@@ -868,8 +868,9 @@ and only widen authority when the user explicitly asks for it.
 Current-state docs:
 
 Versioned document names such as v0.18 and v0.20 are historical anchors for
-features that still feed the v0.25 line. They are not separate current release
-tracks; use the command map and validation chain above for the current surface.
+features that still feed the v0.28 package line. They are not separate current
+release tracks; use the command map and validation chain above for the current
+surface.
 
 - [Architecture](./ARCHITECTURE.md)
 - [Control contract](./CONTROL_CONTRACT.md)
