@@ -51,7 +51,7 @@ v0.28 makes the loop sharper. Lane A provides Qianxuesen-style window distillati
 
 ---
 
-![Misa Cybernetic Evolution Layer v0.28 control loop](docs/assets/misa-cybernetic-evolution-v0.28.svg)
+![Misa 控制论进化层 v0.28 控制闭环](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 
 [Open the full-size architecture diagram](docs/assets/misa-cybernetic-evolution-v0.28.svg)
 

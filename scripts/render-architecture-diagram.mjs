@@ -53,7 +53,7 @@ function t(x, y, value, opt = {}) {
     italic = false,
     letter = 0,
   } = opt;
-  return `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${fill}" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="${size}" font-weight="${weight}"${italic ? ' font-style="italic"' : ""}${letter ? ` letter-spacing="${letter}"` : ""}>${esc(value)}</text>`;
+  return `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="${fill}" font-family="Inter, Segoe UI, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Arial, sans-serif" font-size="${size}" font-weight="${weight}"${italic ? ' font-style="italic"' : ""}${letter ? ` letter-spacing="${letter}"` : ""}>${esc(value)}</text>`;
 }
 
 function lines(x, y, values, opt = {}) {
@@ -118,8 +118,8 @@ function curve(d, opt = {}) {
 const out = [];
 
 out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="title desc">
-<title id="title">Misa Cybernetic Evolution Layer v0.28 architecture</title>
-<desc id="desc">Two evidence lanes feed a measurement quality gate, L0-L4 cybernetic control, L3 feedback, and human bounded decision outputs.</desc>
+<title id="title">Misa 控制论进化层 v0.28 架构</title>
+<desc id="desc">两条证据线进入测量质量闸门、L0-L4 控制链、L3 反哺和人类边界决策输出。</desc>
 <defs>
   <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
     <path d="M1,1 L9,5 L1,9 Z" fill="${color.line}"/>
@@ -145,7 +145,7 @@ for (let x = 0; x <= W; x += 50) out.push(`<line x1="${x}" y1="0" x2="${x}" y2="
 for (let y = 0; y <= H; y += 50) out.push(`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${color.grid}" stroke-width="1"/>`);
 out.push(`</g>`);
 
-out.push(box(510, 58, 480, 70, "Misa Cybernetic Evolution Layer v0.28", ["measurement-first control loop for Hermes-style agents"], {
+out.push(box(510, 58, 480, 70, "Misa 控制论进化层 v0.28", ["Hermes Agent 的测量优先控制闭环"], {
   fill: color.panel,
   stroke: color.blue,
   titleSize: 17,
@@ -153,34 +153,34 @@ out.push(box(510, 58, 480, 70, "Misa Cybernetic Evolution Layer v0.28", ["measur
 }));
 
 // Signal intake.
-out.push(section(70, 170, 980, 420, "SIGNAL INTAKE - two real evidence lanes", { stroke: color.line }));
-out.push(section(110, 230, 360, 310, "Lane A - Qianxuesen window distillation", { stroke: color.blue, label: color.blue }));
-out.push(box(145, 275, 290, 58, "Redacted session windows", ["local refs only"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
-out.push(box(170, 370, 240, 72, "Source ledger", ["retrieval trace", "Hermes refs"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 12 }));
-out.push(box(145, 480, 290, 58, "Distill + map", ["segments -> signals"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
+out.push(section(70, 170, 980, 420, "信号输入 - 两条真实证据线", { stroke: color.line }));
+out.push(section(110, 230, 360, 310, "A线 - 钱学森窗口蒸馏", { stroke: color.blue, label: color.blue }));
+out.push(box(145, 275, 290, 58, "脱敏会话窗口", ["仅本地引用"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
+out.push(box(170, 370, 240, 72, "来源账本", ["检索链路", "Hermes 引用"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 12 }));
+out.push(box(145, 480, 290, 58, "蒸馏 + 映射", ["片段 -> 信号"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
 out.push(arrow(290, 333, 290, 370, { stroke: color.blue, end: "arrowBlue" }));
 out.push(arrow(290, 442, 290, 480, { stroke: color.blue, end: "arrowBlue" }));
 
-out.push(section(520, 230, 490, 310, "Lane B - Hermes runtime logs and model I/O", { stroke: color.purple, label: color.purple }));
-out.push(box(550, 275, 190, 58, "Runtime logs", ["pre/post tool_call"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
-out.push(box(790, 275, 190, 58, "API boundary hooks", ["pre/post api_request"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
-out.push(box(550, 405, 190, 72, "Action monitor", ["failure-after-repeat", "query entropy"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 12 }));
-out.push(box(790, 405, 190, 72, "Model I/O tap", ["context bytes", "hashes only"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 12 }));
+out.push(section(520, 230, 490, 310, "B线 - Hermes 运行日志与模型 I/O", { stroke: color.purple, label: color.purple }));
+out.push(box(550, 275, 190, 58, "运行日志", ["pre/post tool_call"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
+out.push(box(790, 275, 190, 58, "API 边界钩子", ["pre/post api_request"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
+out.push(box(550, 405, 190, 72, "动作监控", ["失败后重复", "查询熵"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 12 }));
+out.push(box(790, 405, 190, 72, "模型 I/O tap", ["上下文字节", "只存哈希"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 12 }));
 out.push(arrow(645, 333, 645, 405, { stroke: color.purple }));
 out.push(arrow(885, 333, 885, 405, { stroke: color.purple }));
 
 // Side blocked panel.
-out.push(section(1110, 170, 310, 620, "BLOCKED BY DEFAULT", { stroke: color.red, label: color.red, fill: "rgba(42,11,11,0.78)" }));
+out.push(section(1110, 170, 310, 620, "默认阻断", { stroke: color.red, label: color.red, fill: "rgba(42,11,11,0.78)" }));
 const blocked = [
-  "memory writes",
-  "skill install / publish",
-  "provider route changes",
-  "runtime blocking",
-  "public posts",
-  "VPS autonomous update",
-  "agent self-review",
-  "auto replay from dirty telemetry",
-  "LLM-owned route / winner",
+  "写入 memory",
+  "安装 / 发布 skill",
+  "切换 provider 路由",
+  "阻断 runtime",
+  "公开发布",
+  "VPS 自主更新",
+  "Agent 自我裁判",
+  "脏 telemetry 触发 replay",
+  "LLM 决定路由 / 胜者",
 ];
 let by = 235;
 for (const item of blocked) {
@@ -190,49 +190,49 @@ for (const item of blocked) {
 }
 
 // Main vertical control chain.
-out.push(section(330, 650, 500, 250, "L0 SENSOR CONTRACT - do not trust unnamed signals", { stroke: color.gray, label: color.gray }));
-out.push(box(385, 705, 390, 58, "Schema lock", ["record_kind + signal_origin required"], { stroke: color.gray, fill: color.gray2, titleSize: 15, subSize: 13 }));
-out.push(box(385, 790, 390, 58, "Redaction boundary", ["no raw prompt / token / tool args in repo"], { stroke: color.gray, fill: color.gray2, titleSize: 15, subSize: 13 }));
+out.push(section(330, 650, 500, 250, "L0 传感器契约 - 不信任无名信号", { stroke: color.gray, label: color.gray }));
+out.push(box(385, 705, 390, 58, "Schema 锁", ["必须有 record_kind + signal_origin"], { stroke: color.gray, fill: color.gray2, titleSize: 15, subSize: 13 }));
+out.push(box(385, 790, 390, 58, "脱敏边界", ["repo 不保存 raw prompt / token / tool args"], { stroke: color.gray, fill: color.gray2, titleSize: 15, subSize: 13 }));
 out.push(arrow(580, 763, 580, 790));
 
-out.push(section(330, 960, 500, 290, "L1 EVIDENCE DISTILLATION - windows into controllable signals", { stroke: color.blue, label: color.blue }));
-out.push(box(385, 1018, 390, 58, "Window distiller", ["compress context entropy"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
-out.push(box(385, 1102, 390, 58, "Route vocabulary", ["memory / skill / case / policy / damping"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
-out.push(box(385, 1186, 390, 58, "Candidate gates", ["minimal L3 / preflight / repair ticket"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
+out.push(section(330, 960, 500, 290, "L1 证据蒸馏 - 把窗口变成可控信号", { stroke: color.blue, label: color.blue }));
+out.push(box(385, 1018, 390, 58, "窗口蒸馏器", ["压缩上下文熵"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
+out.push(box(385, 1102, 390, 58, "路由词表", ["memory / skill / case / policy / damping"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
+out.push(box(385, 1186, 390, 58, "候选门", ["minimal L3 / preflight / repair ticket"], { stroke: color.blue, fill: color.blue2, titleSize: 15, subSize: 13 }));
 out.push(arrow(580, 1076, 580, 1102, { stroke: color.blue, end: "arrowBlue" }));
 out.push(arrow(580, 1160, 580, 1186, { stroke: color.blue, end: "arrowBlue" }));
 
 out.push(`<ellipse cx="580" cy="1378" rx="310" ry="78" fill="url(#gateGlow)"/>`);
-out.push(box(280, 1300, 600, 156, "MEASUREMENT CROSS-CHECK", [
-  "candidate evidence + action monitor + model I/O verdict",
-  "checks measurement quality, not candidate quality",
-  "dirty / missing evidence -> observability only",
+out.push(box(280, 1300, 600, 156, "测量交叉验证", [
+  "候选证据 + 动作监控 + 模型 I/O verdict",
+  "先判断测量质量，不先评候选优劣",
+  "脏 / 缺证据 -> 只进 observability",
 ], { stroke: color.red, fill: color.red2, titleSize: 20, subSize: 14, sw: 2.2 }));
 out.push(box(395, 1486, 370, 58, "measurement_quality_gate", ["clean / input / behavior / compound / insufficient"], { stroke: color.red, fill: color.red2, titleSize: 15, subSize: 12 }));
-out.push(box(395, 1570, 370, 58, "gate-of-gate bias monitor", ["per-candidate skew / emit-only"], { stroke: color.red, fill: color.red2, titleSize: 15, subSize: 13, dash: true }));
+out.push(box(395, 1570, 370, 58, "gate-of-gate 偏置监控", ["按候选统计偏斜 / 仅输出"], { stroke: color.red, fill: color.red2, titleSize: 15, subSize: 13, dash: true }));
 
-out.push(section(170, 1685, 820, 150, "L2 VALIDATION - fail closed before judging the candidate", { stroke: color.purple, label: color.purple }));
-out.push(box(205, 1735, 210, 58, "Clean?", ["or insufficient"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
-out.push(box(475, 1735, 210, 58, "Held-out replay", ["deterministic"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
-out.push(box(745, 1735, 210, 58, "Tournament gate", ["strategy_fit + value"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
+out.push(section(170, 1685, 820, 150, "L2 验证 - 先失败闭合，再评候选", { stroke: color.purple, label: color.purple }));
+out.push(box(205, 1735, 210, 58, "干净？", ["或证据不足"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
+out.push(box(475, 1735, 210, 58, "留出回放", ["确定性"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
+out.push(box(745, 1735, 210, 58, "Tournament 门", ["strategy_fit + value"], { stroke: color.purple, fill: color.purple2, titleSize: 15, subSize: 13 }));
 out.push(arrow(415, 1764, 475, 1764, { stroke: color.purple }));
 out.push(arrow(685, 1764, 745, 1764, { stroke: color.purple }));
 
-out.push(section(170, 1890, 820, 150, "L3 ROUTE FEEDBACK - safe pressure, no self-rewrite", { stroke: color.amber, label: color.amber }));
-out.push(box(205, 1940, 210, 58, "Route decision", ["memory / skill / case"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
-out.push(box(475, 1940, 210, 58, "Work-order pressure", ["repair / variants"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
-out.push(box(745, 1940, 210, 58, "Outer loop", ["setpoints / damping"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
+out.push(section(170, 1890, 820, 150, "L3 路由反哺 - 安全压力，不自我改写", { stroke: color.amber, label: color.amber }));
+out.push(box(205, 1940, 210, 58, "路由决策", ["memory / skill / case"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
+out.push(box(475, 1940, 210, 58, "工单压力", ["repair / variants"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
+out.push(box(745, 1940, 210, 58, "外环调节", ["setpoints / damping"], { stroke: color.amber, fill: color.amber2, titleSize: 15, subSize: 13 }));
 out.push(arrow(415, 1969, 475, 1969, { stroke: color.amber, end: "arrowAmber" }));
 out.push(arrow(685, 1969, 745, 1969, { stroke: color.amber, end: "arrowAmber" }));
 
-out.push(section(1110, 850, 310, 265, "L4 HUMAN DECISION", { stroke: color.orange, label: color.orange, fill: "rgba(43,22,8,0.72)" }));
-out.push(box(1140, 905, 250, 54, "Draft / repair ticket", ["local artifact only"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
-out.push(box(1140, 986, 250, 54, "Human boundary", ["approve / hold / reject"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
-out.push(box(1140, 1067, 250, 54, "Post-deploy measure", ["positive / negative / null"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
+out.push(section(1110, 850, 310, 265, "L4 人类决策", { stroke: color.orange, label: color.orange, fill: "rgba(43,22,8,0.72)" }));
+out.push(box(1140, 905, 250, 54, "草案 / 修复工单", ["仅本地 artifact"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
+out.push(box(1140, 986, 250, 54, "人类边界", ["批准 / 暂停 / 拒绝"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
+out.push(box(1140, 1067, 250, 54, "上线后测量", ["正 / 负 / 空"], { stroke: color.orange, fill: color.orange2, titleSize: 14, subSize: 12 }));
 out.push(arrow(1265, 959, 1265, 986, { stroke: color.orange }));
 out.push(arrow(1265, 1040, 1265, 1067, { stroke: color.orange }));
 
-out.push(section(1110, 1180, 310, 150, "OUTPUT STREAMS", { stroke: color.green, label: color.green, fill: "rgba(8,39,29,0.74)" }));
+out.push(section(1110, 1180, 310, 150, "输出流", { stroke: color.green, label: color.green, fill: "rgba(8,39,29,0.74)" }));
 out.push(box(1135, 1226, 260, 36, "observability_stream", [], { stroke: color.green, fill: color.green2, titleSize: 13 }));
 out.push(box(1135, 1274, 260, 36, "work_order_stream", [], { stroke: color.green, fill: color.green2, titleSize: 13 }));
 out.push(box(1135, 1322, 260, 36, "evolution_candidates", [], { stroke: color.green, fill: color.green2, titleSize: 13 }));
@@ -254,11 +254,11 @@ out.push(curve("M 290 538 C 250 770, 250 1190, 280 1378", { stroke: color.blue, 
 out.push(curve("M 765 477 C 930 780, 930 1180, 880 1378", { stroke: color.purple, dash: true }));
 out.push(curve("M 580 1544 C 900 1544, 1015 1378, 1110 640", { stroke: color.red, dash: true, end: "arrowRed" }));
 
-out.push(t(875, 1510, "verdict only; cannot trigger replay", { size: 13, fill: color.red, anchor: "start", italic: true }));
-out.push(t(1020, 1882, "L3 feedback tightens routes and repair prompts", { size: 13, fill: color.amber, anchor: "start", italic: true }));
+out.push(t(875, 1510, "只输出 verdict，不能触发 replay", { size: 13, fill: color.red, anchor: "start", italic: true }));
+out.push(t(1020, 1882, "L3 反哺收紧路由和修复提示", { size: 13, fill: color.amber, anchor: "start", italic: true }));
 
 out.push(rect(60, 2125, 1380, 34, { fill: color.panel2, stroke: color.blue, rx: 6, opacity: 0.8 }));
-out.push(t(750, 2148, "no measurement -> no evolution claim    ·    no clean measurement -> no candidate judgment    ·    no human boundary -> no live authority", {
+out.push(t(750, 2148, "无测量 -> 无进化声明    ·    测量不干净 -> 不评候选    ·    无人类边界 -> 无 live authority", {
   size: 14,
   fill: color.muted,
   italic: true,
