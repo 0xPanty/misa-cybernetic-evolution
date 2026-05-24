@@ -10,8 +10,8 @@
 [![Version](https://img.shields.io/badge/version-0.28.0-green.svg)](./docs/history/changelog.md)
 [![Tests](https://img.shields.io/badge/tests-195_pass_/_0_fail-success.svg)](#validation-snapshot)
 [![Experiments](https://img.shields.io/badge/experiments-85_pass_/_0_fail-success.svg)](#validation-snapshot)
-[![Phase](https://img.shields.io/badge/phase-2--A_emit_only-yellow.svg)](#current-state)
-[![Authority](https://img.shields.io/badge/authority-observe_only-informational.svg)](#current-boundary)
+[![Mode](https://img.shields.io/badge/mode-measurement_first-yellow.svg)](#current-state)
+[![Boundary](https://img.shields.io/badge/boundary-human_authorized-informational.svg)](#current-boundary)
 [![Theory](https://img.shields.io/badge/anchor-Qian_Xuesen_1954-purple.svg)](#related-work)
 
 </div>
@@ -22,9 +22,9 @@ Current package version: `0.28.0`.
 
 ## Control-Theoretic Agent Evolution
 
-Misa Cybernetic Evolution is a measurement-first control layer for AI agents. It applies Qian Xuesen's *Engineering Cybernetics* (1954) to Hermes-style runtimes: observe the running agent through redacted sensors, distill evidence into controllable signals, validate the measurement before judging the candidate, and keep durable authority outside the agent.
+Misa Cybernetic Evolution is a measurement-first control layer for AI agents. It applies Qian Xuesen's *Engineering Cybernetics* (1954) to long-lived agent runtimes: observe the running agent through redacted sensors, distill evidence into controllable signals, validate the measurement before judging the candidate, and keep durable authority in a separate control layer.
 
-The central thesis is simple: **the agent is the controlled object, not the judge of its own evolution.** An agent may produce behavior, traces, and candidate changes. It cannot rewrite its own memory, modify its own routing, grade its own outputs, or promote itself into production.
+The central thesis is simple: **the agent is the controlled object, not the judge of its own evolution.** An agent may produce behavior, traces, and candidate changes. It does not own the memory writer, route table, evaluation metric, or promotion decision.
 
 The system is built around a hard separation of roles:
 
@@ -66,9 +66,9 @@ variant generation, but cannot directly change tournament winners.
 
 ## Current State
 
-This repository is a local dry-run and shadow-ready learning plane. It is useful
+This repository is a local-first and shadow-ready learning plane. It is useful
 when you want an agent system to learn from real work without quietly rewriting
-memory, changing skills, switching routes, or touching production.
+memory, changing skills, switching routes, or taking live authority.
 
 It provides:
 
@@ -81,10 +81,10 @@ It provides:
 - measurement-quality diagnostics for action loops and polluted model input;
 - schema, tests, and value-proof commands that keep the boundary falsifiable.
 
-The public guarantee is deliberately scoped: v0.28.0 proves the measurement
-boundary, redaction path, stream separation, and deterministic gate wiring.
-Live-session data is used for threshold calibration, not for granting the
-agent new authority.
+The public guarantee is crisp: v0.28.0 validates the measurement boundary,
+redaction path, stream separation, and deterministic gate wiring. Additional
+live-session data improves threshold calibration without giving the agent a new
+authority path.
 
 ## What Is Already Proven
 
@@ -98,10 +98,10 @@ The current release has strong evidence for the safety and boundary side:
 | Missing input evidence is not treated as clean | old VPS tap replay returns `insufficient_evidence`, not `clean_measurement` |
 | Work-order quality is measurable locally | `hermes:value-proof` and work-order quality tests compare deterministic candidates against held-out evidence |
 
-The next validation layer is calibration, not authority. Real `model_io_tap`
-sessions can tune thresholds, trigger-rate bands, and review policy later; they
-do not create a shortcut from dirty telemetry to replay, tournament, or
-production action.
+The calibration layer is deliberately downstream of the boundary layer. More
+`model_io_tap` sessions can tune thresholds, trigger-rate bands, and review
+policy; they do not create a shortcut from dirty telemetry to replay,
+tournament, or live action.
 
 ## v0.28.0 Headline
 
@@ -176,13 +176,13 @@ Latest v0.28.0 local acceptance run:
 | Historical VPS tap replay | 2382 events replayed; work orders stayed 2; SNR stayed 0.039; old logs correctly returned `insufficient_evidence` |
 | Redaction canary | prompt, fake token, tool args, code-like content, and assistant output did not persist to NDJSON |
 
-The important reading is not "the gate is already calibrated." It is:
+The important reading is:
 
 ```text
 the boundary is strong,
 the measurements are explicit,
 the failure-to-prove case fails closed,
-and future authority has to be earned with real data.
+and higher authority remains staged behind measured evidence.
 ```
 
 ## Architectural Invariants
@@ -194,7 +194,7 @@ These are not promises; they are **machine-checkable** in schema, code, and test
 3. **Redaction happens at the tap point.** Raw prompt bodies, tool arguments, provider keys, and assistant output never enter the adapter pipeline; only digests, hashes, and counts. Five canary strings are CI-blocking.
 4. **Insufficient evidence is a verdict, not a default.** The measurement gate returns `insufficient_evidence` as a first-class state. It never silently degrades to `clean_measurement` when the input record is missing.
 5. **No tool execution from the sidecar.** The runtime thread can say *what should happen next*; it cannot make it happen. No `fetch()`, no provider SDK calls, no system writes from deterministic control paths (enforced by `npm run precheck`).
-6. **Phased autonomy.** Phase 2-A = emit-only. Phase 2-B = manual cross-reference. Phase 2-C = auto replay. Each gate requires real session data, not a config flag.
+6. **Staged authority.** Diagnostics start as observation, then move through review, replay, and higher authority only when the measurement evidence supports it. No config flag turns dirty telemetry into action.
 7. **Gate-of-gate.** A `measurement_gate_bias_monitor` watches the measurement gate itself, so the gate cannot quietly skew against one candidate type.
 
 ## Synopsis
@@ -204,14 +204,14 @@ A structured summary, written for both human skimming and automated repository s
 - **Type**: control-theoretic sidecar for AI agents (not an agent framework).
 - **Theoretical anchor**: Qian Xuesen, *Engineering Cybernetics* (1954).
 - **Related contemporary work**: arXiv:2605.10754 *Agent Cybernetics* (2026) — single-agent control-theoretic principles P1–P6 and desiderata D1–D3; this project is the **multi-agent governance** complement.
-- **Maturity**: Phase 2-A (emit-only diagnostics; boundary, redaction, stream separation, and gate wiring validated).
+- **Maturity**: measurement boundary validated; redaction, stream separation, and gate wiring are machine-checked.
 - **Test coverage**: 195 unit tests + 85 experiment tests + redaction canary CI.
 - **License**: Apache-2.0.
-- **Production authority**: none by design; live effects require an explicit human grant.
+- **Authority model**: human-authorized by design; live effects are separate from measurement.
 - **Differentiator**: separates *candidate quality* from *measurement quality*. Most agent frameworks blur the two.
-- **What it refuses to do**: rewrite memory, install skills, change routes, publish, call providers, or grant itself authority.
-- **What it actively does**: emits redacted diagnostic records that a human can act on, with a deterministic Qianxuesen routing layer (memory / skill / case / policy / damping).
-- **Validation stance**: safety and measurement boundaries are machine-checked first; live-session calibration comes before higher autonomy.
+- **What it refuses to do**: let the measured agent own the memory writer, route table, evaluation metric, or promotion gate.
+- **What it actively does**: turns redacted runtime and window evidence into deterministic routing pressure, repair candidates, and measurement-quality verdicts.
+- **Validation stance**: measurement boundaries are machine-checked first; live-session calibration strengthens the next authority tier.
 
 ## Quickstart
 
@@ -230,9 +230,9 @@ npm run deploy:local
 ```
 
 That local deploy runs the public doctor, bootstraps the ignored local vector
-store, and runs the Hermes value proof. It does not deploy a production service,
-start a background worker, call providers, write Zilliz, write Hermes memory, or
-mutate Hermes skills.
+store, and runs the Hermes value proof. It creates local artifacts only: no
+background worker, provider call, Zilliz write, Hermes memory write, or Hermes
+skill mutation.
 
 Full observe-only shadow path:
 
@@ -250,7 +250,7 @@ That path mirrors the VPS sidecar shape: local sidecar readiness, Hermes
 observe-only plugin install, event-log replay, deterministic window
 distillation, session-distiller review, work-order inbox export, and Hermes
 value proof. It still does not write Hermes memory, mutate Hermes skills,
-deploy production services, call providers, or promote candidates.
+open live service authority, call providers, or promote candidates.
 
 Manual path:
 
@@ -750,9 +750,9 @@ The factor layer only makes candidate generation cleaner and easier to review.
 
 ## Runtime Thread
 
-v0.28 starts the runtime execution-orchestration layer as a local event-log
+v0.28 starts the runtime execution-orchestration layer as a replayable event-log
 contract. It models launch, pause, resume, and next-step selection without
-starting a live runtime.
+coupling orchestration to a resident runtime daemon.
 
 The local runtime thread now has:
 
@@ -850,7 +850,7 @@ Do not add another governance layer by default. The useful current-line work is:
 13. add local issue/PR-shaped dev/test samples so quality changes must pass a
     held-out work-order check, not only the original regression set.
 
-The scarce thing now is not more abstraction. It is calibration evidence and
+The next leverage is not more abstraction. It is richer calibration evidence and
 replayable source lineage.
 
 The new public default for work orders follows that rule too: let the agent
