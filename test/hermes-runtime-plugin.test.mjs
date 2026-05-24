@@ -127,9 +127,14 @@ ctx.hooks["post_tool_call"](
   assert.equal(adapted.summary.event_count, 2);
   assert.equal(adapted.summary.research_digest_count, 2);
   assert.equal(adapted.summary.evolution_candidate_count, 2);
+  assert.equal(adapted.summary.official_evolution_candidate_count, 0);
+  assert.equal(adapted.summary.inferred_evolution_pressure_count, 2);
+  assert.equal(adapted.summary.work_order_stream_count, 0);
+  assert.equal(adapted.summary.observability_stream_count, 2);
   assert.equal(candidateTypes.has("skill_variant"), true);
   assert.equal(candidateTypes.has("research_followup"), true);
-  assert.equal(adapted.evolution_candidates.every((candidate) => candidate.status === "replay_required"), true);
+  assert.equal(adapted.evolution_candidates.every((candidate) => candidate.status === "observed"), true);
+  assert.equal(adapted.evolution_candidates.every((candidate) => candidate.routing_stream === "observability_stream"), true);
   assert.equal(adapted.safety.writes_persistent_memory, false);
   assert.equal(adapted.safety.writes_skills, false);
   assert.equal(adapted.safety.llm_api_calls, 0);

@@ -104,7 +104,7 @@ function acceptanceForCandidate(candidate) {
     "safety does not regress: no direct memory write, skill install, public post, external API call, or route change"
   ];
   const evolutionEvidence = candidate.evolution_evidence
-    ? ["the frozen baseline snapshot and held-out split stay attached to the replay evidence"]
+    ? ["the frozen baseline snapshot, registered eval dataset, and held-out split stay attached to the replay evidence"]
     : [];
   if (candidate.candidate_type === "skill_variant") {
     return [
@@ -190,6 +190,18 @@ function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId) {
       id: sourceEvent.source_payload_fingerprint.slice(0, 16)
     });
   }
+  if (candidate.dedupe_cluster_key) {
+    refs.push({
+      kind: "dedupe_cluster_key",
+      id: candidate.dedupe_cluster_key
+    });
+  }
+  if (candidate.action_identity_fingerprint) {
+    refs.push({
+      kind: "action_identity_fingerprint",
+      id: candidate.action_identity_fingerprint
+    });
+  }
   return refs;
 }
 
@@ -241,7 +253,9 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
   const riskLevel = riskLevelForSeverity(severity);
   const executor = executorForCandidate(candidate, severity);
   const adoptionPolicy = adoptionPolicyForCandidate(candidate, severity);
-  const title = `Hermes ${candidate.candidate_type.replaceAll("_", " ")} from ${candidate.source_event_ids?.[0] ?? "runtime signal"}`;
+  const title = candidate.signal_origin === "runtime_operation_log"
+    ? `Hermes boundary anomaly from ${candidate.source_event_ids?.[0] ?? "runtime signal"}`
+    : `Hermes ${candidate.candidate_type.replaceAll("_", " ")} from ${candidate.source_event_ids?.[0] ?? "runtime signal"}`;
   const summary = `${candidate.proposed_change} Expected gain: ${candidate.expected_gain}`;
 
   return {
@@ -254,7 +268,10 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
     source: {
       source_type: "hermes_runtime_adapter",
       source_id: candidate.candidate_id,
-      source_kind: candidate.candidate_type
+      source_kind: candidate.candidate_type,
+      signal_origin: candidate.signal_origin,
+      interpretation: candidate.interpretation,
+      routing_stream: candidate.routing_stream
     },
     summary,
     source_refs: sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId),
@@ -270,6 +287,17 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
       evidence: {
         candidate_type: candidate.candidate_type,
         target_surface: candidate.target_surface,
+        signal_origin: candidate.signal_origin,
+        interpretation: candidate.interpretation,
+        confidence: candidate.confidence,
+        confidence_rule_id: candidate.confidence_rule_id,
+        routing_stream: candidate.routing_stream,
+        anomaly_rule_version: candidate.anomaly_rule_version,
+        anomaly_rule_ids: candidate.anomaly_rule_ids ?? [],
+        raw_signal_count: candidate.raw_signal_count ?? 1,
+        dedupe_cluster_key: candidate.dedupe_cluster_key,
+        action_identity_fingerprint: candidate.action_identity_fingerprint,
+        review_outcome: candidate.review_outcome,
         pressure_signals: candidate.pressure_signals ?? [],
         source_event_ids: candidate.source_event_ids ?? [],
         control_decision: sourceEvent?.control_decision,
@@ -302,6 +330,11 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
       experience_capture_mode: "adoption_ledger_candidate",
       default_next_step: adoptionPolicy.recommendation_mode
     },
+    human_feedback: {
+      outcome: "pending",
+      dismissed_reason_code: null,
+      feedback_source: "user_explicit_after_review"
+    },
     escalation: {
       allowed: true,
       recommended_when: severity === "P1"
@@ -312,7 +345,9 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
     },
     model_handoff: modelHandoffForCandidate(candidate, severity),
     hermes_adoption_policy: adoptionPolicy,
-    user_prompt: `Hermes produced a ${candidate.candidate_type} signal. Turn it into a bounded Qianxuesen work order, compare variants, and adopt only if the selected draft beats the baseline without safety regression.`
+    user_prompt: candidate.signal_origin === "runtime_operation_log"
+      ? `Hermes produced a boundary anomaly from runtime logs. Review the cluster, avoid duplicate execution, and only request replay if the anomaly is useful.`
+      : `Hermes produced a ${candidate.candidate_type} signal. Turn it into a bounded Qianxuesen work order, compare variants, and adopt only if the selected draft beats the baseline without safety regression.`
   };
 }
 
@@ -328,7 +363,8 @@ export function buildHermesWorkOrderRouting({
     }
   }
 
-  const workOrders = (adapterReport?.evolution_candidates ?? []).map((candidate) => {
+  const workOrderCandidates = adapterReport?.work_order_stream ?? adapterReport?.evolution_candidates ?? [];
+  const workOrders = workOrderCandidates.map((candidate) => {
     const sourceEvent = normalizedBySourceId.get(candidate.source_event_ids?.[0]);
     return workOrderFromHermesCandidate({
       candidate,
@@ -347,17 +383,26 @@ export function buildHermesWorkOrderRouting({
       runtime: adapterReport?.adapter?.runtime,
       runtime_commit: adapterReport?.adapter?.runtime_commit,
       event_count: adapterReport?.summary?.event_count ?? 0,
-      evolution_candidate_count: adapterReport?.summary?.evolution_candidate_count ?? 0
+      evolution_candidate_count: adapterReport?.summary?.evolution_candidate_count ?? 0,
+      official_evolution_candidate_count: adapterReport?.summary?.official_evolution_candidate_count ?? 0,
+      inferred_evolution_pressure_count: adapterReport?.summary?.inferred_evolution_pressure_count ?? 0,
+      boundary_observation_count: adapterReport?.summary?.boundary_observation_count ?? 0,
+      observability_stream_count: adapterReport?.summary?.observability_stream_count ?? 0,
+      work_order_stream_count: adapterReport?.summary?.work_order_stream_count ?? workOrders.length
     },
     routing_policy: {
-      mode: "hermes_signal_to_work_order",
-      signal_intake: "all_hermes_self_evolution_signals_enter_qianxuesen_pipeline",
+      mode: "anomaly_or_explicit_evidence_to_work_order",
+      signal_intake: "runtime_operation_logs_default_to_observability; anomaly_or_explicit_evidence_enters_work_order",
       default_delivery: "deliver_to_agent_for_review",
       durable_or_public_effect_policy: "gate_only_at_runtime_write_boundary",
       preserve_hermes_evolution_advantage: true
     },
     summary: {
       work_order_count: workOrders.length,
+      source_boundary_observation_count: adapterReport?.summary?.boundary_observation_count ?? 0,
+      source_observability_stream_count: adapterReport?.summary?.observability_stream_count ?? 0,
+      source_work_order_stream_count: adapterReport?.summary?.work_order_stream_count ?? workOrders.length,
+      sidecar_signal_to_noise_ratio: adapterReport?.summary?.sidecar_signal_to_noise_ratio,
       by_category: countBy(workOrders, (order) => order.category),
       by_suggested_executor: countBy(workOrders, (order) => order.suggested_executor.executor_type),
       requires_user_confirmation_count: workOrders.filter((order) => order.execution_policy.requires_user_confirmation).length,
@@ -380,8 +425,8 @@ export function buildHermesWorkOrderRouting({
       external_api_calls: adapterReport?.safety?.external_api_calls ?? 0
     },
     warnings: [
-      "Hermes signals are not discarded at observe-only; they become Qianxuesen work orders.",
-      "The work-order chain can recommend and prepare bounded changes, but persistent runtime writes remain gated.",
+      "Runtime operation logs default to observability and do not automatically consume human inbox attention.",
+      "Only anomaly-triggered boundary observations or explicit evolution evidence become work orders.",
       "Every work order must pass variants and quality comparison before adoption."
     ]
   };
@@ -423,8 +468,14 @@ function buildQualityComparisons({ routing, variants }) {
         metric: evolutionEvidence.metric,
         baseline_snapshot_id: evolutionEvidence.baseline_snapshot_id,
         holdout_split_id: evolutionEvidence.holdout_split_id,
+        eval_dataset_ref: evolutionEvidence.eval_dataset_ref,
         delta: evolutionEvidence.delta,
         metric_gaming_risk: evolutionEvidence.metric_gaming_risk,
+        evidence_quality: evolutionEvidence.evidence_quality,
+        advisory_only: evolutionEvidence.advisory_only,
+        reason_codes: evolutionEvidence.reason_codes,
+        feedback_source: evolutionEvidence.feedback_source,
+        llm_inferred: evolutionEvidence.llm_inferred,
         can_support_optimization: evolutionEvidence.can_support_optimization
       } : null,
       adoption_policy: order.hermes_adoption_policy
@@ -505,7 +556,7 @@ export function buildHermesWorkOrderPipeline({
       adopted_now_count: 0,
       direct_runtime_write_count: 0,
       useful_signal_count: routing.summary.work_order_count,
-      rule: "Hermes signal value is preserved by producing work orders now; adoption is recorded after replay or task execution chooses the winner."
+      rule: "Hermes signal value is preserved by archiving ordinary boundary observations and producing work orders only for anomaly-triggered or explicit-evidence records."
     },
     safety: {
       production_authority: false,
@@ -520,7 +571,7 @@ export function buildHermesWorkOrderPipeline({
     },
     warnings: [
       "This command produces Hermes-sourced Qianxuesen work orders and selected draft winners.",
-      "It intentionally keeps Hermes' self-evolution signal moving instead of leaving it at observe-only.",
+      "It intentionally keeps ordinary runtime logs in observability unless an anomaly rule or explicit evidence justifies a work order.",
       "It does not write Hermes memory, mutate skills, publish, call models, or call external APIs."
     ]
   };

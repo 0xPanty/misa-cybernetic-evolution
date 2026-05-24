@@ -15,6 +15,97 @@ const REQUIRED_HERMES_HOOKS = [
 ];
 
 const ROUTE_VOCAB = ["memory", "skill", "case", "policy", "damping", "ignore"];
+const FEEDBACK_SOURCE_VOCAB = ["user_explicit", "system_event", "trace_inferred"];
+const USER_FEEDBACK_SIGNAL_VOCAB = ["correction", "accepted", "rejected"];
+const EVIDENCE_QUALITY_VOCAB = ["sufficient", "insufficient_evidence", "gaming_suspected"];
+const SIGNAL_ORIGIN_VOCAB = [
+  "runtime_operation_log",
+  "hermes_official_self_evolution",
+  "qianxuesen_replay_synthesis"
+];
+const INTERPRETATION_VOCAB = [
+  "adapter_inferred_evolution_pressure",
+  "official_evolution_candidate",
+  "replay_synthesized_evidence"
+];
+const CONFIDENCE_VOCAB = ["high", "medium", "low"];
+const ANOMALY_RULE_VERSION = "hermes-boundary-anomaly-rules.v1";
+const ANOMALY_RULE_REGISTRY = Object.freeze([
+  {
+    rule_id: "skill_manage_create_burst",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "runtime_operation_log skill_manage create cluster count >= 5",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "persistent_skill_mutation_pressure",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "runtime_operation_log skill_manage write cluster count >= 5",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "write_file_sensitive_path",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "runtime_operation_log skill_manage write_file event references sensitive path terms",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "repeated_failure_then_skill_create",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "skill create follows a failure-marked runtime event in the same capture",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "post_tool_call_failure_after_skill_manage",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "post_tool_call skill_manage event has failure or damping pressure",
+    deterministic_reducer: true
+  },
+  {
+    rule_id: "memory_write_boundary_pressure",
+    version: ANOMALY_RULE_VERSION,
+    registered_at: "2026-05-24T00:00:00Z",
+    rule_definition: "runtime_operation_log memory write touches durable memory boundary",
+    deterministic_reducer: true
+  }
+]);
+const SIGNAL_TO_NOISE_METRIC_ID = "sidecar_signal_to_noise_ratio";
+const SIGNAL_TO_NOISE_TARGET_BAND = { min: 0.05, max: 0.2 };
+const OBSERVABILITY_RETENTION_POLICY = Object.freeze({
+  raw_events_window: "30d",
+  aggregated_stats_window: "1y",
+  compaction_on_overflow: true,
+  enforcement_mode: "declared_only_no_deletion"
+});
+
+const QIANXUESEN_FROZEN_BASELINES = new Set([
+  "baseline-farcaster-reply-2026-05-14",
+  "baseline-public-boundary-2026-05-14",
+  "baseline-recovery-smoke-2026-05-14"
+]);
+
+const QIANXUESEN_FROZEN_HOLDOUT_SPLITS = new Set([
+  "holdout-farcaster-public-reply-v1",
+  "holdout-public-private-boundary-v1",
+  "holdout-recovery-anchor-v1"
+]);
+
+const QIANXUESEN_REGISTERED_EVAL_DATASETS = new Set([
+  "dataset-farcaster-public-reply-v1",
+  "dataset-public-private-boundary-v1",
+  "dataset-recovery-anchor-v1"
+]);
+
+const HUMAN_REVIEW_DECISIONS = new Set([
+  "approve-for-human-review",
+  "approve_for_human_review",
+  "policy_candidate_pending_human_review"
+]);
 
 const SKILL_WRITE_ACTIONS = new Set([
   "create",
@@ -108,6 +199,14 @@ function round3(value) {
   return Math.round(value * 1000) / 1000;
 }
 
+function countBy(items, selector) {
+  return items.reduce((counts, item) => {
+    const key = selector(item);
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
 function numberOrNull(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
@@ -122,6 +221,134 @@ function stringOrNull(value) {
 function riskOrUnknown(value) {
   const risk = String(value ?? "unknown").trim().toLowerCase();
   return ["low", "medium", "high"].includes(risk) ? risk : "unknown";
+}
+
+function enumOrDefault(value, allowed, fallback) {
+  const text = stringOrNull(value);
+  return text && allowed.includes(text) ? text : fallback;
+}
+
+function registeredOrMissing(id, registry, missingReason, untrustedReason, reasons) {
+  if (!id) {
+    reasons.push(missingReason);
+    return false;
+  }
+  if (!registry.has(id)) {
+    reasons.push(untrustedReason);
+    return false;
+  }
+  return true;
+}
+
+function explicitSignalOriginFor(event) {
+  const raw = event.evolution_evidence ?? event.context?.evolution_evidence;
+  return enumOrDefault(
+    raw?.signal_origin ?? event.context?.signal_origin,
+    SIGNAL_ORIGIN_VOCAB,
+    null
+  );
+}
+
+function hasEvolutionEvidencePayload(event) {
+  const raw = event.evolution_evidence ?? event.context?.evolution_evidence;
+  return Boolean(raw && typeof raw === "object" && !Array.isArray(raw));
+}
+
+function signalOriginFor(event) {
+  const explicit = explicitSignalOriginFor(event);
+  if (explicit) return explicit;
+  return "runtime_operation_log";
+}
+
+function interpretationForOrigin(origin) {
+  return {
+    runtime_operation_log: "adapter_inferred_evolution_pressure",
+    hermes_official_self_evolution: "official_evolution_candidate",
+    qianxuesen_replay_synthesis: "replay_synthesized_evidence"
+  }[origin] ?? "adapter_inferred_evolution_pressure";
+}
+
+function confidenceRuleFor(event, origin) {
+  if (origin !== "runtime_operation_log") {
+    return {
+      confidence: "high",
+      confidence_rule_id: "non_runtime_evidence_is_explicit"
+    };
+  }
+
+  const hook = String(event.hook ?? "");
+  const toolName = toolNameFor(event);
+  const action = String(actionFor(event) ?? "");
+  if (hook === "post_tool_call" && toolName === "skill_manage" && ["create", "write_file"].includes(action)) {
+    return {
+      confidence: "high",
+      confidence_rule_id: `post_tool_call_skill_manage_${action}`
+    };
+  }
+  if (hook === "post_tool_call" && toolName === "memory" && MEMORY_WRITE_ACTIONS.has(action)) {
+    return {
+      confidence: "high",
+      confidence_rule_id: "post_tool_call_memory_write"
+    };
+  }
+  if (hook === "pre_tool_call" && toolName === "skill_manage") {
+    return {
+      confidence: "medium",
+      confidence_rule_id: "pre_tool_call_skill_manage"
+    };
+  }
+  if (toolName && EXTERNAL_INFORMATION_TOOLS.has(toolName)) {
+    return {
+      confidence: "low",
+      confidence_rule_id: "external_information_lookup"
+    };
+  }
+  if (event.context?.curator_action) {
+    return {
+      confidence: "medium",
+      confidence_rule_id: "curator_lifecycle_signal"
+    };
+  }
+  if (toolName === "memory" && MEMORY_WRITE_ACTIONS.has(action)) {
+    return {
+      confidence: "medium",
+      confidence_rule_id: "pre_tool_call_memory_write"
+    };
+  }
+  return {
+    confidence: "low",
+    confidence_rule_id: "runtime_log_default_low"
+  };
+}
+
+function hermesArtifactHash(value, label) {
+  const text = stringOrNull(value);
+  return text ? stableHash({ label, text }) : null;
+}
+
+function sourceWindowFor(events, sampleCount) {
+  const timestamps = events
+    .map((event) => event.timestamp)
+    .map((value) => value ? new Date(value) : null)
+    .filter((date) => date && !Number.isNaN(date.getTime()))
+    .map((date) => date.toISOString())
+    .sort((left, right) => left.localeCompare(right));
+  if (timestamps.length > 0) {
+    return {
+      kind: "time",
+      value: `${timestamps[0]}/${timestamps[timestamps.length - 1]}`
+    };
+  }
+  return {
+    kind: "count",
+    value: `${sampleCount}_events`
+  };
+}
+
+function evidenceQualityFor({ positiveDirection, registered, metricGamingRisk, llmInferred }) {
+  if (metricGamingRisk === "high") return "gaming_suspected";
+  if (!positiveDirection || !registered || llmInferred) return "insufficient_evidence";
+  return "sufficient";
 }
 
 function normalizeEvolutionEvidence(event, sourceEventId) {
@@ -142,19 +369,87 @@ function normalizeEvolutionEvidence(event, sourceEventId) {
   const metricGamingRisk = riskOrUnknown(raw.metric_gaming_risk ?? raw.gaming_risk);
   const baselineSnapshotId = stringOrNull(raw.baseline_snapshot_id ?? raw.baseline?.snapshot_id);
   const holdoutSplitId = stringOrNull(raw.holdout_split_id ?? raw.holdout?.split_id);
+  const evalDatasetRef = stringOrNull(raw.eval_dataset_ref ?? raw.eval_dataset?.dataset_hash ?? raw.eval_dataset?.ref);
+  const traceRef = stringOrNull(raw.trace_ref ?? event.trace_ref ?? event.session_id);
+  const redactedTraceDigestRef = stringOrNull(
+    raw.redacted_trace_digest_ref
+      ?? raw.trace_digest_ref
+      ?? event.context?.redacted_trace_digest_ref
+      ?? event.context?.trace_digest_ref
+  );
+  const userFeedbackSignal = enumOrDefault(raw.user_feedback_signal ?? raw.feedback_signal, USER_FEEDBACK_SIGNAL_VOCAB, null);
+  const feedbackSource = enumOrDefault(raw.feedback_source, FEEDBACK_SOURCE_VOCAB, "system_event");
+  const llmInferred = raw.llm_inferred === true;
+  const hasExplicitSignalOrigin = Boolean(explicitSignalOriginFor(event));
   const positiveDirection = delta !== null && delta > 0;
-  const holdoutBacked = Boolean(baselineSnapshotId && holdoutSplitId && sampleCount > 0);
+  const reasonCodes = [];
+  const baselineRegistered = registeredOrMissing(
+    baselineSnapshotId,
+    QIANXUESEN_FROZEN_BASELINES,
+    "missing_baseline_snapshot",
+    "untrusted_baseline",
+    reasonCodes
+  );
+  const holdoutRegistered = registeredOrMissing(
+    holdoutSplitId,
+    QIANXUESEN_FROZEN_HOLDOUT_SPLITS,
+    "missing_holdout",
+    "untrusted_holdout",
+    reasonCodes
+  );
+  const evalDatasetRegistered = registeredOrMissing(
+    evalDatasetRef,
+    QIANXUESEN_REGISTERED_EVAL_DATASETS,
+    "missing_eval_dataset_ref",
+    "unregistered_eval_dataset",
+    reasonCodes
+  );
+  if (sampleCount <= 0) reasonCodes.push("missing_sample_count");
+  if (!positiveDirection) reasonCodes.push("non_positive_delta");
+  if (metricGamingRisk === "high") reasonCodes.push("metric_gaming_risk_high");
+  if (llmInferred) reasonCodes.push("llm_inferred_feedback_blocked");
+  if (!hasExplicitSignalOrigin) reasonCodes.push("evolution_evidence_without_explicit_signal_origin");
+
+  const registered = baselineRegistered && holdoutRegistered && evalDatasetRegistered && sampleCount > 0 && hasExplicitSignalOrigin;
+  const holdoutBacked = Boolean(holdoutRegistered && sampleCount > 0);
+  const evidenceQuality = evidenceQualityFor({
+    positiveDirection,
+    registered,
+    metricGamingRisk,
+    llmInferred
+  });
+  const advisoryOnly = evidenceQuality !== "sufficient";
 
   return {
     evidence_id: stringOrNull(raw.evidence_id) ?? `hermes-evolution-evidence-${stableSlug(sourceEventId)}`,
     metric: stringOrNull(raw.metric ?? raw.metric_id) ?? "unspecified",
     baseline_snapshot_id: baselineSnapshotId,
     holdout_split_id: holdoutSplitId,
+    eval_dataset_ref: evalDatasetRef,
+    baseline_registered: baselineRegistered,
+    holdout_registered: holdoutRegistered,
+    eval_dataset_registered: evalDatasetRegistered,
     before_score: beforeScore,
     after_score: afterScore,
     delta,
     sample_count: sampleCount,
     metric_gaming_risk: metricGamingRisk,
+    evidence_quality: evidenceQuality,
+    advisory_only: advisoryOnly,
+    reason_codes: uniqueStrings(reasonCodes),
+    user_feedback_signal: userFeedbackSignal,
+    feedback_source: feedbackSource,
+    llm_inferred: llmInferred,
+    feedback_usable_for_decision: !llmInferred,
+    trace_ref: traceRef,
+    redacted_trace_digest_ref: redactedTraceDigestRef,
+    trace_detail_source: redactedTraceDigestRef ? "hermes_redacted_reducer_digest" : "trace_identity_only",
+    redaction_status: "at_tap_point",
+    raw_private_content_exported: false,
+    hermes_artifact_hash_before: stringOrNull(raw.hermes_artifact_hash_before ?? raw.artifact_hash_before ?? raw.before?.artifact_hash)
+      ?? hermesArtifactHash(event.args?.old_string, "hermes_artifact_before"),
+    hermes_artifact_hash_after: stringOrNull(raw.hermes_artifact_hash_after ?? raw.artifact_hash_after ?? raw.after?.artifact_hash)
+      ?? hermesArtifactHash(event.args?.new_string, "hermes_artifact_after"),
     failure_refs: uniqueStrings([
       ...(raw.failure_refs ?? []),
       ...(raw.before?.failure_refs ?? [])
@@ -165,7 +460,7 @@ function normalizeEvolutionEvidence(event, sourceEventId) {
     ]),
     positive_direction: positiveDirection,
     holdout_backed: holdoutBacked,
-    can_support_optimization: positiveDirection && holdoutBacked && metricGamingRisk !== "high"
+    can_support_optimization: evidenceQuality === "sufficient"
   };
 }
 
@@ -245,6 +540,23 @@ function actionFor(event) {
     ?? null;
 }
 
+function hookFamilyFor(runtimeHook) {
+  return ["pre_tool_call", "post_tool_call"].includes(runtimeHook)
+    ? "tool_call"
+    : runtimeHook ?? "unknown";
+}
+
+function actionIdentityFingerprintFor(event) {
+  const args = event.args ?? {};
+  return stableHash({
+    tool_name: toolNameFor(event),
+    action: actionFor(event),
+    target_name: args.name ?? args.skill_name ?? args.target ?? event.context?.skill_name ?? null,
+    target_path: args.path ?? args.file_path ?? args.filename ?? null,
+    target_fingerprint: args.fingerprint ?? null
+  });
+}
+
 function eventSignals(event) {
   const toolName = toolNameFor(event);
   const action = actionFor(event);
@@ -308,6 +620,8 @@ function qianxuesenEventTypeFor(event, signals) {
 
 function routeTargetFor(event, signals) {
   const toolName = toolNameFor(event);
+  const requestedDecision = event.context?.decision ?? event.context?.review_decision ?? event.decision;
+  if (HUMAN_REVIEW_DECISIONS.has(String(requestedDecision))) return "policy";
   if (signals.includes("damping_pressure")) return "damping";
   if (toolName === "skill_manage" || signals.includes("background_skill_review")) return "skill";
   if (toolName === "memory") {
@@ -393,6 +707,11 @@ function normalizeHermesEvent(event, index) {
   const effectBoundary = effectBoundaryFor(event, signals);
   const sourceEventId = event.event_id ?? `hermes-event-${index + 1}`;
   const evolutionEvidence = normalizeEvolutionEvidence(event, sourceEventId);
+  const signalOrigin = signalOriginFor(event);
+  const interpretation = interpretationForOrigin(signalOrigin);
+  const confidence = confidenceRuleFor(event, signalOrigin);
+  const runtimeHook = event.hook ?? "unknown";
+  const actionIdentityFingerprint = actionIdentityFingerprintFor(event);
   const sourcePayloadFingerprint = stableHash({
     hook: event.hook,
     tool_name: event.tool_name,
@@ -404,7 +723,8 @@ function normalizeHermesEvent(event, index) {
   return {
     normalized_event_id: `hermes-${stableSlug(sourceEventId)}-${sourcePayloadFingerprint.slice(0, 8)}`,
     source_event_id: sourceEventId,
-    runtime_hook: event.hook ?? "unknown",
+    runtime_hook: runtimeHook,
+    hook_family: hookFamilyFor(runtimeHook),
     runtime_surface: runtimeSurfaceFor(event),
     tool_name: toolNameFor(event),
     runtime_action: actionFor(event),
@@ -412,11 +732,16 @@ function normalizeHermesEvent(event, index) {
     route_target: routeTarget,
     observed_signals: signals,
     observed_terms: extractKnownTerms(event),
+    signal_origin: signalOrigin,
+    interpretation,
+    confidence: confidence.confidence,
+    confidence_rule_id: confidence.confidence_rule_id,
     evidence_refs: uniqueStrings([
       sourceEventId,
       ...(event.source_refs ?? []),
       ...(event.context?.evidence_refs ?? [])
     ]),
+    action_identity_fingerprint: actionIdentityFingerprint,
     source_payload_fingerprint: sourcePayloadFingerprint,
     ...(evolutionEvidence ? { evolution_evidence: evolutionEvidence } : {}),
     effect_boundary: effectBoundary,
@@ -510,37 +835,235 @@ function shouldCreateCandidate(event) {
     || event.observed_signals.includes("background_skill_review");
 }
 
+function humanReviewFor(event) {
+  const requestedDecision = event.context?.decision ?? event.context?.review_decision ?? event.decision;
+  if (!HUMAN_REVIEW_DECISIONS.has(String(requestedDecision))) return null;
+  return {
+    route_target: "policy",
+    state: "policy_candidate_pending_human_review",
+    consumer: "human_owner"
+  };
+}
+
+function candidateEvidenceGate(event) {
+  if (!event.evolution_evidence) {
+    return {
+      evidence_quality: "insufficient_evidence",
+      advisory_only: true,
+      reason_codes: ["missing_evolution_evidence"]
+    };
+  }
+  if (event.signal_origin === "runtime_operation_log") {
+    return {
+      evidence_quality: "insufficient_evidence",
+      advisory_only: true,
+      reason_codes: uniqueStrings([
+        ...(event.evolution_evidence.reason_codes ?? []),
+        "evolution_evidence_without_explicit_signal_origin"
+      ])
+    };
+  }
+  return {
+    evidence_quality: EVIDENCE_QUALITY_VOCAB.includes(event.evolution_evidence.evidence_quality)
+      ? event.evolution_evidence.evidence_quality
+      : "insufficient_evidence",
+    advisory_only: event.evolution_evidence.advisory_only !== false,
+    reason_codes: event.evolution_evidence.reason_codes ?? []
+  };
+}
+
+function candidateClusterKey(event, candidateType) {
+  return stableSlug([
+    candidateType,
+    event.tool_name ?? "none",
+    event.runtime_action ?? "none",
+    event.hook_family ?? event.runtime_hook ?? "unknown",
+    event.action_identity_fingerprint.slice(0, 12)
+  ].join("|"));
+}
+
+function anomalyRuleIdsFor({ event, clusterCount, captureHasFailure }) {
+  if (event.signal_origin !== "runtime_operation_log") return [];
+
+  const ruleIds = [];
+  if (event.effect_boundary.persistent_memory_write_requested) {
+    ruleIds.push("memory_write_boundary_pressure");
+  }
+  if (event.tool_name === "skill_manage" && event.runtime_action === "create" && clusterCount >= 5) {
+    ruleIds.push("skill_manage_create_burst");
+  }
+  if (event.tool_name === "skill_manage" && ["patch", "write_file"].includes(String(event.runtime_action)) && clusterCount >= 5) {
+    ruleIds.push("persistent_skill_mutation_pressure");
+  }
+  if (
+    event.tool_name === "skill_manage"
+    && event.runtime_action === "write_file"
+    && event.observed_terms.some((term) => /secret|credential|private|production/i.test(term))
+  ) {
+    ruleIds.push("write_file_sensitive_path");
+  }
+  if (event.tool_name === "skill_manage" && event.runtime_action === "create" && captureHasFailure) {
+    ruleIds.push("repeated_failure_then_skill_create");
+  }
+  if (
+    event.runtime_hook === "post_tool_call"
+    && event.tool_name === "skill_manage"
+    && event.observed_signals.includes("tool_failure")
+  ) {
+    ruleIds.push("post_tool_call_failure_after_skill_manage");
+  }
+  return uniqueStrings(ruleIds);
+}
+
+function workOrderOutcomeSkeleton(anomalyRuleIds) {
+  return {
+    outcome: "pending",
+    dismissed_reason_code: null,
+    fire_count: anomalyRuleIds.length,
+    dismissal_rate: null,
+    human_action_rate: null,
+    noisy_rule: false
+  };
+}
+
 function buildEvolutionCandidates(normalizedEvents) {
-  return normalizedEvents
+  const captureHasFailure = normalizedEvents.some((event) => event.observed_signals.includes("tool_failure"));
+  const candidateEvents = normalizedEvents
     .filter(shouldCreateCandidate)
-    .map((event) => ({
-      candidate_id: `hermes-candidate-${stableSlug(event.source_event_id)}-${stableHash({
-        route: event.route_target,
-        type: event.qianxuesen_event_type,
-        decision: event.control_decision.decision
-      }).slice(0, 8)}`,
-      source_event_ids: [event.source_event_id],
-      candidate_type: candidateTypeFor(event),
-      target_surface: event.route_target,
-      pressure_signals: event.observed_signals,
-      evidence_refs: event.evidence_refs,
-      proposed_change: proposedChangeFor(event),
-      expected_gain: expectedGainFor(event),
-      ...(event.evolution_evidence ? { evolution_evidence: event.evolution_evidence } : {}),
-      status: "replay_required",
-      replay_required: true,
-      tournament_required: true,
-      can_promote_now: false,
-      promotion_gate: {
-        required_rules: [
-          "build_or_select_replay_dataset",
-          "run_side_by_side_candidate_eval",
-          "run_tournament_against_current_behavior",
+    .map((event, index) => {
+      const evidenceGate = candidateEvidenceGate(event);
+      const candidateType = candidateTypeFor(event);
+      const dedupeClusterKey = candidateClusterKey(event, candidateType);
+      return {
+        _candidate_index: index,
+        _source_event: event,
+        candidate_id: `hermes-candidate-${stableSlug(event.source_event_id)}-${stableHash({
+          route: event.route_target,
+          type: event.qianxuesen_event_type,
+          decision: event.control_decision.decision
+        }).slice(0, 8)}`,
+        source_event_ids: [event.source_event_id],
+        candidate_type: candidateType,
+        target_surface: event.route_target,
+        signal_origin: event.signal_origin,
+        interpretation: event.interpretation,
+        confidence: event.confidence,
+        confidence_rule_id: event.confidence_rule_id,
+        dedupe_cluster_key: dedupeClusterKey,
+        action_identity_fingerprint: event.action_identity_fingerprint,
+        pressure_signals: event.observed_signals,
+        evidence_refs: event.evidence_refs,
+        proposed_change: proposedChangeFor(event),
+        expected_gain: expectedGainFor(event),
+        ...(event.evolution_evidence ? { evolution_evidence: event.evolution_evidence } : {}),
+        ...(humanReviewFor(event) ? { human_review: humanReviewFor(event) } : {}),
+        evidence_quality: evidenceGate.evidence_quality,
+        advisory_only: evidenceGate.advisory_only,
+        evidence_reason_codes: uniqueStrings(evidenceGate.reason_codes),
+        status: "observed",
+        replay_required: false,
+        tournament_required: false,
+        can_promote_now: false,
+        anomaly_rule_version: ANOMALY_RULE_VERSION,
+        anomaly_rule_ids: [],
+        raw_signal_count: 1,
+        routing_stream: "observability_stream",
+        stream_reason: "runtime observation is archived unless an anomaly rule or explicit evidence triggers a work order",
+        review_outcome: workOrderOutcomeSkeleton([]),
+        promotion_gate: {
+          required_rules: [
+            "preserve_signal_origin",
+            "route_layer_a_to_observability_by_default",
+            "promote_only_through_qianxuesen_gate"
+          ],
+          reason: "Runtime adapter output is boundary observation, not authority."
+        }
+      };
+    });
+
+  const clusterStats = new Map();
+  for (const candidate of candidateEvents) {
+    const current = clusterStats.get(candidate.dedupe_cluster_key) ?? {
+      count: 0,
+      representative_index: candidate._candidate_index,
+      representative_hook: candidate._source_event.runtime_hook,
+      representative_source_event_id: candidate.source_event_ids[0],
+      source_event_ids: []
+    };
+    current.count += 1;
+    current.source_event_ids.push(...candidate.source_event_ids);
+    const candidateHook = candidate._source_event.runtime_hook;
+    const prefersPostToolCall = candidateHook === "post_tool_call" && current.representative_hook !== "post_tool_call";
+    const preservesFirstWithinHook = candidateHook === current.representative_hook && candidate._candidate_index < current.representative_index;
+    if (prefersPostToolCall || preservesFirstWithinHook) {
+      current.representative_index = candidate._candidate_index;
+      current.representative_hook = candidateHook;
+      current.representative_source_event_id = candidate.source_event_ids[0];
+    }
+    clusterStats.set(candidate.dedupe_cluster_key, current);
+  }
+
+  return candidateEvents.map((candidate) => {
+    const event = candidate._source_event;
+    const cluster = clusterStats.get(candidate.dedupe_cluster_key) ?? {
+      count: 1,
+      representative_index: candidate._candidate_index,
+      representative_hook: candidate._source_event.runtime_hook,
+      representative_source_event_id: candidate.source_event_ids[0],
+      source_event_ids: candidate.source_event_ids
+    };
+    const anomalyRuleIds = anomalyRuleIdsFor({
+      event,
+      clusterCount: cluster.count,
+      captureHasFailure
+    });
+    const explicitEvidence = candidate.signal_origin !== "runtime_operation_log";
+    const isClusterRepresentative = candidate._candidate_index === cluster.representative_index;
+    const goesToWorkOrder = explicitEvidence || (anomalyRuleIds.length > 0 && isClusterRepresentative);
+    const requiredRules = goesToWorkOrder
+      ? [
+          "preserve_signal_origin",
+          "dedupe_boundary_observations",
+          "run_only_anomaly_or_explicit_evidence_as_work_order",
           "promote_only_through_qianxuesen_gate"
-        ],
-        reason: "Runtime adapter output is pressure, not authority."
+        ]
+      : [
+          "preserve_signal_origin",
+          "archive_runtime_boundary_observation",
+          "do_not_interrupt_human_inbox_without_anomaly"
+        ];
+    const {
+      _candidate_index,
+      _source_event,
+      ...publicCandidate
+    } = candidate;
+
+    return {
+      ...publicCandidate,
+      source_event_ids: uniqueStrings([
+        cluster.representative_source_event_id,
+        ...(cluster.source_event_ids ?? publicCandidate.source_event_ids)
+      ]),
+      anomaly_rule_ids: anomalyRuleIds,
+      raw_signal_count: cluster.count,
+      routing_stream: goesToWorkOrder ? "work_order_stream" : "observability_stream",
+      stream_reason: goesToWorkOrder
+        ? explicitEvidence
+          ? "explicit evolution evidence or replay synthesis enters the work-order stream"
+          : "cluster representative matched deterministic anomaly rules"
+        : "runtime boundary observation archived for observability only",
+      review_outcome: workOrderOutcomeSkeleton(anomalyRuleIds),
+      status: goesToWorkOrder ? "replay_required" : "observed",
+      replay_required: goesToWorkOrder,
+      tournament_required: goesToWorkOrder && candidate.signal_origin !== "runtime_operation_log",
+      promotion_gate: {
+        required_rules: requiredRules,
+        reason: goesToWorkOrder
+          ? "This record may become a work order, but still has no promotion authority."
+          : "This record is observable boundary pressure, not a work order."
       }
-    }));
+    };
+  });
 }
 
 function buildHookMapping() {
@@ -603,7 +1126,9 @@ function buildPluginContract() {
       format: "ndjson",
       env_var: "QIANXUESEN_HERMES_EVENT_LOG",
       default_path: "~/.hermes/qianxuesen-runtime-events.ndjson",
-      contains_raw_private_content: false
+      contains_raw_private_content: false,
+      redaction_status: "at_tap_point",
+      raw_private_content_exported: false
     },
     no_direct_authority: [
       "does_not_write_hermes_memory",
@@ -656,6 +1181,7 @@ function safetySummary() {
     publication_allowed: false,
     starts_services: false,
     raw_private_content_persisted: false,
+    raw_private_content_exported: false,
     llm_api_calls: 0,
     external_api_calls: 0
   };
@@ -666,6 +1192,9 @@ function buildChecks({
   normalizedEvents,
   researchDigests,
   evolutionCandidates,
+  boundaryObservations,
+  observabilityStream,
+  workOrderStream,
   safety,
   pluginContract,
   controlPlaneWriteDeny
@@ -684,7 +1213,8 @@ function buildChecks({
     blocks_runtime: safety.blocks_runtime,
     publication_allowed: safety.publication_allowed,
     starts_services: safety.starts_services,
-    raw_private_content_persisted: safety.raw_private_content_persisted
+    raw_private_content_persisted: safety.raw_private_content_persisted,
+    raw_private_content_exported: safety.raw_private_content_exported
   }).every((value) => value === false);
 
   return [
@@ -719,13 +1249,79 @@ function buildChecks({
       research_digests: researchDigests.length
     },
     {
-      name: "all adapter candidates require replay and tournament",
+      name: "boundary observations split into observability and work-order streams",
       ok: evolutionCandidates.every((candidate) => (
-        candidate.replay_required === true
-        && candidate.tournament_required === true
+        ["observability_stream", "work_order_stream"].includes(candidate.routing_stream)
         && candidate.can_promote_now === false
+      ))
+        && observabilityStream.every((candidate) => candidate.replay_required === false)
+        && workOrderStream.every((candidate) => candidate.replay_required === true),
+      candidate_count: evolutionCandidates.length,
+      observability_stream_count: observabilityStream.length,
+      work_order_stream_count: workOrderStream.length
+    },
+    {
+      name: "candidate provenance is explicit and closed",
+      ok: evolutionCandidates.every((candidate) => (
+        SIGNAL_ORIGIN_VOCAB.includes(candidate.signal_origin)
+        && INTERPRETATION_VOCAB.includes(candidate.interpretation)
+        && CONFIDENCE_VOCAB.includes(candidate.confidence)
+        && typeof candidate.confidence_rule_id === "string"
+        && candidate.confidence_rule_id.length > 0
       )),
+      signal_origin_counts: countBy(evolutionCandidates, (candidate) => candidate.signal_origin),
+      boundary_observations: boundaryObservations.length
+    },
+    {
+      name: "runtime log pressure reaches inbox only through deterministic anomaly rules",
+      ok: workOrderStream.every((candidate) => (
+        candidate.signal_origin !== "runtime_operation_log"
+        || candidate.anomaly_rule_ids.length > 0
+      ))
+        && evolutionCandidates.every((candidate) => candidate.anomaly_rule_version === ANOMALY_RULE_VERSION),
+      anomaly_rule_version: ANOMALY_RULE_VERSION,
+      runtime_work_order_count: workOrderStream.filter((candidate) => candidate.signal_origin === "runtime_operation_log").length
+    },
+    {
+      name: "evolution evidence tap blocks insufficient or gameable evidence",
+      ok: evolutionCandidates.every((candidate) => (
+        candidate.can_promote_now === false
+        && EVIDENCE_QUALITY_VOCAB.includes(candidate.evidence_quality)
+        && (candidate.evidence_quality !== "sufficient" || candidate.advisory_only === false)
+      )),
+      insufficient_evidence_count: evolutionCandidates.filter((candidate) => candidate.evidence_quality !== "sufficient").length,
       candidate_count: evolutionCandidates.length
+    },
+    {
+      name: "feedback reducer gate blocks LLM-inferred feedback from decisions",
+      ok: evolutionCandidates.every((candidate) => (
+        candidate.evolution_evidence?.llm_inferred !== true
+          || (candidate.evidence_quality !== "sufficient" && candidate.advisory_only === true)
+      )),
+      llm_inferred_feedback_candidates: evolutionCandidates.filter((candidate) => candidate.evolution_evidence?.llm_inferred === true).length
+    },
+    {
+      name: "registered baseline eval and holdout own promotion evidence",
+      ok: evolutionCandidates.every((candidate) => (
+        candidate.evidence_quality !== "sufficient"
+          || (
+            candidate.evolution_evidence?.baseline_registered === true
+            && candidate.evolution_evidence?.holdout_registered === true
+            && candidate.evolution_evidence?.eval_dataset_registered === true
+          )
+      )),
+      sufficient_evidence_count: evolutionCandidates.filter((candidate) => candidate.evidence_quality === "sufficient").length
+    },
+    {
+      name: "trace references stay behind the redacted tap boundary",
+      ok: normalizedEvents.every((event) => (
+        !event.evolution_evidence
+          || (
+            event.evolution_evidence.redaction_status === "at_tap_point"
+            && event.evolution_evidence.raw_private_content_exported === false
+          )
+      )),
+      evolution_evidence_count: normalizedEvents.filter((event) => event.evolution_evidence).length
     },
     {
       name: "adapter stays observe-only and call-free",
@@ -761,6 +1357,45 @@ function violationsForChecks(checks) {
     .map((check) => `failed_${stableSlug(check.name)}`);
 }
 
+function buildSignalToNoiseMetric({ workOrderCount, boundaryObservationCount }) {
+  const value = boundaryObservationCount
+    ? round3(workOrderCount / boundaryObservationCount)
+    : 0;
+  const status = boundaryObservationCount === 0
+    ? "not_applicable"
+    : value >= SIGNAL_TO_NOISE_TARGET_BAND.min && value <= SIGNAL_TO_NOISE_TARGET_BAND.max
+      ? "inside_target_band"
+      : value > SIGNAL_TO_NOISE_TARGET_BAND.max
+        ? "too_noisy"
+        : "possibly_too_quiet";
+  return {
+    metric_id: SIGNAL_TO_NOISE_METRIC_ID,
+    formula: "work_order_stream_count / boundary_observation_count",
+    source_contract: {
+      kind: "deterministic_reducer",
+      llm_api_calls: 0
+    },
+    numerator: workOrderCount,
+    denominator: boundaryObservationCount,
+    value,
+    target_band: SIGNAL_TO_NOISE_TARGET_BAND,
+    status
+  };
+}
+
+function buildMigrationDryRun({ evolutionCandidates, observabilityStream, workOrderStream }) {
+  return {
+    mode: "dry_run_only",
+    source: "legacy_evolution_candidates",
+    original_count: evolutionCandidates.length,
+    work_order_stream_count: workOrderStream.length,
+    observability_stream_count: observabilityStream.length,
+    history_write_performed: false,
+    action: "report_only_no_ledger_mutation",
+    reclassified_marker: "retroactively_reclassified_on_report_only"
+  };
+}
+
 export function buildHermesRuntimeAdapterReport({
   fixture,
   now = new Date("2026-05-15T00:00:00Z")
@@ -772,6 +1407,9 @@ export function buildHermesRuntimeAdapterReport({
   const normalizedEvents = events.map(normalizeHermesEvent);
   const researchDigests = buildResearchDigests(normalizedEvents, events);
   const evolutionCandidates = buildEvolutionCandidates(normalizedEvents);
+  const boundaryObservations = evolutionCandidates.filter((candidate) => candidate.signal_origin === "runtime_operation_log");
+  const observabilityStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "observability_stream");
+  const workOrderStream = evolutionCandidates.filter((candidate) => candidate.routing_stream === "work_order_stream");
   const evolutionEvidence = normalizedEvents
     .map((event) => event.evolution_evidence)
     .filter(Boolean);
@@ -783,11 +1421,32 @@ export function buildHermesRuntimeAdapterReport({
     normalizedEvents,
     researchDigests,
     evolutionCandidates,
+    boundaryObservations,
+    observabilityStream,
+    workOrderStream,
     safety,
     pluginContract,
     controlPlaneWriteDeny
   });
   const violations = violationsForChecks(checks);
+  const signalToNoise = buildSignalToNoiseMetric({
+    workOrderCount: workOrderStream.length,
+    boundaryObservationCount: boundaryObservations.length
+  });
+  const evidenceWithoutExplicitSignalOriginCount = events.filter((event) => (
+    hasEvolutionEvidencePayload(event) && !explicitSignalOriginFor(event)
+  )).length;
+  const warnings = [
+    "This adapter report is local dry-run evidence, not a live Hermes plugin install.",
+    "Hermes pre_tool_call can block at runtime, but this default contract only observes.",
+    "Layer A runtime operation logs are boundary observations; they are not official Hermes self-evolution candidates.",
+    "Only anomaly-triggered boundary observations or explicit evolution evidence enter the work-order stream.",
+    ...(evidenceWithoutExplicitSignalOriginCount > 0
+      ? [
+          `${evidenceWithoutExplicitSignalOriginCount} event(s) supplied evolution_evidence without explicit signal_origin; they defaulted to runtime_operation_log and cannot support promotion.`
+        ]
+      : [])
+  ];
 
   return {
     schema_version: "misa.agent_runtime_adapter.v1",
@@ -808,7 +1467,7 @@ export function buildHermesRuntimeAdapterReport({
       framework_role: "carrier_runtime",
       route_vocab: ROUTE_VOCAB,
       accepts_external_information: true,
-      candidate_pool_policy: "research_digest_or_evolution_candidate_only",
+      candidate_pool_policy: "boundary_observation_or_explicit_evolution_evidence_only",
       direct_write_policy: "forbidden_by_default",
       runtime_specific_code_required: true
     },
@@ -816,6 +1475,20 @@ export function buildHermesRuntimeAdapterReport({
     normalized_events: normalizedEvents,
     research_digests: researchDigests,
     evolution_candidates: evolutionCandidates,
+    boundary_observations: boundaryObservations,
+    observability_stream: observabilityStream,
+    work_order_stream: workOrderStream,
+    anomaly_rules: {
+      registry_id: "hermes-boundary-anomaly-rules",
+      version: ANOMALY_RULE_VERSION,
+      rules: ANOMALY_RULE_REGISTRY
+    },
+    observability_retention: OBSERVABILITY_RETENTION_POLICY,
+    migration_dry_run: buildMigrationDryRun({
+      evolutionCandidates,
+      observabilityStream,
+      workOrderStream
+    }),
     control_plane_write_deny: controlPlaneWriteDeny,
     plugin_contract: pluginContract,
     summary: {
@@ -823,6 +1496,17 @@ export function buildHermesRuntimeAdapterReport({
       normalized_event_count: normalizedEvents.length,
       research_digest_count: researchDigests.length,
       evolution_candidate_count: evolutionCandidates.length,
+      official_evolution_candidate_count: evolutionCandidates.filter((candidate) => (
+        candidate.signal_origin === "hermes_official_self_evolution"
+      )).length,
+      qianxuesen_replay_synthesis_count: evolutionCandidates.filter((candidate) => (
+        candidate.signal_origin === "qianxuesen_replay_synthesis"
+      )).length,
+      inferred_evolution_pressure_count: boundaryObservations.length,
+      boundary_observation_count: boundaryObservations.length,
+      observability_stream_count: observabilityStream.length,
+      work_order_stream_count: workOrderStream.length,
+      sidecar_signal_to_noise_ratio: signalToNoise,
       replay_required_count: evolutionCandidates.filter((candidate) => candidate.replay_required).length,
       tournament_required_count: evolutionCandidates.filter((candidate) => candidate.tournament_required).length,
       skill_manage_event_count: normalizedEvents.filter((event) => event.tool_name === "skill_manage").length,
@@ -831,16 +1515,21 @@ export function buildHermesRuntimeAdapterReport({
       evolution_evidence_count: evolutionEvidence.length,
       holdout_evidence_count: evolutionEvidence.filter((item) => item.holdout_backed).length,
       positive_optimization_evidence_count: evolutionEvidence.filter((item) => item.can_support_optimization).length,
+      insufficient_evidence_summary: {
+        sample_count: evolutionCandidates.length,
+        event_type: "evolution_candidate",
+        source_window: sourceWindowFor(events, evolutionCandidates.length),
+        insufficient_count: evolutionCandidates.filter((candidate) => candidate.evidence_quality !== "sufficient").length,
+        insufficient_ratio: evolutionCandidates.length
+          ? round3(evolutionCandidates.filter((candidate) => candidate.evidence_quality !== "sufficient").length / evolutionCandidates.length)
+          : 0
+      },
       default_mode: "observe_only",
       verifier: violations.length === 0 ? "passed" : "failed"
     },
     safety,
     checks,
-    warnings: [
-      "This adapter report is local dry-run evidence, not a live Hermes plugin install.",
-      "Hermes pre_tool_call can block at runtime, but this default contract only observes.",
-      "Research digests and candidates must enter replay or tournament before promotion."
-    ],
+    warnings,
     violations
   };
 }

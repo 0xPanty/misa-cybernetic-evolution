@@ -47,8 +47,8 @@ test("qianxuesen full-loop health writes latest plus timestamped history", async
   assert.equal(report.component_summaries.hermes_runtime_adapter.evolution_candidates, 4);
   assert.equal(report.component_summaries.hermes_runtime_adapter.writes_skills, false);
   assert.equal(report.component_summaries.hermes_runtime_adapter.blocks_runtime, false);
-  assert.equal(report.component_summaries.hermes_work_order.work_orders, 4);
-  assert.equal(report.component_summaries.hermes_work_order.variants, 20);
+  assert.equal(report.component_summaries.hermes_work_order.work_orders, 1);
+  assert.equal(report.component_summaries.hermes_work_order.variants, 5);
   assert.equal(report.component_summaries.hermes_work_order.positive_lift_rate, 1);
   assert.equal(report.component_summaries.hermes_work_order.safety_regressions, 0);
   assert.equal(report.component_summaries.runtime_thread.thread_status, "paused");

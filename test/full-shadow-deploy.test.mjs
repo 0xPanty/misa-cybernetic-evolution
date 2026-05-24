@@ -24,7 +24,7 @@ test("full shadow deploy wires Hermes logs, distiller review, inbox, and value p
   assert.equal(result.mode, "full-shadow-deploy");
   assert.equal(result.ok, true);
   assert.equal(result.summary.seed_count, 2);
-  assert.equal(result.summary.value_comparisons, 46);
+  assert.equal(result.summary.value_comparisons, 36);
   assert.equal(result.summary.positive_lift_rate, 1);
   assert.ok(result.summary.window_atomic_lessons > 0);
   assert.equal(result.safety.full_shadow_online, true);

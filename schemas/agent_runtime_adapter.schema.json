@@ -15,6 +15,12 @@
     "normalized_events",
     "research_digests",
     "evolution_candidates",
+    "boundary_observations",
+    "observability_stream",
+    "work_order_stream",
+    "anomaly_rules",
+    "observability_retention",
+    "migration_dry_run",
     "control_plane_write_deny",
     "plugin_contract",
     "summary",
@@ -78,7 +84,7 @@
           ]
         },
         "accepts_external_information": { "type": "boolean", "const": true },
-        "candidate_pool_policy": { "type": "string", "const": "research_digest_or_evolution_candidate_only" },
+        "candidate_pool_policy": { "type": "string", "const": "boundary_observation_or_explicit_evolution_evidence_only" },
         "direct_write_policy": { "type": "string", "const": "forbidden_by_default" },
         "runtime_specific_code_required": { "type": "boolean", "const": true }
       }
@@ -100,6 +106,21 @@
       "type": "array",
       "items": { "$ref": "#/$defs/evolution_candidate" }
     },
+    "boundary_observations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evolution_candidate" }
+    },
+    "observability_stream": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evolution_candidate" }
+    },
+    "work_order_stream": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evolution_candidate" }
+    },
+    "anomaly_rules": { "$ref": "#/$defs/anomaly_rule_registry" },
+    "observability_retention": { "$ref": "#/$defs/observability_retention" },
+    "migration_dry_run": { "$ref": "#/$defs/migration_dry_run" },
     "control_plane_write_deny": { "$ref": "#/$defs/control_plane_write_deny" },
     "plugin_contract": { "$ref": "#/$defs/plugin_contract" },
     "summary": {
@@ -110,6 +131,13 @@
         "normalized_event_count",
         "research_digest_count",
         "evolution_candidate_count",
+        "official_evolution_candidate_count",
+        "qianxuesen_replay_synthesis_count",
+        "inferred_evolution_pressure_count",
+        "boundary_observation_count",
+        "observability_stream_count",
+        "work_order_stream_count",
+        "sidecar_signal_to_noise_ratio",
         "replay_required_count",
         "tournament_required_count",
         "skill_manage_event_count",
@@ -118,6 +146,7 @@
         "evolution_evidence_count",
         "holdout_evidence_count",
         "positive_optimization_evidence_count",
+        "insufficient_evidence_summary",
         "default_mode",
         "verifier"
       ],
@@ -126,6 +155,13 @@
         "normalized_event_count": { "type": "integer", "minimum": 0 },
         "research_digest_count": { "type": "integer", "minimum": 0 },
         "evolution_candidate_count": { "type": "integer", "minimum": 0 },
+        "official_evolution_candidate_count": { "type": "integer", "minimum": 0 },
+        "qianxuesen_replay_synthesis_count": { "type": "integer", "minimum": 0 },
+        "inferred_evolution_pressure_count": { "type": "integer", "minimum": 0 },
+        "boundary_observation_count": { "type": "integer", "minimum": 0 },
+        "observability_stream_count": { "type": "integer", "minimum": 0 },
+        "work_order_stream_count": { "type": "integer", "minimum": 0 },
+        "sidecar_signal_to_noise_ratio": { "$ref": "#/$defs/sidecar_signal_to_noise_ratio" },
         "replay_required_count": { "type": "integer", "minimum": 0 },
         "tournament_required_count": { "type": "integer", "minimum": 0 },
         "skill_manage_event_count": { "type": "integer", "minimum": 0 },
@@ -134,6 +170,7 @@
         "evolution_evidence_count": { "type": "integer", "minimum": 0 },
         "holdout_evidence_count": { "type": "integer", "minimum": 0 },
         "positive_optimization_evidence_count": { "type": "integer", "minimum": 0 },
+        "insufficient_evidence_summary": { "$ref": "#/$defs/insufficient_evidence_summary" },
         "default_mode": { "type": "string", "const": "observe_only" },
         "verifier": { "type": "string", "enum": ["passed", "failed"] }
       }
@@ -157,6 +194,169 @@
     "string_array": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "evidence_quality": {
+      "type": "string",
+      "enum": ["sufficient", "insufficient_evidence", "gaming_suspected"]
+    },
+    "signal_origin": {
+      "type": "string",
+      "enum": [
+        "runtime_operation_log",
+        "hermes_official_self_evolution",
+        "qianxuesen_replay_synthesis"
+      ]
+    },
+    "interpretation": {
+      "type": "string",
+      "enum": [
+        "adapter_inferred_evolution_pressure",
+        "official_evolution_candidate",
+        "replay_synthesized_evidence"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "routing_stream": {
+      "type": "string",
+      "enum": ["observability_stream", "work_order_stream"]
+    },
+    "source_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["time", "count"] },
+        "value": { "type": "string" }
+      }
+    },
+    "insufficient_evidence_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_count",
+        "event_type",
+        "source_window",
+        "insufficient_count",
+        "insufficient_ratio"
+      ],
+      "properties": {
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "event_type": { "type": "string", "const": "evolution_candidate" },
+        "source_window": { "$ref": "#/$defs/source_window" },
+        "insufficient_count": { "type": "integer", "minimum": 0 },
+        "insufficient_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "sidecar_signal_to_noise_ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "metric_id",
+        "formula",
+        "source_contract",
+        "numerator",
+        "denominator",
+        "value",
+        "target_band",
+        "status"
+      ],
+      "properties": {
+        "metric_id": { "type": "string", "const": "sidecar_signal_to_noise_ratio" },
+        "formula": { "type": "string" },
+        "source_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "llm_api_calls"],
+          "properties": {
+            "kind": { "type": "string", "const": "deterministic_reducer" },
+            "llm_api_calls": { "type": "integer", "const": 0 }
+          }
+        },
+        "numerator": { "type": "integer", "minimum": 0 },
+        "denominator": { "type": "integer", "minimum": 0 },
+        "value": { "type": "number", "minimum": 0 },
+        "target_band": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "type": "number", "minimum": 0 },
+            "max": { "type": "number", "minimum": 0 }
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["inside_target_band", "too_noisy", "possibly_too_quiet", "not_applicable"]
+        }
+      }
+    },
+    "anomaly_rule_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry_id", "version", "rules"],
+      "properties": {
+        "registry_id": { "type": "string" },
+        "version": { "type": "string" },
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rule_id", "version", "registered_at", "rule_definition", "deterministic_reducer"],
+            "properties": {
+              "rule_id": { "type": "string" },
+              "version": { "type": "string" },
+              "registered_at": { "type": "string", "format": "date-time" },
+              "rule_definition": { "type": "string" },
+              "deterministic_reducer": { "type": "boolean", "const": true }
+            }
+          }
+        }
+      }
+    },
+    "observability_retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_events_window",
+        "aggregated_stats_window",
+        "compaction_on_overflow",
+        "enforcement_mode"
+      ],
+      "properties": {
+        "raw_events_window": { "type": "string" },
+        "aggregated_stats_window": { "type": "string" },
+        "compaction_on_overflow": { "type": "boolean" },
+        "enforcement_mode": { "type": "string", "const": "declared_only_no_deletion" }
+      }
+    },
+    "migration_dry_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "source",
+        "original_count",
+        "work_order_stream_count",
+        "observability_stream_count",
+        "history_write_performed",
+        "action",
+        "reclassified_marker"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "dry_run_only" },
+        "source": { "type": "string", "const": "legacy_evolution_candidates" },
+        "original_count": { "type": "integer", "minimum": 0 },
+        "work_order_stream_count": { "type": "integer", "minimum": 0 },
+        "observability_stream_count": { "type": "integer", "minimum": 0 },
+        "history_write_performed": { "type": "boolean", "const": false },
+        "action": { "type": "string", "const": "report_only_no_ledger_mutation" },
+        "reclassified_marker": { "type": "string", "const": "retroactively_reclassified_on_report_only" }
+      }
     },
     "hook_mapping": {
       "type": "object",
@@ -185,6 +385,7 @@
         "normalized_event_id",
         "source_event_id",
         "runtime_hook",
+        "hook_family",
         "runtime_surface",
         "tool_name",
         "runtime_action",
@@ -192,7 +393,12 @@
         "route_target",
         "observed_signals",
         "observed_terms",
+        "signal_origin",
+        "interpretation",
+        "confidence",
+        "confidence_rule_id",
         "evidence_refs",
+        "action_identity_fingerprint",
         "source_payload_fingerprint",
         "effect_boundary",
         "control_decision"
@@ -201,6 +407,7 @@
         "normalized_event_id": { "type": "string" },
         "source_event_id": { "type": "string" },
         "runtime_hook": { "type": "string" },
+        "hook_family": { "type": "string" },
         "runtime_surface": { "type": "string" },
         "tool_name": { "type": ["string", "null"] },
         "runtime_action": { "type": ["string", "null"] },
@@ -211,7 +418,15 @@
         },
         "observed_signals": { "$ref": "#/$defs/string_array" },
         "observed_terms": { "$ref": "#/$defs/string_array" },
+        "signal_origin": { "$ref": "#/$defs/signal_origin" },
+        "interpretation": { "$ref": "#/$defs/interpretation" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "confidence_rule_id": { "type": "string" },
         "evidence_refs": { "$ref": "#/$defs/string_array" },
+        "action_identity_fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "source_payload_fingerprint": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
@@ -300,10 +515,25 @@
         "source_event_ids",
         "candidate_type",
         "target_surface",
+        "signal_origin",
+        "interpretation",
+        "confidence",
+        "confidence_rule_id",
+        "dedupe_cluster_key",
+        "action_identity_fingerprint",
         "pressure_signals",
         "evidence_refs",
         "proposed_change",
         "expected_gain",
+        "evidence_quality",
+        "advisory_only",
+        "evidence_reason_codes",
+        "anomaly_rule_version",
+        "anomaly_rule_ids",
+        "raw_signal_count",
+        "routing_stream",
+        "stream_reason",
+        "review_outcome",
         "status",
         "replay_required",
         "tournament_required",
@@ -318,14 +548,61 @@
           "type": "string",
           "enum": ["memory", "skill", "case", "policy", "damping", "ignore"]
         },
+        "signal_origin": { "$ref": "#/$defs/signal_origin" },
+        "interpretation": { "$ref": "#/$defs/interpretation" },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "confidence_rule_id": { "type": "string" },
+        "dedupe_cluster_key": { "type": "string" },
+        "action_identity_fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "pressure_signals": { "$ref": "#/$defs/string_array" },
         "evidence_refs": { "$ref": "#/$defs/string_array" },
         "proposed_change": { "type": "string" },
         "expected_gain": { "type": "string" },
         "evolution_evidence": { "$ref": "#/$defs/evolution_evidence" },
-        "status": { "type": "string", "const": "replay_required" },
-        "replay_required": { "type": "boolean", "const": true },
-        "tournament_required": { "type": "boolean", "const": true },
+        "human_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route_target", "state", "consumer"],
+          "properties": {
+            "route_target": { "type": "string", "const": "policy" },
+            "state": { "type": "string", "const": "policy_candidate_pending_human_review" },
+            "consumer": { "type": "string", "const": "human_owner" }
+          }
+        },
+        "evidence_quality": { "$ref": "#/$defs/evidence_quality" },
+        "advisory_only": { "type": "boolean" },
+        "evidence_reason_codes": { "$ref": "#/$defs/string_array" },
+        "anomaly_rule_version": { "type": "string" },
+        "anomaly_rule_ids": { "$ref": "#/$defs/string_array" },
+        "raw_signal_count": { "type": "integer", "minimum": 1 },
+        "routing_stream": { "$ref": "#/$defs/routing_stream" },
+        "stream_reason": { "type": "string" },
+        "review_outcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "dismissed_reason_code",
+            "fire_count",
+            "dismissal_rate",
+            "human_action_rate",
+            "noisy_rule"
+          ],
+          "properties": {
+            "outcome": { "type": "string", "enum": ["pending", "actioned", "dismissed", "escalated"] },
+            "dismissed_reason_code": { "type": ["string", "null"] },
+            "fire_count": { "type": "integer", "minimum": 0 },
+            "dismissal_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "human_action_rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "noisy_rule": { "type": "boolean" }
+          }
+        },
+        "status": { "type": "string", "enum": ["observed", "replay_required"] },
+        "replay_required": { "type": "boolean" },
+        "tournament_required": { "type": "boolean" },
         "can_promote_now": { "type": "boolean", "const": false },
         "promotion_gate": {
           "type": "object",
@@ -350,11 +627,29 @@
         "metric",
         "baseline_snapshot_id",
         "holdout_split_id",
+        "eval_dataset_ref",
+        "baseline_registered",
+        "holdout_registered",
+        "eval_dataset_registered",
         "before_score",
         "after_score",
         "delta",
         "sample_count",
         "metric_gaming_risk",
+        "evidence_quality",
+        "advisory_only",
+        "reason_codes",
+        "user_feedback_signal",
+        "feedback_source",
+        "llm_inferred",
+        "feedback_usable_for_decision",
+        "trace_ref",
+        "redacted_trace_digest_ref",
+        "trace_detail_source",
+        "redaction_status",
+        "raw_private_content_exported",
+        "hermes_artifact_hash_before",
+        "hermes_artifact_hash_after",
         "failure_refs",
         "evidence_refs",
         "positive_direction",
@@ -366,6 +661,10 @@
         "metric": { "type": "string" },
         "baseline_snapshot_id": { "type": ["string", "null"] },
         "holdout_split_id": { "type": ["string", "null"] },
+        "eval_dataset_ref": { "type": ["string", "null"] },
+        "baseline_registered": { "type": "boolean" },
+        "holdout_registered": { "type": "boolean" },
+        "eval_dataset_registered": { "type": "boolean" },
         "before_score": { "type": ["number", "null"] },
         "after_score": { "type": ["number", "null"] },
         "delta": { "type": ["number", "null"] },
@@ -373,6 +672,35 @@
         "metric_gaming_risk": {
           "type": "string",
           "enum": ["low", "medium", "high", "unknown"]
+        },
+        "evidence_quality": { "$ref": "#/$defs/evidence_quality" },
+        "advisory_only": { "type": "boolean" },
+        "reason_codes": { "$ref": "#/$defs/string_array" },
+        "user_feedback_signal": {
+          "type": ["string", "null"],
+          "enum": ["correction", "accepted", "rejected", null]
+        },
+        "feedback_source": {
+          "type": "string",
+          "enum": ["user_explicit", "system_event", "trace_inferred"]
+        },
+        "llm_inferred": { "type": "boolean" },
+        "feedback_usable_for_decision": { "type": "boolean" },
+        "trace_ref": { "type": ["string", "null"] },
+        "redacted_trace_digest_ref": { "type": ["string", "null"] },
+        "trace_detail_source": {
+          "type": "string",
+          "enum": ["hermes_redacted_reducer_digest", "trace_identity_only"]
+        },
+        "redaction_status": { "type": "string", "const": "at_tap_point" },
+        "raw_private_content_exported": { "type": "boolean", "const": false },
+        "hermes_artifact_hash_before": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "hermes_artifact_hash_after": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
         },
         "failure_refs": { "$ref": "#/$defs/string_array" },
         "evidence_refs": { "$ref": "#/$defs/string_array" },
@@ -415,12 +743,21 @@
         "event_output": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["format", "env_var", "default_path", "contains_raw_private_content"],
+          "required": [
+            "format",
+            "env_var",
+            "default_path",
+            "contains_raw_private_content",
+            "redaction_status",
+            "raw_private_content_exported"
+          ],
           "properties": {
             "format": { "type": "string", "const": "ndjson" },
             "env_var": { "type": "string" },
             "default_path": { "type": "string" },
-            "contains_raw_private_content": { "type": "boolean", "const": false }
+            "contains_raw_private_content": { "type": "boolean", "const": false },
+            "redaction_status": { "type": "string", "const": "at_tap_point" },
+            "raw_private_content_exported": { "type": "boolean", "const": false }
           }
         },
         "no_direct_authority": { "$ref": "#/$defs/string_array" },
@@ -485,6 +822,7 @@
         "publication_allowed",
         "starts_services",
         "raw_private_content_persisted",
+        "raw_private_content_exported",
         "llm_api_calls",
         "external_api_calls"
       ],
@@ -498,6 +836,7 @@
         "publication_allowed": { "type": "boolean", "const": false },
         "starts_services": { "type": "boolean", "const": false },
         "raw_private_content_persisted": { "type": "boolean", "const": false },
+        "raw_private_content_exported": { "type": "boolean", "const": false },
         "llm_api_calls": { "type": "integer", "const": 0 },
         "external_api_calls": { "type": "integer", "const": 0 }
       }

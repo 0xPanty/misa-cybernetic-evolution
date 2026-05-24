@@ -230,6 +230,12 @@ function summarizeHermesRuntimeAdapter(adapter) {
     events: adapter.summary.event_count,
     research_digests: adapter.summary.research_digest_count,
     evolution_candidates: adapter.summary.evolution_candidate_count,
+    official_evolution_candidates: adapter.summary.official_evolution_candidate_count ?? 0,
+    inferred_evolution_pressure: adapter.summary.inferred_evolution_pressure_count ?? 0,
+    boundary_observations: adapter.summary.boundary_observation_count ?? 0,
+    observability_stream: adapter.summary.observability_stream_count ?? 0,
+    work_order_stream: adapter.summary.work_order_stream_count ?? 0,
+    sidecar_signal_to_noise_ratio: adapter.summary.sidecar_signal_to_noise_ratio?.value ?? null,
     replay_required: adapter.summary.replay_required_count,
     control_plane_write_deny_failed: !(
       writeDeny.default_decision === "deny"

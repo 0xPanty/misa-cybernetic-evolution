@@ -21,6 +21,7 @@
       "context": {
         "platform": "cli",
         "topic": "Farcaster public reply skill held-out replay",
+        "signal_origin": "qianxuesen_replay_synthesis",
         "terms": ["Hermes", "Farcaster", "skill_manage"],
         "conversation_signals": [
           "external_framework_change",
@@ -36,10 +37,15 @@
           "metric": "heldout_public_reply_success",
           "baseline_snapshot_id": "baseline-farcaster-reply-2026-05-14",
           "holdout_split_id": "holdout-farcaster-public-reply-v1",
+          "eval_dataset_ref": "dataset-farcaster-public-reply-v1",
           "before_score": 0.58,
           "after_score": 0.74,
           "sample_count": 12,
           "metric_gaming_risk": "medium",
+          "user_feedback_signal": "accepted",
+          "feedback_source": "user_explicit",
+          "llm_inferred": false,
+          "redacted_trace_digest_ref": "redacted-trace-farcaster-reply-001",
           "failure_refs": [
             "failure-private-memory-boundary-01",
             "failure-protocol-drift-02"
@@ -64,6 +70,7 @@
       "context": {
         "platform": "cli",
         "topic": "public/private memory boundary replay",
+        "signal_origin": "qianxuesen_replay_synthesis",
         "terms": ["Hermes", "memory", "Farcaster"],
         "conversation_signals": [
           "public_posting_boundary",
@@ -79,10 +86,15 @@
           "metric": "heldout_boundary_precision",
           "baseline_snapshot_id": "baseline-public-boundary-2026-05-14",
           "holdout_split_id": "holdout-public-private-boundary-v1",
+          "eval_dataset_ref": "dataset-public-private-boundary-v1",
           "before_score": 0.62,
           "after_score": 0.79,
           "sample_count": 10,
           "metric_gaming_risk": "low",
+          "user_feedback_signal": "correction",
+          "feedback_source": "user_explicit",
+          "llm_inferred": false,
+          "redacted_trace_digest_ref": "redacted-trace-policy-boundary-002",
           "failure_refs": [
             "failure-public-private-leak-risk-01"
           ],
@@ -110,6 +122,7 @@
       "context": {
         "platform": "cli",
         "topic": "bounded retry and recovery-anchor damping",
+        "signal_origin": "qianxuesen_replay_synthesis",
         "terms": ["Hermes", "Qianxuesen"],
         "conversation_signals": [
           "repeated_failure_pattern",
@@ -123,10 +136,14 @@
           "metric": "heldout_recovery_success",
           "baseline_snapshot_id": "baseline-recovery-smoke-2026-05-14",
           "holdout_split_id": "holdout-recovery-anchor-v1",
+          "eval_dataset_ref": "dataset-recovery-anchor-v1",
           "before_score": 0.5,
           "after_score": 0.7,
           "sample_count": 8,
           "metric_gaming_risk": "medium",
+          "feedback_source": "system_event",
+          "llm_inferred": false,
+          "redacted_trace_digest_ref": "redacted-trace-damping-replay-003",
           "failure_refs": [
             "failure-missing-recovery-anchor-01",
             "failure-repeat-run-without-stop-condition-02"

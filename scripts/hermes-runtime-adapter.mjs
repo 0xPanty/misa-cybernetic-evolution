@@ -37,6 +37,11 @@ if (hasArg("json")) {
   console.log(`events: ${result.summary.event_count}`);
   console.log(`research_digests: ${result.summary.research_digest_count}`);
   console.log(`evolution_candidates: ${result.summary.evolution_candidate_count}`);
+  console.log(`official_evolution_candidates: ${result.summary.official_evolution_candidate_count}`);
+  console.log(`inferred_evolution_pressure: ${result.summary.inferred_evolution_pressure_count}`);
+  console.log(`boundary_observations: ${result.summary.boundary_observation_count}`);
+  console.log(`work_order_stream: ${result.summary.work_order_stream_count}`);
+  console.log(`observability_stream: ${result.summary.observability_stream_count}`);
   console.log(`replay_required: ${result.summary.replay_required_count}`);
   console.log(`default_mode: ${result.summary.default_mode}`);
   console.log(`llm_api_calls: ${result.safety.llm_api_calls}`);

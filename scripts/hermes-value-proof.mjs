@@ -80,6 +80,29 @@ function countBy(items, selector) {
 }
 
 function summarizeComparisons(label, comparisons) {
+  if (!comparisons.length) {
+    return {
+      label,
+      comparison_count: 0,
+      positive_lift_count: 0,
+      positive_lift_rate: 0,
+      regression_count: 0,
+      zero_or_negative_count: 0,
+      safety_regression_count: 0,
+      avg_delta: 0,
+      min_delta: 0,
+      p05_delta: 0,
+      p50_delta: 0,
+      p95_delta: 0,
+      max_delta: 0,
+      by_strategy: {},
+      by_risk: {},
+      evolution_evidence_count: 0,
+      supported_optimization_evidence_count: 0,
+      evidence_support_rate: 0,
+      worst: []
+    };
+  }
   const deltas = comparisons.map((item) => item.delta);
   const positiveLiftCount = comparisons.filter((item) => item.positive_lift).length;
   const evidenceRows = comparisons.filter((item) => item.evolution_evidence);
@@ -344,6 +367,7 @@ export async function runHermesValueProof({
       ? "positive_for_current_local_corpus"
       : "not_release_ready",
     hard_limit: "This is deterministic evidence for the current local corpus and seeds, not a mathematical guarantee for unknown future data."
+      + " It measures Qianxuesen's synthetic/local discriminator consistency, not Hermes official self-evolution accuracy; the current runtime tap has no official_evolution_candidate rows unless explicitly supplied."
   };
 }
 

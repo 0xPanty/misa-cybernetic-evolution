@@ -83,14 +83,75 @@ The adapter can produce:
 - `research_followup`
 - `damping_rule_candidate`
 
-All evolution candidates are marked:
+These records are boundary observations by default. A runtime operation log is
+not an official Hermes self-evolution candidate. The report therefore separates:
 
-- `replay_required: true`
-- `tournament_required: true`
-- `can_promote_now: false`
+- `official_evolution_candidate_count`: explicit Hermes self-evolution rows;
+- `inferred_evolution_pressure_count`: runtime logs interpreted as pressure;
+- `boundary_observation_count`: all Layer A boundary observations;
+- `work_order_stream_count`: the subset that should consume inbox attention.
 
-This keeps the useful Hermes self-improvement signal without letting runtime
-events directly rewrite Qianxuesen memory, skills, policy, or route state.
+Every candidate-like record must carry:
+
+- `signal_origin`: `runtime_operation_log`,
+  `hermes_official_self_evolution`, or `qianxuesen_replay_synthesis`;
+- `interpretation`: what Qianxuesen is allowed to infer from that origin;
+- `confidence`: `high`, `medium`, or `low`, assigned by deterministic rules.
+
+Layer A runtime logs default to `observability_stream`. They become work orders
+only when a registered anomaly rule fires. Explicit Hermes self-evolution rows
+and Qianxuesen replay-synthesized evidence can enter `work_order_stream`, but
+still cannot promote themselves.
+
+This keeps the useful Hermes boundary signal without letting runtime events
+directly rewrite Qianxuesen memory, skills, policy, route state, or human inbox.
+
+Pre/post tool hooks are folded by a redacted `action_identity_fingerprint`, not
+by the whole payload fingerprint. The identity hash covers tool, action, target
+name/path, and Hermes target fingerprint, but not post-call result content. This
+keeps the intent/result pair attached to one anomaly while still preferring the
+`post_tool_call` row as the work-order representative when it exists.
+
+## Anomaly Work-Order Gate
+
+`anomaly_rules.version` is attached to every report so future threshold changes
+do not make old ledgers incomparable. The first registry is deterministic:
+
+- `skill_manage_create_burst`;
+- `persistent_skill_mutation_pressure`;
+- `write_file_sensitive_path`;
+- `repeated_failure_then_skill_create`;
+- `post_tool_call_failure_after_skill_manage`;
+- `memory_write_boundary_pressure`.
+
+The work-order stream is anomaly-based:
+
+```text
+runtime_operation_log
+-> boundary_observation
+-> observability_stream by default
+-> work_order_stream only on anomaly or explicit evidence
+```
+
+The report also emits `sidecar_signal_to_noise_ratio`:
+
+```text
+work_order_stream_count / boundary_observation_count
+target band: 0.05 - 0.20
+```
+
+Too high means the sidecar is becoming noisy. Too low can mean it is missing
+useful anomalies. The metric is a deterministic reducer and does not use LLMs.
+
+Observability retention is declared as:
+
+```text
+raw_events_window=30d
+aggregated_stats_window=1y
+enforcement_mode=declared_only_no_deletion
+```
+
+This version does not delete or compact historical logs.
 
 ## Evolution-Grade Samples
 
@@ -107,6 +168,23 @@ emits before/after replay evidence. This is the minimum useful proof shape:
 Qualified evidence can support optimization only when the direction is positive,
 the baseline and held-out split are present, and the gaming risk is not high.
 It still creates replay-required candidates only; it does not promote anything.
+
+## Value Proof Scope
+
+`npm run hermes:value-proof` runs deterministic comparisons on the local
+Qianxuesen corpus, local Hermes fixtures, and the evolution-grade sample file.
+Those 11500-style comparisons prove internal discriminator consistency on known
+local samples, including `positive_lift_rate=1.0` and negative-control rejection.
+
+They are not a measured accuracy score for Hermes official self-evolution. A
+real runtime tap with only `runtime_operation_log` rows has:
+
+```text
+official_evolution_candidate_count=0
+```
+
+Layer B validation starts only when Hermes emits explicit
+`hermes_official_self_evolution` rows or Qianxuesen synthesizes replay evidence.
 
 ## Verification
 
