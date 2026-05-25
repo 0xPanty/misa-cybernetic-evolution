@@ -20,7 +20,10 @@ import {
   reviewSessionDistillerOutput,
   writeSessionDistillerReviewOutFile
 } from "./lib/session-distiller-review.mjs";
-import { exportReviewWorkOrdersToInbox } from "./lib/work-order-inbox.mjs";
+import {
+  exportInboxOwnerDigest,
+  exportReviewWorkOrdersToInbox
+} from "./lib/work-order-inbox.mjs";
 import { runLocalSidecarQuickstart } from "./local-quickstart.mjs";
 
 const DEFAULT_REPORT_ROOT = "runs/full-shadow-deploy";
@@ -158,10 +161,29 @@ function compactInboxExport(inbox) {
     root: inbox.root,
     inbox_dir: inbox.inbox_dir,
     written_count: inbox.summary.written_count,
+    merged_existing_count: inbox.summary.merged_existing_count,
     skipped_existing_count: inbox.summary.skipped_existing_count,
     inbox_count: inbox.summary.inbox_count,
+    report_needed_count: inbox.summary.report_needed_count,
+    spike_count: inbox.summary.spike_count,
     auto_execute: inbox.summary.auto_execute,
     safety: inbox.safety
+  };
+}
+
+function compactOwnerDigest(digest) {
+  return {
+    ok: digest.ok,
+    root: digest.root,
+    report_item_count: digest.summary.report_item_count,
+    total_new_since_last_report: digest.summary.total_new_since_last_report,
+    total_occurrence_count: digest.summary.total_occurrence_count,
+    spike_count: digest.summary.spike_count,
+    mark_reported: digest.summary.mark_reported,
+    artifacts: digest.artifacts,
+    auto_execute: digest.safety.auto_execute,
+    executes_work_orders: digest.safety.executes_work_orders,
+    safety: digest.safety
   };
 }
 
@@ -238,6 +260,11 @@ export async function runFullShadowDeploy({
     repoRoot,
     now
   });
+  const ownerDigest = await exportInboxOwnerDigest({
+    root: workOrderRoot,
+    repoRoot,
+    now
+  });
 
   const checks = [
     {
@@ -293,6 +320,13 @@ export async function runFullShadowDeploy({
       ok: inbox.ok,
       inbox_dir: inbox.inbox_dir,
       inbox_count: inbox.summary.inbox_count
+    },
+    {
+      name: "work-order owner digest is ready",
+      ok: ownerDigest.ok,
+      report_item_count: ownerDigest.summary.report_item_count,
+      total_new_since_last_report: ownerDigest.summary.total_new_since_last_report,
+      executes_work_orders: ownerDigest.safety.executes_work_orders
     }
   ];
 
@@ -310,6 +344,7 @@ export async function runFullShadowDeploy({
       hermes_work_order_count: hermesWorkOrder.routing.summary.work_order_count,
       session_review_verdict: sessionReview.summary.verdict,
       inbox_count: inbox.summary.inbox_count,
+      owner_digest_report_count: ownerDigest.summary.report_item_count,
       value_comparisons: quickstart.summary.value_comparisons,
       positive_lift_rate: quickstart.summary.positive_lift_rate
     },
@@ -323,7 +358,8 @@ export async function runFullShadowDeploy({
       hermes_event_log: resolvedEventLog,
       window_distillation: path.join(resolvedReportRoot, "window-distillation.json"),
       session_review: sessionReviewPath,
-      work_order_inbox: inbox.inbox_dir
+      work_order_inbox: inbox.inbox_dir,
+      work_order_owner_digest: ownerDigest.artifacts.markdown
     },
     integration: {
       hermes_plugin_dir: pluginInstall.plugin_dir,
@@ -342,6 +378,7 @@ export async function runFullShadowDeploy({
       writes_window_distillation_report: true,
       writes_local_vector_store: quickstart.safety.writes_local_vector_store,
       writes_work_order_inbox: true,
+      writes_work_order_owner_digest: true,
       writes_zilliz: false,
       embedding_created: false,
       llm_api_calls: quickstart.safety.llm_api_calls + hermesWorkOrder.safety.llm_api_calls,
@@ -373,10 +410,11 @@ export async function runFullShadowDeploy({
       hermes_work_order: compactWorkOrderPipeline(hermesWorkOrder),
       window_distillation: compactWindowDistillation(windowDistillation),
       session_distiller_review: compactSessionReview(sessionReview),
-      work_order_inbox: compactInboxExport(inbox)
+      work_order_inbox: compactInboxExport(inbox),
+      work_order_owner_digest: compactOwnerDigest(ownerDigest)
     },
     notes: [
-      "This is the one-command full shadow path: local sidecar, window distillation, Hermes observe-only plugin, event-log replay, session-distiller review, work-order inbox, and value proof.",
+      "This is the one-command full shadow path: local sidecar, window distillation, Hermes observe-only plugin, event-log replay, session-distiller review, work-order inbox, owner digest, and value proof.",
       "It mirrors the VPS sidecar shape without granting production authority.",
       "Hermes event count can be zero immediately after deploy; it increases after Hermes loads the plugin and emits hook events."
     ]
@@ -398,6 +436,7 @@ function printSummary(result) {
   console.log(`hermes_work_orders: ${result.summary.hermes_work_order_count}`);
   console.log(`session_review_verdict: ${result.summary.session_review_verdict}`);
   console.log(`inbox_count: ${result.summary.inbox_count}`);
+  console.log(`owner_digest_report_count: ${result.summary.owner_digest_report_count}`);
   console.log(`report: ${result.outputs.latest_json}`);
   console.log(`production_deploy: ${result.safety.production_deploy}`);
   console.log(`llm_api_calls: ${result.safety.llm_api_calls}`);

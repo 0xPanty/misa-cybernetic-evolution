@@ -50,10 +50,18 @@ The one-command full-shadow path is also present: `node scripts/setup-full-shado
 for fresh clones and `npm run deploy:full-shadow` after dependencies are
 installed. It wires local sidecar readiness, deterministic window distillation,
 Hermes observe-only plugin install, event-log replay, Hermes work-order
-generation, session-distiller cybernetic review, work-order inbox export, and
-value proof. `npm run deploy:vps-shadow` installs the existing VPS-style
+generation, session-distiller cybernetic review, work-order inbox export, owner
+digest reporting, and value proof. `npm run deploy:vps-shadow` installs the existing VPS-style
 session-distiller `ExecStartPost` hook on Linux hosts that already run
 `misa-session-distiller.service`.
+
+The work-order inbox now closes the L4 report loop: repeated session-distiller
+failures are grouped by failure class, the owner digest writes JSON/Markdown
+handoff artifacts, and reported work orders remember the occurrence count that
+has already been surfaced. Matching failures keep appending evidence to the same
+work order; a fresh digest is raised only when new unreported evidence crosses
+the observation threshold. The digest remains report-only and cannot execute
+work orders.
 
 v0.27.1 adds `npm run update:vps-shadow`, the safe one-command VPS updater. It
 refuses tracked local changes, fast-forwards from `origin/main`, runs `npm ci`,

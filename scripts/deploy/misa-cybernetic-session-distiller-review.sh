@@ -25,6 +25,7 @@ WRAPPER="${MISA_CYBERNETIC_WRAPPER:-$PROJECT_ROOT/tools/misa_cybernetic_wrapper.
 NODE_BIN_DIR="${MISA_CYBERNETIC_NODE_BIN_DIR:-/opt/misa-node20/bin}"
 CYBERNETIC_REPO="${MISA_CYBERNETIC_REPO:-/root/misa-cybernetic-evolution}"
 WORK_ORDER_INBOX_ENABLED="${MISA_SESSION_DISTILLER_WORK_ORDER_INBOX_ENABLED:-true}"
+OWNER_DIGEST_ENABLED="${MISA_SESSION_DISTILLER_OWNER_DIGEST_ENABLED:-true}"
 WORK_ORDER_ROOT="${MISA_CYBERNETIC_WORK_ORDER_ROOT:-$PROJECT_ROOT/work-orders/cybernetic}"
 
 mkdir -p "$REVIEW_DIR"
@@ -142,6 +143,27 @@ if [[ "$WORK_ORDER_INBOX_ENABLED" == "true" ]]; then
   fi
 
   cp "$inbox_output" "$REVIEW_DIR/latest-work-order-inbox.json"
+
+  if [[ "$OWNER_DIGEST_ENABLED" == "true" ]]; then
+    owner_digest_output="$REVIEW_DIR/session-distiller-owner-digest-$timestamp.json"
+    set +e
+    (
+      cd "$CYBERNETIC_REPO"
+      node scripts/work-order-inbox.mjs \
+        --owner-digest \
+        --root "$WORK_ORDER_ROOT" \
+        --json
+    ) > "$owner_digest_output" 2>&1
+    owner_digest_exit_code=$?
+    set -e
+
+    if [[ "$owner_digest_exit_code" -ne 0 ]]; then
+      write_status "failed" "owner_digest_export_failed" "$owner_digest_exit_code"
+      exit "$owner_digest_exit_code"
+    fi
+
+    cp "$owner_digest_output" "$REVIEW_DIR/latest-owner-digest.json"
+  fi
 fi
 
 write_status "ok" "cybernetic_review_written"

@@ -467,10 +467,19 @@ When enabled, the same hook also calls `work-order:inbox` and splits
   done/
   failed/
   ignored/
+  reports/
+  latest-owner-digest.json
+  latest-owner-digest.md
 ```
 
 Those files are an inbox for a primary agent or Codex-style repair pass. They
 are not shell jobs and do not execute themselves.
+
+The hook then runs `work-order:owner-digest`. It writes an owner-visible digest,
+marks the included work orders as reported, and records the occurrence count
+that was reported. Later matching failures append evidence to the same work
+order; the digest is raised again only after new unreported evidence crosses the
+observation threshold.
 
 ## Perception Log Layout
 

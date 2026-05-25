@@ -34,6 +34,7 @@ test("full shadow deploy wires Hermes logs, distiller review, inbox, and value p
   assert.equal(result.safety.writes_window_distillation_report, true);
   assert.equal(result.safety.writes_local_vector_store, true);
   assert.equal(result.safety.writes_work_order_inbox, true);
+  assert.equal(result.safety.writes_work_order_owner_digest, true);
   assert.equal(result.safety.writes_zilliz, false);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
@@ -48,9 +49,12 @@ test("full shadow deploy wires Hermes logs, distiller review, inbox, and value p
   assert.equal(result.artifacts.window_distillation.production_authority, false);
   assert.equal(result.artifacts.session_distiller_review.ok, true);
   assert.equal(result.artifacts.work_order_inbox.ok, true);
+  assert.equal(result.artifacts.work_order_owner_digest.ok, true);
+  assert.equal(result.artifacts.work_order_owner_digest.executes_work_orders, false);
   assert.equal((await fs.stat(path.join(pluginDir, "plugin.yaml"))).isFile(), true);
   assert.equal((await fs.stat(eventLogFile)).isFile(), true);
   assert.equal((await fs.stat(path.join(reportRoot, "window-distillation.json"))).isFile(), true);
   assert.equal((await fs.stat(path.join(reportRoot, "latest.json"))).isFile(), true);
   assert.equal((await fs.stat(path.join(workOrderRoot, "latest-index.json"))).isFile(), true);
+  assert.equal((await fs.stat(path.join(workOrderRoot, "latest-owner-digest.json"))).isFile(), true);
 });

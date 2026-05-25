@@ -43,9 +43,10 @@ mutation.
 `deploy:full-shadow` is the one-command observe-only integration path. It adds
 deterministic window distillation, Hermes plugin install, event-log replay,
 Hermes work-order generation, session-distiller cybernetic review, and
-work-order inbox export on top of the local path. It mirrors the VPS sidecar
-shape, but still does not start a new service, write production memory, mutate
-Hermes skills, call providers, write Zilliz, or promote candidates.
+work-order inbox export plus owner digest on top of the local path. It mirrors
+the VPS sidecar shape, but still does not start a new service, write production
+memory, mutate Hermes skills, call providers, write Zilliz, or promote
+candidates.
 
 `update:vps-shadow` is the one-command VPS update path. It checks for tracked
 local changes, fast-forwards the checkout from `origin/main`, runs `npm ci`,
@@ -81,6 +82,7 @@ npm run hermes:map-distillation -- --json
 npm run hermes:adapt-runtime -- --json
 npm run hermes:plugin:doctor
 npm run session-distiller:review -- --json --summary-file examples/session-distiller-summary.example.json
+npm run work-order:owner-digest -- --json --no-mark-reported
 npm run work-order:variants -- --json --dry-run
 npm run work-order:evaluate -- --json --dry-run
 npm run candidate:context -- --json
