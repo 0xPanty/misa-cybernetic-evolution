@@ -4,6 +4,7 @@ import {
   buildHermesWorkOrderPipeline,
   runHermesWorkOrderPipeline
 } from "../scripts/lib/hermes-work-order.mjs";
+import { buildHermesRuntimeAdapterReport } from "../scripts/lib/hermes-runtime-adapter.mjs";
 import { runHermesValueProof } from "../scripts/hermes-value-proof.mjs";
 
 test("Hermes boundary observations enter work orders only when anomaly rules fire", async () => {
@@ -44,6 +45,15 @@ test("Hermes boundary observations enter work orders only when anomaly rules fir
   assert.equal(result.quality.summary.qianxuesen_fit.medium_risk_replay_or_compact_count, 0);
   assert.equal(result.routing.work_orders[0].traceability.evidence.signal_origin, "runtime_operation_log");
   assert.equal(result.routing.work_orders[0].traceability.evidence.anomaly_rule_ids.includes("memory_write_boundary_pressure"), true);
+  assert.equal(result.routing.summary.measurement_quality_evidence.verdict, "insufficient_evidence");
+  assert.equal(result.routing.summary.measurement_quality_evidence.diagnosis_class, "sample_insufficient");
+  assert.equal(result.routing.summary.measurement_quality_evidence.evidence_role, "critic_evidence_not_judge");
+  assert.equal(result.routing.work_orders[0].source_refs.some((ref) => ref.kind === "measurement_quality_gate"), true);
+  assert.equal(result.routing.work_orders[0].traceability.evidence.measurement_quality_evidence.evidence_role, "critic_evidence_not_judge");
+  assert.equal(result.routing.work_orders[0].traceability.evidence.measurement_quality_evidence.authority.changes_winner, false);
+  assert.equal(result.routing.work_orders[0].traceability.evidence.measurement_quality_evidence.matched_rule_ids.includes("measurement_evidence_sparse"), true);
+  assert.equal(result.routing.work_orders[0].traceability.evidence.measurement_quality_evidence.issue_kinds.includes("sample_insufficient"), true);
+  assert.ok(result.routing.work_orders[0].task_gate.reasons.some((reason) => reason.includes("held-out data")));
 });
 
 test("Hermes evolution-grade samples become positive held-out work-order evidence", async () => {
@@ -76,6 +86,73 @@ test("Hermes evolution-grade samples become positive held-out work-order evidenc
   )), true);
   assert.equal(result.safety.llm_api_calls, 0);
   assert.equal(result.safety.external_api_calls, 0);
+});
+
+test("Hermes work orders carry context-quality evidence as evidence, not judge", () => {
+  const repeatedSkillCreates = Array.from({ length: 5 }, (_, index) => ({
+    event_id: `context-pollution-skill-create-${index + 1}`,
+    hook: "post_tool_call",
+    timestamp: `2026-05-20T00:0${index}:00Z`,
+    tool_name: "skill_manage",
+    args: {
+      action: "create",
+      name: "context-cleanup-skill",
+      fingerprint: "context-cleanup"
+    },
+    result: {
+      success: true
+    },
+    context: {
+      terms: ["Hermes", "skill_manage"]
+    }
+  }));
+  const adapterReport = buildHermesRuntimeAdapterReport({
+    fixture: {
+      source: {
+        runtime: "hermes-agent",
+        runtime_commit: "context-quality-local-sample",
+        source_url: "local-context-quality"
+      },
+      events: [
+        ...repeatedSkillCreates,
+        {
+          record_kind: "model_io_tap",
+          event_id: "model-io-context-pollution-001",
+          source_event_ids: ["context-pollution-model-input-001"],
+          metrics: {
+            message_count: 48,
+            context_byte_size: 60000,
+            tool_schema_count: 42,
+            tool_result_error_count: 3
+          }
+        }
+      ]
+    },
+    now: new Date("2026-05-20T00:00:00Z")
+  });
+  const result = buildHermesWorkOrderPipeline({
+    adapterReport,
+    now: new Date("2026-05-20T00:00:00Z")
+  });
+  const evidence = result.routing.work_orders[0].traceability.evidence.measurement_quality_evidence;
+
+  assert.equal(result.ok, true);
+  assert.equal(adapterReport.summary.work_order_stream_count, 1);
+  assert.equal(evidence.verdict, "suspect_input_contamination");
+  assert.equal(evidence.diagnosis_class, "context_pollution");
+  assert.equal(evidence.failure_kind, "input_contamination");
+  assert.equal(evidence.agentic_pattern, "context_engineering");
+  assert.equal(evidence.evidence_role, "critic_evidence_not_judge");
+  assert.equal(evidence.authority.evaluates_candidate_quality, false);
+  assert.equal(evidence.authority.changes_route, false);
+  assert.equal(evidence.authority.triggers_replay, false);
+  assert.equal(evidence.metrics.max_context_byte_size, 60000);
+  assert.equal(evidence.metrics.max_tool_result_error_count, 3);
+  assert.equal(evidence.matched_rule_ids.includes("context_byte_size_high"), true);
+  assert.equal(evidence.matched_rule_ids.includes("tool_result_error_accumulation"), true);
+  assert.equal(evidence.issue_kinds.includes("context_oversized"), true);
+  assert.equal(evidence.issue_kinds.includes("tool_schema_overloaded"), true);
+  assert.equal(evidence.issue_kinds.includes("tool_result_error"), true);
 });
 
 test("Hermes value proof quantifies positive local value and rejects bad evidence", async () => {

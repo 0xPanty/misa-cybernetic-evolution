@@ -178,6 +178,8 @@ Each work order includes:
 - `task_gate`: complexity, value, doability, and error-discovery cost;
 - `traceability`: evidence, reproduction commands, acceptance criteria, editable
   scope, forbidden scope, audit requirement, and rollback need;
+- `measurement_quality_evidence`: when present, the emit-only
+  `measurement_quality_gate` verdict carried as critic evidence, not as a judge;
 - `execution_policy`: whether the agent may self-review, self-resolve, must
   report upward, and whether the experience should stay as candidate-only log;
 - `escalation`: when stronger-model handoff is reasonable;
@@ -189,6 +191,25 @@ For repair tickets where minimal-positive mode already blocked the bad export,
 the prompt says so directly. A P1/P2 local over-promotion ticket should feel
 important, but it should not sound like Misa's live memory or production
 runtime has already been changed.
+
+Hermes-sourced work orders also carry a compact measurement-quality diagnosis
+when the adapter produced one:
+
+| Diagnosis | Meaning | What the next agent should do |
+|---|---|---|
+| `context_pollution` | model input or tool context looks overloaded, unstable, or error-heavy | clean the case file before blaming the candidate |
+| `agent_behavior_failure` | action history suggests looping or repeated failed behavior | bound reflection and ask for replay or review |
+| `compound_input_and_behavior_failure` | both input and behavior signals look suspicious | split context cleanup from behavior repair |
+| `sample_insufficient` | the gate cannot prove the measurement was clean | keep it as evidence and ask for more replay/held-out data |
+| `clean_measurement` | no measurement-quality issue fired | continue normal replay and quality comparison |
+
+The same evidence also carries `issue_kinds`, so a work order can say whether
+the concrete signal was `context_oversized`, `tool_schema_overloaded`,
+`tool_result_error`, `agent_repeated_failed_action`, `agent_search_loop`, or
+`sample_insufficient`.
+
+This field is deliberately named evidence. It cannot change the route, winner,
+metric, replay state, or human gate.
 
 ## Safety
 

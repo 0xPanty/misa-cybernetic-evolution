@@ -93,6 +93,17 @@ main `npm test` path. Live `model_io_tap` sessions are calibration input for
 future trigger bands and review policy; they do not create a shortcut from
 diagnostic telemetry to replay, tournament, or live authority.
 
+The Hermes work-order path now also carries the gate verdict forward as
+`measurement_quality_evidence`. This is an Agentic Design Patterns adaptation:
+context-quality and critic-style observations can explain whether a work order
+looks like context pollution, agent behavior failure, compound failure, or
+sparse evidence, but they remain evidence only. They do not change route,
+winner, replay, metric, or human-gate authority.
+The evidence also carries compact `issue_kinds` such as `context_oversized`,
+`tool_result_error`, `agent_repeated_failed_action`, and
+`sample_insufficient`, so the next agent can see what failed without reading
+raw prompts or tool bodies.
+
 The calibration report now also exposes the current signal-layer map: source
 signals, deterministic route signals, perception hints, work-order pressure,
 retrieval-ranker inputs, and tournament quality signals. This is a review

@@ -36,9 +36,105 @@ function countBy(items, selector) {
   }, {});
 }
 
+const MEASUREMENT_DIAGNOSIS_BY_VERDICT = Object.freeze({
+  clean_measurement: {
+    diagnosis_class: "clean_measurement",
+    failure_kind: "none",
+    agentic_pattern: "context_quality_pass",
+    summary: "Measurement evidence did not show input pollution, behavior looping, or sparse samples.",
+    work_order_hint: "Continue replay and quality comparison before any adoption decision."
+  },
+  suspect_input_contamination: {
+    diagnosis_class: "context_pollution",
+    failure_kind: "input_contamination",
+    agentic_pattern: "context_engineering",
+    summary: "The model case file looks polluted or overloaded, so the candidate should not be blamed before the input is checked.",
+    work_order_hint: "Inspect context size, tool-schema count, tool-result errors, and source selection before judging agent behavior."
+  },
+  suspect_behavior_loop: {
+    diagnosis_class: "agent_behavior_failure",
+    failure_kind: "behavior_loop",
+    agentic_pattern: "reflection_budget",
+    summary: "The action history suggests repeated failure or collapsed search behavior.",
+    work_order_hint: "Prefer bounded replay or owner review over more unbounded self-reflection."
+  },
+  suspect_compound_failure: {
+    diagnosis_class: "compound_input_and_behavior_failure",
+    failure_kind: "compound_failure",
+    agentic_pattern: "producer_critic_evidence",
+    summary: "Both model input quality and agent behavior signals look suspicious.",
+    work_order_hint: "Split context cleanup from behavior repair before treating the work-order result as candidate-quality evidence."
+  },
+  insufficient_evidence: {
+    diagnosis_class: "sample_insufficient",
+    failure_kind: "insufficient_measurement_evidence",
+    agentic_pattern: "memory_layer_boundary",
+    summary: "There is not enough measurement evidence to call the case file clean.",
+    work_order_hint: "Keep the signal as evidence and ask for replay, held-out data, or human review before durable learning."
+  }
+});
+
+const MEASUREMENT_ISSUE_KIND_BY_RULE = Object.freeze({
+  context_byte_size_high: "context_oversized",
+  tool_schema_count_high: "tool_schema_overloaded",
+  tool_result_error_accumulation: "tool_result_error",
+  failure_after_repeat_rate_high: "agent_repeated_failed_action",
+  query_entropy_collapsed: "agent_search_loop",
+  measurement_evidence_sparse: "sample_insufficient"
+});
+
 function hasAny(values = [], expected = []) {
   const set = new Set(values);
   return expected.some((item) => set.has(item));
+}
+
+function measurementQualityRecordForAdapter(adapterReport) {
+  return (adapterReport?.observability_stream ?? []).find((record) => (
+    record?.record_kind === "measurement_quality_gate"
+  )) ?? null;
+}
+
+function measurementQualityEvidenceForAdapter(adapterReport) {
+  const record = measurementQualityRecordForAdapter(adapterReport);
+  if (!record) return null;
+
+  const diagnosis = MEASUREMENT_DIAGNOSIS_BY_VERDICT[record.verdict]
+    ?? MEASUREMENT_DIAGNOSIS_BY_VERDICT.insufficient_evidence;
+  const matchedRuleIds = record.measurement_rule_registry?.matched_rule_ids ?? [];
+
+  return {
+    evidence_source: "measurement_quality_gate",
+    evidence_role: "critic_evidence_not_judge",
+    verdict: record.verdict,
+    diagnosis_class: diagnosis.diagnosis_class,
+    failure_kind: diagnosis.failure_kind,
+    agentic_pattern: diagnosis.agentic_pattern,
+    gate_record_id: record.record_id,
+    rule_version: record.measurement_rule_registry?.version ?? null,
+    matched_rule_ids: matchedRuleIds,
+    issue_kinds: [...new Set(matchedRuleIds.map((ruleId) => (
+      MEASUREMENT_ISSUE_KIND_BY_RULE[ruleId] ?? "unknown_measurement_issue"
+    )))],
+    source_event_ids: record.source_event_ids ?? [],
+    summary: diagnosis.summary,
+    work_order_hint: diagnosis.work_order_hint,
+    metrics: {
+      max_context_byte_size: record.metrics?.max_context_byte_size ?? 0,
+      max_tool_schema_count: record.metrics?.max_tool_schema_count ?? 0,
+      max_tool_result_error_count: record.metrics?.max_tool_result_error_count ?? 0,
+      max_failure_after_repeat_rate: record.metrics?.max_failure_after_repeat_rate ?? null,
+      failure_after_repeat_denominator: record.metrics?.failure_after_repeat_denominator ?? 0,
+      query_entropy_status: record.metrics?.query_entropy_status ?? null
+    },
+    authority: {
+      evaluates_candidate_quality: false,
+      changes_route: false,
+      changes_winner: false,
+      triggers_replay: false,
+      blocks_layer_a: false,
+      llm_api_calls: 0
+    }
+  };
 }
 
 function severityForCandidate(candidate, sourceEvent) {
@@ -157,7 +253,7 @@ function forbiddenScopeForCandidate(candidate) {
   return common;
 }
 
-function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId) {
+function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId, measurementQualityEvidence) {
   const refs = [];
   for (const sourceId of candidate.source_event_ids ?? []) {
     refs.push({
@@ -184,6 +280,12 @@ function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId) {
       id: candidate.evolution_evidence.evidence_id
     });
   }
+  if (measurementQualityEvidence?.gate_record_id) {
+    refs.push({
+      kind: "measurement_quality_gate",
+      id: measurementQualityEvidence.gate_record_id
+    });
+  }
   if (sourceEvent?.source_payload_fingerprint) {
     refs.push({
       kind: "source_payload_fingerprint",
@@ -205,7 +307,7 @@ function sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId) {
   return refs;
 }
 
-function taskGateForCandidate(candidate, severity) {
+function taskGateForCandidate(candidate, severity, measurementQualityEvidence) {
   const highRisk = severity === "P1";
   return {
     complex_enough: highRisk || candidate.candidate_type !== "research_followup",
@@ -218,7 +320,8 @@ function taskGateForCandidate(candidate, severity) {
       "Qianxuesen should convert the signal into replayable work instead of discarding it at the adapter layer.",
       highRisk
         ? "The signal touches memory, policy, or public boundary pressure, so durable writes need a final gate."
-        : "The signal can move quickly through agent self-review because durable writes remain blocked."
+        : "The signal can move quickly through agent self-review because durable writes remain blocked.",
+      ...(measurementQualityEvidence ? [measurementQualityEvidence.work_order_hint] : [])
     ]
   };
 }
@@ -248,7 +351,12 @@ function adoptionPolicyForCandidate(candidate, severity) {
   };
 }
 
-function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEventId }) {
+function workOrderFromHermesCandidate({
+  candidate,
+  sourceEvent,
+  digestBySourceEventId,
+  measurementQualityEvidence
+}) {
   const severity = severityForCandidate(candidate, sourceEvent);
   const riskLevel = riskLevelForSeverity(severity);
   const executor = executorForCandidate(candidate, severity);
@@ -274,7 +382,7 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
       routing_stream: candidate.routing_stream
     },
     summary,
-    source_refs: sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId),
+    source_refs: sourceRefsForCandidate(candidate, sourceEvent, digestBySourceEventId, measurementQualityEvidence),
     delivery: {
       receiver_type: "primary_agent",
       receiver_label: "Primary agent",
@@ -282,7 +390,7 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
       reason: "Hermes runtime pressure should enter the Qianxuesen work-order loop immediately, then be filtered by variants and quality scoring."
     },
     suggested_executor: executor,
-    task_gate: taskGateForCandidate(candidate, severity),
+    task_gate: taskGateForCandidate(candidate, severity, measurementQualityEvidence),
     traceability: {
       evidence: {
         candidate_type: candidate.candidate_type,
@@ -302,6 +410,7 @@ function workOrderFromHermesCandidate({ candidate, sourceEvent, digestBySourceEv
         source_event_ids: candidate.source_event_ids ?? [],
         control_decision: sourceEvent?.control_decision,
         ...(candidate.evolution_evidence ? { evolution_evidence: candidate.evolution_evidence } : {}),
+        ...(measurementQualityEvidence ? { measurement_quality_evidence: measurementQualityEvidence } : {}),
         adoption_policy: adoptionPolicy
       },
       reproduction_commands: [
@@ -363,13 +472,15 @@ export function buildHermesWorkOrderRouting({
     }
   }
 
+  const measurementQualityEvidence = measurementQualityEvidenceForAdapter(adapterReport);
   const workOrderCandidates = adapterReport?.work_order_stream ?? adapterReport?.evolution_candidates ?? [];
   const workOrders = workOrderCandidates.map((candidate) => {
     const sourceEvent = normalizedBySourceId.get(candidate.source_event_ids?.[0]);
     return workOrderFromHermesCandidate({
       candidate,
       sourceEvent,
-      digestBySourceEventId
+      digestBySourceEventId,
+      measurementQualityEvidence
     });
   });
 
@@ -403,6 +514,13 @@ export function buildHermesWorkOrderRouting({
       source_observability_stream_count: adapterReport?.summary?.observability_stream_count ?? 0,
       source_work_order_stream_count: adapterReport?.summary?.work_order_stream_count ?? workOrders.length,
       sidecar_signal_to_noise_ratio: adapterReport?.summary?.sidecar_signal_to_noise_ratio,
+      measurement_quality_evidence: measurementQualityEvidence
+        ? {
+            verdict: measurementQualityEvidence.verdict,
+            diagnosis_class: measurementQualityEvidence.diagnosis_class,
+            evidence_role: measurementQualityEvidence.evidence_role
+          }
+        : null,
       by_category: countBy(workOrders, (order) => order.category),
       by_suggested_executor: countBy(workOrders, (order) => order.suggested_executor.executor_type),
       requires_user_confirmation_count: workOrders.filter((order) => order.execution_policy.requires_user_confirmation).length,

@@ -27,6 +27,7 @@ noise are also valid outputs.
 | GenericAgent | completed work can be crystallized into small reusable skills; active context should maximize information density | add a skill candidate index, bounded self-repair draft loop, and context-density gate over replay results | broad shell/tool authority, autonomous scheduler, automatic memory writes, production publication, desktop/browser/ADB live control |
 | EvoMap/evolver | self-evolution benefits from wide mutation candidates, adaptive strategy switching, hard/soft failure classification, suppression, and blast-radius gates | add a local adaptive candidate gate: generate more candidates/signals first, filter with safety gates, verify surviving candidates, keep production hard-locked | daemon loop, Hub worker execution, marketplace/ATP auto-delivery, host-runtime `sessions_spawn` authority, automatic production writes |
 | NousResearch/hermes-agent-self-evolution | self-evolution should compare multiple variants with train/validation/holdout data and Pareto-style scoring | add a local tournament gate after Qianxuesen preflight: generate variants, score them, choose a draft-only winner, record rejected variants as evidence, and use a local escalation gate to decide whether optional LLM review is worth the cost | automatic Skill writes, memory writes, LLM-owned route decisions, prompt/code auto-evolution, continuous production loop |
+| Antonio Gulli's Agentic Design Patterns | context engineering, producer/critic separation, memory layering, reflection budgets, and task routing are useful when they improve the evidence an agent gives the controller | map context quality into the existing `model_io_tap` / `measurement_quality_gate`, carry critic-style observations into work orders as `measurement_quality_evidence`, and keep executor choice inside the existing primary/specialized/stronger/human slots | a new agent runtime, a multi-agent orchestrator, unbounded reflection loops, LLM-owned metrics, LLM-owned routes, or critic verdicts that directly judge candidates |
 | Cybernetic Systems Engineering | control/data/state surfaces and minimal control input | use surface language only where it prevents real confusion | a heavy approval process for every small change |
 | self-evolution | simple categories and experience summary template | use plain route labels and positive-value checks | Heartbeat/timer learning or unimplemented scripts |
 
@@ -47,6 +48,10 @@ noise are also valid outputs.
    draft sandbox; winner selection is not publication approval. Optional LLM
    review is gated by deterministic local escalation advice and cannot change
    routes or winners.
+9. Agentic-pattern critic output is evidence only. It can say the context looks
+   polluted, tool output looks broken, samples are sparse, or behavior is
+   looping. Replay, held-out checks, value proof, and the human gate still own
+   judgment.
 
 ## Route Model
 
