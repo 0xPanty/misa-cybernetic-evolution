@@ -126,6 +126,40 @@
       ]
     },
     {
+      "signal": "context_injection_risk",
+      "route_hint": "policy",
+      "confidence": 0.94,
+      "patterns": [
+        "\\bpre[-_ ]?llm\\b",
+        "\\bcontext injection\\b",
+        "\\bcontext_injected\\b",
+        "\\brecall_context\\b",
+        "\\bsystem_prompt_block\\b",
+        "\\bon_pre_compress\\b",
+        "\\bAGENTMEMORY_INJECT_CONTEXT=true\\b",
+        "\\b/agentmemory/context\\b",
+        "注入.*上下文"
+      ]
+    },
+    {
+      "signal": "memory_provider_takeover_risk",
+      "route_hint": "policy",
+      "confidence": 0.95,
+      "patterns": [
+        "\\bmemory\\.provider[:= ]+agentmemory\\b",
+        "\\bmemory_provider[:= ]+agentmemory\\b",
+        "\\bon_memory_write\\b",
+        "\\bmemory_save\\b",
+        "\\b/agentmemory/remember\\b",
+        "\\bmem::remember\\b",
+        "\\bremember endpoint\\b",
+        "\\bremember tool\\b",
+        "\\bintegrations[\\\\/]hermes\\b",
+        "\\bagentmemory plugin\\b",
+        "接管.*记忆"
+      ]
+    },
+    {
       "signal": "public_posting_boundary",
       "route_hint": "policy",
       "confidence": 0.92,

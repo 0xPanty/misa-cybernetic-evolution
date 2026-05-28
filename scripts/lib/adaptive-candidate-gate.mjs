@@ -21,6 +21,8 @@ const BLOCKED_OPERATIONS = [
   "external_worker_or_hub_execution"
 ];
 
+const EXTERNAL_PROMOTION_ROUTES = new Set(["memory", "skill", "policy"]);
+
 const VALIDATION_COMMANDS = [
   "npm run crystallize:misa",
   "npm run self-repair:misa -- --no-verify",
@@ -106,7 +108,12 @@ function classifyFailure(trace) {
     };
   }
 
-  if (signals.includes("explicit_user_boundary") || signals.includes("public_posting_boundary")) {
+  if (
+    signals.includes("explicit_user_boundary")
+    || signals.includes("public_posting_boundary")
+    || signals.includes("context_injection_risk")
+    || signals.includes("memory_provider_takeover_risk")
+  ) {
     return {
       class: "none",
       retryable: false,
@@ -130,6 +137,33 @@ function classifyFailure(trace) {
     suppress_candidate: false,
     rationale: "No failure suppression is required."
   };
+}
+
+function traceRefs(trace) {
+  return trace.artifact_evidence?.referenced ?? [];
+}
+
+function isExternalFootprintRef(ref) {
+  return /^agentmemory:/.test(String(ref)) || /^omniagent-footprint:/.test(String(ref));
+}
+
+function isInternalCorroborationRef(ref) {
+  return /^(hermes|zilliz|local|repo|test|session-distiller|journal|chunk):/.test(String(ref));
+}
+
+function isExternalFootprintTrace(trace) {
+  return String(trace.source_event_id ?? "").startsWith("omniagent-")
+    || traceRefs(trace).some(isExternalFootprintRef);
+}
+
+function hasInternalCorroboration(trace) {
+  return traceRefs(trace).some(isInternalCorroborationRef);
+}
+
+function blocksExternalFootprintPromotion(trace) {
+  return isExternalFootprintTrace(trace)
+    && EXTERNAL_PROMOTION_ROUTES.has(trace.route.target)
+    && !hasInternalCorroboration(trace);
 }
 
 function makeGate(name, ok, state, reason) {
@@ -157,6 +191,10 @@ function classifyDecision(trace, failureMode) {
     return "held_for_more_evidence";
   }
 
+  if (blocksExternalFootprintPromotion(trace)) {
+    return "held_for_more_evidence";
+  }
+
   if (trace.result.positive_value && trace.observe.evidence_count >= 2) {
     return "validation_ready";
   }
@@ -164,13 +202,14 @@ function classifyDecision(trace, failureMode) {
   return "held_for_more_evidence";
 }
 
-function buildAdaptiveCandidate(trace, skillCandidateBySource) {
+export function buildAdaptiveCandidate(trace, skillCandidateBySource = new Map()) {
   const generatedSignals = buildGeneratedSignals(trace);
   const failureMode = classifyFailure(trace);
   const decision = classifyDecision(trace, failureMode);
   const skillCandidate = skillCandidateBySource.get(trace.source_event_id);
   const hasLiveEffects = Object.values(trace.result.live_effects ?? {}).some(Boolean);
   const evidenceOk = trace.observe.evidence_count >= 2;
+  const externalPromotionOk = !blocksExternalFootprintPromotion(trace);
   const commandsAllowed = VALIDATION_COMMANDS.every((command) => command.startsWith("npm run ") || command === "npm test");
   const entersVerification = decision === "validation_ready";
   const productionLocked = true;
@@ -193,6 +232,14 @@ function buildAdaptiveCandidate(trace, skillCandidateBySource) {
       !hasLiveEffects,
       !hasLiveEffects ? "passed" : "rejected",
       "Candidates with live effects cannot enter validation."
+    ),
+    makeGate(
+      "external_footprint_promotion",
+      externalPromotionOk,
+      externalPromotionOk ? "passed" : "held",
+      externalPromotionOk
+        ? "Candidate is not blocked by external-only footprint evidence."
+        : "External footprint alone cannot promote memory, skill, policy, route, or session mechanics."
     ),
     makeGate(
       "validation_command_allowlist",

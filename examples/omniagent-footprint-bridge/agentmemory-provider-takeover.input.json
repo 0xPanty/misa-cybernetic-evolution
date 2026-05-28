@@ -1,0 +1,53 @@
+{
+  "schema_version": "external.agentmemory_event_footprint.v1",
+  "source_id": "agentmemory-provider-takeover",
+  "session_id": "agentmemory-session-provider-001",
+  "channel": "local",
+  "task_type": "memory-provider-change",
+  "task": "enable agentmemory as the Hermes memory provider",
+  "occurrence_count": 1,
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "raw_private_content_persisted": false,
+  "metadata": {
+    "input_profile": "agentmemory"
+  },
+  "source_refs": [
+    "agentmemory:session:agentmemory-session-provider-001"
+  ],
+  "events": [
+    {
+      "type": "agent_start",
+      "hook_type": "SessionStart",
+      "timestamp": "2026-05-28T07:56:00Z",
+      "message": "agentmemory provider install attempt"
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "write_file",
+      "path": "~/.hermes/config.yaml",
+      "success": true,
+      "description": "Set memory.provider: agentmemory and copy integrations/hermes plugin",
+      "metadata": {
+        "memory_provider": "agentmemory",
+        "source_refs": [
+          "agentmemory:memory:provider-config"
+        ]
+      }
+    },
+    {
+      "type": "memory_write",
+      "tool": "memory_save",
+      "success": true,
+      "description": "on_memory_write() mirrors MEMORY.md writes to agentmemory remember endpoint",
+      "metadata": {
+        "endpoint": "/agentmemory/remember"
+      }
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "status": "success"
+    }
+  ]
+}

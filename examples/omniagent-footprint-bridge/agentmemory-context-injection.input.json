@@ -1,0 +1,63 @@
+{
+  "schema_version": "external.agentmemory_event_footprint.v1",
+  "source_id": "agentmemory-context-injection",
+  "session_id": "agentmemory-session-ctx-001",
+  "channel": "local",
+  "task_type": "agentmemory-hook-footprint",
+  "task": "prefetch recalled context into the Hermes prompt",
+  "occurrence_count": 1,
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "raw_private_content_persisted": false,
+  "metadata": {
+    "input_profile": "agentmemory"
+  },
+  "source_refs": [
+    "agentmemory:session:agentmemory-session-ctx-001"
+  ],
+  "events": [
+    {
+      "type": "agent_start",
+      "hook_type": "SessionStart",
+      "timestamp": "2026-05-28T07:55:00Z",
+      "message": "agentmemory session started"
+    },
+    {
+      "type": "context_injected",
+      "hook_type": "prefetch",
+      "tool": "memory_context",
+      "success": true,
+      "description": "system_prompt_block() injected recall_context before the LLM call",
+      "metadata": {
+        "context_packet_id": "ctx-agentmemory-001",
+        "source_refs": [
+          "agentmemory:context_packet:ctx-agentmemory-001"
+        ],
+        "recall_hits": [
+          {
+            "obs_id": "obs-agentmemory-007",
+            "session_id": "agentmemory-session-ctx-001",
+            "score": 0.91,
+            "kind": "memory"
+          }
+        ]
+      }
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "memory_smart_search",
+      "success": true,
+      "description": "memory_smart_search returned recalled context with citations",
+      "metadata": {
+        "source_refs": [
+          "agentmemory:memory:mem-agentmemory-002"
+        ]
+      }
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "status": "success"
+    }
+  ]
+}

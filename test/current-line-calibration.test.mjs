@@ -100,9 +100,9 @@ test("current-line calibration runs redacted samples in shadow mode", async () =
   assert.deepEqual(
     result.signal_layers.find((layer) => layer.layer_id === "shadow_perception_signals").taxonomy,
     {
-      risk_signal_count: 10,
+      risk_signal_count: 12,
       novelty_signal_count: 9,
-      signal_family_count: 15
+      signal_family_count: 17
     }
   );
   assert.deepEqual(

@@ -34,6 +34,7 @@
         "session_id",
         "channel",
         "task_type",
+        "input_profile",
         "occurrence_count",
         "raw_private_content_persisted"
       ],
@@ -43,6 +44,7 @@
         "session_id": { "type": "string", "minLength": 1 },
         "channel": { "type": "string", "enum": ["discord", "farcaster", "agentmail", "local", "other"] },
         "task_type": { "type": "string", "minLength": 1 },
+        "input_profile": { "type": "string", "enum": ["omniagent_footprint_profile", "agentmemory_footprint_profile"] },
         "occurrence_count": { "type": "integer", "minimum": 0 },
         "raw_private_content_persisted": { "type": "boolean", "const": false }
       }
@@ -81,7 +83,8 @@
         "successful_tool_count",
         "failed_tool_count",
         "tool_error_count",
-        "auto_write_indicators"
+        "auto_write_indicators",
+        "provenance"
       ],
       "properties": {
         "tools_used": { "type": "array", "items": { "type": "string" } },
@@ -91,13 +94,43 @@
         "auto_write_indicators": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["agents_md_write", "memory_write", "skill_write", "public_send", "runtime_mutation"],
+          "required": [
+            "agents_md_write",
+            "memory_write",
+            "skill_write",
+            "public_send",
+            "runtime_mutation",
+            "context_injection",
+            "memory_provider_takeover"
+          ],
           "properties": {
             "agents_md_write": { "type": "boolean" },
             "memory_write": { "type": "boolean" },
             "skill_write": { "type": "boolean" },
             "public_send": { "type": "boolean" },
-            "runtime_mutation": { "type": "boolean" }
+            "runtime_mutation": { "type": "boolean" },
+            "context_injection": { "type": "boolean" },
+            "memory_provider_takeover": { "type": "boolean" }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gate",
+            "state",
+            "source_ref_count",
+            "has_agentmemory_provenance",
+            "has_internal_corroboration",
+            "external_only"
+          ],
+          "properties": {
+            "gate": { "type": "string", "const": "footprint_provenance_gate" },
+            "state": { "type": "string", "enum": ["passed", "held"] },
+            "source_ref_count": { "type": "integer", "minimum": 0 },
+            "has_agentmemory_provenance": { "type": "boolean" },
+            "has_internal_corroboration": { "type": "boolean" },
+            "external_only": { "type": "boolean" }
           }
         }
       }

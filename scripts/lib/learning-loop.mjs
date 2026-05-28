@@ -45,6 +45,8 @@ function classifyRoute(event) {
   const artifactEvidence = normalizeArtifactEvidence(event);
   const overreactionSignal = hasSignal(event, "avoid_overreaction") || hasSignal(event, "single_failure");
   const publicBoundarySignal = hasSignal(event, "public_posting_boundary") || hasSignal(event, "farcaster_public_memory_risk");
+  const externalMemoryBoundarySignal = hasSignal(event, "context_injection_risk") || hasSignal(event, "memory_provider_takeover_risk");
+  const policyBoundarySignal = publicBoundarySignal || externalMemoryBoundarySignal;
 
   if (hasSignal(event, "candidate_replay_failed")) {
     return {
@@ -61,7 +63,7 @@ function classifyRoute(event) {
     };
   }
 
-  if (overreactionSignal && !publicBoundarySignal) {
+  if (overreactionSignal && !policyBoundarySignal) {
     return {
       target: "damping",
       controlCategory: "fault_tolerance",
@@ -76,7 +78,7 @@ function classifyRoute(event) {
     };
   }
 
-  if (hasSignal(event, "explicit_user_boundary") || publicBoundarySignal) {
+  if (hasSignal(event, "explicit_user_boundary") || policyBoundarySignal) {
     return {
       target: "policy",
       controlCategory: "optimal_control",

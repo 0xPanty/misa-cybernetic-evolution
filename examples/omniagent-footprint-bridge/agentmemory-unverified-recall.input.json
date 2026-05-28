@@ -1,0 +1,34 @@
+{
+  "schema_version": "external.agentmemory_event_footprint.v1",
+  "source_id": "agentmemory-unverified-recall",
+  "session_id": "agentmemory-session-unverified-001",
+  "channel": "local",
+  "task_type": "agentmemory-hook-footprint",
+  "task": "surface an unverified recalled preference without citations",
+  "occurrence_count": 1,
+  "redaction_status": "redacted",
+  "source_type": "redacted_realish",
+  "raw_private_content_persisted": false,
+  "metadata": {
+    "input_profile": "agentmemory"
+  },
+  "events": [
+    {
+      "type": "agent_start",
+      "hook_type": "SessionStart",
+      "timestamp": "2026-05-28T07:57:00Z",
+      "message": "agentmemory recall test"
+    },
+    {
+      "type": "tool_execution_end",
+      "tool": "memory_smart_search",
+      "success": true,
+      "description": "memory_smart_search surfaced a possible preference but no source_refs or citations were present"
+    },
+    {
+      "type": "agent_end",
+      "success": true,
+      "status": "success"
+    }
+  ]
+}

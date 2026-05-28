@@ -12,6 +12,8 @@ const BLOCKED_OPERATIONS = [
   "automatic_agents_md_write",
   "automatic_memory_write",
   "automatic_skill_installation",
+  "automatic_context_injection",
+  "memory_provider_takeover",
   "llm_owned_learning_route",
   "production_runtime_mutation",
   "public_channel_send",
@@ -20,7 +22,17 @@ const BLOCKED_OPERATIONS = [
 
 const ROUTE_VOCAB = ["memory", "skill", "case", "policy", "damping", "ignore"];
 
-const READ_TOOLS = new Set(["read_file", "grep", "find", "ls", "memory_search", "memory_get"]);
+const READ_TOOLS = new Set([
+  "read_file",
+  "grep",
+  "find",
+  "ls",
+  "memory_search",
+  "memory_get",
+  "memory_smart_search",
+  "memory_context",
+  "memory_verify"
+]);
 const WRITE_TOOLS = new Set([
   "write_file",
   "edit_file",
@@ -53,10 +65,20 @@ function eventPath(event) {
 }
 
 function eventText(event) {
+  const metadata = event.metadata ?? {};
   return [
     eventType(event),
     eventTool(event),
     eventPath(event),
+    event.hook_type,
+    event.hookType,
+    metadata.hook_type,
+    metadata.hookType,
+    metadata.endpoint,
+    metadata.memory_provider,
+    metadata.provider,
+    metadata.config,
+    metadata.context_destination,
     event.description,
     event.error,
     event.command,
@@ -74,6 +96,20 @@ function stableSlug(value) {
 
 function normalizeEvents(footprint) {
   return Array.isArray(footprint?.events) ? footprint.events : [];
+}
+
+function inferInputProfile(footprint) {
+  const raw = [
+    footprint?.metadata?.input_profile,
+    footprint?.input_profile,
+    footprint?.schema_version,
+    footprint?.source_type,
+    footprint?.task_type
+  ].map((item) => String(item ?? "").toLowerCase()).join(" ");
+
+  return /agentmemory/.test(raw)
+    ? "agentmemory_footprint_profile"
+    : "omniagent_footprint_profile";
 }
 
 function inferSourceId(footprint) {
@@ -148,7 +184,7 @@ function isAutoAgentsMdWrite(event) {
 
 function isAutoMemoryWrite(event) {
   const text = eventText(event);
-  if (/memory_write|persistent_memory/.test(text)) return true;
+  if (/memory_write|persistent_memory|memory_save|on_memory_write|agentmemory\/remember|mem::remember|remember endpoint|remember tool/.test(text)) return true;
   return /(memory\.db|zilliz)/.test(text) && isWriteLikeEvent(event);
 }
 
@@ -170,12 +206,35 @@ function isRuntimeMutation(event) {
     && /(change|start|stop|restart|kill|write|update|mutate)/.test(text);
 }
 
+function isContextInjectionRisk(event) {
+  const text = eventText(event);
+  return /agentmemory_inject_context=true/.test(text)
+    || /system_prompt_block|on_pre_compress|pre[-_ ]?llm|pre[-_ ]?compact/.test(text)
+    || /(prefetch|inject|injected|recall_context|context packet|context_packet|memory_context|agentmemory\/context)/.test(text)
+      && /(prompt|context|llm|system)/.test(text);
+}
+
+function isMemoryProviderTakeoverRisk(event) {
+  const text = eventText(event);
+  return /memory\.provider[:= ]+agentmemory/.test(text)
+    || /memory_provider[:= ]+agentmemory/.test(text)
+    || /provider[:= ]+agentmemory/.test(text) && /memory/.test(text)
+    || /integrations[\\/]hermes|agentmemory plugin|hermes agentmemory plugin/.test(text)
+    || /on_memory_write|memory_save|agentmemory\/remember|mem::remember|remember endpoint|remember tool/.test(text)
+    || /(replace|replac|takeover|switch|set|enable|install|mirror|sync).{0,80}(memory provider|agentmemory|memory\.md|user\.md)/.test(text);
+}
+
 function inferRiskLevel(events, autoWriteIndicators) {
-  if (autoWriteIndicators.public_send || autoWriteIndicators.runtime_mutation) return "critical";
+  if (
+    autoWriteIndicators.public_send
+    || autoWriteIndicators.runtime_mutation
+    || autoWriteIndicators.memory_provider_takeover
+  ) return "critical";
   if (
     autoWriteIndicators.agents_md_write
     || autoWriteIndicators.memory_write
     || autoWriteIndicators.skill_write
+    || autoWriteIndicators.context_injection
   ) {
     return "high";
   }
@@ -203,12 +262,16 @@ function collectToolStats(events) {
 }
 
 function collectAutoWriteIndicators(events) {
+  const contextInjection = events.some(isContextInjectionRisk);
+  const memoryProviderTakeover = events.some(isMemoryProviderTakeoverRisk);
   return {
     agents_md_write: events.some(isAutoAgentsMdWrite),
     memory_write: events.some(isAutoMemoryWrite),
     skill_write: events.some(isAutoSkillWrite),
     public_send: events.some(isPublicSend),
-    runtime_mutation: events.some(isRuntimeMutation)
+    runtime_mutation: events.some(isRuntimeMutation) || memoryProviderTakeover,
+    context_injection: contextInjection,
+    memory_provider_takeover: memoryProviderTakeover
   };
 }
 
@@ -236,6 +299,8 @@ function collectArtifactEvidence(events, toolStats, autoWriteIndicators) {
   if (autoWriteIndicators.agents_md_write) modified.push("policy:omniagent-agents-md-auto-promotion");
   if (autoWriteIndicators.memory_write) modified.push("memory:omniagent-automatic-memory-write");
   if (autoWriteIndicators.skill_write) modified.push("skill:omniagent-automatic-skill-write");
+  if (autoWriteIndicators.context_injection) injected.push("context:agentmemory-context-injection-risk");
+  if (autoWriteIndicators.memory_provider_takeover) modified.push("policy:agentmemory-memory-provider-takeover");
 
   return {
     injected: uniqueStrings(injected),
@@ -245,20 +310,94 @@ function collectArtifactEvidence(events, toolStats, autoWriteIndicators) {
   };
 }
 
-function inferSignals({ outcome, occurrenceCount, toolStats, autoWriteIndicators }) {
+function refFromRecallHit(hit) {
+  const refs = [];
+  if (hit?.obs_id) refs.push(`agentmemory:observation:${hit.obs_id}`);
+  if (hit?.observation_id) refs.push(`agentmemory:observation:${hit.observation_id}`);
+  if (hit?.session_id) refs.push(`agentmemory:session:${hit.session_id}`);
+  if (hit?.memory_id) refs.push(`agentmemory:memory:${hit.memory_id}`);
+  if (hit?.context_id) refs.push(`agentmemory:context_packet:${hit.context_id}`);
+  if (hit?.context_packet_id) refs.push(`agentmemory:context_packet:${hit.context_packet_id}`);
+  return refs;
+}
+
+function collectSourceRefs({ footprint, events, sourceId }) {
+  const refs = [
+    ...(Array.isArray(footprint?.source_refs) ? footprint.source_refs : [])
+  ];
+
+  for (const event of events) {
+    refs.push(...(Array.isArray(event.source_refs) ? event.source_refs : []));
+    refs.push(...(Array.isArray(event.metadata?.source_refs) ? event.metadata.source_refs : []));
+    if (event.obs_id) refs.push(`agentmemory:observation:${event.obs_id}`);
+    if (event.observation_id) refs.push(`agentmemory:observation:${event.observation_id}`);
+    if (event.session_id) refs.push(`agentmemory:session:${event.session_id}`);
+    if (event.context_packet_id) refs.push(`agentmemory:context_packet:${event.context_packet_id}`);
+    if (event.metadata?.context_packet_id) refs.push(`agentmemory:context_packet:${event.metadata.context_packet_id}`);
+    if (Array.isArray(event.metadata?.recall_hits)) {
+      refs.push(...event.metadata.recall_hits.flatMap(refFromRecallHit));
+    }
+  }
+
+  return uniqueStrings([`omniagent-footprint:${sourceId}`, ...refs]);
+}
+
+function isAgentMemorySpecificRef(ref) {
+  return /^agentmemory:(observation|session|memory|context_packet):/.test(String(ref));
+}
+
+function isExternalFootprintRef(ref) {
+  return /^agentmemory:/.test(String(ref)) || /^omniagent-footprint:/.test(String(ref));
+}
+
+function isInternalCorroborationRef(ref) {
+  return /^(hermes|zilliz|local|repo|test|session-distiller|journal|chunk):/.test(String(ref));
+}
+
+function buildProvenanceGate({ inputProfile, sourceRefs }) {
+  const hasAgentMemoryProvenance = sourceRefs.some(isAgentMemorySpecificRef);
+  const hasInternalCorroboration = sourceRefs.some(isInternalCorroborationRef);
+  const externalOnly = sourceRefs.length > 0 && sourceRefs.every(isExternalFootprintRef);
+  const agentmemoryProfile = inputProfile === "agentmemory_footprint_profile";
+  const passed = !agentmemoryProfile || hasAgentMemoryProvenance || hasInternalCorroboration;
+
+  return {
+    gate: "footprint_provenance_gate",
+    state: passed ? "passed" : "held",
+    source_ref_count: sourceRefs.length,
+    has_agentmemory_provenance: hasAgentMemoryProvenance,
+    has_internal_corroboration: hasInternalCorroboration,
+    external_only: externalOnly
+  };
+}
+
+function inferSignals({ outcome, occurrenceCount, toolStats, autoWriteIndicators, inputProfile, provenanceGate }) {
   const signals = [];
   const hasAutoWrite = Object.values(autoWriteIndicators).some(Boolean);
   const hasUsefulToolSequence = toolStats.successful_tools.length >= 2
     && (toolStats.read_tool_count > 0 || toolStats.write_tool_count > 0);
 
   if (autoWriteIndicators.public_send) signals.push("public_posting_boundary");
+  if (autoWriteIndicators.context_injection) signals.push("context_injection_risk");
+  if (autoWriteIndicators.memory_provider_takeover) signals.push("memory_provider_takeover_risk");
   if (
     autoWriteIndicators.agents_md_write
     || autoWriteIndicators.memory_write
     || autoWriteIndicators.skill_write
     || autoWriteIndicators.runtime_mutation
+    || autoWriteIndicators.context_injection
+    || autoWriteIndicators.memory_provider_takeover
   ) {
     signals.push("explicit_user_boundary");
+  }
+
+  if (
+    inputProfile === "agentmemory_footprint_profile"
+    && provenanceGate.state === "held"
+    && !autoWriteIndicators.context_injection
+    && !autoWriteIndicators.memory_provider_takeover
+  ) {
+    signals.push("avoid_overreaction");
   }
 
   if (outcome === "failure" || toolStats.tool_errors.length > 0) {
@@ -294,6 +433,7 @@ function expectationFromTrace(trace) {
 
 function buildLearningEvent({ footprint, events, now }) {
   const sourceId = inferSourceId(footprint);
+  const inputProfile = inferInputProfile(footprint);
   const sessionId = inferSessionId(footprint, events);
   const createdAt = inferCreatedAt(footprint, events, now);
   const outcome = inferOutcome(footprint, events);
@@ -302,7 +442,16 @@ function buildLearningEvent({ footprint, events, now }) {
   const autoWriteIndicators = collectAutoWriteIndicators(events);
   const riskLevel = inferRiskLevel(events, autoWriteIndicators);
   const artifactEvidence = collectArtifactEvidence(events, toolStats, autoWriteIndicators);
-  const signals = inferSignals({ outcome, occurrenceCount, toolStats, autoWriteIndicators });
+  const sourceRefs = collectSourceRefs({ footprint, events, sourceId });
+  const provenanceGate = buildProvenanceGate({ inputProfile, sourceRefs });
+  const signals = inferSignals({
+    outcome,
+    occurrenceCount,
+    toolStats,
+    autoWriteIndicators,
+    inputProfile,
+    provenanceGate
+  });
   const base = {
     event_id: `omniagent-${stableSlug(sourceId)}`,
     channel: inferChannel(footprint),
@@ -317,7 +466,7 @@ function buildLearningEvent({ footprint, events, now }) {
     setpoint: "Use OmniAgent-style execution footprints as evidence only; Qianxuesen owns route and promotion decisions.",
     artifact_evidence: artifactEvidence,
     source_id: String(sourceId),
-    source_refs: [`omniagent-footprint:${sourceId}`],
+    source_refs: sourceRefs,
     expected_route: "ignore",
     expected_status: "rejected",
     expected_publication_mode: "no_publish",
@@ -333,7 +482,9 @@ function buildLearningEvent({ footprint, events, now }) {
     learningEvent,
     trace: simulateLearningCycle(learningEvent),
     toolStats,
-    autoWriteIndicators
+    autoWriteIndicators,
+    inputProfile,
+    provenanceGate
   };
 }
 
@@ -388,7 +539,7 @@ export function reviewOmniAgentFootprintBridge({
 } = {}) {
   const events = normalizeEvents(footprint);
   const sourceId = inferSourceId(footprint);
-  const { learningEvent, trace, toolStats, autoWriteIndicators } = buildLearningEvent({
+  const { learningEvent, trace, toolStats, autoWriteIndicators, inputProfile, provenanceGate } = buildLearningEvent({
     footprint,
     events,
     now
@@ -402,6 +553,9 @@ export function reviewOmniAgentFootprintBridge({
   if (learningEvent.signals.includes("avoid_overreaction")) {
     warnings.push("Bridge held thin evidence through damping instead of promoting from one footprint.");
   }
+  if (provenanceGate.state === "held") {
+    warnings.push("Agentmemory footprint lacks recall provenance; bridge keeps it as low-trust evidence.");
+  }
 
   const result = {
     schema_version: "misa.omniagent_footprint_bridge.v1",
@@ -414,6 +568,7 @@ export function reviewOmniAgentFootprintBridge({
       session_id: inferSessionId(footprint, events),
       channel: learningEvent.channel,
       task_type: inferTaskType(footprint),
+      input_profile: inputProfile,
       occurrence_count: inferOccurrenceCount(footprint),
       raw_private_content_persisted: footprint?.raw_private_content_persisted === true
     },
@@ -433,7 +588,8 @@ export function reviewOmniAgentFootprintBridge({
       successful_tool_count: toolStats.successful_tools.length,
       failed_tool_count: toolStats.failed_tools.length,
       tool_error_count: toolStats.tool_errors.length,
-      auto_write_indicators: autoWriteIndicators
+      auto_write_indicators: autoWriteIndicators,
+      provenance: provenanceGate
     },
     converted_learning_event: learningEvent,
     cycle_trace: trace,

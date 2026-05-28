@@ -15,9 +15,9 @@ import {
 
 test("perception signal taxonomy centralizes risk, novelty, family, and priority constants", () => {
   assert.equal(PERCEPTION_ROUTE_PRIORITY.policy > PERCEPTION_ROUTE_PRIORITY.memory, true);
-  assert.equal(PERCEPTION_RISK_SIGNAL_HINTS.length, 10);
+  assert.equal(PERCEPTION_RISK_SIGNAL_HINTS.length, 12);
   assert.equal(PERCEPTION_NOVELTY_SIGNAL_HINTS.length, 9);
-  assert.equal(PERCEPTION_SIGNAL_FAMILIES.length, 15);
+  assert.equal(PERCEPTION_SIGNAL_FAMILIES.length, 17);
   assert.ok(PERCEPTION_RISK_SIGNAL_HINTS.some(([signal, hint]) => (
     signal === "farcaster_public_memory_risk"
     && hint.kind === "public_boundary"
@@ -30,6 +30,16 @@ test("perception signal taxonomy centralizes risk, novelty, family, and priority
   assert.ok(PERCEPTION_SIGNAL_FAMILIES.some(([family, signals]) => (
     family === "knowledge_gap"
     && signals.includes("research_needed")
+  )));
+  assert.ok(PERCEPTION_RISK_SIGNAL_HINTS.some(([signal, hint]) => (
+    signal === "context_injection_risk"
+    && hint.kind === "context_boundary"
+    && hint.level === "high"
+  )));
+  assert.ok(PERCEPTION_RISK_SIGNAL_HINTS.some(([signal, hint]) => (
+    signal === "memory_provider_takeover_risk"
+    && hint.kind === "memory_authority_boundary"
+    && hint.level === "high"
   )));
 });
 

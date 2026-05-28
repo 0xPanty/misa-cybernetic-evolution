@@ -23,6 +23,16 @@ export const PERCEPTION_RISK_SIGNAL_HINTS = Object.freeze([
     level: "medium",
     reason: "explicit user boundary should be preserved before routing"
   })]),
+  Object.freeze(["context_injection_risk", Object.freeze({
+    kind: "context_boundary",
+    level: "high",
+    reason: "external context injection can change model behavior and must stay behind policy review"
+  })]),
+  Object.freeze(["memory_provider_takeover_risk", Object.freeze({
+    kind: "memory_authority_boundary",
+    level: "high",
+    reason: "external memory providers must not take over Hermes/Zilliz memory authority"
+  })]),
   Object.freeze(["candidate_replay_failed", Object.freeze({
     kind: "replay_failure",
     level: "medium",
@@ -103,6 +113,8 @@ export const PERCEPTION_SIGNAL_FAMILIES = Object.freeze([
   Object.freeze(["public_memory_risk", Object.freeze(["farcaster_public_memory_risk"])]),
   Object.freeze(["public_boundary", Object.freeze(["public_posting_boundary"])]),
   Object.freeze(["authority_boundary", Object.freeze(["explicit_user_boundary"])]),
+  Object.freeze(["context_boundary", Object.freeze(["context_injection_risk"])]),
+  Object.freeze(["memory_authority_boundary", Object.freeze(["memory_provider_takeover_risk"])]),
   Object.freeze(["candidate_replay_failed", Object.freeze(["candidate_replay_failed"])]),
   Object.freeze(["overreaction_damping", Object.freeze(["avoid_overreaction", "single_failure"])]),
   Object.freeze(["repeated_failure", Object.freeze(["repeated_failure_pattern"])]),
